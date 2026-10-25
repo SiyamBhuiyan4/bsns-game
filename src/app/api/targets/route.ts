@@ -8,7 +8,7 @@ import { endOfMonth } from 'date-fns';
 import { z } from 'zod';
 
 const targetSchema = z.object({
-  section_id: z.string().uuid(),
+  section_id: z.string().uuid().nullable().optional(),
   employee_id: z.string().uuid().nullable().optional(),
   metric_type: z.nativeEnum(MetricType),
   target_value: z.number().positive(),
@@ -135,13 +135,14 @@ export async function POST(req: NextRequest) {
       pEnd = endOfMonth(pStart);
     }
 
-    // Check for overlapping targets of same section, metric, and period type (scoped to employee if assigned)
+    // Check for overlapping targets of same section, metric, and period type (scoped to employee and section)
+    const overlapWhere: any = {
+      metric_type,
+      ...(employee_id ? { employee_id } : {}),
+      ...(section_id ? { section_id } : {}),
+    };
     const existingTargets = await prisma.sectionTarget.findMany({
-      where: {
-        section_id,
-        metric_type,
-        ...(employee_id ? { employee_id } : {}),
-      },
+      where: overlapWhere,
     });
 
     const candidate = {
@@ -155,7 +156,7 @@ export async function POST(req: NextRequest) {
       if (existing.period_type === candidate.period_type) {
         if (existing.period_type === PeriodType.DAILY) {
           return NextResponse.json(
-            { error: 'A daily target for this metric and employee/section already exists. Please update it instead.' },
+            { error: 'A daily target for this metric and employee already exists. Please update it instead.' },
             { status: 409 }
           );
         }
@@ -170,7 +171,7 @@ export async function POST(req: NextRequest) {
 
     const target = await prisma.sectionTarget.create({
       data: {
-        section_id,
+        section_id: section_id || null,
         employee_id: employee_id ?? null,
         metric_type,
         target_value,
@@ -185,8 +186,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Auto-assign employee to this group section in Assignment so they receive task links!
-    if (employee_id && section_id) {
+    // Auto-assign employee to this group section in Assignment ONLY if metric is POSTS_DONE and a specific section_id is chosen!
+    if (metric_type === MetricType.POSTS_DONE && employee_id && section_id) {
       try {
         const existingAssign = await prisma.assignment.findFirst({
           where: { employee_id, section_id },
@@ -211,7 +212,8 @@ export async function POST(req: NextRequest) {
       entity: 'SectionTarget',
       entityId: target.id,
       payload: {
-        section_id,
+        section_id: section_id || null,
+        employee_id: employee_id || null,
         metric_type,
         target_value,
         period_type,

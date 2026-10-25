@@ -206,10 +206,9 @@ export default function AdminTargetsPage() {
       setErrorMsg(L('সঠিক টার্গেট সংখ্যা দিন', 'Enter a valid target quantity'));
       return;
     }
-    if (!form.section_id && sections.length > 0) {
-      setErrorMsg(L('গ্রুপ বা সেকশন নির্বাচন করুন', 'Select a group section'));
-      return;
-    }
+
+    const isPosts = form.metric_type === 'POSTS_DONE';
+    const chosenSectionId = isPosts ? (form.section_id || null) : null;
 
     setSubmitting(true);
     setErrorMsg('');
@@ -222,10 +221,11 @@ export default function AdminTargetsPage() {
           body: JSON.stringify({
             target_value: Number(form.target_value),
             employee_id: form.employee_id || null,
+            section_id: chosenSectionId,
             period_start: form.period_start || null,
           }),
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || 'Failed to update target');
         setSuccessMsg(L('টার্গেট সফলভাবে আপডেট করা হয়েছে', 'Target updated successfully'));
       } else {
@@ -234,7 +234,7 @@ export default function AdminTargetsPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            section_id: form.section_id || sections[0]?.id,
+            section_id: chosenSectionId,
             employee_id: form.employee_id || null,
             metric_type: form.metric_type,
             target_value: Number(form.target_value),
@@ -242,7 +242,7 @@ export default function AdminTargetsPage() {
             period_start: form.period_start || null,
           }),
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || 'Failed to assign target');
         setSuccessMsg(L('কর্মচারীর টার্গেট সফলভাবে নির্ধারণ করা হয়েছে', 'Target assigned successfully'));
       }
@@ -505,10 +505,16 @@ export default function AdminTargetsPage() {
                       {/* Task & Group Section */}
                       <td>
                         <div className="font-medium text-slate-800">{L(cfg.bn, cfg.en)}</div>
-                        <div className="flex items-center gap-1 text-xs text-slate-500">
-                          <Layers className="h-3 w-3 text-slate-400" />
-                          <span>{t.section?.name || L('সব গ্রুপ', 'All Groups')}</span>
-                        </div>
+                        {t.metric_type === 'POSTS_DONE' ? (
+                          <div className="flex items-center gap-1 text-xs text-slate-500">
+                            <Layers className="h-3 w-3 text-slate-400" />
+                            <span>{t.section?.name || L('সব গ্রুপ', 'All Groups')}</span>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-slate-400">
+                            {L('সাধারণ লক্ষ্য', 'General Target')}
+                          </div>
+                        )}
                       </td>
 
                       {/* Period Badge */}
@@ -692,24 +698,32 @@ export default function AdminTargetsPage() {
                 </select>
               </div>
 
-              {/* 3. Group Section Selection */}
-              <div>
-                <label className="label">
-                  {L('গ্রুপ বা সেকশন (Group Section) *', 'Group Section *')}
-                </label>
-                <select
-                  value={form.section_id}
-                  onChange={(e) => setForm({ ...form, section_id: e.target.value })}
-                  className="input"
-                  required
-                >
-                  {sections.map((sec) => (
-                    <option key={sec.id} value={sec.id}>
-                      {sec.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* 3. Group Section Selection (Only for Group Posts/Links Task) */}
+              {form.metric_type === 'POSTS_DONE' && (
+                <div>
+                  <label className="label">
+                    {L('গ্রুপ বা সেকশন (Group Section)', 'Group Section')}
+                  </label>
+                  <select
+                    value={form.section_id}
+                    onChange={(e) => setForm({ ...form, section_id: e.target.value })}
+                    className="input"
+                  >
+                    <option value="">{L('-- সব গ্রুপ (All Groups) --', '-- All Groups --')}</option>
+                    {sections.map((sec) => (
+                      <option key={sec.id} value={sec.id}>
+                        {sec.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-[11px] text-slate-400 mt-1 block">
+                    {L(
+                      'নির্দিষ্ট কোনো গ্রুপের লিংকে কাজের জন্য গ্রুপ সিলেক্ট করুন (বা সব গ্রুপের জন্য ফাঁকা রাখুন)',
+                      'Select a specific group for link posting, or leave as All Groups'
+                    )}
+                  </span>
+                </div>
+              )}
 
               {/* 4. Target Value & Period in 2 columns */}
               <div className="grid grid-cols-2 gap-3">
