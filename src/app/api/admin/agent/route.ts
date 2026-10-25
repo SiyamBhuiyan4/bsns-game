@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
   const { message, confirm, pending } = parse.data;
   const ctx = { actorId: session.userId, confirm: confirm === true };
 
-  let result: AgentResult & { link?: NavLink; suggestions?: NavLink[] };
+  let result: AgentResult & { link?: NavLink; suggestions?: NavLink[]; navigate?: boolean };
   if (confirm === true && pending) {
     // Run exactly what was previewed.
     const opened = await openPending(pending.token);
@@ -96,7 +96,8 @@ export async function POST(request: NextRequest) {
     pending?: { command: string; token: string };
     link?: NavLink;
     suggestions?: NavLink[];
-  } = { reply: result.reply, link: result.link, suggestions: result.suggestions };
+    navigate?: boolean;
+  } = { reply: result.reply, link: result.link, suggestions: result.suggestions, navigate: result.navigate };
   if (result.needsConfirmation && result.pending) {
     response.needsConfirmation = true;
     response.pending = {

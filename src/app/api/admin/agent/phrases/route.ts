@@ -24,7 +24,7 @@ export async function GET() {
   const phrases = await prisma.agentPhrase.findMany({ orderBy: { created_at: 'desc' } });
   return NextResponse.json({
     phrases,
-    pages: INTENTS.map((i) => ({ id: i.id, href: i.href, labelBn: i.labelBn, labelEn: i.labelEn })),
+    pages: INTENTS,
   });
 }
 

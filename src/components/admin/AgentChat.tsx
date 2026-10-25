@@ -33,9 +33,10 @@ interface AgentResponse {
   pending?: { command: string; token: string };
   link?: NavLink;
   suggestions?: NavLink[];
+  navigate?: boolean;
 }
 
-const HINTS = ['নতুন কর্মী যোগ', 'গ্রুপ দেখাও', 'আজকের রিপোর্ট', 'add group', '#status', '#help'];
+const HINTS = ['কর্মী যোগ করব কীভাবে?', 'গ্রুপে লিংক যোগ', 'আজকের রিপোর্ট', 'how do I set a target?', 'তুমি কী পারো?', '#status'];
 const NETWORK_ERROR =
   'Network problem. Please check your connection and try again. / নেটওয়ার্ক সমস্যা। ইন্টারনেট চেক করে আবার চেষ্টা করুন।';
 
@@ -118,7 +119,7 @@ export default function AgentChat() {
         suggestions: data.suggestions,
       });
       // Take the admin straight to the page; the chat stays open (it lives in the admin layout).
-      if (data.link) router.push(data.link.href);
+      if (data.link && data.navigate) router.push(data.link.href);
     } catch {
       addMessage({ role: 'assistant', text: NETWORK_ERROR });
     } finally {

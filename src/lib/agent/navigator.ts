@@ -1,210 +1,221 @@
-// Offline assistant: understands plain Bangla/English requests by matching them against a
-// built-in map of the admin panel, then sends the admin to the right page (no AI service needed).
-// Admins can teach new phrases from /admin/assistant; those are checked first.
+// Offline assistant for the admin panel (no AI service, no API key).
+// It reads the admin's message, works out the action (add / edit / delete / view / how / what)
+// and the subject, finds the matching topic in knowledge.ts, answers with the steps and opens
+// the page. Anything outside the panel is politely declined.
 
 import prisma from '@/lib/prisma';
 import { normalizeText } from './router';
+import { ACTION_WORDS, FILLER, PAGES, TOPICS, WEAK, type Action, type Topic } from './knowledge';
 
 export type NavLink = { href: string; labelBn: string; labelEn: string };
-export type NavResult = { reply: string; link?: NavLink; suggestions?: NavLink[] };
+export type NavResult = { reply: string; link?: NavLink; suggestions?: NavLink[]; navigate?: boolean };
 
-type Intent = {
-  id: string;
-  href: string;
-  labelBn: string;
-  labelEn: string;
-  /** Words that point to this page. */
-  topic: string[];
-  /** Extra hint shown with the link. */
-  hintBn: string;
-  hintEn: string;
-  /** Page supports ?add=1 / ?q= / ?name= (see employees and sections pages). */
-  deepLinks?: boolean;
-  entity?: 'employee' | 'section';
-};
+/** Kept for the teach page: every page the assistant can open. */
+export const INTENTS = PAGES;
 
-const ADD_WORDS = ['add', 'new', 'create', 'make', 'যোগ', 'যুক্ত', 'নতুন', 'তৈরি', 'বানাও', 'খোলো', 'অ্যাড', 'এড'];
-const FIND_WORDS = ['check', 'show', 'see', 'find', 'search', 'status', 'state', 'performance', 'view', 'দেখাও', 'দেখ', 'খুঁজ', 'অবস্থা', 'পারফরম্যান্স', 'চেক'];
-const EDIT_WORDS = ['edit', 'change', 'update', 'modify', 'rename', 'reset', 'এডিট', 'পরিবর্তন', 'বদল', 'আপডেট', 'ঠিক'];
-
-export const INTENTS: Intent[] = [
-  { id: 'dashboard', href: '/admin/dashboard', labelBn: 'ড্যাশবোর্ড', labelEn: 'Dashboard',
-    topic: ['dashboard', 'home', 'overview', 'summary', 'ড্যাশবোর্ড', 'হোম', 'সারাংশ', 'মূল'],
-    hintBn: 'সব সংখ্যা এক জায়গায়।', hintEn: 'All key numbers in one place.' },
-  { id: 'team', href: '/admin/employees', labelBn: 'টিম', labelEn: 'Team', deepLinks: true, entity: 'employee',
-    topic: ['employee', 'employees', 'staff', 'team', 'member', 'worker', 'user', 'marketer', 'password', 'performance', 'পারফরম্যান্স', 'কর্মী', 'টিম', 'স্টাফ', 'সদস্য', 'মার্কেটার', 'ইউজার', 'পাসওয়ার্ড'],
-    hintBn: 'কর্মী যোগ, এডিট, পাসওয়ার্ড রিসেট ও সেকশন বরাদ্দ এখানে।', hintEn: 'Add, edit, reset passwords and assign sections here.' },
-  { id: 'groups', href: '/admin/sections', labelBn: 'গ্রুপ / সেকশন', labelEn: 'Groups', deepLinks: true, entity: 'section',
-    topic: ['group', 'groups', 'section', 'sections', 'link', 'links', 'facebook', 'csv', 'upload', 'গ্রুপ', 'সেকশন', 'লিংক', 'ফেসবুক', 'আপলোড'],
-    hintBn: 'সেকশন তৈরি, লিংক যোগ ও CSV আপলোড এখানে।', hintEn: 'Create sections, add links and upload CSV here.' },
-  { id: 'uploads', href: '/admin/csv/history', labelBn: 'আপলোড ইতিহাস', labelEn: 'Upload History',
-    topic: ['uploads', 'import', 'imported', 'ইতিহাস', 'হিস্ট্রি'],
-    hintBn: 'আগের CSV আপলোডের ফলাফল।', hintEn: 'Results of past CSV uploads.' },
-  { id: 'products', href: '/admin/products', labelBn: 'পণ্য', labelEn: 'Products',
-    topic: ['product', 'products', 'item', 'price', 'mushroom', 'পণ্য', 'প্রোডাক্ট', 'দাম', 'মাশরুম'],
-    hintBn: 'পণ্য যোগ ও দাম পরিবর্তন এখানে।', hintEn: 'Add products and change prices here.' },
-  { id: 'campaigns', href: '/admin/campaigns', labelBn: 'ক্যাম্পেইন', labelEn: 'Campaigns',
-    topic: ['campaign', 'campaigns', 'ad', 'ads', 'boost', 'roas', 'ক্যাম্পেইন', 'বিজ্ঞাপন', 'অ্যাড', 'বুস্ট'],
-    hintBn: 'ক্যাম্পেইন ও খরচের হিসাব।', hintEn: 'Campaigns and their spend.' },
-  { id: 'leads', href: '/admin/leads', labelBn: 'লিড', labelEn: 'Leads',
-    topic: ['lead', 'leads', 'customer', 'buyer', 'client', 'followup', 'follow', 'pipeline', 'লিড', 'কাস্টমার', 'ক্রেতা', 'ক্লায়েন্ট', 'ফলোআপ', 'ফলো'],
-    hintBn: 'লিডের অবস্থা ও ফলো-আপ।', hintEn: 'Lead status and follow-ups.' },
-  { id: 'targets', href: '/admin/targets', labelBn: 'টার্গেট ও বাজেট', labelEn: 'Targets & Budget',
-    topic: ['target', 'targets', 'goal', 'budget', 'limit', 'টার্গেট', 'লক্ষ্য', 'বাজেট', 'সীমা'],
-    hintBn: 'মাসিক টার্গেট ও বাজেট সেট করুন।', hintEn: 'Set monthly targets and budgets.' },
-  { id: 'report_daily', href: '/admin/reports/daily', labelBn: 'দৈনিক রিপোর্ট', labelEn: 'Daily Report',
-    topic: ['daily', 'today', 'report', 'sales', 'দৈনিক', 'আজ', 'আজকের', 'রিপোর্ট', 'বিক্রি', 'সেল'],
-    hintBn: 'আজকের কাজ ও বিক্রি।', hintEn: "Today's work and sales." },
-  { id: 'report_weekly', href: '/admin/reports/weekly', labelBn: 'সাপ্তাহিক রিপোর্ট', labelEn: 'Weekly Report',
-    topic: ['weekly', 'week', 'সাপ্তাহিক', 'সপ্তাহ'],
-    hintBn: 'সপ্তাহের রিপোর্ট ও প্রশ্নোত্তর।', hintEn: 'The weekly report and review answers.' },
-  { id: 'report_monthly', href: '/admin/reports/monthly', labelBn: 'মাসিক রিপোর্ট', labelEn: 'Monthly Report',
-    topic: ['monthly', 'month', 'মাসিক', 'মাস'],
-    hintBn: 'মাসের সারাংশ ও পরের মাসের লক্ষ্য।', hintEn: 'Month summary and next month goals.' },
-  { id: 'plan', href: '/admin/plan', labelBn: '৯০ দিনের প্ল্যান', labelEn: '90-Day Plan',
-    topic: ['plan', 'planning', 'task', 'tasks', 'milestone', '90', 'প্ল্যান', 'পরিকল্পনা', 'কাজ', 'টাস্ক', '৯০'],
-    hintBn: 'ধাপ, কাজ ও মাইলস্টোন।', hintEn: 'Phases, tasks and milestones.' },
-  { id: 'settings', href: '/admin/settings', labelBn: 'সেটিংস', labelEn: 'Settings',
-    topic: ['setting', 'settings', 'score', 'scoring', 'weight', 'undo', 'সেটিংস', 'স্কোর', 'ওজন'],
-    hintBn: 'স্কোরিং ও সিস্টেম সেটিংস।', hintEn: 'Scoring and system settings.' },
-  { id: 'audit', href: '/admin/audit', labelBn: 'অডিট লগ', labelEn: 'Audit Log',
-    topic: ['audit', 'log', 'logs', 'activity', 'who', 'deleted', 'removed', 'history', 'অডিট', 'লগ', 'কে', 'মুছেছে', 'ডিলিট'],
-    hintBn: 'কে কখন কী করেছে।', hintEn: 'Who did what, and when.' },
-  { id: 'manual', href: '/admin/manual', labelBn: 'নির্দেশিকা', labelEn: 'Manual',
-    topic: ['manual', 'help', 'guide', 'how', 'tutorial', 'নির্দেশিকা', 'সাহায্য', 'গাইড', 'কিভাবে', 'কীভাবে'],
-    hintBn: 'কীভাবে সব কাজ করবেন।', hintEn: 'How everything works.' },
-  { id: 'assistant', href: '/admin/assistant', labelBn: 'সহকারী শেখান', labelEn: 'Teach Assistant',
-    topic: ['teach', 'train', 'assistant', 'শেখাও', 'শেখান', 'ট্রেনিং', 'সহকারী'],
-    hintBn: 'নতুন বাক্য শেখান।', hintEn: 'Teach new phrases.' },
-];
+const BANGLA = /[ঀ-৿]/;
+const ALL_ACTION_WORDS = Object.values(ACTION_WORDS).flat();
+const ALL_SUBJECT_WORDS = [...new Set(TOPICS.flatMap((t) => t.keywords))];
 
 function tokens(text: string): string[] {
+  // \p{M} keeps Bangla vowel signs and virama inside words.
   return normalizeText(text).toLowerCase().split(/[^\p{L}\p{M}\p{N}]+/u).filter(Boolean);
 }
 
-function hasAny(words: string[], list: string[]): boolean {
-  return words.some((w) => list.some((k) => w === k || (k.length >= 3 && w.startsWith(k))));
-}
-
-function scoreIntent(words: string[], intent: Intent): number {
-  let score = 0;
-  for (const w of words) {
-    for (const k of intent.topic) {
-      if (w === k) score += 3;
-      else if (k.length >= 3 && (w.startsWith(k) || k.startsWith(w)) && w.length >= 3) score += 1;
+/** Edit distance, used to forgive small English typos (emplyee, grup, reprot). */
+function distance(a: string, b: string): number {
+  if (Math.abs(a.length - b.length) > 2) return 3;
+  const row = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    let prev = row[0];
+    row[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = row[j];
+      row[j] = Math.min(row[j] + 1, row[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = tmp;
     }
   }
-  return score;
+  return row[b.length];
 }
 
-const toLink = (i: Intent): NavLink => ({ href: i.href, labelBn: i.labelBn, labelEn: i.labelEn });
-
-/** Words left after removing action/topic words: used as the employee or section name. */
-function leftoverName(message: string, intent: Intent): string {
-  const skip = new Set([...ADD_WORDS, ...FIND_WORDS, ...EDIT_WORDS, ...intent.topic,
-    'a', 'an', 'the', 'of', 'for', 'to', 'please', 'can', 'you', 'i', 'want', 'called', 'named', 'name', 'me', 'my',
-    'how', 'do', 'does', 'what', 'where', 'is', 'are', 'in', 'on', 'with', 'and', 'kivabe', 'কীভাবে', 'কিভাবে', 'কোথায়', 'কি', 'কী', 'চাই', 'করতে', 'আমি',
-    'এর', 'একটা', 'একটি', 'নামে', 'নাম', 'করো', 'করুন', 'কর', 'দাও', 'দিন', 'আমাকে', 'প্লিজ', 'টা', 'টি']);
-  return message.split(/\s+/).filter((w) => w && !skip.has(normalizeText(w).toLowerCase())).join(' ').trim();
+/** How well one word matches one keyword: 3 exact, 2 typo/inflection, 0 none. */
+function wordScore(word: string, key: string): number {
+  if (word === key) return 3;
+  // Bangla suffixes (কর্মীর, গ্রুপগুলো) and English forms (adding, groups).
+  if (key.length >= 3 && word.startsWith(key)) return 2;
+  if (word.length >= 4 && key.startsWith(word)) return 2;
+  if (!BANGLA.test(word) && word.length >= 4 && key.length >= 4 && distance(word, key) <= 1) return 2;
+  return 0;
 }
 
-async function matchEntity(intent: Intent, name: string): Promise<{ id: string; label: string } | null> {
+function detectActions(words: string[]): Set<Action> {
+  const found = new Set<Action>();
+  for (const [action, list] of Object.entries(ACTION_WORDS) as [Action, string[]][]) {
+    if (words.some((w) => list.some((k) => wordScore(w, k) >= 2))) found.add(action);
+  }
+  return found;
+}
+
+function scoreTopic(words: string[], topic: Topic, actions: Set<Action>): number {
+  if (topic.requires && !words.some((w) => topic.requires!.some((k) => wordScore(w, k) >= 2))) return 0;
+  let subject = 0;
+  for (const w of words) {
+    if (FILLER.has(w)) continue;
+    let best = 0;
+    for (const k of topic.keywords) best = Math.max(best, wordScore(w, k));
+    subject += best > 0 && WEAK.has(w) ? 1 : best;
+  }
+  if (subject === 0) return 0; // must mention the subject
+  const actionBonus = topic.actions.some((a) => actions.has(a)) ? 3 : 0;
+  return subject + actionBonus;
+}
+
+const clean = (raw: string) => raw.replace(/[?!.,।"'“”]/g, '');
+
+/** Words that are not filler, action or subject words: treated as a name ("Rahim", "Dhaka Farmers"). */
+function extractName(message: string, topic: Topic): string {
+  return message
+    .split(/\s+/)
+    .map(clean)
+    .filter((raw) => {
+      const w = normalizeText(raw).toLowerCase();
+      if (!w || FILLER.has(w)) return false;
+      if (ALL_ACTION_WORDS.some((k) => wordScore(w, k) >= 2)) return false;
+      if (topic.keywords.some((k) => wordScore(w, k) >= 2)) return false;
+      if (ALL_SUBJECT_WORDS.some((k) => wordScore(w, k) >= 2)) return false;
+      return true;
+    })
+    .join(' ')
+    .trim();
+}
+
+async function findEntity(kind: 'employee' | 'section', name: string) {
   if (!name) return null;
   const needle = name.toLowerCase();
-  if (intent.entity === 'employee') {
+  if (kind === 'employee') {
     const people = await prisma.user.findMany({ where: { role: 'EMPLOYEE' }, select: { id: true, name: true, email: true } });
     const hit = people.find((p) => p.name.toLowerCase().includes(needle) || p.email.toLowerCase().includes(needle));
     return hit ? { id: hit.id, label: hit.name } : null;
   }
-  if (intent.entity === 'section') {
-    const sections = await prisma.groupSection.findMany({ select: { id: true, name: true } });
-    const hit = sections.find((s) => s.name.toLowerCase().includes(needle));
-    return hit ? { id: hit.id, label: hit.name } : null;
-  }
-  return null;
+  const sections = await prisma.groupSection.findMany({ select: { id: true, name: true } });
+  const hit = sections.find((s) => s.name.toLowerCase().includes(needle));
+  return hit ? { id: hit.id, label: hit.name } : null;
 }
 
-export async function navigate(message: string): Promise<NavResult> {
-  const words = tokens(message);
-  const lower = normalizeText(message).toLowerCase().trim();
+function formatSteps(lines: string[]): string {
+  return lines.length === 1 ? lines[0] : lines.map((l, i) => `${i + 1}. ${l}`).join('\n');
+}
 
-  // 1. Phrases the admin has taught (exact or contained match wins).
+const GREETING = ['hi', 'hello', 'hey', 'salam', 'assalamualaikum', 'হ্যালো', 'হাই', 'সালাম', 'আসসালামু'];
+const THANKS = ['thanks', 'thank', 'thx', 'ok', 'okay', 'great', 'nice', 'ধন্যবাদ', 'আচ্ছা', 'ওকে'];
+const CAPABILITY = ['what can you do', 'who are you', 'তুমি কে', 'কী করতে পারো', 'কি করতে পারো', 'কী কী পারো', 'কি কি পারো'];
+
+export async function navigate(message: string): Promise<NavResult> {
+  const bn = BANGLA.test(message);
+  const say = (b: string, e: string) => (bn ? b : e);
+  const lower = normalizeText(message).toLowerCase().trim();
+  const words = tokens(message);
+
+  // 1. Phrases the admin has taught come first.
   const taught = await prisma.agentPhrase.findMany({});
   const learned = taught
     .filter((t) => lower === String(t.phrase).toLowerCase() || lower.includes(String(t.phrase).toLowerCase()))
     .sort((a, b) => String(b.phrase).length - String(a.phrase).length)[0];
   if (learned) {
     return {
-      reply: `"${learned.phrase}" — শেখানো বাক্য অনুযায়ী খুলছি।\nOpening the page you taught for this phrase.`,
+      reply: say(`"${learned.label}" পেজ খুলছি।`, `Opening "${learned.label}".`),
       link: { href: String(learned.href), labelBn: String(learned.label), labelEn: String(learned.label) },
+      navigate: true,
     };
   }
 
-  // 2. Built-in map.
-  const ranked = INTENTS.map((i) => ({ i, s: scoreIntent(words, i) }))
-    .filter((r) => r.s > 0)
+  // 2. Small talk.
+  if (CAPABILITY.some((p) => lower.includes(p))) {
+    return {
+      reply: say(
+        'আমি এই অ্যাডমিন প্যানেলের সহকারী। কোন কাজ কীভাবে করবেন বলে দিই এবং সঠিক পেজ খুলে দিই। যেমন লিখুন: "নতুন কর্মী যোগ করব কীভাবে?", "গ্রুপে লিংক যোগ", "আজকের রিপোর্ট দেখাও"।',
+        'I am the assistant for this admin panel. I explain how to do things and open the right page. Try: "how do I add an employee?", "add links to a group", "show today\'s report".'
+      ),
+      suggestions: PAGES.filter((p) => ['team', 'groups', 'leads', 'manual'].includes(p.id)),
+    };
+  }
+  const meaningful = words.filter((w) => !FILLER.has(w));
+  if (words.length && words.every((w) => GREETING.includes(w) || FILLER.has(w))) {
+    return { reply: say('হ্যালো! কী করতে চান লিখুন, আমি দেখিয়ে দেব।', 'Hello! Tell me what you want to do and I will show you how.') };
+  }
+  if (meaningful.length && meaningful.every((w) => THANKS.includes(w))) {
+    return { reply: say('আপনাকে স্বাগতম! আর কিছু লাগলে লিখুন।', "You're welcome! Ask me anything about the panel.") };
+  }
+
+  // 3. Match a topic.
+  const actions = detectActions(words);
+  const ranked = TOPICS.map((t) => ({ t, s: scoreTopic(words, t, actions) }))
+    .filter((r) => r.s >= 3)
     .sort((a, b) => b.s - a.s);
 
   if (!ranked.length) {
-    // No page word: maybe the admin named a person or a section ("check Karim").
-    for (const id of ['team', 'groups'] as const) {
-      const intent = INTENTS.find((i) => i.id === id)!;
-      const name = leftoverName(message, intent);
-      const found = name ? await matchEntity(intent, name) : null;
+    // Maybe just a person's or section's name ("check Karim").
+    const nameWords = message
+      .split(/\s+/)
+      .map(clean)
+      .filter((w) => w && !FILLER.has(w.toLowerCase()) && !ALL_ACTION_WORDS.some((k) => wordScore(w.toLowerCase(), k) >= 2));
+    for (const kind of ['employee', 'section'] as const) {
+      const found = nameWords.length ? await findEntity(kind, nameWords.join(' ')) : null;
       if (found) {
-        const href = id === 'groups' ? `/admin/sections/${found.id}` : `${intent.href}?q=${encodeURIComponent(found.label)}`;
+        const href = kind === 'section' ? `/admin/sections/${found.id}` : `/admin/employees?q=${encodeURIComponent(found.label)}`;
         return {
-          reply: `"${found.label}" খুঁজে পেয়েছি। পেজ খুলছি।\nFound "${found.label}". Opening its page.`,
+          reply: say(`"${found.label}" পেয়েছি। পেজ খুলছি।`, `Found "${found.label}". Opening it.`),
           link: { href, labelBn: found.label, labelEn: found.label },
+          navigate: true,
         };
       }
     }
     return {
-      reply:
-        'বুঝতে পারিনি। নিচের কোনো পেজ খুলবেন? অথবা "সহকারী শেখান" পেজে এই বাক্যটি শিখিয়ে দিন।\n' +
-        "I didn't understand. Pick a page below, or teach me this phrase on the Teach Assistant page.",
-      suggestions: INTENTS.filter((i) => ['team', 'groups', 'leads', 'report_daily', 'manual', 'assistant'].includes(i.id)).map(toLink),
+      reply: say(
+        'দুঃখিত, এটা আমি জানি না। আমার জ্ঞান শুধু এই অ্যাডমিন প্যানেল নিয়ে, তাই এর উত্তর দিতে পারছি না। প্যানেলের কোনো কাজ নিয়ে জিজ্ঞেস করুন, যেমন "কর্মী যোগ করব কীভাবে?"',
+        "Sorry, I don't know about that. I have limited knowledge (only this admin panel), so I'm not sure how to answer it. Ask me about something in the panel, for example \"how do I add an employee?\""
+      ),
     };
   }
 
-  const intent = ranked[0].i;
-  const wantsAdd = hasAny(words, ADD_WORDS);
-  const wantsEdit = hasAny(words, EDIT_WORDS);
-  const name = leftoverName(message, intent);
-  const others = ranked.slice(1, 3).map((r) => toLink(r.i));
+  const topic = ranked[0].t;
+  const alternatives = ranked
+    .slice(1)
+    .filter((r) => r.t.href && r.t.href !== topic.href)
+    .filter((r, i, arr) => arr.findIndex((x) => x.t.href === r.t.href) === i)
+    .slice(0, 2)
+    .map((r) => ({ href: r.t.href!, labelBn: r.t.pageBn, labelEn: r.t.pageEn }));
 
-  if (intent.deepLinks && intent.entity) {
-    const found = await matchEntity(intent, name);
-    if (wantsAdd && !found) {
-      const href = `${intent.href}?add=1${name ? `&name=${encodeURIComponent(name)}` : ''}`;
-      return {
-        reply: `${intent.labelBn} পেজে যোগ করার ফর্ম খুলছি${name ? ` ("${name}" লেখা থাকবে)` : ''}। ফর্ম পূরণ করে সেভ করুন।\n` +
-          `Opening the add form on ${intent.labelEn}${name ? ` with "${name}" filled in` : ''}. Fill it in and save.`,
-        link: { href, labelBn: `${intent.labelBn}: নতুন`, labelEn: `${intent.labelEn}: Add new` },
-        suggestions: others,
-      };
-    }
-    if (found) {
-      const href = intent.entity === 'section' ? `/admin/sections/${found.id}` : `${intent.href}?q=${encodeURIComponent(found.label)}`;
-      const action = wantsEdit ? 'এডিট বাটনে চাপ দিন / click Edit' : 'বিস্তারিত দেখুন / see the details';
-      return {
-        reply: `"${found.label}" খুঁজে পেয়েছি। পেজ খুলছি, ${action}.\nFound "${found.label}". Opening its page.`,
-        link: { href, labelBn: found.label, labelEn: found.label },
-        suggestions: others,
-      };
-    }
-    if (name && !wantsAdd) {
-      return {
-        reply: `"${name}" নামে কিছু পাইনি। ${intent.labelBn} পেজে খুঁজে দেখুন।\nNo match for "${name}". Opening ${intent.labelEn} so you can search.`,
-        link: { href: `${intent.href}?q=${encodeURIComponent(name)}`, labelBn: intent.labelBn, labelEn: intent.labelEn },
-        suggestions: others,
-      };
+  const steps = formatSteps(bn ? topic.bn : topic.en);
+  const explainOnly = (actions.has('what') || actions.has('how')) && !actions.has('add') && !actions.has('edit') && !actions.has('delete');
+
+  if (!topic.href) return { reply: steps, suggestions: alternatives };
+
+  let link: NavLink = { href: topic.href, labelBn: topic.pageBn, labelEn: topic.pageEn };
+  let lead = say(`${topic.pageBn} পেজ খুলছি।`, `Opening ${topic.pageEn}.`);
+
+  if (topic.deep) {
+    const name = extractName(message, topic);
+    const found = await findEntity(topic.deep, name);
+    if (found && !actions.has('add')) {
+      const href = topic.deep === 'section' ? `/admin/sections/${found.id}` : `${topic.href}?q=${encodeURIComponent(found.label)}`;
+      link = { href, labelBn: found.label, labelEn: found.label };
+      lead = say(`"${found.label}" পেয়েছি, খুলছি।`, `Found "${found.label}", opening it.`);
+    } else if (actions.has('add') && (topic.id === 'add_employee' || topic.id === 'add_section')) {
+      link = { href: `${topic.href}?add=1${name ? `&name=${encodeURIComponent(name)}` : ''}`, labelBn: `${topic.pageBn}: নতুন`, labelEn: `${topic.pageEn}: Add` };
+      lead = name
+        ? say(`যোগ করার ফর্ম খুলছি, "${name}" লেখা থাকবে।`, `Opening the add form with "${name}" filled in.`)
+        : say('যোগ করার ফর্ম খুলছি।', 'Opening the add form.');
+    } else if (name && !explainOnly) {
+      link = { href: `${topic.href}?q=${encodeURIComponent(name)}`, labelBn: topic.pageBn, labelEn: topic.pageEn };
+      lead = say(`"${name}" নামে কিছু পাইনি; ${topic.pageBn} পেজে খুঁজে দেখুন।`, `No match for "${name}"; opening ${topic.pageEn} so you can search.`);
     }
   }
 
   return {
-    reply: `${intent.labelBn} খুলছি। ${intent.hintBn}\nOpening ${intent.labelEn}. ${intent.hintEn}`,
-    link: toLink(intent),
-    suggestions: others,
+    reply: explainOnly ? `${steps}\n\n${say('নিচের বাটনে চাপলে পেজটি খুলবে।', 'Tap the button below to open the page.')}` : `${lead}\n${steps}`,
+    link,
+    suggestions: alternatives,
+    navigate: !explainOnly,
   };
 }
