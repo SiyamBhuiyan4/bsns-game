@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Calendar } from 'lucide-react';
 import { DashboardPeriodKey } from '@/lib/dashboard';
+import { useLanguage } from '@/components/LanguageContext';
 
 interface Props {
   currentPeriod: DashboardPeriodKey;
@@ -11,12 +12,18 @@ interface Props {
   currentTo?: string;
 }
 
-const PERIOD_OPTIONS: { key: DashboardPeriodKey; label: string }[] = [
-  { key: 'today', label: 'আজ' },
-  { key: 'yesterday', label: 'গতকাল' },
-  { key: 'last7days', label: 'গত ৭ দিন' },
-  { key: 'thisMonth', label: 'এই মাস' },
-  { key: 'custom', label: 'কাস্টম' },
+interface PeriodOption {
+  key: DashboardPeriodKey;
+  labelBn: string;
+  labelEn: string;
+}
+
+const PERIOD_OPTIONS: PeriodOption[] = [
+  { key: 'today', labelBn: 'আজ', labelEn: 'Today' },
+  { key: 'yesterday', labelBn: 'গতকাল', labelEn: 'Yesterday' },
+  { key: 'last7days', labelBn: 'গত ৭ দিন', labelEn: 'Last 7 Days' },
+  { key: 'thisMonth', labelBn: 'এই মাস', labelEn: 'This Month' },
+  { key: 'custom', labelBn: 'কাস্টম', labelEn: 'Custom' },
 ];
 
 export default function DashboardPeriodSelector({
@@ -26,6 +33,8 @@ export default function DashboardPeriodSelector({
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { lang } = useLanguage();
+  const L = (bn: string, en: string) => (lang === 'bn' ? bn : en);
 
   const [isCustomOpen, setIsCustomOpen] = useState(currentPeriod === 'custom');
   const [fromDate, setFromDate] = useState(currentFrom || '');
@@ -81,11 +90,11 @@ export default function DashboardPeriodSelector({
     <div className="card flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
       <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
         <Calendar className="h-4 w-4 text-slate-400" />
-        <span>সময়কাল</span>
+        <span>{L('সময়কাল', 'Time Period')}</span>
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="segmented max-w-full flex-wrap" role="group" aria-label="সময়কাল">
+        <div className="segmented max-w-full flex-wrap" role="group" aria-label={L('সময়কাল', 'Time Period')}>
           {PERIOD_OPTIONS.map((opt) => {
             const isActive = isOptionActive(opt.key);
             return (
@@ -96,7 +105,7 @@ export default function DashboardPeriodSelector({
                 data-active={isActive ? 'true' : undefined}
                 onClick={() => handlePeriodChange(opt.key)}
               >
-                {opt.label}
+                {L(opt.labelBn, opt.labelEn)}
               </button>
             );
           })}
@@ -106,17 +115,17 @@ export default function DashboardPeriodSelector({
           <form onSubmit={handleCustomApply} className="flex flex-wrap items-center gap-2">
             <input
               type="date"
-              aria-label="শুরুর তারিখ"
+              aria-label={L('শুরুর তারিখ', 'Start Date')}
               value={fromDate}
               max={toDate || undefined}
               onChange={(e) => setFromDate(e.target.value)}
               className="input w-auto py-1.5 text-xs"
               required
             />
-            <span className="text-xs text-slate-400">থেকে</span>
+            <span className="text-xs text-slate-400">{L('থেকে', 'to')}</span>
             <input
               type="date"
-              aria-label="শেষ তারিখ"
+              aria-label={L('শেষ তারিখ', 'End Date')}
               value={toDate}
               min={fromDate || undefined}
               onChange={(e) => setToDate(e.target.value)}
@@ -124,7 +133,7 @@ export default function DashboardPeriodSelector({
               required
             />
             <button type="submit" className="btn btn-primary btn-sm">
-              দেখুন
+              {L('দেখুন', 'Apply')}
             </button>
           </form>
         )}

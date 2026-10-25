@@ -10,13 +10,15 @@ describe('Section Overview Analytics & Deep-Dive Data', () => {
     expect(Array.isArray(data.sectionsOverview)).toBe(true);
     expect(Array.isArray(data.groupSectionsOverview)).toBe(true);
 
-    // Verify 5 core sections are present
+    // Verify 7 core sections are present
     const expectedKeys: SectionOverviewKey[] = [
       'POSTS_DONE',
-      'ORDERS_CONFIRMED',
-      'MESSAGES_REPLIED',
-      'LEADS_COLLECTED',
+      'NEW_LEADS',
+      'CONFIRMED_ORDERS',
       'SALES_AMOUNT',
+      'NEW_CLIENTS',
+      'FOLLOWUPS_DONE',
+      'PROFIT_AMOUNT',
     ];
 
     const presentKeys = data.sectionsOverview.map((s) => s.key);
@@ -75,10 +77,10 @@ describe('Section Overview Analytics & Deep-Dive Data', () => {
   it('should support sectionKey filtering in getAdminDashboardData', async () => {
     const data = await getAdminDashboardData({
       period: 'thisMonth',
-      sectionKey: 'ORDERS_CONFIRMED',
+      sectionKey: 'CONFIRMED_ORDERS',
     });
 
     expect(data.sectionsOverview.length).toBe(1);
-    expect(data.sectionsOverview[0].key).toBe('ORDERS_CONFIRMED');
+    expect(data.sectionsOverview[0].key).toBe('CONFIRMED_ORDERS');
   });
 });

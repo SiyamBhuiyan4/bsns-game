@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Search,
   BarChart3,
+  TrendingUp,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import {
@@ -43,26 +44,26 @@ const SECTION_STYLES: Record<string, SectionStyleConfig> = {
     ringColor: 'ring-sky-600/20',
     progressBarColor: 'bg-sky-600',
   },
-  ORDERS_CONFIRMED: {
+  NEW_LEADS: {
+    bgLight: 'bg-amber-50',
+    textColor: 'text-amber-700',
+    borderColor: 'border-amber-200',
+    ringColor: 'ring-amber-600/20',
+    progressBarColor: 'bg-amber-500',
+  },
+  CONFIRMED_ORDERS: {
     bgLight: 'bg-emerald-50',
     textColor: 'text-emerald-700',
     borderColor: 'border-emerald-200',
     ringColor: 'ring-emerald-600/20',
     progressBarColor: 'bg-emerald-600',
   },
-  MESSAGES_REPLIED: {
-    bgLight: 'bg-violet-50',
-    textColor: 'text-violet-700',
-    borderColor: 'border-violet-200',
-    ringColor: 'ring-violet-600/20',
-    progressBarColor: 'bg-violet-600',
-  },
-  LEADS_COLLECTED: {
-    bgLight: 'bg-amber-50',
-    textColor: 'text-amber-700',
-    borderColor: 'border-amber-200',
-    ringColor: 'ring-amber-600/20',
-    progressBarColor: 'bg-amber-500',
+  ORDERS_CONFIRMED: {
+    bgLight: 'bg-emerald-50',
+    textColor: 'text-emerald-700',
+    borderColor: 'border-emerald-200',
+    ringColor: 'ring-emerald-600/20',
+    progressBarColor: 'bg-emerald-600',
   },
   SALES_AMOUNT: {
     bgLight: 'bg-brand-50',
@@ -71,12 +72,40 @@ const SECTION_STYLES: Record<string, SectionStyleConfig> = {
     ringColor: 'ring-brand-600/20',
     progressBarColor: 'bg-brand-600',
   },
-  GROUP_DEFAULT: {
+  NEW_CLIENTS: {
+    bgLight: 'bg-teal-50',
+    textColor: 'text-teal-700',
+    borderColor: 'border-teal-200',
+    ringColor: 'ring-teal-600/20',
+    progressBarColor: 'bg-teal-600',
+  },
+  FOLLOWUPS_DONE: {
+    bgLight: 'bg-violet-50',
+    textColor: 'text-violet-700',
+    borderColor: 'border-violet-200',
+    ringColor: 'ring-violet-600/20',
+    progressBarColor: 'bg-violet-600',
+  },
+  MESSAGES_REPLIED: {
+    bgLight: 'bg-violet-50',
+    textColor: 'text-violet-700',
+    borderColor: 'border-violet-200',
+    ringColor: 'ring-violet-600/20',
+    progressBarColor: 'bg-violet-600',
+  },
+  PROFIT_AMOUNT: {
     bgLight: 'bg-indigo-50',
-    textColor: 'text-indigo-700',
+    textColor: 'text-indigo-800',
     borderColor: 'border-indigo-200',
     ringColor: 'ring-indigo-600/20',
     progressBarColor: 'bg-indigo-600',
+  },
+  GROUP_DEFAULT: {
+    bgLight: 'bg-blue-50',
+    textColor: 'text-blue-700',
+    borderColor: 'border-blue-200',
+    ringColor: 'ring-blue-600/20',
+    progressBarColor: 'bg-blue-600',
   },
 };
 
@@ -101,14 +130,18 @@ export default function SectionOverviewCards({
     switch (key) {
       case 'POSTS_DONE':
         return <Share2 className={iconClass} />;
-      case 'ORDERS_CONFIRMED':
-        return <ShoppingBag className={iconClass} />;
-      case 'MESSAGES_REPLIED':
-        return <MessageSquare className={iconClass} />;
-      case 'LEADS_COLLECTED':
+      case 'NEW_LEADS':
         return <UserPlus className={iconClass} />;
+      case 'CONFIRMED_ORDERS':
+        return <ShoppingBag className={iconClass} />;
       case 'SALES_AMOUNT':
         return <DollarSign className={iconClass} />;
+      case 'NEW_CLIENTS':
+        return <Users className={iconClass} />;
+      case 'FOLLOWUPS_DONE':
+        return <MessageSquare className={iconClass} />;
+      case 'PROFIT_AMOUNT':
+        return <TrendingUp className={iconClass} />;
       default:
         return <Layers className={iconClass} />;
     }
@@ -116,7 +149,7 @@ export default function SectionOverviewCards({
 
   // Format value with unit or taka
   const formatValue = (sec: SectionOverviewItem) => {
-    if (sec.key === 'SALES_AMOUNT') {
+    if (sec.isCurrency || sec.key === 'SALES_AMOUNT' || sec.key === 'PROFIT_AMOUNT') {
       return formatMoney(sec.totalAchieved);
     }
     const unit = lang === 'bn' ? sec.unitBn : sec.unitEn;
@@ -233,7 +266,9 @@ export default function SectionOverviewCards({
           {filteredCoreSections.map((sec) => {
             const styles = SECTION_STYLES[sec.key] || SECTION_STYLES.GROUP_DEFAULT;
             const hasTarget = sec.totalTarget > 0;
-            const percentage = hasTarget
+            const percentage = sec.averagePercentage !== undefined
+              ? sec.averagePercentage
+              : hasTarget
               ? Math.min(100, Math.round((sec.totalAchieved / sec.totalTarget) * 100))
               : 0;
 
@@ -285,7 +320,7 @@ export default function SectionOverviewCards({
                           <span className="text-slate-500 font-medium">
                             {L('টার্গেট:', 'Target:')}{' '}
                             <span className="text-slate-800 font-semibold tabular-nums">
-                              {sec.key === 'SALES_AMOUNT'
+                              {sec.isCurrency || sec.key === 'SALES_AMOUNT' || sec.key === 'PROFIT_AMOUNT'
                                 ? formatMoney(sec.totalTarget)
                                 : `${formatNum(sec.totalTarget)} ${unit}`}
                             </span>
@@ -300,6 +335,7 @@ export default function SectionOverviewCards({
                                 ? 'badge-amber'
                                 : 'badge-red'
                             } font-semibold tabular-nums`}
+                            title={L('দায়িত্বপ্রাপ্ত কর্মীদের গড় লক্ষ্য পূরণ', 'Average achievement of assigned employees')}
                           >
                             {formatDigits(percentage)}%
                           </span>
@@ -307,8 +343,12 @@ export default function SectionOverviewCards({
                         <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                           <div
                             className={`h-full rounded-full transition-all duration-500 ${styles.progressBarColor}`}
-                            style={{ width: `${percentage}%` }}
+                            style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
                           />
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-slate-400">
+                          <span>{L('গড় লক্ষ্য পূরণ:', 'Avg Progress:')}</span>
+                          <span className="font-semibold text-slate-600">{formatDigits(percentage)}%</span>
                         </div>
                       </div>
                     ) : (
@@ -328,9 +368,9 @@ export default function SectionOverviewCards({
                     <Users className="h-3.5 w-3.5 text-slate-400" />
                     <span>
                       <strong className="text-slate-800 font-semibold tabular-nums">
-                        {formatNum(sec.activeEmployeesCount)}
+                        {formatNum(sec.assignedEmployeesCount || sec.activeEmployeesCount)}
                       </strong>{' '}
-                      {L('জন সক্রিয়', 'active')}
+                      {L('জন কর্মী দায়িত্বপ্রাপ্ত', 'assigned')}
                     </span>
                   </div>
 

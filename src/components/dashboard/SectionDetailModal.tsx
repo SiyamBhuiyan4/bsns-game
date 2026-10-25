@@ -20,6 +20,7 @@ import {
   Layers,
   ArrowUpDown,
   Download,
+  TrendingUp,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import {
@@ -73,6 +74,7 @@ export default function SectionDetailModal({
   const [activeTab, setActiveTab] = useState<'employees' | 'history'>('employees');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [employeeFilter, setEmployeeFilter] = useState<'assigned' | 'all'>('assigned');
 
   // Close on Escape key press
   useEffect(() => {
@@ -103,6 +105,7 @@ export default function SectionDetailModal({
     setSearchTerm('');
     setActiveTab('employees');
     setSortOrder('desc');
+    setEmployeeFilter('assigned');
   }, [selected]);
 
   const L = (bn: string, en: string) => (lang === 'bn' ? bn : en);
@@ -137,14 +140,18 @@ export default function SectionDetailModal({
     switch (standardSec?.key) {
       case 'POSTS_DONE':
         return <Share2 className={iconClass} />;
-      case 'ORDERS_CONFIRMED':
-        return <ShoppingBag className={iconClass} />;
-      case 'MESSAGES_REPLIED':
-        return <MessageSquare className={iconClass} />;
-      case 'LEADS_COLLECTED':
+      case 'NEW_LEADS':
         return <UserPlus className={iconClass} />;
+      case 'CONFIRMED_ORDERS':
+        return <ShoppingBag className={iconClass} />;
       case 'SALES_AMOUNT':
         return <DollarSign className={iconClass} />;
+      case 'NEW_CLIENTS':
+        return <Users className={iconClass} />;
+      case 'FOLLOWUPS_DONE':
+        return <MessageSquare className={iconClass} />;
+      case 'PROFIT_AMOUNT':
+        return <TrendingUp className={iconClass} />;
       default:
         return <Layers className={iconClass} />;
     }
@@ -152,7 +159,7 @@ export default function SectionDetailModal({
 
   // Format value depending on SALES_AMOUNT or normal numeric count
   const formatSectionValue = (val: number) => {
-    if (isStandard && standardSec?.key === 'SALES_AMOUNT') {
+    if (isStandard && (standardSec?.key === 'SALES_AMOUNT' || standardSec?.key === 'PROFIT_AMOUNT' || standardSec?.isCurrency)) {
       return formatMoney(val);
     }
     return `${formatNum(val)} ${unit}`;
@@ -209,6 +216,14 @@ export default function SectionDetailModal({
   // Filtered and sorted employee list
   const filteredEmployees = useMemo(() => {
     let list = [...rawEmployeeList];
+
+    // If 'assigned' filter is chosen, show only assigned (has target or achieved total)
+    // If no one is assigned, fallback to all employees so the view is never empty
+    const hasAssigned = list.some((emp) => emp.target > 0 || emp.total > 0);
+    if (employeeFilter === 'assigned' && hasAssigned) {
+      list = list.filter((emp) => emp.target > 0 || emp.total > 0);
+    }
+
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
       list = list.filter(
@@ -224,7 +239,7 @@ export default function SectionDetailModal({
       return b.total - a.total;
     });
     return list;
-  }, [rawEmployeeList, searchTerm, sortOrder]);
+  }, [rawEmployeeList, employeeFilter, searchTerm, sortOrder]);
 
   // Standard History Logs
   const filteredHistoryLogs = useMemo(() => {
@@ -333,12 +348,18 @@ export default function SectionDetailModal({
     : `${formatNum(groupSec!.completedLinksCount)} / ${formatNum(groupSec!.totalLinks)} ${L('টি', 'links')}`;
 
   const targetPercentage = isStandard
-    ? standardSec!.totalTarget > 0
+    ? standardSec!.averagePercentage !== undefined
+      ? standardSec!.averagePercentage
+      : standardSec!.totalTarget > 0
       ? Math.round((standardSec!.totalAchieved / standardSec!.totalTarget) * 100)
       : null
     : groupSec!.totalLinks > 0
     ? Math.round((groupSec!.completedLinksCount / groupSec!.totalLinks) * 100)
     : null;
+
+  const assignedEmployeesCount = isStandard
+    ? standardSec!.assignedEmployeesCount || standardSec!.activeEmployeesCount
+    : rawEmployeeList.length;
 
   const activeEmployeesCount = isStandard
     ? standardSec!.activeEmployeesCount
@@ -442,22 +463,24 @@ export default function SectionDetailModal({
             </div>
             <div className="text-[11px] text-slate-400 mt-0.5">
               {targetPercentage !== null
-                ? `${formatDigits(targetPercentage)}% ${L('অর্জিত', 'achieved')}`
+                ? `${formatDigits(targetPercentage)}% ${L('গড় লক্ষ্য পূরণ', 'avg achieved')}`
                 : L('কোনো টার্গেট নেই', 'No target set')}
             </div>
           </div>
 
-          {/* Card 3: Active Employees */}
+          {/* Card 3: Assigned / Active Employees */}
           <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
             <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-              <span>{L('সক্রিয় কর্মী', 'Active Team')}</span>
+              <span>{L('দায়িত্বপ্রাপ্ত কর্মী', 'Assigned Team')}</span>
               <Users className="h-4 w-4 text-violet-600" />
             </div>
             <div className="text-lg font-bold text-slate-900 tracking-tight">
-              {formatNum(activeEmployeesCount)} <span className="text-xs font-normal text-slate-500">{L('জন', 'members')}</span>
+              {formatNum(assignedEmployeesCount)} <span className="text-xs font-normal text-slate-500">{L('জন', 'members')}</span>
             </div>
             <div className="text-[11px] text-slate-400 mt-0.5">
-              {L('কাজ সম্পাদনকারী', 'contributors')}
+              {isStandard
+                ? `${formatNum(activeEmployeesCount)} ${L('জন সক্রিয়ভাবে কাজ করেছেন', 'active contributors')}`
+                : L('কাজ সম্পাদনকারী কর্মী', 'contributors')}
             </div>
           </div>
 
@@ -548,6 +571,35 @@ export default function SectionDetailModal({
           {activeTab === 'employees' ? (
             /* TAB 1: EMPLOYEE BREAKDOWN */
             <div>
+              {/* Assignment filter pills */}
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setEmployeeFilter('assigned')}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                      employeeFilter === 'assigned'
+                        ? 'bg-brand-600 text-white shadow-xs'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {L('দায়িত্বপ্রাপ্ত কর্মী', 'Assigned Employees')} ({formatNum(rawEmployeeList.filter(e => e.target > 0 || e.total > 0).length || rawEmployeeList.length)})
+                  </button>
+                  <button
+                    onClick={() => setEmployeeFilter('all')}
+                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                      employeeFilter === 'all'
+                        ? 'bg-brand-600 text-white shadow-xs'
+                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {L('সকল কর্মী', 'All Team')} ({formatNum(rawEmployeeList.length)})
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-400 hidden sm:block">
+                  {L('প্রতিটি কর্মীর অর্জিত কাজ ও লক্ষ্যমাত্রা পূরণের অগ্রগতি', 'Individual target, progress % and achievements')}
+                </p>
+              </div>
+
               {filteredEmployees.length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-10 text-center bg-white rounded-xl border border-dashed border-slate-200">
                   <Users className="h-10 w-10 text-slate-300 mb-2" />

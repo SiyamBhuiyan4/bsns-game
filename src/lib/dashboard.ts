@@ -17,10 +17,12 @@ export interface DashboardFilter {
 
 export type SectionOverviewKey =
   | 'POSTS_DONE'
-  | 'ORDERS_CONFIRMED'
-  | 'MESSAGES_REPLIED'
-  | 'LEADS_COLLECTED'
-  | 'SALES_AMOUNT';
+  | 'NEW_LEADS'
+  | 'CONFIRMED_ORDERS'
+  | 'SALES_AMOUNT'
+  | 'NEW_CLIENTS'
+  | 'FOLLOWUPS_DONE'
+  | 'PROFIT_AMOUNT';
 
 export interface EmployeeSectionBreakdown {
   employeeId: string;
@@ -29,6 +31,7 @@ export interface EmployeeSectionBreakdown {
   total: number;
   target: number;
   percentage: number;
+  hasTarget: boolean;
 }
 
 export interface SectionHistoryLog {
@@ -46,9 +49,12 @@ export interface SectionOverviewItem {
   unitBn: string;
   unitEn: string;
   iconName: string;
+  isCurrency: boolean;
   totalAchieved: number;
   totalTarget: number;
   activeEmployeesCount: number;
+  assignedEmployeesCount: number;
+  averagePercentage: number;
   employeeBreakdown: EmployeeSectionBreakdown[];
   historyLogs: SectionHistoryLog[];
 }
@@ -211,39 +217,35 @@ export const SECTION_METRIC_CONFIG: Record<
     unitBn: string;
     unitEn: string;
     iconName: string;
+    isCurrency: boolean;
   }
 > = {
   POSTS_DONE: {
     metricType: MetricType.POSTS_DONE,
-    labelBn: 'গ্রুপ পোস্টিং',
-    labelEn: 'Group Posts',
+    labelBn: 'গ্রুপ পোস্ট / লিংক সম্পন্ন',
+    labelEn: 'Group Links / Posts Done',
     unitBn: 'টি',
-    unitEn: 'posts',
+    unitEn: 'links',
     iconName: 'Share2',
+    isCurrency: false,
   },
-  ORDERS_CONFIRMED: {
-    metricType: MetricType.CONFIRMED_ORDERS,
-    labelBn: 'কনফার্ম অর্ডার',
-    labelEn: 'Orders Confirmed',
-    unitBn: 'টি',
-    unitEn: 'orders',
-    iconName: 'ShoppingBag',
-  },
-  MESSAGES_REPLIED: {
-    metricType: MetricType.FOLLOWUPS_DONE,
-    labelBn: 'মেসেজ রিপ্লাই / ফলো-আপ',
-    labelEn: 'Messages Replied',
-    unitBn: 'টি',
-    unitEn: 'replies',
-    iconName: 'MessageSquare',
-  },
-  LEADS_COLLECTED: {
+  NEW_LEADS: {
     metricType: MetricType.NEW_LEADS,
-    labelBn: 'লিড সংগ্রহ',
-    labelEn: 'Leads Collected',
+    labelBn: 'নতুন লিড সংগ্রহ',
+    labelEn: 'New Leads Collected',
     unitBn: 'টি',
     unitEn: 'leads',
     iconName: 'UserPlus',
+    isCurrency: false,
+  },
+  CONFIRMED_ORDERS: {
+    metricType: MetricType.CONFIRMED_ORDERS,
+    labelBn: 'কনফার্মড অর্ডার',
+    labelEn: 'Confirmed Orders',
+    unitBn: 'টি',
+    unitEn: 'orders',
+    iconName: 'ShoppingBag',
+    isCurrency: false,
   },
   SALES_AMOUNT: {
     metricType: MetricType.SALES_AMOUNT,
@@ -252,6 +254,34 @@ export const SECTION_METRIC_CONFIG: Record<
     unitBn: '৳',
     unitEn: 'BDT',
     iconName: 'DollarSign',
+    isCurrency: true,
+  },
+  NEW_CLIENTS: {
+    metricType: MetricType.NEW_CLIENTS,
+    labelBn: 'নতুন ক্রেতা',
+    labelEn: 'New Clients',
+    unitBn: 'জন',
+    unitEn: 'clients',
+    iconName: 'Users',
+    isCurrency: false,
+  },
+  FOLLOWUPS_DONE: {
+    metricType: MetricType.FOLLOWUPS_DONE,
+    labelBn: 'ইনবক্স ফলো-আপ',
+    labelEn: 'Inbox Follow-ups',
+    unitBn: 'টি',
+    unitEn: 'follow-ups',
+    iconName: 'MessageSquare',
+    isCurrency: false,
+  },
+  PROFIT_AMOUNT: {
+    metricType: MetricType.PROFIT_AMOUNT,
+    labelBn: 'মোট মুনাফা',
+    labelEn: 'Total Profit',
+    unitBn: '৳',
+    unitEn: 'BDT',
+    iconName: 'TrendingUp',
+    isCurrency: true,
   },
 };
 
@@ -990,10 +1020,12 @@ export function computeSectionsOverview(params: {
 
   const sectionKeys: SectionOverviewKey[] = [
     'POSTS_DONE',
-    'ORDERS_CONFIRMED',
-    'MESSAGES_REPLIED',
-    'LEADS_COLLECTED',
+    'NEW_LEADS',
+    'CONFIRMED_ORDERS',
     'SALES_AMOUNT',
+    'NEW_CLIENTS',
+    'FOLLOWUPS_DONE',
+    'PROFIT_AMOUNT',
   ];
 
   const result: SectionOverviewItem[] = [];
@@ -1042,7 +1074,7 @@ export function computeSectionsOverview(params: {
         }
       }
     } else {
-      // Other 4 metrics: from periodEntries
+      // Other metrics: from periodEntries
       for (const e of periodEntries) {
         if (e.metric_type === metricType) {
           const val = Number(e.value);
@@ -1072,17 +1104,32 @@ export function computeSectionsOverview(params: {
     for (const emp of activeEmployees) {
       const empTotal = empTotals.get(emp.id) || 0;
 
-      // Employee section-specific target
-      const empSectionIds = assignments.filter((a) => a.employee_id === emp.id).map((a) => a.section_id);
-      const empTargets = allTargets.filter((t) => empSectionIds.includes(t.section_id));
-      const empEffective = calculateEffectiveTargetsForRange(empTargets, startUtcDate, endUtcDate);
+      // Check direct targets for this employee
+      const directTargets = allTargets.filter(
+        (t) => t.employee_id === emp.id && t.metric_type === metricType
+      );
+      const directEffective = calculateEffectiveTargetsForRange(directTargets, startUtcDate, endUtcDate);
+      let empTarget = Math.round(directEffective[metricType] || 0);
 
-      let empTarget = Math.round(empEffective[metricType] || 0);
+      // Fallback to section-based targets
+      if (empTarget === 0) {
+        const empSectionIds = assignments.filter((a) => a.employee_id === emp.id).map((a) => a.section_id);
+        const empSectionTargets = allTargets.filter(
+          (t) => (!t.employee_id || t.employee_id === emp.id) && empSectionIds.includes(t.section_id)
+        );
+        const empEffective = calculateEffectiveTargetsForRange(empSectionTargets, startUtcDate, endUtcDate);
+        empTarget = Math.round(empEffective[metricType] || 0);
+      }
+
+      // General fallback if system has a shared target
       if (empTarget === 0 && overallMetricTarget > 0 && activeEmployees.length > 0) {
         empTarget = Math.round(overallMetricTarget / activeEmployees.length);
       }
 
-      const percentage = empTarget > 0 ? Math.round((empTotal / empTarget) * 100) : (empTotal > 0 ? 100 : 0);
+      const hasTarget = empTarget > 0;
+      const percentage = empTarget > 0
+        ? Math.min(100, Math.round((empTotal / empTarget) * 100))
+        : (empTotal > 0 ? 100 : 0);
 
       employeeBreakdown.push({
         employeeId: emp.id,
@@ -1091,6 +1138,7 @@ export function computeSectionsOverview(params: {
         total: empTotal,
         target: empTarget,
         percentage,
+        hasTarget,
       });
     }
 
@@ -1102,6 +1150,17 @@ export function computeSectionsOverview(params: {
     const totalTarget = Math.max(overallMetricTarget, sumEmpTargets);
     const activeEmployeesCount = employeeBreakdown.filter((e) => e.total > 0).length;
 
+    // Average percentage across assigned employees (as requested: "suppose 5 ta employee 5 jon 80 tader target puron korse oi tab er % holo 80 mane sob employee der avarage hobe okhane")
+    const assignedEmployees = employeeBreakdown.filter((e) => e.target > 0 || e.total > 0);
+    const averagePercentage =
+      assignedEmployees.length > 0
+        ? Math.round(
+            assignedEmployees.reduce((sum, e) => sum + e.percentage, 0) / assignedEmployees.length
+          )
+        : totalTarget > 0
+        ? Math.min(100, Math.round((totalAchieved / totalTarget) * 100))
+        : 0;
+
     result.push({
       key: secKey,
       labelBn: config.labelBn,
@@ -1109,9 +1168,12 @@ export function computeSectionsOverview(params: {
       unitBn: config.unitBn,
       unitEn: config.unitEn,
       iconName: config.iconName,
+      isCurrency: config.isCurrency,
       totalAchieved,
       totalTarget,
       activeEmployeesCount,
+      assignedEmployeesCount: assignedEmployees.length,
+      averagePercentage,
       employeeBreakdown,
       historyLogs,
     });
