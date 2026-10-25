@@ -22,6 +22,9 @@ import {
 } from 'lucide-react';
 import { toBengaliDigits, getDhakaDateString } from '@/lib/date';
 import { format, parseISO } from 'date-fns';
+import PageHeader from '@/components/ui/PageHeader';
+import StatCard from '@/components/ui/StatCard';
+import EmptyState from '@/components/ui/EmptyState';
 
 interface Owner {
   id: string;
@@ -456,195 +459,189 @@ export default function AdminPlanPage() {
     }
   };
 
+  type TaskStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'DONE' | 'BLOCKED';
+
+  const statusOptions = (
+    <>
+      <option value="NOT_STARTED">শুরু হয়নি</option>
+      <option value="IN_PROGRESS">চলমান</option>
+      <option value="DONE">সম্পন্ন</option>
+      <option value="BLOCKED">আটকে আছে</option>
+    </>
+  );
+
+  const milestoneBadge = (status?: PlanMilestone['status']) => {
+    switch (status) {
+      case 'MET':
+        return <span className="badge badge-green">অর্জিত</span>;
+      case 'PARTIAL':
+        return <span className="badge badge-blue">আংশিক</span>;
+      case 'MISSED':
+        return <span className="badge badge-red">অনর্জিত</span>;
+      case 'PENDING':
+        return <span className="badge badge-amber">অপেক্ষমাণ</span>;
+      default:
+        return null;
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <Loader2 className="h-9 w-9 animate-spin text-emerald-600" />
-        <p className="text-sm font-medium text-slate-600">৯০ দিনের কর্মপরিকল্পনা লোড হচ্ছে...</p>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
+        <Loader2 className="h-7 w-7 animate-spin text-brand-600" />
+        <p className="text-sm text-slate-500">লোড হচ্ছে...</p>
       </div>
     );
   }
 
   if (!plan) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
-        <AlertCircle className="mx-auto h-8 w-8 text-red-500 mb-2" />
-        <h3 className="text-base font-bold text-red-800">প্ল্যান ডাটা পাওয়া যায়নি</h3>
-        <p className="text-sm text-red-600 mt-1">সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি। অনুগ্রহ করে রিফ্রেশ করুন।</p>
-        <button
-          onClick={fetchPlanData}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
-        >
-          <RefreshCw className="h-4 w-4" /> পুনরায় চেষ্টা করুন
-        </button>
+      <div className="card">
+        <EmptyState
+          icon={<AlertCircle className="h-5 w-5" />}
+          title="প্ল্যান ডাটা পাওয়া যায়নি"
+          description="সার্ভারের সাথে সংযোগ হয়নি। আবার চেষ্টা করুন।"
+          action={
+            <button onClick={fetchPlanData} className="btn btn-primary">
+              <RefreshCw className="h-4 w-4" /> আবার চেষ্টা করুন
+            </button>
+          }
+        />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 pb-12 font-sans">
-      {/* Toast Notification */}
+    <div className="space-y-6">
       {toastMessage && (
         <div
-          className={`fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium shadow-lg transition-all ${
-            toastMessage.type === 'success'
-              ? 'bg-emerald-900 text-emerald-50 border border-emerald-700'
-              : 'bg-rose-900 text-rose-50 border border-rose-700'
+          role="status"
+          className={`alert fixed right-4 top-4 z-[60] max-w-sm shadow-lg ${
+            toastMessage.type === 'success' ? 'alert-success' : 'alert-error'
           }`}
         >
           {toastMessage.type === 'success' ? (
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
           ) : (
-            <AlertCircle className="h-4 w-4 text-rose-400" />
+            <AlertCircle className="h-4 w-4 shrink-0" />
           )}
           <span>{toastMessage.text}</span>
         </div>
       )}
 
-      {/* SUMMARY HEADER */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
-                <CalendarCheck className="h-3.5 w-3.5" />
-                স্টেপ ৯: ৯০ দিনের মাস্টার প্ল্যান
-              </span>
-
-              {/* Current Phase Indicator Badge */}
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-800">
-                <Clock className="h-3.5 w-3.5" />
-                দিন {toBengaliDigits(stats?.current_day || 1)} / ৯০ (ফেজ {toBengaliDigits(stats?.current_phase_order || 1)} সক্রিয়)
-              </span>
-
-              {/* Overdue Tasks Badge */}
-              {stats && stats.overdue_tasks > 0 ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-800 animate-pulse">
-                  <AlertTriangle className="h-3.5 w-3.5 text-rose-600" />
-                  {toBengaliDigits(stats.overdue_tasks)}টি টাস্ক বিলম্বিত (Overdue)
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
-                  কোনো ওভারডিউ টাস্ক নেই
-                </span>
-              )}
-            </div>
-
-            {/* Plan Title & Start Date */}
-            {!isEditingPlan ? (
-              <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{plan.name}</h1>
-                  <button
-                    onClick={() => setIsEditingPlan(true)}
-                    className="p-1 rounded text-slate-400 hover:text-emerald-700 hover:bg-slate-100 transition-colors"
-                    title="প্ল্যান শিরোনাম ও শুরু তারিখ পরিবর্তন করুন"
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                  <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                  <span>
-                    শুরুর তারিখ: <strong className="text-slate-700">{format(parseISO(plan.start_date), 'dd MMMM, yyyy')}</strong> ({toBengaliDigits(plan.start_date)})
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">প্ল্যানের নাম</label>
-                    <input
-                      type="text"
-                      value={planNameInput}
-                      onChange={(e) => setPlanNameInput(e.target.value)}
-                      className="w-full text-sm rounded-lg border border-slate-300 px-3 py-1.5 focus:border-emerald-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">শুরুর তারিখ (Start Date)</label>
-                    <input
-                      type="date"
-                      value={startDateInput}
-                      onChange={(e) => setStartDateInput(e.target.value)}
-                      className="w-full text-sm rounded-lg border border-slate-300 px-3 py-1.5 focus:border-emerald-500 focus:outline-none"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 justify-end">
-                  <button
-                    onClick={() => setIsEditingPlan(false)}
-                    className="px-3 py-1 text-xs rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 font-medium"
-                  >
-                    বাতিল
-                  </button>
-                  <button
-                    disabled={submitting}
-                    onClick={handleUpdatePlanHeader}
-                    className="flex items-center gap-1.5 px-3 py-1 text-xs rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 font-semibold disabled:opacity-50"
-                  >
-                    {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                    সংরক্ষণ করুন
-                  </button>
-                </div>
-              </div>
+      <PageHeader
+        icon={<CalendarCheck className="h-5 w-5" />}
+        title={
+          <span className="flex flex-wrap items-center gap-2">
+            {plan.name}
+            {!isEditingPlan && (
+              <button
+                onClick={() => setIsEditingPlan(true)}
+                className="btn-icon"
+                title="নাম ও শুরুর তারিখ পরিবর্তন"
+                aria-label="নাম ও শুরুর তারিখ পরিবর্তন"
+              >
+                <Edit2 className="h-4 w-4" />
+              </button>
             )}
-          </div>
+          </span>
+        }
+        subtitle={
+          <span className="inline-flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5" />
+            ৯০ দিনের প্ল্যান · শুরু {format(parseISO(plan.start_date), 'dd MMM yyyy')}
+          </span>
+        }
+        actions={
+          <>
+            <button type="button" onClick={expandAllPhases} className="btn btn-secondary btn-sm">
+              <ChevronDown className="h-3.5 w-3.5" />
+              সব খুলুন
+            </button>
+            <button type="button" onClick={collapseAllPhases} className="btn btn-secondary btn-sm">
+              <ChevronUp className="h-3.5 w-3.5" />
+              সব বন্ধ
+            </button>
+          </>
+        }
+      />
 
-          {/* Overall Progress Bar Box */}
-          <div className="w-full lg:w-80 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-              <span className="flex items-center gap-1.5">
-                <TrendingUp className="h-4 w-4 text-emerald-600" />
-                সার্বিক অগ্রগতি (Overall Progress)
-              </span>
-              <span className="text-base text-emerald-700">{toBengaliDigits(stats?.overall_progress || 0)}%</span>
+      {isEditingPlan && (
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title">প্ল্যানের তথ্য</h2>
+          </div>
+          <div className="card-body grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="label" htmlFor="plan-name">প্ল্যানের নাম</label>
+              <input
+                id="plan-name"
+                type="text"
+                value={planNameInput}
+                onChange={(e) => setPlanNameInput(e.target.value)}
+                className="input"
+              />
             </div>
-            <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-slate-200">
+            <div>
+              <label className="label" htmlFor="plan-start">শুরুর তারিখ</label>
+              <input
+                id="plan-start"
+                type="date"
+                value={startDateInput}
+                onChange={(e) => setStartDateInput(e.target.value)}
+                className="input"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
+            <button onClick={() => setIsEditingPlan(false)} className="btn btn-secondary btn-sm">
+              বাতিল
+            </button>
+            <button disabled={submitting} onClick={handleUpdatePlanHeader} className="btn btn-primary btn-sm">
+              {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              সংরক্ষণ
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          label="চলমান দিন"
+          value={`${toBengaliDigits(stats?.current_day || 1)} / ৯০`}
+          note={`ফেজ ${toBengaliDigits(stats?.current_phase_order || 1)} সক্রিয়`}
+          icon={<Clock className="h-4 w-4" />}
+          tone="blue"
+        />
+        <StatCard
+          label="সার্বিক অগ্রগতি"
+          value={`${toBengaliDigits(stats?.overall_progress || 0)}%`}
+          note={
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 transition-all duration-500"
+                className="h-full rounded-full bg-brand-600 transition-all duration-500"
                 style={{ width: `${stats?.overall_progress || 0}%` }}
-              ></div>
+              />
             </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 font-medium">
-              <span>মোট টাস্ক: {toBengaliDigits(stats?.total_tasks || 0)}টি</span>
-              <span>সম্পন্ন: {toBengaliDigits(stats?.completed_tasks || 0)}টি</span>
-            </div>
-          </div>
-        </div>
+          }
+          icon={<TrendingUp className="h-4 w-4" />}
+          tone="brand"
+        />
+        <StatCard
+          label="সম্পন্ন টাস্ক"
+          value={`${toBengaliDigits(stats?.completed_tasks || 0)} / ${toBengaliDigits(stats?.total_tasks || 0)}`}
+          icon={<CheckCircle2 className="h-4 w-4" />}
+          tone="violet"
+        />
+        <StatCard
+          label="বিলম্বিত টাস্ক"
+          value={toBengaliDigits(stats?.overdue_tasks || 0)}
+          note={stats && stats.overdue_tasks > 0 ? 'দ্রুত ব্যবস্থা নিন' : 'কোনো বিলম্ব নেই'}
+          icon={<AlertTriangle className="h-4 w-4" />}
+          tone={stats && stats.overdue_tasks > 0 ? 'red' : 'gray'}
+        />
       </div>
 
-      {/* 3-PHASE ACCORDION CONTROLS & HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900">
-            ৩টি পর্যায়ভিত্তিক কর্মপরিকল্পনা (90-Day 3-Phase Plan)
-          </h2>
-          <p className="text-xs text-slate-500">
-            প্রতিটি ফেজের ড্রপডাউন/অ্যাকর্ডিয়ন ক্লিক করে সংশ্লিষ্ট মাইলস্টোন ও টাস্কগুলো দেখুন বা সংকুচিত করুন
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={expandAllPhases}
-            className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors"
-          >
-            সবগুলো খুলুন (Expand All)
-          </button>
-          <button
-            type="button"
-            onClick={collapseAllPhases}
-            className="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors"
-          >
-            সবগুলো বন্ধ করুন (Collapse All)
-          </button>
-        </div>
-      </div>
-
-      {/* 3-PHASE COLLAPSIBLE ACCORDION */}
       <div className="space-y-4">
         {plan.phases.map((phase) => {
           const isExpanded = !!expandedPhases[phase.order_no];
@@ -658,394 +655,284 @@ export default function AdminPlanPage() {
           return (
             <div
               key={phase.id}
-              className={`rounded-2xl border transition-all overflow-hidden ${
-                isSystemCurrentPhase
-                  ? 'border-emerald-300 bg-white shadow-md'
-                  : 'border-slate-200 bg-white shadow-sm'
-              }`}
+              className={`card overflow-hidden ${isSystemCurrentPhase ? 'ring-1 ring-brand-500/40' : ''}`}
             >
-              {/* ACCORDION HEADER (COLLAPSIBLE BUTTON) */}
               <button
                 type="button"
                 onClick={() => togglePhaseCollapse(phase.order_no)}
-                className={`w-full flex flex-col md:flex-row md:items-center justify-between p-5 text-left transition-colors gap-4 ${
-                  isExpanded ? 'bg-slate-50/80 border-b border-slate-200' : 'bg-white hover:bg-slate-50/60'
+                aria-expanded={isExpanded}
+                className={`flex w-full flex-col gap-4 px-5 py-4 text-left transition-colors md:flex-row md:items-center md:justify-between ${
+                  isExpanded ? 'border-b border-slate-100' : 'hover:bg-slate-50/60'
                 }`}
               >
-                <div className="flex items-start md:items-center gap-3">
-                  <div
-                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold text-white shadow-sm ${
-                      phase.order_no === 1
-                        ? 'bg-blue-600'
-                        : phase.order_no === 2
-                        ? 'bg-teal-600'
-                        : 'bg-purple-600'
-                    }`}
-                  >
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-semibold text-slate-700">
                     {toBengaliDigits(phase.order_no)}
                   </div>
-
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full ${
-                          phase.order_no === 1
-                            ? 'bg-blue-100 text-blue-800'
-                            : phase.order_no === 2
-                            ? 'bg-teal-100 text-teal-800'
-                            : 'bg-purple-100 text-purple-800'
-                        }`}
-                      >
-                        ফেজ {toBengaliDigits(phase.order_no)}: দিন {toBengaliDigits(phase.day_start)}–{toBengaliDigits(phase.day_end)}
-                      </span>
-
-                      {isSystemCurrentPhase && (
-                        <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 animate-ping"></span>
-                          চলমান ফেজ
-                        </span>
-                      )}
+                      <h3 className="text-[15px] font-semibold text-slate-900">{phase.name_bn}</h3>
+                      {isSystemCurrentPhase && <span className="badge badge-green">চলমান</span>}
                     </div>
-
-                    <h3 className="text-base font-bold text-slate-900 mt-1">{phase.name_bn}</h3>
-                    <p className="text-xs text-slate-500 font-mono">{phase.name_en}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {phase.name_en} · দিন {toBengaliDigits(phase.day_start)}–{toBengaliDigits(phase.day_end)}
+                    </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 shrink-0 justify-between md:justify-end">
-                  {/* Progress info */}
+                <div className="flex shrink-0 items-center justify-between gap-4 md:justify-end">
                   <div className="text-right">
-                    <div className="text-xs font-semibold text-slate-600">
-                      টাস্ক: <strong className="text-slate-800">{toBengaliDigits(phaseCompleted)}/{toBengaliDigits(phaseTotal)}</strong>
-                      <span className="ml-2 font-bold text-emerald-700">{toBengaliDigits(phasePct)}%</span>
+                    <div className="text-xs text-slate-500">
+                      টাস্ক {toBengaliDigits(phaseCompleted)}/{toBengaliDigits(phaseTotal)}
+                      <span className="ml-2 font-semibold text-slate-900">{toBengaliDigits(phasePct)}%</span>
                     </div>
-                    <div className="mt-1.5 h-2 w-28 bg-slate-200 rounded-full overflow-hidden">
+                    <div className="mt-1.5 h-1.5 w-28 overflow-hidden rounded-full bg-slate-100">
                       <div
-                        className="h-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full transition-all duration-300"
+                        className="h-full rounded-full bg-brand-600 transition-all duration-300"
                         style={{ width: `${phasePct}%` }}
                       />
                     </div>
                   </div>
-
-                  {/* Accordion Chevron Icon */}
-                  <div className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-colors">
+                  <span className="text-slate-400">
                     {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </div>
+                  </span>
                 </div>
               </button>
 
-              {/* ACCORDION BODY (COLLAPSIBLE CONTENT) */}
               {isExpanded && (
-                <div className="p-5 space-y-6">
-                  {/* MILESTONE CARD */}
-                  <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                      <div className="space-y-2 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="p-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
-                            <Award className="h-5 w-5" />
-                          </span>
-                          <div>
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                              ফেজ {toBengaliDigits(phase.order_no)} মাইলস্টোন
-                            </span>
-                            <h4 className="text-base font-bold text-slate-900">
-                              {phaseMilestone?.title_bn || 'মাইলস্টোন বিবরণ'}
-                            </h4>
-                          </div>
-                        </div>
-
-                        <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-100 text-xs sm:text-sm space-y-1.5">
-                          <div>
-                            <span className="font-semibold text-slate-600">প্রত্যাশিত ফলাফল (Expected Result):</span>{' '}
-                            <span className="text-slate-800">{phaseMilestone?.expected_result}</span>
-                          </div>
-                          {phaseMilestone?.achieved_result && (
-                            <div className="pt-1 border-t border-slate-200 text-emerald-800">
-                              <span className="font-semibold">অর্জিত অগ্রগতি (Achieved):</span>{' '}
-                              <span>{phaseMilestone.achieved_result}</span>
-                            </div>
-                          )}
-                        </div>
+                <div className="divide-y divide-slate-100">
+                  {/* Milestone */}
+                  <div className="flex flex-col gap-4 bg-slate-50/50 px-5 py-4 md:flex-row md:items-start md:justify-between">
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Award className="h-4 w-4 text-slate-400" />
+                        <span className="text-xs font-medium text-slate-500">মাইলস্টোন</span>
+                        {milestoneBadge(phaseMilestone?.status)}
                       </div>
-
-                      {/* Milestone Review Controls */}
-                      <div className="flex flex-col items-start md:items-end gap-2.5 shrink-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-slate-500 font-medium">মূল্যায়ন স্ট্যাটাস:</span>
-                          <span
-                            className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${
-                              phaseMilestone?.status === 'MET'
-                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                : phaseMilestone?.status === 'PARTIAL'
-                                ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                : phaseMilestone?.status === 'MISSED'
-                                ? 'bg-rose-100 text-rose-800 border border-rose-300'
-                                : 'bg-amber-100 text-amber-800 border border-amber-300'
-                            }`}
-                          >
-                            {phaseMilestone?.status === 'MET' && 'অর্জিত (Met)'}
-                            {phaseMilestone?.status === 'PARTIAL' && 'আংশিক অর্জিত (Partial)'}
-                            {phaseMilestone?.status === 'MISSED' && 'অনর্জিত (Missed)'}
-                            {phaseMilestone?.status === 'PENDING' && 'অপেক্ষমাণ (Pending)'}
-                          </span>
-                        </div>
-
-                        <button
-                          onClick={() => {
-                            if (phaseMilestone) {
-                              setEvaluatingMilestone(phaseMilestone);
-                              setMilestoneStatus(phaseMilestone.status);
-                              setMilestoneResultNote(phaseMilestone.achieved_result || '');
-                            }
-                          }}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white px-3.5 py-2 text-xs font-bold shadow-sm transition-colors"
-                        >
-                          <Award className="h-4 w-4" />
-                          মাইলস্টোন মূল্যায়ন করুন
-                        </button>
-                      </div>
+                      <h4 className="text-sm font-semibold text-slate-900">
+                        {phaseMilestone?.title_bn || 'মাইলস্টোন'}
+                      </h4>
+                      <p className="text-sm text-slate-600">
+                        <span className="text-slate-500">প্রত্যাশিত: </span>
+                        {phaseMilestone?.expected_result}
+                      </p>
+                      {phaseMilestone?.achieved_result && (
+                        <p className="text-sm text-slate-700">
+                          <span className="text-slate-500">অর্জিত: </span>
+                          {phaseMilestone.achieved_result}
+                        </p>
+                      )}
                     </div>
+                    <button
+                      onClick={() => {
+                        if (phaseMilestone) {
+                          setEvaluatingMilestone(phaseMilestone);
+                          setMilestoneStatus(phaseMilestone.status);
+                          setMilestoneResultNote(phaseMilestone.achieved_result || '');
+                        }
+                      }}
+                      className="btn btn-secondary btn-sm shrink-0"
+                    >
+                      <Award className="h-3.5 w-3.5" />
+                      মূল্যায়ন করুন
+                    </button>
                   </div>
 
-                  {/* TASKS LIST SECTION */}
-                  <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                    {/* Table Header / Action Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 border-b border-slate-200 bg-slate-50/50">
-                      <div>
-                        <h4 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                          <span>{phase.name_bn} — টাস্ক তালিকা</span>
-                          <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">
-                            {toBengaliDigits(phaseTasks.length)}টি
-                          </span>
-                        </h4>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          ফেজের সকল কর্মপরিকল্পনা, অগ্রগতি ও দায়িত্বপ্রাপ্ত সদস্যদের তালিকা
-                        </p>
-                      </div>
+                  {/* Tasks header */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                    <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                      টাস্ক
+                      <span className="badge badge-gray">{toBengaliDigits(phaseTasks.length)}</span>
+                    </h4>
+                    <button
+                      onClick={() => {
+                        setSelectedPhaseIdForAdd(phase.id);
+                        setShowAddTaskModal(true);
+                      }}
+                      className="btn btn-primary btn-sm"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      নতুন টাস্ক
+                    </button>
+                  </div>
 
-                      <button
-                        onClick={() => {
-                          setSelectedPhaseIdForAdd(phase.id);
-                          setShowAddTaskModal(true);
-                        }}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-colors shrink-0"
-                      >
-                        <Plus className="h-4 w-4" />
-                        নতুন টাস্ক যোগ করুন
-                      </button>
-                    </div>
+                  {phaseTasks.length === 0 ? (
+                    <EmptyState
+                      icon={<FileText className="h-5 w-5" />}
+                      title="এই ফেজে কোনো টাস্ক নেই"
+                      description="“নতুন টাস্ক” বাটনে ক্লিক করে প্রথম টাস্ক যোগ করুন।"
+                    />
+                  ) : (
+                    phaseTasks.map((task) => {
+                      const todayStr = stats?.today || getDhakaDateString();
+                      const dueDateDhaka = task.due_date ? getDhakaDateString(new Date(task.due_date)) : null;
+                      const isOverdue =
+                        task.status !== 'DONE' &&
+                        dueDateDhaka !== null &&
+                        dueDateDhaka < todayStr;
 
-                    {/* Empty State */}
-                    {phaseTasks.length === 0 ? (
-                      <div className="p-12 text-center">
-                        <FileText className="mx-auto h-10 w-10 text-slate-300 mb-2" />
-                        <h4 className="text-sm font-bold text-slate-700">এই ফেজে এখনও কোনো টাস্ক যোগ করা হয়নি</h4>
-                        <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                          উপরের &ldquo;নতুন টাস্ক যোগ করুন&rdquo; বাটনে ক্লিক করে এই ফেজের প্রথম কর্মপরিকল্পনাটি যুক্ত করুন।
-                        </p>
-                      </div>
-                    ) : (
-                      /* Interactive Tasks Table / Card List */
-                      <div className="divide-y divide-slate-100 overflow-x-auto">
-                        {phaseTasks.map((task) => {
-                          const todayStr = stats?.today || getDhakaDateString();
-                          const dueDateDhaka = task.due_date ? getDhakaDateString(new Date(task.due_date)) : null;
-                          const isOverdue =
-                            task.status !== 'DONE' &&
-                            dueDateDhaka !== null &&
-                            dueDateDhaka < todayStr;
+                      const isEditingOutcome = editingOutcomeId === task.id;
 
-                          const isEditingOutcome = editingOutcomeId === task.id;
+                      return (
+                        <div key={task.id} className="px-5 py-4 transition-colors hover:bg-slate-50/60">
+                          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="min-w-0 flex-1 space-y-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <label className="sr-only" htmlFor={`task-status-${task.id}`}>স্ট্যাটাস</label>
+                                <select
+                                  id={`task-status-${task.id}`}
+                                  value={task.status}
+                                  onChange={(e) => handleQuickStatusChange(task.id, e.target.value as TaskStatus)}
+                                  className={`cursor-pointer rounded-md border px-2 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/20 ${
+                                    task.status === 'DONE'
+                                      ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                                      : task.status === 'IN_PROGRESS'
+                                      ? 'border-sky-200 bg-sky-50 text-sky-700'
+                                      : task.status === 'BLOCKED'
+                                      ? 'border-rose-200 bg-rose-50 text-rose-700'
+                                      : 'border-slate-200 bg-slate-50 text-slate-600'
+                                  }`}
+                                >
+                                  {statusOptions}
+                                </select>
 
-                          return (
-                            <div
-                              key={task.id}
-                              className={`p-5 transition-colors hover:bg-slate-50/70 ${
-                                isOverdue ? 'bg-rose-50/40' : ''
-                              }`}
-                            >
-                              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                                {/* Task Details */}
-                                <div className="space-y-1.5 flex-1 min-w-0">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    {/* Status Quick Dropdown */}
-                                    <select
-                                      value={task.status}
-                                      onChange={(e) =>
-                                        handleQuickStatusChange(task.id, e.target.value as 'NOT_STARTED' | 'IN_PROGRESS' | 'DONE' | 'BLOCKED')
-                                      }
-                                      className={`text-xs font-bold rounded-lg px-2.5 py-1 border transition-colors cursor-pointer focus:outline-none ${
-                                        task.status === 'DONE'
-                                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                          : task.status === 'IN_PROGRESS'
-                                          ? 'bg-blue-100 text-blue-800 border-blue-300'
-                                          : task.status === 'BLOCKED'
-                                          ? 'bg-rose-100 text-rose-800 border-rose-300'
-                                          : 'bg-slate-100 text-slate-700 border-slate-300'
-                                      }`}
-                                    >
-                                      <option value="NOT_STARTED">শুরু হয়নি (Not Started)</option>
-                                      <option value="IN_PROGRESS">চলমান (In Progress)</option>
-                                      <option value="DONE">সম্পন্ন (Done)</option>
-                                      <option value="BLOCKED">স্থগিত (Blocked)</option>
-                                    </select>
+                                {isOverdue && (
+                                  <span className="badge badge-red">
+                                    <AlertTriangle className="h-3 w-3" />
+                                    বিলম্বিত
+                                  </span>
+                                )}
 
-                                    {/* Overdue Warning Badge */}
-                                    {isOverdue && (
-                                      <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700 border border-rose-200">
-                                        <AlertTriangle className="h-3 w-3" />
-                                        বিলম্বিত (Overdue)
-                                      </span>
-                                    )}
+                                <span className="flex items-center gap-1 text-xs text-slate-500">
+                                  <Calendar className="h-3.5 w-3.5" />
+                                  {task.due_date ? format(new Date(task.due_date), 'dd MMM yyyy') : 'তারিখ নেই'}
+                                </span>
+                              </div>
 
-                                    {/* Due Date Indicator */}
-                                    <span className="flex items-center gap-1 text-xs text-slate-500 font-mono">
-                                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                                      {task.due_date ? format(new Date(task.due_date), 'dd MMM, yyyy') : 'তারিখ নেই'}
-                                    </span>
-                                  </div>
+                              <div>
+                                <h5 className="text-sm font-medium leading-snug text-slate-900">{task.title_bn}</h5>
+                                <p className="mt-0.5 text-xs text-slate-500">{task.title_en}</p>
+                                {task.description && (
+                                  <p className="mt-1 text-sm text-slate-600">{task.description}</p>
+                                )}
+                              </div>
 
-                                  {/* Titles */}
-                                  <div>
-                                    <h4 className="text-sm font-bold text-slate-900 leading-snug">
-                                      {task.title_bn}
-                                    </h4>
-                                    <p className="text-xs text-slate-500 font-mono mt-0.5">{task.title_en}</p>
-                                    {task.description && (
-                                      <p className="text-xs text-slate-600 mt-1">{task.description}</p>
-                                    )}
-                                  </div>
-
-                                  {/* Outcome Note Section */}
-                                  <div className="pt-1">
-                                    {!isEditingOutcome ? (
-                                      <div className="flex items-center gap-2 text-xs">
-                                        <span className="font-semibold text-slate-500">ফলাফল নোট:</span>
-                                        {task.outcome_note ? (
-                                          <span className="text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md italic">
-                                            &ldquo;{task.outcome_note}&rdquo;
-                                          </span>
-                                        ) : (
-                                          <span className="text-slate-400 italic">কোনো নোট নেই</span>
-                                        )}
-                                        <button
-                                          onClick={() => {
-                                            setEditingOutcomeId(task.id);
-                                            setOutcomeDraft(task.outcome_note || '');
-                                          }}
-                                          className="text-[11px] text-emerald-600 hover:text-emerald-700 hover:underline font-medium"
-                                        >
-                                          {task.outcome_note ? 'সম্পাদনা' : 'নোট যোগ করুন'}
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <div className="flex items-center gap-2 mt-1">
-                                        <input
-                                          type="text"
-                                          placeholder="কাজের অর্জিত ফলাফল বা বিবরণ লিখুন..."
-                                          value={outcomeDraft}
-                                          onChange={(e) => setOutcomeDraft(e.target.value)}
-                                          className="text-xs rounded-lg border border-slate-300 px-2.5 py-1 w-full max-w-md focus:border-emerald-500 focus:outline-none"
-                                        />
-                                        <button
-                                          onClick={() => handleSaveOutcomeNote(task.id)}
-                                          className="px-2.5 py-1 text-xs bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700"
-                                        >
-                                          সেভ
-                                        </button>
-                                        <button
-                                          onClick={() => setEditingOutcomeId(null)}
-                                          className="px-2 py-1 text-xs border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-100"
-                                        >
-                                          বাতিল
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
+                              {!isEditingOutcome ? (
+                                <div className="flex flex-wrap items-center gap-2 text-xs">
+                                  <span className="text-slate-500">ফলাফল:</span>
+                                  {task.outcome_note ? (
+                                    <span className="text-slate-700">{task.outcome_note}</span>
+                                  ) : (
+                                    <span className="text-slate-400">নেই</span>
+                                  )}
+                                  <button
+                                    onClick={() => {
+                                      setEditingOutcomeId(task.id);
+                                      setOutcomeDraft(task.outcome_note || '');
+                                    }}
+                                    className="font-medium text-brand-700 hover:underline"
+                                  >
+                                    {task.outcome_note ? 'সম্পাদনা' : 'নোট যোগ করুন'}
+                                  </button>
                                 </div>
-
-                                {/* Interactive Controls Column */}
-                                <div className="flex flex-wrap lg:flex-nowrap items-center gap-4 shrink-0 pt-2 lg:pt-0">
-                                  {/* Owner Dropdown */}
-                                  <div className="w-44">
-                                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
-                                      দায়িত্বপ্রাপ্ত সদস্য
-                                    </label>
-                                    <select
-                                      value={task.owner_id || 'UNASSIGNED'}
-                                      onChange={(e) => handleQuickOwnerChange(task.id, e.target.value)}
-                                      className="w-full text-xs rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-slate-700 focus:border-emerald-500 focus:outline-none"
-                                    >
-                                      <option value="UNASSIGNED">-- অবণ্টিত (Unassigned) --</option>
-                                      {employees.map((emp) => (
-                                        <option key={emp.id} value={emp.id}>
-                                          {emp.name}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </div>
-
-                                  {/* Progress Slider/Percentage Input */}
-                                  <div className="w-36">
-                                    <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 mb-0.5">
-                                      <span>অগ্রগতি</span>
-                                      <span className="text-emerald-700 font-bold">{toBengaliDigits(task.progress_percent)}%</span>
-                                    </div>
-                                    <input
-                                      type="range"
-                                      min="0"
-                                      max="100"
-                                      step="5"
-                                      value={task.progress_percent}
-                                      onChange={(e) => {
-                                        const val = Number(e.target.value);
-                                        setPlan((prev) => {
-                                          if (!prev) return prev;
-                                          return {
-                                            ...prev,
-                                            phases: prev.phases.map((ph) => ({
-                                              ...ph,
-                                              tasks: ph.tasks.map((t) => (t.id === task.id ? { ...t, progress_percent: val, ...(val === 100 ? { status: 'DONE' } : {}) } : t)),
-                                            })),
-                                          };
-                                        });
-                                      }}
-                                      onMouseUp={(e) =>
-                                        handleQuickProgressChange(task.id, Number((e.target as HTMLInputElement).value))
-                                      }
-                                      onTouchEnd={(e) =>
-                                        handleQuickProgressChange(task.id, Number((e.target as HTMLInputElement).value))
-                                      }
-                                      className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                    />
-                                  </div>
-
-                                  {/* Edit & Delete Action Buttons */}
-                                  <div className="flex items-center gap-1">
-                                    <button
-                                      onClick={() => setEditingTask(task)}
-                                      className="p-1.5 text-slate-500 hover:text-emerald-700 hover:bg-slate-100 rounded-lg transition-colors"
-                                      title="টাস্ক সম্পাদনা করুন"
-                                    >
-                                      <Edit2 className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                      onClick={() => setDeletingTaskId(task.id)}
-                                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                                      title="টাস্ক মুছুন"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </button>
-                                  </div>
+                              ) : (
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <label className="sr-only" htmlFor={`outcome-${task.id}`}>ফলাফল নোট</label>
+                                  <input
+                                    id={`outcome-${task.id}`}
+                                    type="text"
+                                    placeholder="অর্জিত ফলাফল লিখুন..."
+                                    value={outcomeDraft}
+                                    onChange={(e) => setOutcomeDraft(e.target.value)}
+                                    className="input max-w-md flex-1 py-1.5"
+                                  />
+                                  <button onClick={() => handleSaveOutcomeNote(task.id)} className="btn btn-primary btn-sm">
+                                    সংরক্ষণ
+                                  </button>
+                                  <button onClick={() => setEditingOutcomeId(null)} className="btn btn-ghost btn-sm">
+                                    বাতিল
+                                  </button>
                                 </div>
+                              )}
+                            </div>
+
+                            <div className="flex flex-wrap items-end gap-4 lg:flex-nowrap">
+                              <div className="w-44">
+                                <label className="label" htmlFor={`task-owner-${task.id}`}>দায়িত্বপ্রাপ্ত</label>
+                                <select
+                                  id={`task-owner-${task.id}`}
+                                  value={task.owner_id || 'UNASSIGNED'}
+                                  onChange={(e) => handleQuickOwnerChange(task.id, e.target.value)}
+                                  className="input py-1.5 text-xs"
+                                >
+                                  <option value="UNASSIGNED">অবণ্টিত</option>
+                                  {employees.map((emp) => (
+                                    <option key={emp.id} value={emp.id}>
+                                      {emp.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div className="w-36">
+                                <div className="label flex items-center justify-between">
+                                  <label htmlFor={`task-progress-${task.id}`}>অগ্রগতি</label>
+                                  <span className="tabular-nums text-slate-900">{toBengaliDigits(task.progress_percent)}%</span>
+                                </div>
+                                <input
+                                  id={`task-progress-${task.id}`}
+                                  type="range"
+                                  min="0"
+                                  max="100"
+                                  step="5"
+                                  value={task.progress_percent}
+                                  onChange={(e) => {
+                                    const val = Number(e.target.value);
+                                    setPlan((prev) => {
+                                      if (!prev) return prev;
+                                      return {
+                                        ...prev,
+                                        phases: prev.phases.map((ph) => ({
+                                          ...ph,
+                                          tasks: ph.tasks.map((t) => (t.id === task.id ? { ...t, progress_percent: val, ...(val === 100 ? { status: 'DONE' } : {}) } : t)),
+                                        })),
+                                      };
+                                    });
+                                  }}
+                                  onMouseUp={(e) =>
+                                    handleQuickProgressChange(task.id, Number((e.target as HTMLInputElement).value))
+                                  }
+                                  onTouchEnd={(e) =>
+                                    handleQuickProgressChange(task.id, Number((e.target as HTMLInputElement).value))
+                                  }
+                                  className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-brand-600"
+                                />
+                              </div>
+
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => setEditingTask(task)}
+                                  className="btn-icon"
+                                  title="টাস্ক সম্পাদনা"
+                                  aria-label="টাস্ক সম্পাদনা"
+                                >
+                                  <Edit2 className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => setDeletingTaskId(task.id)}
+                                  className="btn-icon hover:bg-rose-50 hover:text-rose-600"
+                                  title="টাস্ক মুছুন"
+                                  aria-label="টাস্ক মুছুন"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               )}
             </div>
@@ -1055,76 +942,59 @@ export default function AdminPlanPage() {
 
       {/* MILESTONE EVALUATION MODAL */}
       {evaluatingMilestone && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-amber-50 text-amber-600">
-                  <Award className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">মাইলস্টোন মূল্যায়ন</h3>
-                  <p className="text-xs text-slate-500">{evaluatingMilestone.title_bn}</p>
-                </div>
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-panel">
+            <div className="card-header">
+              <div className="min-w-0">
+                <h3 className="card-title">মাইলস্টোন মূল্যায়ন</h3>
+                <p className="card-subtitle truncate">{evaluatingMilestone.title_bn}</p>
               </div>
-              <button
-                onClick={() => setEvaluatingMilestone(null)}
-                className="text-slate-400 hover:text-slate-600 p-1"
-              >
-                <X className="h-5 w-5" />
+              <button onClick={() => setEvaluatingMilestone(null)} className="btn-icon" aria-label="বন্ধ করুন">
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="space-y-3 text-xs sm:text-sm">
-              <div className="rounded-xl bg-slate-50 p-3 border border-slate-200">
-                <span className="font-semibold text-slate-600">প্রত্যাশিত মানদণ্ড:</span>
-                <p className="text-slate-800 mt-1">{evaluatingMilestone.expected_result}</p>
+            <div className="card-body space-y-4 text-sm">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <span className="text-xs font-medium text-slate-500">প্রত্যাশিত ফলাফল</span>
+                <p className="mt-1 text-slate-800">{evaluatingMilestone.expected_result}</p>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  মূল্যায়ন ফলাফল (Milestone Status)
-                </label>
+                <label className="label" htmlFor="ms-status">মূল্যায়ন</label>
                 <select
+                  id="ms-status"
                   value={milestoneStatus}
                   onChange={(e) => setMilestoneStatus(e.target.value as 'PENDING' | 'MET' | 'PARTIAL' | 'MISSED')}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-slate-800 font-medium focus:border-amber-500 focus:outline-none"
+                  className="input"
                 >
-                  <option value="PENDING">অপেক্ষমাণ (PENDING) — এখনও মূল্যায়ন হয়নি</option>
-                  <option value="MET">অর্জিত (MET) — প্রত্যাশা অনুযায়ী সম্পূর্ণ অর্জিত</option>
-                  <option value="PARTIAL">আংশিক অর্জিত (PARTIAL) — লক্ষ্যমাত্রার কিছু অংশ পূর্ণ</option>
-                  <option value="MISSED">অনর্জিত (MISSED) — লক্ষ্য অর্জনে ব্যর্থ</option>
+                  <option value="PENDING">অপেক্ষমাণ — এখনও মূল্যায়ন হয়নি</option>
+                  <option value="MET">অর্জিত — সম্পূর্ণ অর্জিত</option>
+                  <option value="PARTIAL">আংশিক — কিছু অংশ পূর্ণ</option>
+                  <option value="MISSED">অনর্জিত — লক্ষ্য পূরণ হয়নি</option>
                 </select>
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  অর্জিত ফলাফলের বিশদ মন্তব্য (Achieved Result Note)
-                </label>
+                <label className="label" htmlFor="ms-note">অর্জিত ফলাফল</label>
                 <textarea
+                  id="ms-note"
                   rows={3}
                   value={milestoneResultNote}
                   onChange={(e) => setMilestoneResultNote(e.target.value)}
-                  placeholder="যেমন: সকল অডিট সম্পন্ন হয়েছে এবং প্রথম ১৫ দিনে ৭০টি লিড এসেছে..."
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-slate-800 focus:border-amber-500 focus:outline-none"
+                  placeholder="যেমন: সকল অডিট সম্পন্ন, প্রথম ১৫ দিনে ৭০টি লিড..."
+                  className="input"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-              <button
-                onClick={() => setEvaluatingMilestone(null)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 rounded-xl border border-slate-300 hover:bg-slate-50"
-              >
+            <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
+              <button onClick={() => setEvaluatingMilestone(null)} className="btn btn-secondary">
                 বাতিল
               </button>
-              <button
-                disabled={submitting}
-                onClick={handleSaveMilestoneEvaluation}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-xl shadow-sm disabled:opacity-50"
-              >
+              <button disabled={submitting} onClick={handleSaveMilestoneEvaluation} className="btn btn-primary">
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                মূল্যায়ন নিশ্চিত করুন
+                সংরক্ষণ
               </button>
             </div>
           </div>
@@ -1133,134 +1003,122 @@ export default function AdminPlanPage() {
 
       {/* ADD TASK MODAL */}
       {showAddTaskModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Plus className="h-5 w-5 text-emerald-600" />
-                নতুন কর্মপরিকল্পনা (টাস্ক) যোগ করুন
-              </h3>
-              <button
-                onClick={() => setShowAddTaskModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
-              >
-                <X className="h-5 w-5" />
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-panel">
+            <div className="card-header">
+              <h3 className="card-title">নতুন টাস্ক</h3>
+              <button onClick={() => setShowAddTaskModal(false)} className="btn-icon" aria-label="বন্ধ করুন">
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateTask} className="space-y-3.5 text-xs sm:text-sm">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  বাংলা শিরোনাম <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="যেমন: ফেসবুক গ্রুপে কন্টেন্ট শেয়ারিং ক্যাম্পেইন"
-                  value={taskForm.title_bn}
-                  onChange={(e) => setTaskForm({ ...taskForm, title_bn: e.target.value })}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  ইংরেজি শিরোনাম (Title EN) <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Facebook Group Content Campaign"
-                  value={taskForm.title_en}
-                  onChange={(e) => setTaskForm({ ...taskForm, title_en: e.target.value })}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">টাস্ক বিবরণ (ঐচ্ছিক)</label>
-                <textarea
-                  rows={2}
-                  placeholder="কাজের বিস্তারিত বিবরণ বা উদ্দেশ্য..."
-                  value={taskForm.description}
-                  onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <form onSubmit={handleCreateTask}>
+              <div className="card-body space-y-4">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">দায়িত্বপ্রাপ্ত কর্মী</label>
-                  <select
-                    value={taskForm.owner_id}
-                    onChange={(e) => setTaskForm({ ...taskForm, owner_id: e.target.value })}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 focus:border-emerald-500 focus:outline-none"
-                  >
-                    <option value="">-- অবণ্টিত (Unassigned) --</option>
-                    {employees.map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.name} ({emp.email})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">সমাপ্তির তারিখ (Due Date)</label>
-                  <input
-                    type="date"
-                    value={taskForm.due_date}
-                    onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 focus:border-emerald-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">প্রাথমিক স্ট্যাটাস</label>
-                  <select
-                    value={taskForm.status}
-                    onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value as 'NOT_STARTED' | 'IN_PROGRESS' | 'DONE' | 'BLOCKED' })}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 focus:border-emerald-500 focus:outline-none"
-                  >
-                    <option value="NOT_STARTED">শুরু হয়নি (NOT_STARTED)</option>
-                    <option value="IN_PROGRESS">চলমান (IN_PROGRESS)</option>
-                    <option value="DONE">সম্পন্ন (DONE)</option>
-                    <option value="BLOCKED">স্থগিত (BLOCKED)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    অগ্রগতি % ({taskForm.progress_percent}%)
+                  <label className="label" htmlFor="add-title-bn">
+                    শিরোনাম (বাংলা) <span className="text-rose-500">*</span>
                   </label>
                   <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={taskForm.progress_percent}
-                    onChange={(e) => setTaskForm({ ...taskForm, progress_percent: Number(e.target.value) })}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 focus:border-emerald-500 focus:outline-none"
+                    id="add-title-bn"
+                    type="text"
+                    required
+                    placeholder="যেমন: ফেসবুক গ্রুপে কন্টেন্ট ক্যাম্পেইন"
+                    value={taskForm.title_bn}
+                    onChange={(e) => setTaskForm({ ...taskForm, title_bn: e.target.value })}
+                    className="input"
                   />
+                </div>
+
+                <div>
+                  <label className="label" htmlFor="add-title-en">
+                    Title (English) <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    id="add-title-en"
+                    type="text"
+                    required
+                    placeholder="e.g. Facebook Group Content Campaign"
+                    value={taskForm.title_en}
+                    onChange={(e) => setTaskForm({ ...taskForm, title_en: e.target.value })}
+                    className="input"
+                  />
+                </div>
+
+                <div>
+                  <label className="label" htmlFor="add-desc">বিবরণ (ঐচ্ছিক)</label>
+                  <textarea
+                    id="add-desc"
+                    rows={2}
+                    placeholder="কাজের বিবরণ বা উদ্দেশ্য..."
+                    value={taskForm.description}
+                    onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                    className="input"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="label" htmlFor="add-owner">দায়িত্বপ্রাপ্ত</label>
+                    <select
+                      id="add-owner"
+                      value={taskForm.owner_id}
+                      onChange={(e) => setTaskForm({ ...taskForm, owner_id: e.target.value })}
+                      className="input"
+                    >
+                      <option value="">অবণ্টিত</option>
+                      {employees.map((emp) => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.name} ({emp.email})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label" htmlFor="add-due">শেষ তারিখ</label>
+                    <input
+                      id="add-due"
+                      type="date"
+                      value={taskForm.due_date}
+                      onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })}
+                      className="input"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="label" htmlFor="add-status">স্ট্যাটাস</label>
+                    <select
+                      id="add-status"
+                      value={taskForm.status}
+                      onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value as TaskStatus })}
+                      className="input"
+                    >
+                      {statusOptions}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label" htmlFor="add-progress">অগ্রগতি (%)</label>
+                    <input
+                      id="add-progress"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={taskForm.progress_percent}
+                      onChange={(e) => setTaskForm({ ...taskForm, progress_percent: Number(e.target.value) })}
+                      className="input"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowAddTaskModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 rounded-xl border border-slate-300 hover:bg-slate-50"
-                >
+              <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
+                <button type="button" onClick={() => setShowAddTaskModal(false)} className="btn btn-secondary">
                   বাতিল
                 </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm disabled:opacity-50"
-                >
+                <button type="submit" disabled={submitting} className="btn btn-primary">
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                  টাস্ক সংরক্ষণ করুন
+                  টাস্ক যোগ করুন
                 </button>
               </div>
             </form>
@@ -1270,147 +1128,136 @@ export default function AdminPlanPage() {
 
       {/* EDIT TASK MODAL */}
       {editingTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Edit2 className="h-5 w-5 text-emerald-600" />
-                টাস্ক সম্পাদনা করুন
-              </h3>
-              <button
-                onClick={() => setEditingTask(null)}
-                className="text-slate-400 hover:text-slate-600 p-1"
-              >
-                <X className="h-5 w-5" />
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-panel">
+            <div className="card-header">
+              <h3 className="card-title">টাস্ক সম্পাদনা</h3>
+              <button onClick={() => setEditingTask(null)} className="btn-icon" aria-label="বন্ধ করুন">
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleUpdateTask} className="space-y-3.5 text-xs sm:text-sm">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">বাংলা শিরোনাম</label>
-                <input
-                  type="text"
-                  required
-                  value={editingTask.title_bn}
-                  onChange={(e) => setEditingTask({ ...editingTask, title_bn: e.target.value })}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">ইংরেজি শিরোনাম</label>
-                <input
-                  type="text"
-                  required
-                  value={editingTask.title_en}
-                  onChange={(e) => setEditingTask({ ...editingTask, title_en: e.target.value })}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">বিবরণ</label>
-                <textarea
-                  rows={2}
-                  value={editingTask.description || ''}
-                  onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <form onSubmit={handleUpdateTask}>
+              <div className="card-body space-y-4">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">দায়িত্বপ্রাপ্ত কর্মী</label>
-                  <select
-                    value={editingTask.owner_id || ''}
-                    onChange={(e) => setEditingTask({ ...editingTask, owner_id: e.target.value || null })}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 focus:border-emerald-500 focus:outline-none"
-                  >
-                    <option value="">-- অবণ্টিত (Unassigned) --</option>
-                    {employees.map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.name}
-                      </option>
-                    ))}
-                  </select>
+                  <label className="label" htmlFor="edit-title-bn">শিরোনাম (বাংলা)</label>
+                  <input
+                    id="edit-title-bn"
+                    type="text"
+                    required
+                    value={editingTask.title_bn}
+                    onChange={(e) => setEditingTask({ ...editingTask, title_bn: e.target.value })}
+                    className="input"
+                  />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">সমাপ্তির তারিখ</label>
+                  <label className="label" htmlFor="edit-title-en">Title (English)</label>
                   <input
-                    type="date"
-                    value={editingTask.due_date ? format(new Date(editingTask.due_date), 'yyyy-MM-dd') : ''}
-                    onChange={(e) => setEditingTask({ ...editingTask, due_date: e.target.value || null })}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 focus:border-emerald-500 focus:outline-none"
+                    id="edit-title-en"
+                    type="text"
+                    required
+                    value={editingTask.title_en}
+                    onChange={(e) => setEditingTask({ ...editingTask, title_en: e.target.value })}
+                    className="input"
+                  />
+                </div>
+
+                <div>
+                  <label className="label" htmlFor="edit-desc">বিবরণ</label>
+                  <textarea
+                    id="edit-desc"
+                    rows={2}
+                    value={editingTask.description || ''}
+                    onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
+                    className="input"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="label" htmlFor="edit-owner">দায়িত্বপ্রাপ্ত</label>
+                    <select
+                      id="edit-owner"
+                      value={editingTask.owner_id || ''}
+                      onChange={(e) => setEditingTask({ ...editingTask, owner_id: e.target.value || null })}
+                      className="input"
+                    >
+                      <option value="">অবণ্টিত</option>
+                      {employees.map((emp) => (
+                        <option key={emp.id} value={emp.id}>
+                          {emp.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label" htmlFor="edit-due">শেষ তারিখ</label>
+                    <input
+                      id="edit-due"
+                      type="date"
+                      value={editingTask.due_date ? format(new Date(editingTask.due_date), 'yyyy-MM-dd') : ''}
+                      onChange={(e) => setEditingTask({ ...editingTask, due_date: e.target.value || null })}
+                      className="input"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="label" htmlFor="edit-status">স্ট্যাটাস</label>
+                    <select
+                      id="edit-status"
+                      value={editingTask.status}
+                      onChange={(e) => {
+                        const st = e.target.value as TaskStatus;
+                        setEditingTask({
+                          ...editingTask,
+                          status: st,
+                          progress_percent: st === 'DONE' ? 100 : editingTask.progress_percent,
+                        });
+                      }}
+                      className="input"
+                    >
+                      {statusOptions}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label" htmlFor="edit-progress">অগ্রগতি (%)</label>
+                    <input
+                      id="edit-progress"
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={editingTask.progress_percent}
+                      onChange={(e) =>
+                        setEditingTask({ ...editingTask, progress_percent: Number(e.target.value) })
+                      }
+                      className="input"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="label" htmlFor="edit-outcome">ফলাফল নোট</label>
+                  <input
+                    id="edit-outcome"
+                    type="text"
+                    value={editingTask.outcome_note || ''}
+                    onChange={(e) => setEditingTask({ ...editingTask, outcome_note: e.target.value })}
+                    placeholder="কাজের ফলাফল..."
+                    className="input"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">স্ট্যাটাস</label>
-                  <select
-                    value={editingTask.status}
-                    onChange={(e) => {
-                      const st = e.target.value as 'NOT_STARTED' | 'IN_PROGRESS' | 'DONE' | 'BLOCKED';
-                      setEditingTask({
-                        ...editingTask,
-                        status: st,
-                        progress_percent: st === 'DONE' ? 100 : editingTask.progress_percent,
-                      });
-                    }}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 focus:border-emerald-500 focus:outline-none"
-                  >
-                    <option value="NOT_STARTED">শুরু হয়নি (NOT_STARTED)</option>
-                    <option value="IN_PROGRESS">চলমান (IN_PROGRESS)</option>
-                    <option value="DONE">সম্পন্ন (DONE)</option>
-                    <option value="BLOCKED">স্থগিত (BLOCKED)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    অগ্রগতি % ({editingTask.progress_percent}%)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={editingTask.progress_percent}
-                    onChange={(e) =>
-                      setEditingTask({ ...editingTask, progress_percent: Number(e.target.value) })
-                    }
-                    className="w-full rounded-xl border border-slate-300 p-2.5 focus:border-emerald-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">ফলাফল নোট</label>
-                <input
-                  type="text"
-                  value={editingTask.outcome_note || ''}
-                  onChange={(e) => setEditingTask({ ...editingTask, outcome_note: e.target.value })}
-                  placeholder="কাজের ফলাফল..."
-                  className="w-full rounded-xl border border-slate-300 p-2.5 focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setEditingTask(null)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 rounded-xl border border-slate-300 hover:bg-slate-50"
-                >
+              <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
+                <button type="button" onClick={() => setEditingTask(null)} className="btn btn-secondary">
                   বাতিল
                 </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm disabled:opacity-50"
-                >
+                <button type="submit" disabled={submitting} className="btn btn-primary">
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                  পরিবর্তন সংরক্ষণ করুন
+                  সংরক্ষণ
                 </button>
               </div>
             </form>
@@ -1420,31 +1267,22 @@ export default function AdminPlanPage() {
 
       {/* DELETE CONFIRM MODAL */}
       {deletingTaskId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl space-y-4 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600">
-              <Trash2 className="h-6 w-6" />
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-panel sm:max-w-sm">
+            <div className="card-body space-y-3 text-center">
+              <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <h3 className="card-title">টাস্ক মুছে ফেলবেন?</h3>
+              <p className="text-sm text-slate-500">এটি স্থায়ীভাবে মুছে যাবে, ফিরিয়ে আনা যাবে না।</p>
             </div>
-            <div>
-              <h3 className="text-base font-bold text-slate-900">টাস্ক মুছে ফেলতে চান?</h3>
-              <p className="text-xs text-slate-500 mt-1">
-                এই কর্মপরিকল্পনাটি ডাটাবেস থেকে স্থায়ীভাবে মুছে যাবে। এটি আর ফিরিয়ে আনা যাবে না।
-              </p>
-            </div>
-            <div className="flex items-center justify-center gap-2 pt-2">
-              <button
-                onClick={() => setDeletingTaskId(null)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 rounded-xl border border-slate-300 hover:bg-slate-50"
-              >
+            <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
+              <button onClick={() => setDeletingTaskId(null)} className="btn btn-secondary">
                 বাতিল
               </button>
-              <button
-                disabled={submitting}
-                onClick={handleDeleteTask}
-                className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm disabled:opacity-50"
-              >
+              <button disabled={submitting} onClick={handleDeleteTask} className="btn btn-danger">
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                হ্যাঁ, মুছে ফেলুন
+                মুছে ফেলুন
               </button>
             </div>
           </div>

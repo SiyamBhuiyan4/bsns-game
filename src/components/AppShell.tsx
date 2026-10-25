@@ -1,0 +1,146 @@
+'use client';
+
+import { useEffect, useState, type ReactNode } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Menu, X, type LucideIcon } from 'lucide-react';
+import LogoutButton from '@/components/LogoutButton';
+import LanguageToggle from '@/components/LanguageToggle';
+import { useLanguage } from '@/components/LanguageContext';
+
+export type NavItem = { href: string; key: string; labelBn: string; labelEn: string; icon: LucideIcon };
+export type NavGroup = { key: string; labelBn?: string; labelEn?: string; items: NavItem[] };
+
+type Props = {
+  brandBn: string;
+  brandEn: string;
+  brandIcon: LucideIcon;
+  homeHref: string;
+  roleLabel: string;
+  groups: NavGroup[];
+  session: { name: string; email: string };
+  logoutRedirect: string;
+  children: ReactNode;
+};
+
+/** Sidebar + top bar frame shared by the admin and employee panels. */
+export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeHref, roleLabel, groups, session, logoutRedirect, children }: Props) {
+  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const { t, lang } = useLanguage();
+
+  useEffect(() => setOpen(false), [pathname]);
+
+  const isActive = (href: string) => (href === homeHref ? pathname === href : pathname.startsWith(href));
+  const current = groups.flatMap((g) => g.items).find((i) => isActive(i.href));
+  const initials = session.name
+    .split(/\s+/)
+    .map((p) => p[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  const nav = (
+    <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label={lang === 'bn' ? 'মেনু' : 'Menu'}>
+      {groups.map((group) => (
+        <div key={group.key} className="mb-5 last:mb-0">
+          {group.labelBn && (
+            <div className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              {t(`admin_nav.group_${group.key}`, group.labelBn, group.labelEn ?? group.labelBn)}
+            </div>
+          )}
+          <ul className="space-y-0.5">
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.href);
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+                      active ? 'bg-brand-50 font-semibold text-brand-800' : 'font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                  >
+                    <Icon className={`h-[18px] w-[18px] shrink-0 ${active ? 'text-brand-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                    <span className="truncate">{t(item.key, item.labelBn, item.labelEn)}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </nav>
+  );
+
+  const brand = (
+    <Link href={homeHref} className="flex items-center gap-2.5 px-5 py-4">
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white shadow-sm">
+        <BrandIcon className="h-5 w-5" />
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-semibold text-slate-900">{lang === 'bn' ? brandBn : brandEn}</span>
+        <span className="block text-[11px] font-medium uppercase tracking-wider text-slate-400">{roleLabel}</span>
+      </span>
+    </Link>
+  );
+
+  const userCard = (
+    <div className="border-t border-slate-200 p-3">
+      <div className="flex items-center gap-3 rounded-lg px-2 py-2">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
+          {initials || 'A'}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-slate-900">{session.name}</span>
+          <span className="block truncate text-xs text-slate-500">{session.email}</span>
+        </span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-canvas">
+      {/* Desktop sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-slate-200 bg-white lg:flex">
+        {brand}
+        {nav}
+        {userCard}
+      </aside>
+
+      {/* Mobile drawer */}
+      {open && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
+          <div className="absolute inset-0 bg-slate-900/40" onClick={() => setOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-white shadow-xl">
+            <div className="flex items-center justify-between pr-3">
+              {brand}
+              <button type="button" className="btn-icon" onClick={() => setOpen(false)} aria-label={lang === 'bn' ? 'মেনু বন্ধ করুন' : 'Close menu'}>
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            {nav}
+            {userCard}
+          </aside>
+        </div>
+      )}
+
+      <div className="lg:pl-64">
+        {/* Top bar */}
+        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6">
+          <button type="button" className="btn-icon lg:hidden" onClick={() => setOpen(true)} aria-label={lang === 'bn' ? 'মেনু খুলুন' : 'Open menu'}>
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="min-w-0 flex-1 truncate text-sm font-medium text-slate-500">
+            {current ? t(current.key, current.labelBn, current.labelEn) : ''}
+          </div>
+          <LanguageToggle />
+          <LogoutButton redirectTo={logoutRedirect} />
+        </header>
+
+        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
+      </div>
+    </div>
+  );
+}

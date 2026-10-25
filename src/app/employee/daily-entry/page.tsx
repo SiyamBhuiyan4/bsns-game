@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import {
   Calendar,
@@ -26,6 +27,8 @@ import {
   LOCK_NOTICE,
   SAVE_SUCCESS_MESSAGE,
 } from '@/lib/daily-entry';
+import PageHeader from '@/components/ui/PageHeader';
+import EmptyState from '@/components/ui/EmptyState';
 
 interface Product {
   id: string;
@@ -379,31 +382,52 @@ export default function EmployeeDailyEntryPage() {
           <button
             type="button"
             onClick={() => toggleNoteField(metricKey)}
-            className="text-[11px] font-medium text-teal-600 hover:text-teal-800 transition flex items-center gap-1"
+            className="text-xs font-medium text-brand-700 hover:text-brand-800"
           >
-            + নোট যোগ করুন
+            + নোট · Add note
           </button>
         )}
         {isOpen && (
-          <div className="space-y-1 mt-1">
+          <div className="mt-1 space-y-1">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold text-slate-500">নোট (Note):</span>
-              <span className="text-[10px] text-slate-400">{noteVal.length}/300</span>
+              <label htmlFor={`note-${metricKey}`} className="text-[11px] font-medium text-slate-500">
+                নোট · Note
+              </label>
+              <span className="text-[11px] text-slate-400 tabular-nums">{noteVal.length}/300</span>
             </div>
             <input
+              id={`note-${metricKey}`}
               type="text"
               maxLength={300}
               disabled={!canEdit}
               value={noteVal}
               onChange={(e) => setNote(metricKey, e.target.value)}
-              placeholder="এই মেট্রিকের বিস্তারিত নোট লিখুন..."
-              className="w-full rounded border border-slate-300 px-2 py-1 text-xs text-slate-800 focus:border-teal-500 focus:outline-none disabled:bg-slate-100"
+              placeholder="বিস্তারিত লিখুন · Details"
+              className="input py-1.5 text-xs"
             />
           </div>
         )}
       </div>
     );
   };
+
+  const sectionHeader = (icon: ReactNode, title: string, subtitle: string, right?: ReactNode) => (
+    <div className="card-header">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <h2 className="card-title">{title}</h2>
+          <p className="card-subtitle">{subtitle}</p>
+        </div>
+      </div>
+      {right}
+    </div>
+  );
+
+  const warnInput = (warn: boolean) =>
+    `input tabular-nums ${warn ? 'border-amber-500 bg-amber-50/40 focus:border-amber-500 focus:ring-amber-500/20' : ''}`;
 
   // Group history by date for 7-day summary table
   const historyByDate: Record<string, Record<string, number>> = {};
@@ -417,776 +441,703 @@ export default function EmployeeDailyEntryPage() {
 
   if (isAdminForbidden) {
     return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center shadow-sm">
-        <ShieldAlert className="h-12 w-12 mx-auto text-red-600 mb-3" />
-        <h2 className="text-lg font-bold text-red-900">অ্যাডমিন প্রবেশাধিকার নিষিদ্ধ</h2>
-        <p className="text-sm text-red-700 mt-1 max-w-md mx-auto">
-          অ্যাডমিন কর্মচারী দৈনিক এন্ট্রি ফর্ম খুলতে বা জমা দিতে পারবেন না (Admin cannot open or submit employee daily entry form)।
-        </p>
-        <div className="mt-4">
-          <Link
-            href="/admin/dashboard"
-            className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 shadow"
-          >
-            অ্যাডমিন ড্যাশবোর্ডে ফিরুন
-          </Link>
-        </div>
+      <div className="card">
+        <EmptyState
+          icon={<ShieldAlert className="h-5 w-5 text-rose-600" />}
+          title="অ্যাডমিন প্রবেশাধিকার নেই · Admin access not allowed"
+          description="অ্যাডমিন কর্মচারীর দৈনিক এন্ট্রি খুলতে বা জমা দিতে পারবেন না। Admins cannot open or submit the employee daily entry."
+          action={
+            <Link href="/admin/dashboard" className="btn btn-primary">
+              অ্যাডমিন ড্যাশবোর্ড · Admin dashboard
+            </Link>
+          }
+        />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Page Title & Date Selector */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            দৈনিক পারফরম্যান্স এন্ট্রি (Daily Entry Form)
-          </h1>
-          <p className="text-sm text-slate-500">
-            আপনার আজকের বিক্রয়, লিড, বিজ্ঞাপন, B2B এবং কাজের প্রতিক্রিয়া লিপিবদ্ধ করুন
-          </p>
-        </div>
-
-        {/* Date Controls */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold shadow-sm">
-            <Calendar className="h-4 w-4 text-teal-600" />
-            <input
-              type="date"
-              max={todayDhaka || getDhakaDateString()}
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="border-none bg-transparent p-0 font-bold text-slate-800 focus:outline-none"
-            />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedDate(todayDhaka || getDhakaDateString());
-            }}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm"
-          >
-            আজ (Today)
-          </button>
-
-          {oldestAllowed && (
-            <button
-              type="button"
-              onClick={() => setSelectedDate(oldestAllowed)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm"
-            >
-              গতকাল (Yesterday)
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Lock Notice or Window Info Banner */}
-      {isLocked ? (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs font-medium text-amber-900 shadow-sm">
-          <Lock className="h-5 w-5 shrink-0 text-amber-700 mt-0.5" />
-          <div className="space-y-1">
-            <div className="font-bold text-amber-950 text-sm">
-              {LOCK_NOTICE}
+      <PageHeader
+        icon={<FileText className="h-5 w-5" />}
+        title="দৈনিক এন্ট্রি · Daily Entry"
+        subtitle="আজকের বিক্রি, লিড, বিজ্ঞাপন ও কাজের হিসাব লিখুন। Log today's sales, leads and work."
+        actions={
+          <>
+            <div className="relative">
+              <label htmlFor="de-date" className="sr-only">
+                তারিখ · Date
+              </label>
+              <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                id="de-date"
+                type="date"
+                max={todayDhaka || getDhakaDateString()}
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="input w-auto pl-9 font-medium"
+              />
             </div>
-            <p className="text-amber-800">
-              নিয়ম অনুযায়ী শুধুমাত্র আজ এবং গতকালের তথ্য সম্পাদন করা যায়। এই তারিখে সংরক্ষিত তথ্য নিচে শুধু দর্শনযোগ্য হিসেবে দেখানো হচ্ছে (Read-only View)।
+            <div className="segmented">
+              <button
+                type="button"
+                data-active={selectedDate === (todayDhaka || getDhakaDateString())}
+                onClick={() => {
+                  setSelectedDate(todayDhaka || getDhakaDateString());
+                }}
+              >
+                আজ · Today
+              </button>
+              {oldestAllowed && (
+                <button
+                  type="button"
+                  data-active={selectedDate === oldestAllowed}
+                  onClick={() => setSelectedDate(oldestAllowed)}
+                >
+                  গতকাল · Yesterday
+                </button>
+              )}
+            </div>
+          </>
+        }
+      />
+
+      {/* Lock notice or edit window */}
+      {isLocked ? (
+        <div className="alert alert-warning">
+          <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+          <div className="space-y-1">
+            <div className="font-medium">{LOCK_NOTICE}</div>
+            <p className="text-xs">
+              শুধু আজ ও গতকালের তথ্য সম্পাদন করা যায়; এই তারিখ শুধু দেখা যাবে। Only today and yesterday can be edited; this date is read-only.
             </p>
             {oldestAllowed && todayDhaka && (
-              <p className="text-[11px] font-semibold text-amber-900 bg-amber-100/70 inline-block px-2 py-0.5 rounded border border-amber-200">
-                অনুমোদিত সম্পাদন সময়সীমা (Asia/Dhaka): {oldestAllowed} থেকে {todayDhaka} পর্যন্ত
+              <p className="text-xs font-medium tabular-nums">
+                সম্পাদনযোগ্য · Editable: {oldestAllowed} – {todayDhaka}
               </p>
             )}
           </div>
         </div>
       ) : (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg bg-teal-50 px-4 py-2.5 text-xs font-semibold text-teal-900 border border-teal-200 shadow-sm">
+        <div className="alert alert-info flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <Unlock className="h-4 w-4 text-teal-600 shrink-0" />
-            <span>সম্পাদন উইন্ডো সক্রিয় (Asia/Dhaka): আপনি আজ ও গতকালের এন্ট্রি যুক্ত বা পরিবর্তন করতে পারবেন।</span>
+            <Unlock className="h-4 w-4 shrink-0" />
+            <span>আজ ও গতকালের এন্ট্রি সম্পাদন করা যাবে · Today and yesterday are editable</span>
           </div>
-          <div className="flex items-center gap-1 text-[11px] font-normal text-teal-700">
-            <CheckCircle2 className="h-3.5 w-3.5 text-teal-600" />
-            <span>টাস্ক কিউ পোস্ট সম্পন্ন: <strong className="font-bold">{postsDone}</strong> টি</span>
+          <div className="flex items-center gap-1.5 text-xs">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            <span>
+              টাস্ক কিউ পোস্ট · Queue posts: <strong className="font-semibold tabular-nums">{postsDone}</strong>
+            </span>
           </div>
         </div>
       )}
 
-      {/* Alert Messages */}
       {errorMsg && (
-        <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3.5 text-xs font-semibold text-red-800 border border-red-200">
-          <AlertTriangle className="h-4 w-4 shrink-0 text-red-600" />
+        <div className="alert alert-error">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
       {successMsg && (
-        <div className="flex items-center gap-2 rounded-lg bg-emerald-50 p-3.5 text-xs font-semibold text-emerald-800 border border-emerald-200">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+        <div className="alert alert-success">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {loading ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center text-sm text-slate-500">
-          ডাটা লোড হচ্ছে...
-        </div>
+        <div className="card p-12 text-center text-sm text-slate-500">লোড হচ্ছে... · Loading...</div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* SECTION 0: কন্টেন্ট ও গ্রুপ পোস্টিং (Posts Done) */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-3 mb-4 gap-2">
-              <div className="flex items-center gap-2">
-                <div className="rounded-lg bg-teal-50 p-2 text-teal-700">
-                  <Megaphone className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-slate-900">
-                    কন্টেন্ট ও গ্রুপ পোস্টিং (Group Posts Completed)
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    আজকের সম্পন্ন করা ফেসবুক গ্রুপ পোস্ট সংখ্যা ও নোট
-                  </p>
-                </div>
-              </div>
-              <span className="inline-flex items-center gap-1 self-start sm:self-auto rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-800 border border-teal-200">
-                <CheckCircle2 className="h-3.5 w-3.5 text-teal-600" />
-                টাস্ক কিউ থেকে স্বয়ংক্রিয় গণনা: {postsDone} টি
+          {/* Posts done */}
+          <div className="card">
+            {sectionHeader(
+              <Megaphone className="h-4 w-4" />,
+              'গ্রুপ পোস্ট · Group posts',
+              'আজকের সম্পন্ন ফেসবুক গ্রুপ পোস্ট · Facebook group posts done today',
+              <span className="badge badge-green">
+                <CheckCircle2 className="h-3 w-3" />
+                কিউ থেকে · From queue: {postsDone}
               </span>
-            </div>
-
-            <div className="max-w-md">
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                গ্রুপ পোস্ট সম্পন্ন (সংখ্যা) <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-2.5 text-xs font-bold text-slate-400">#</span>
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  disabled={!canEdit}
-                  value={postsInput}
-                  onChange={(e) => setPostsInput(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 pl-8 pr-3 py-2 text-xs font-bold text-slate-900 focus:border-teal-500 focus:outline-none disabled:bg-slate-100"
-                  placeholder="0"
-                  required
-                />
-              </div>
-              <p className="text-[11px] text-slate-500 mt-1">
-                * টাস্ক কিউতে সম্পন্ন করা পোস্ট সংখ্যা স্বয়ংক্রিয়ভাবে বসেছে। প্রয়োজনে সমন্বয় বা নোট যুক্ত করতে পারেন।
-              </p>
-              {renderNoteInput('POSTS_DONE')}
-            </div>
-          </div>
-
-          {/* SECTION 1: বিক্রি (Sales, Profit, Confirmed Orders) */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-              <div className="flex items-center gap-2">
-                <div className="rounded-lg bg-emerald-50 p-2 text-emerald-700">
-                  <DollarSign className="h-5 w-5" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold text-slate-900">
-                    ১. বিক্রি (Sales & Profit)
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    মোট বিক্রি, লাভের পরিমাণ এবং নিশ্চিত অর্ডারের সংখ্যা লিখুন
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* মোট বিক্রি */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  মোট বিক্রি (৳) <span className="text-red-500">*</span>
+            )}
+            <div className="card-body">
+              <div className="max-w-md">
+                <label htmlFor="de-posts" className="label">
+                  গ্রুপ পোস্ট সম্পন্ন · Posts done <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-xs font-bold text-slate-400">৳</span>
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">#</span>
                   <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    disabled={!canEdit}
-                    value={salesAmount}
-                    onChange={(e) => setSalesAmount(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 pl-8 pr-3 py-2 text-xs font-bold text-slate-900 focus:border-teal-500 focus:outline-none disabled:bg-slate-100"
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-                {renderNoteInput('SALES_AMOUNT')}
-              </div>
-
-              {/* লাভ */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  লাভ (৳) <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-xs font-bold text-slate-400">৳</span>
-                  <input
-                    type="number"
-                    step="any"
-                    min="0"
-                    disabled={!canEdit}
-                    value={profitAmount}
-                    onChange={(e) => setProfitAmount(e.target.value)}
-                    className={`w-full rounded-lg border pl-8 pr-3 py-2 text-xs font-bold text-slate-900 focus:outline-none disabled:bg-slate-100 ${
-                      isProfitHigherThanSales ? 'border-amber-500 bg-amber-50/40' : 'border-slate-300 focus:border-teal-500'
-                    }`}
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-                {renderNoteInput('PROFIT_AMOUNT')}
-              </div>
-
-              {/* নিশ্চিত অর্ডার */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  নিশ্চিত অর্ডার (সংখ্যা) <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-xs font-bold text-slate-400">#</span>
-                  <input
+                    id="de-posts"
                     type="number"
                     step="1"
                     min="0"
                     disabled={!canEdit}
-                    value={confirmedOrders}
-                    onChange={(e) => setConfirmedOrders(e.target.value)}
-                    className={`w-full rounded-lg border pl-8 pr-3 py-2 text-xs font-bold text-slate-900 focus:outline-none disabled:bg-slate-100 ${
-                      isConfirmedOrdersHigherThanNewLeads ? 'border-amber-500 bg-amber-50/40' : 'border-slate-300 focus:border-teal-500'
-                    }`}
+                    value={postsInput}
+                    onChange={(e) => setPostsInput(e.target.value)}
+                    className="input pl-8 tabular-nums"
                     placeholder="0"
                     required
                   />
                 </div>
-                {renderNoteInput('CONFIRMED_ORDERS')}
+                <p className="hint">টাস্ক কিউ থেকে স্বয়ংক্রিয়; প্রয়োজনে বদলান। Filled from your task queue; adjust if needed.</p>
+                {renderNoteInput('POSTS_DONE')}
               </div>
             </div>
-
-            {/* Warning Banner 1: Profit > Sales */}
-            {isProfitHigherThanSales && (
-              <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 p-2.5 text-xs font-semibold text-amber-900 border border-amber-300">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
-                <span>{WARNING_MESSAGES.PROFIT_EXCEEDS_SALES}</span>
-              </div>
-            )}
           </div>
 
-          {/* SECTION 2: পণ্যভিত্তিক বিক্রি (Product-wise Sales) */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-              <div className="flex items-center gap-2">
-                <div className="rounded-lg bg-blue-50 p-2 text-blue-700">
-                  <Package className="h-5 w-5" />
-                </div>
+          {/* 1. Sales */}
+          <div className="card">
+            {sectionHeader(
+              <DollarSign className="h-4 w-4" />,
+              '১. বিক্রি · Sales',
+              'মোট বিক্রি, লাভ ও নিশ্চিত অর্ডার · Sales, profit and confirmed orders'
+            )}
+            <div className="card-body space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
-                  <h2 className="text-sm font-bold text-slate-900">
-                    ২. পণ্যভিত্তিক বিক্রি (Product Breakdown)
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    প্রতিটি পণ্যের পরিমাণ এবং মোট বিক্রির টাকার পরিমাণ লিখুন
-                  </p>
+                  <label htmlFor="de-sales" className="label">
+                    মোট বিক্রি · Sales (৳) <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">৳</span>
+                    <input
+                      id="de-sales"
+                      type="number"
+                      step="any"
+                      min="0"
+                      disabled={!canEdit}
+                      value={salesAmount}
+                      onChange={(e) => setSalesAmount(e.target.value)}
+                      className="input pl-8 tabular-nums"
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                  {renderNoteInput('SALES_AMOUNT')}
+                </div>
+
+                <div>
+                  <label htmlFor="de-profit" className="label">
+                    লাভ · Profit (৳) <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">৳</span>
+                    <input
+                      id="de-profit"
+                      type="number"
+                      step="any"
+                      min="0"
+                      disabled={!canEdit}
+                      value={profitAmount}
+                      onChange={(e) => setProfitAmount(e.target.value)}
+                      className={`${warnInput(isProfitHigherThanSales)} pl-8`}
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                  {renderNoteInput('PROFIT_AMOUNT')}
+                </div>
+
+                <div>
+                  <label htmlFor="de-orders" className="label">
+                    নিশ্চিত অর্ডার · Confirmed orders <span className="text-rose-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">#</span>
+                    <input
+                      id="de-orders"
+                      type="number"
+                      step="1"
+                      min="0"
+                      disabled={!canEdit}
+                      value={confirmedOrders}
+                      onChange={(e) => setConfirmedOrders(e.target.value)}
+                      className={`${warnInput(isConfirmedOrdersHigherThanNewLeads)} pl-8`}
+                      placeholder="0"
+                      required
+                    />
+                  </div>
+                  {renderNoteInput('CONFIRMED_ORDERS')}
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <span className="text-xs font-medium text-slate-500">পণ্য বিক্রির মোট:</span>
-                  <span className="text-sm font-bold text-slate-900 ml-1.5">
+
+              {isProfitHigherThanSales && (
+                <div className="alert alert-warning">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{WARNING_MESSAGES.PROFIT_EXCEEDS_SALES}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 2. Product-wise sales */}
+          <div className="card">
+            {sectionHeader(
+              <Package className="h-4 w-4" />,
+              '২. পণ্যভিত্তিক বিক্রি · Products',
+              'প্রতিটি পণ্যের পরিমাণ ও টাকা · Quantity and amount per product',
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-slate-500">
+                  মোট · Total:{' '}
+                  <span className="text-sm font-semibold text-slate-900 tabular-nums">
                     {formatTaka(totalProductSalesAmount)}
                   </span>
-                </div>
+                </span>
                 {canEdit && totalProductSalesAmount > 0 && (
                   <button
                     type="button"
                     onClick={() => setSalesAmount(String(totalProductSalesAmount))}
-                    className="rounded-lg border border-teal-300 bg-teal-50 px-2.5 py-1 text-[11px] font-bold text-teal-700 hover:bg-teal-100 transition shadow-xs"
-                    title="পণ্য বিক্রির মোট টাকাকে উপরে 'মোট বিক্রি' ঘরে বসান"
+                    className="btn btn-secondary btn-sm"
+                    title="পণ্যের মোট টাকা 'মোট বিক্রি' ঘরে বসান · Copy to Sales"
                   >
-                    মোট বিক্রিতে কপি করুন
+                    বিক্রিতে কপি · Copy to sales
                   </button>
                 )}
               </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
-                <thead className="bg-slate-50 font-bold text-slate-600 uppercase tracking-wider">
-                  <tr>
-                    <th className="px-3 py-2.5">পণ্যের নাম</th>
-                    <th className="px-3 py-2.5">একক (Unit)</th>
-                    <th className="px-3 py-2.5">নির্ধারিত বিক্রয়মূল্য (৳ Selling Price)</th>
-                    <th className="px-3 py-2.5">পরিমাণ (Quantity)</th>
-                    <th className="px-3 py-2.5">মোট মূল্য (৳ Amount)</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {productSales.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-3 py-4 text-center text-slate-400">
-                        কোন সক্রিয় পণ্য পাওয়া যায়নি।
-                      </td>
-                    </tr>
-                  ) : (
-                    productSales.map((ps, idx) => (
-                      <tr key={ps.product_id} className="hover:bg-slate-50">
-                        <td className="px-3 py-2.5 font-bold text-slate-800">
-                          {ps.product_name_bn}
-                        </td>
-                        <td className="px-3 py-2.5 text-slate-500">{ps.unit}</td>
-                        <td className="px-3 py-2.5 font-semibold text-slate-700">
-                          {formatTaka(ps.selling_price)}
-                        </td>
-                        <td className="px-3 py-2.5">
-                          <input
-                            type="number"
-                            step="any"
-                            min="0"
-                            disabled={!canEdit}
-                            value={ps.quantity || ''}
-                            onChange={(e) =>
-                              handleProductChange(idx, 'quantity', parseFloat(e.target.value) || 0)
-                            }
-                            className="w-24 rounded border border-slate-300 p-1 font-bold text-slate-800 focus:border-teal-500 focus:outline-none disabled:bg-slate-100"
-                            placeholder="0"
-                          />
-                        </td>
-                        <td className="px-3 py-2.5">
-                          <div className="relative">
-                            <input
-                              type="number"
-                              step="any"
-                              min="0"
-                              disabled={!canEdit}
-                              value={ps.amount || ''}
-                              onChange={(e) =>
-                                handleProductChange(idx, 'amount', parseFloat(e.target.value) || 0)
-                              }
-                              className="w-32 rounded border border-slate-300 p-1 font-bold text-slate-800 focus:border-teal-500 focus:outline-none disabled:bg-slate-100"
-                              placeholder="0.00"
-                            />
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-3 rounded-lg bg-slate-50 p-2.5 text-[11px] text-slate-600 border border-slate-200 flex items-center justify-between">
-              <span>* <strong>স্বয়ংক্রিয় হিসাব:</strong> পরিমাণ (Quantity) লিখলে নির্ধারিত বিক্রয়মূল্য (Selling Price) দিয়ে গুণ হয়ে মোট মূল্য স্বয়ংক্রিয়ভাবে হিসাব হবে। প্রয়োজনে সমন্বয় করতে পারবেন।</span>
-            </div>
-          </div>
-
-          {/* SECTION 3: লিড ও ক্রেতা (Leads & Clients) */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
-              <div className="rounded-lg bg-teal-50 p-2 text-teal-700">
-                <Users className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">
-                  ৩. লিড ও ক্রেতা (Leads & Clients)
-                </h2>
-                <p className="text-xs text-slate-500">
-                  নতুন লিড, নতুন ক্রেতা এবং পুরোনো ক্রেতা ধরে রাখার সংখ্যা লিখুন
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* নতুন লিড */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  নতুন লিড (সংখ্যা)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  disabled={!canEdit}
-                  value={newLeads}
-                  onChange={(e) => setNewLeads(e.target.value)}
-                  className={`w-full rounded-lg border p-2 text-xs font-bold text-slate-800 focus:outline-none disabled:bg-slate-100 ${
-                    isConfirmedOrdersHigherThanNewLeads ? 'border-amber-500 bg-amber-50/40' : 'border-slate-300 focus:border-teal-500'
-                  }`}
-                  placeholder="0"
-                />
-                {renderNoteInput('NEW_LEADS')}
-              </div>
-
-              {/* নতুন ক্রেতা */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  নতুন ক্রেতা (সংখ্যা)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  disabled={!canEdit}
-                  value={newClients}
-                  onChange={(e) => setNewClients(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-xs font-bold text-slate-800 focus:border-teal-500 focus:outline-none disabled:bg-slate-100"
-                  placeholder="0"
-                />
-                {renderNoteInput('NEW_CLIENTS')}
-              </div>
-
-              {/* পুরোনো ক্রেতা ধরে রাখা */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  পুরোনো ক্রেতা ধরে রাখা (সংখ্যা)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  disabled={!canEdit}
-                  value={retentionCount}
-                  onChange={(e) => setRetentionCount(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-xs font-bold text-slate-800 focus:border-teal-500 focus:outline-none disabled:bg-slate-100"
-                  placeholder="0"
-                />
-                {renderNoteInput('RETENTION_COUNT')}
-              </div>
-            </div>
-
-            {/* Warning Banner 2: Confirmed Orders > New Leads */}
-            {isConfirmedOrdersHigherThanNewLeads && (
-              <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 p-2.5 text-xs font-semibold text-amber-900 border border-amber-300">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
-                <span>{WARNING_MESSAGES.ORDERS_EXCEED_LEADS}</span>
-              </div>
             )}
+
+            {productSales.length === 0 ? (
+              <div className="px-5 py-8 text-center text-sm text-slate-500">
+                কোনো সক্রিয় পণ্য নেই · No active products
+              </div>
+            ) : (
+              <>
+                <div className="hidden border-b border-slate-200 bg-slate-50/80 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:gap-4">
+                  <span>পণ্য · Product</span>
+                  <span>মূল্য · Price</span>
+                  <span>পরিমাণ · Qty</span>
+                  <span>মোট · Amount (৳)</span>
+                </div>
+                <ul className="divide-y divide-slate-100">
+                  {productSales.map((ps, idx) => (
+                    <li
+                      key={ps.product_id}
+                      className="grid grid-cols-2 gap-3 px-4 py-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:items-center sm:gap-4 sm:px-5"
+                    >
+                      <div className="col-span-2 flex items-baseline justify-between gap-2 sm:col-span-1 sm:block">
+                        <div className="truncate text-sm font-medium text-slate-900">{ps.product_name_bn}</div>
+                        <div className="text-xs text-slate-500">{ps.unit}</div>
+                      </div>
+                      <div className="col-span-2 text-xs text-slate-500 sm:col-span-1 sm:text-sm sm:text-slate-700 tabular-nums">
+                        <span className="sm:hidden">মূল্য · Price: </span>
+                        {formatTaka(ps.selling_price)}
+                      </div>
+                      <div>
+                        <label htmlFor={`de-qty-${ps.product_id}`} className="label sm:sr-only">
+                          পরিমাণ · Qty
+                        </label>
+                        <input
+                          id={`de-qty-${ps.product_id}`}
+                          type="number"
+                          step="any"
+                          min="0"
+                          disabled={!canEdit}
+                          value={ps.quantity || ''}
+                          onChange={(e) =>
+                            handleProductChange(idx, 'quantity', parseFloat(e.target.value) || 0)
+                          }
+                          className="input tabular-nums"
+                          placeholder="0"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor={`de-amt-${ps.product_id}`} className="label sm:sr-only">
+                          মোট · Amount (৳)
+                        </label>
+                        <input
+                          id={`de-amt-${ps.product_id}`}
+                          type="number"
+                          step="any"
+                          min="0"
+                          disabled={!canEdit}
+                          value={ps.amount || ''}
+                          onChange={(e) =>
+                            handleProductChange(idx, 'amount', parseFloat(e.target.value) || 0)
+                          }
+                          className="input tabular-nums"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <div className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
+              পরিমাণ লিখলে মূল্য × পরিমাণ স্বয়ংক্রিয় হিসাব হয়; প্রয়োজনে বদলান। Amount is auto-calculated from quantity × price; you can adjust it.
+            </div>
           </div>
 
-          {/* SECTION 4: বিজ্ঞাপন (Advertising) */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
-              <div className="rounded-lg bg-orange-50 p-2 text-orange-700">
-                <Megaphone className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">
-                  ৪. বিজ্ঞাপন (Advertising)
-                </h2>
-                <p className="text-xs text-slate-500">
-                  আজকের বিজ্ঞাপনের খরচ (৳) লিপিবদ্ধ করুন
-                </p>
-              </div>
-            </div>
+          {/* 3. Leads & clients */}
+          <div className="card">
+            {sectionHeader(
+              <Users className="h-4 w-4" />,
+              '৩. লিড ও ক্রেতা · Leads & clients',
+              'নতুন লিড, নতুন ও পুরোনো ক্রেতা · New leads, new and returning clients'
+            )}
+            <div className="card-body space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div>
+                  <label htmlFor="de-leads" className="label">
+                    নতুন লিড · New leads
+                  </label>
+                  <input
+                    id="de-leads"
+                    type="number"
+                    min="0"
+                    step="1"
+                    disabled={!canEdit}
+                    value={newLeads}
+                    onChange={(e) => setNewLeads(e.target.value)}
+                    className={warnInput(isConfirmedOrdersHigherThanNewLeads)}
+                    placeholder="0"
+                  />
+                  {renderNoteInput('NEW_LEADS')}
+                </div>
 
-            <div className="max-w-md">
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                বিজ্ঞাপনের খরচ (৳)
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-2.5 text-xs font-bold text-slate-400">৳</span>
-                <input
-                  type="number"
-                  step="any"
-                  min="0"
-                  disabled={!canEdit}
-                  value={adSpend}
-                  onChange={(e) => setAdSpend(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 pl-8 pr-3 py-2 text-xs font-bold text-slate-900 focus:border-teal-500 focus:outline-none disabled:bg-slate-100"
-                  placeholder="0.00"
-                />
+                <div>
+                  <label htmlFor="de-clients" className="label">
+                    নতুন ক্রেতা · New clients
+                  </label>
+                  <input
+                    id="de-clients"
+                    type="number"
+                    min="0"
+                    step="1"
+                    disabled={!canEdit}
+                    value={newClients}
+                    onChange={(e) => setNewClients(e.target.value)}
+                    className="input tabular-nums"
+                    placeholder="0"
+                  />
+                  {renderNoteInput('NEW_CLIENTS')}
+                </div>
+
+                <div>
+                  <label htmlFor="de-retention" className="label">
+                    পুরোনো ক্রেতা ধরে রাখা · Retained
+                  </label>
+                  <input
+                    id="de-retention"
+                    type="number"
+                    min="0"
+                    step="1"
+                    disabled={!canEdit}
+                    value={retentionCount}
+                    onChange={(e) => setRetentionCount(e.target.value)}
+                    className="input tabular-nums"
+                    placeholder="0"
+                  />
+                  {renderNoteInput('RETENTION_COUNT')}
+                </div>
               </div>
-              {renderNoteInput('AD_SPEND')}
+
+              {isConfirmedOrdersHigherThanNewLeads && (
+                <div className="alert alert-warning">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{WARNING_MESSAGES.ORDERS_EXCEED_LEADS}</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* SECTION 5: ফলোআপ (Follow-ups) */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
-              <div className="rounded-lg bg-purple-50 p-2 text-purple-700">
-                <MessageSquare className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">
-                  ৫. ফলোআপ (Follow-ups)
-                </h2>
-                <p className="text-xs text-slate-500">
-                  আজকে সম্পন্ন করা মেসেজ ও কল ফলোআপের মোট সংখ্যা
-                </p>
-              </div>
-            </div>
-
-            <div className="max-w-md">
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                ফলোআপ সম্পন্ন (সংখ্যা)
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                disabled={!canEdit}
-                value={followupsDone}
-                onChange={(e) => setFollowupsDone(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-xs font-bold text-slate-800 focus:border-teal-500 focus:outline-none disabled:bg-slate-100"
-                placeholder="0"
-              />
-              {renderNoteInput('FOLLOWUPS_DONE')}
-            </div>
-          </div>
-
-          {/* SECTION 6: B2B (B2B Orders, Inquiries, Potential Value) */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
-              <div className="rounded-lg bg-indigo-50 p-2 text-indigo-700">
-                <TrendingUp className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">
-                  ৬. B2B (পাইকার / কর্পোরেট / রেস্তোরাঁ)
-                </h2>
-                <p className="text-xs text-slate-500">
-                  B2B অর্ডার সংখ্যা, বড় B2B অনুসন্ধান এবং অনুসন্ধানের সম্ভাব্য মোট মূল্য লিখুন
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* B2B অর্ডার */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  B2B অর্ডার (সংখ্যা)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  disabled={!canEdit}
-                  value={b2bOrders}
-                  onChange={(e) => setB2bOrders(e.target.value)}
-                  className={`w-full rounded-lg border p-2 text-xs font-bold text-slate-800 focus:outline-none disabled:bg-slate-100 ${
-                    isB2bOrdersHigherThanInquiries ? 'border-amber-500 bg-amber-50/40' : 'border-slate-300 focus:border-teal-500'
-                  }`}
-                  placeholder="0"
-                />
-                {renderNoteInput('B2B_ORDERS')}
-              </div>
-
-              {/* বড় B2B অনুসন্ধান */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  বড় B2B অনুসন্ধান (সংখ্যা)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  disabled={!canEdit}
-                  value={b2bInquiries}
-                  onChange={(e) => setB2bInquiries(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-xs font-bold text-slate-800 focus:border-teal-500 focus:outline-none disabled:bg-slate-100"
-                  placeholder="0"
-                />
-                {renderNoteInput('B2B_INQUIRIES')}
-              </div>
-
-              {/* সম্ভাব্য মূল্য */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  সম্ভাব্য মূল্য (৳)
+          {/* 4 + 5. Advertising and follow-ups */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="card">
+              {sectionHeader(
+                <Megaphone className="h-4 w-4" />,
+                '৪. বিজ্ঞাপন · Advertising',
+                'আজকের বিজ্ঞাপন খরচ · Today\'s ad spend'
+              )}
+              <div className="card-body">
+                <label htmlFor="de-ad" className="label">
+                  বিজ্ঞাপনের খরচ · Ad spend (৳)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-xs font-bold text-slate-400">৳</span>
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">৳</span>
                   <input
+                    id="de-ad"
                     type="number"
                     step="any"
                     min="0"
                     disabled={!canEdit}
-                    value={b2bInquiryValue}
-                    onChange={(e) => setB2bInquiryValue(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 pl-8 pr-3 py-2 text-xs font-bold text-slate-900 focus:border-teal-500 focus:outline-none disabled:bg-slate-100"
+                    value={adSpend}
+                    onChange={(e) => setAdSpend(e.target.value)}
+                    className="input pl-8 tabular-nums"
                     placeholder="0.00"
                   />
                 </div>
-                {renderNoteInput('B2B_INQUIRY_VALUE')}
+                {renderNoteInput('AD_SPEND')}
               </div>
             </div>
 
-            {/* Warning Banner 3: B2B Orders > B2B Inquiries */}
-            {isB2bOrdersHigherThanInquiries && (
-              <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 p-2.5 text-xs font-semibold text-amber-900 border border-amber-300">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
-                <span>{WARNING_MESSAGES.B2B_ORDERS_EXCEED_INQUIRIES}</span>
+            <div className="card">
+              {sectionHeader(
+                <MessageSquare className="h-4 w-4" />,
+                '৫. ফলোআপ · Follow-ups',
+                'আজকের মেসেজ ও কল ফলোআপ · Messages and calls today'
+              )}
+              <div className="card-body">
+                <label htmlFor="de-followups" className="label">
+                  ফলোআপ সম্পন্ন · Follow-ups done
+                </label>
+                <input
+                  id="de-followups"
+                  type="number"
+                  min="0"
+                  step="1"
+                  disabled={!canEdit}
+                  value={followupsDone}
+                  onChange={(e) => setFollowupsDone(e.target.value)}
+                  className="input tabular-nums"
+                  placeholder="0"
+                />
+                {renderNoteInput('FOLLOWUPS_DONE')}
               </div>
-            )}
+            </div>
           </div>
 
-          {/* SECTION 7: টেক্সট (Reflection: Issues & Next Priorities) */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
-              <div className="rounded-lg bg-violet-50 p-2 text-violet-700">
-                <FileText className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">
-                  ৭. টেক্সট প্রতিক্রিয়া (Daily Reflection)
-                </h2>
-                <p className="text-xs text-slate-500">
-                  আজকের প্রধান সমস্যা এবং আগামী দিনের অগ্রাধিকারমূলক কাজগুলো লিখুন
-                </p>
-              </div>
-            </div>
+          {/* 6. B2B */}
+          <div className="card">
+            {sectionHeader(
+              <TrendingUp className="h-4 w-4" />,
+              '৬. B2B · পাইকার / কর্পোরেট / রেস্তোরাঁ',
+              'B2B অর্ডার, অনুসন্ধান ও সম্ভাব্য মূল্য · Orders, inquiries and potential value'
+            )}
+            <div className="card-body space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div>
+                  <label htmlFor="de-b2b-orders" className="label">
+                    B2B অর্ডার · Orders
+                  </label>
+                  <input
+                    id="de-b2b-orders"
+                    type="number"
+                    min="0"
+                    step="1"
+                    disabled={!canEdit}
+                    value={b2bOrders}
+                    onChange={(e) => setB2bOrders(e.target.value)}
+                    className={warnInput(isB2bOrdersHigherThanInquiries)}
+                    placeholder="0"
+                  />
+                  {renderNoteInput('B2B_ORDERS')}
+                </div>
 
-            <div className="space-y-4">
+                <div>
+                  <label htmlFor="de-b2b-inq" className="label">
+                    বড় B2B অনুসন্ধান · Inquiries
+                  </label>
+                  <input
+                    id="de-b2b-inq"
+                    type="number"
+                    min="0"
+                    step="1"
+                    disabled={!canEdit}
+                    value={b2bInquiries}
+                    onChange={(e) => setB2bInquiries(e.target.value)}
+                    className="input tabular-nums"
+                    placeholder="0"
+                  />
+                  {renderNoteInput('B2B_INQUIRIES')}
+                </div>
+
+                <div>
+                  <label htmlFor="de-b2b-value" className="label">
+                    সম্ভাব্য মূল্য · Potential value (৳)
+                  </label>
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">৳</span>
+                    <input
+                      id="de-b2b-value"
+                      type="number"
+                      step="any"
+                      min="0"
+                      disabled={!canEdit}
+                      value={b2bInquiryValue}
+                      onChange={(e) => setB2bInquiryValue(e.target.value)}
+                      className="input pl-8 tabular-nums"
+                      placeholder="0.00"
+                    />
+                  </div>
+                  {renderNoteInput('B2B_INQUIRY_VALUE')}
+                </div>
+              </div>
+
+              {isB2bOrdersHigherThanInquiries && (
+                <div className="alert alert-warning">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{WARNING_MESSAGES.B2B_ORDERS_EXCEED_INQUIRIES}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 7. Reflection */}
+          <div className="card">
+            {sectionHeader(
+              <FileText className="h-4 w-4" />,
+              '৭. দিনের প্রতিফলন · Reflection',
+              'প্রধান সমস্যা ও আগামী দিনের অগ্রাধিকার · Main issue and next priorities'
+            )}
+            <div className="card-body space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  প্রধান সমস্যা (সর্বোচ্চ ৫০০ অক্ষর)
+                <label htmlFor="de-issue" className="label">
+                  প্রধান সমস্যা · Main issue
                 </label>
                 <textarea
+                  id="de-issue"
                   rows={2}
                   maxLength={500}
                   disabled={!canEdit}
                   value={mainIssue}
                   onChange={(e) => setMainIssue(e.target.value)}
-                  placeholder="আজকের কাজে কি কি সমস্যা বা বাধার মুখোমুখি হয়েছেন..."
-                  className="w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-800 focus:border-teal-500 focus:outline-none disabled:bg-slate-100"
+                  placeholder="আজ কী বাধা ছিল? · What got in the way today?"
+                  className="input"
                 />
-                <span className="text-[10px] text-slate-400 block text-right">
-                  {mainIssue.length}/500 অক্ষর
+                <span className="mt-1 block text-right text-[11px] text-slate-400 tabular-nums">
+                  {mainIssue.length}/500
                 </span>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  আগামী দিনের অগ্রাধিকার (সর্বোচ্চ ৫০০ অক্ষর)
+                <label htmlFor="de-next" className="label">
+                  আগামী দিনের অগ্রাধিকার · Next priorities
                 </label>
                 <textarea
+                  id="de-next"
                   rows={2}
                   maxLength={500}
                   disabled={!canEdit}
                   value={nextPriorities}
                   onChange={(e) => setNextPriorities(e.target.value)}
-                  placeholder="আগামীকাল কোন কোন কাজগুলো অগ্রাধিকার ভিত্তিতে করবেন..."
-                  className="w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-800 focus:border-teal-500 focus:outline-none disabled:bg-slate-100"
+                  placeholder="আগামীকাল কী আগে করবেন? · What comes first tomorrow?"
+                  className="input"
                 />
-                <span className="text-[10px] text-slate-400 block text-right">
-                  {nextPriorities.length}/500 অক্ষর
+                <span className="mt-1 block text-right text-[11px] text-slate-400 tabular-nums">
+                  {nextPriorities.length}/500
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Submit Actions */}
           {canEdit && (
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="submit"
-                disabled={saving}
-                className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-7 py-2.5 text-xs font-bold text-white shadow-md hover:bg-teal-700 transition disabled:opacity-50"
-              >
+            <div className="flex justify-end">
+              <button type="submit" disabled={saving} className="btn btn-primary min-h-11 w-full px-6 sm:w-auto">
                 <Save className="h-4 w-4" />
-                {saving ? 'সংরক্ষণ করা হচ্ছে...' : 'দৈনিক তথ্য সংরক্ষণ করুন'}
+                {saving ? 'সংরক্ষণ হচ্ছে... · Saving...' : 'সংরক্ষণ করুন · Save entry'}
               </button>
             </div>
           )}
         </form>
       )}
 
-      {/* Below Form: Actions & 7-Day History Table */}
-      <div className="pt-4 border-t border-slate-200 space-y-6">
-        {/* Link Button to Daily Report */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-gradient-to-r from-teal-50 via-slate-50 to-emerald-50 p-4 rounded-xl border border-teal-200/70 shadow-sm">
-          <div>
-            <h4 className="text-xs font-bold text-slate-900">
-              দৈনিক পারফরম্যান্স রিপোর্ট পর্যবেক্ষণ
-            </h4>
-            <p className="text-[11px] text-slate-600 mt-0.5">
-              আজকের অর্জিত পয়েন্ট, স্কোরিং ও লক্ষ্যমাত্রার হিসাব বিস্তারিত দেখতে নিচের বাটনে ক্লিক করুন
-            </p>
+      {/* Daily report link */}
+      <div className="card card-body flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="card-title">দৈনিক রিপোর্ট · Daily report</h3>
+          <p className="mt-0.5 text-sm text-slate-500">আজকের পয়েন্ট, স্কোর ও লক্ষ্য দেখুন · See today&apos;s points, score and targets</p>
+        </div>
+        <Link href="/employee/performance?period=daily" className="btn btn-secondary shrink-0">
+          <span>রিপোর্ট দেখুন · View report</span>
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+
+      {/* Last 7 days */}
+      <div className="card overflow-hidden">
+        <div className="card-header">
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-slate-400" />
+            <h3 className="card-title">গত ৭ দিন · Last 7 days</h3>
           </div>
-          <Link
-            href="/employee/performance?period=daily"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-xs font-bold text-white hover:bg-teal-700 transition shadow-sm shrink-0"
-          >
-            <span>আজকের daily report দেখুন</span>
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
+          <span className="card-subtitle">
+            রেকর্ড · Days recorded: {historyDates.length}
+          </span>
         </div>
 
-        {/* 7-Day History Table */}
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/70 p-4">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-teal-600" />
-              <h3 className="text-xs font-bold text-slate-800">
-                বিগত ৭ দিনের সারসংক্ষেপ (Last 7 Days Summary)
-              </h3>
-            </div>
-            <span className="text-[11px] font-medium text-slate-500">
-              মোট রেকর্ডকৃত দিন: {historyDates.length}
-            </span>
+        {historyDates.length === 0 ? (
+          <div className="px-5 py-8 text-center text-sm text-slate-500">
+            গত ৭ দিনের কোনো রেকর্ড নেই · No records in the last 7 days
           </div>
+        ) : (
+          <>
+            {/* Phone: stacked rows */}
+            <ul className="divide-y divide-slate-100 md:hidden">
+              {historyDates.map((d) => {
+                const row = historyByDate[d] || {};
+                return (
+                  <li key={d} className="px-4 py-3">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-sm font-medium text-slate-900 tabular-nums">{d}</span>
+                      <span className="text-sm font-semibold text-brand-700 tabular-nums">
+                        {formatTaka(row.SALES_AMOUNT || 0)}
+                      </span>
+                    </div>
+                    <dl className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
+                      {[
+                        ['পোস্ট · Posts', row.POSTS_DONE ?? 0],
+                        ['লাভ · Profit', formatTaka(row.PROFIT_AMOUNT || 0)],
+                        ['অর্ডার · Orders', row.CONFIRMED_ORDERS ?? 0],
+                        ['লিড · Leads', row.NEW_LEADS ?? 0],
+                        ['ক্রেতা · Clients', row.NEW_CLIENTS ?? 0],
+                        ['বিজ্ঞাপন · Ads', formatTaka(row.AD_SPEND || 0)],
+                        ['ফলোআপ · Follow-ups', row.FOLLOWUPS_DONE ?? 0],
+                        ['B2B', row.B2B_ORDERS ?? 0],
+                      ].map(([k, v]) => (
+                        <div key={String(k)} className="min-w-0">
+                          <dt className="truncate text-slate-500">{k}</dt>
+                          <dd className="font-medium text-slate-900 tabular-nums">{v}</dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </li>
+                );
+              })}
+            </ul>
 
-          {historyDates.length === 0 ? (
-            <div className="p-8 text-center text-xs text-slate-500">
-              বিগত ৭ দিনের কোনো রেকর্ড সংরক্ষিত নেই।
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
-                <thead className="bg-slate-50 font-bold text-slate-600 uppercase tracking-wider text-[11px]">
+            {/* Desktop: table */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="table-pro">
+                <thead>
                   <tr>
-                    <th className="px-4 py-3">তারিখ</th>
-                    <th className="px-3 py-3">পোস্ট</th>
-                    <th className="px-3 py-3">মোট বিক্রি (৳)</th>
-                    <th className="px-3 py-3">লাভ (৳)</th>
-                    <th className="px-3 py-3">অর্ডার</th>
-                    <th className="px-3 py-3">লিড</th>
-                    <th className="px-3 py-3">নতুন ক্রেতা</th>
-                    <th className="px-3 py-3">বিজ্ঞাপন (৳)</th>
-                    <th className="px-3 py-3">ফলোআপ</th>
-                    <th className="px-3 py-3">B2B অর্ডার</th>
+                    <th>তারিখ · Date</th>
+                    <th>পোস্ট</th>
+                    <th>বিক্রি (৳)</th>
+                    <th>লাভ (৳)</th>
+                    <th>অর্ডার</th>
+                    <th>লিড</th>
+                    <th>নতুন ক্রেতা</th>
+                    <th>বিজ্ঞাপন (৳)</th>
+                    <th>ফলোআপ</th>
+                    <th>B2B অর্ডার</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="tabular-nums">
                   {historyDates.map((d) => {
                     const row = historyByDate[d] || {};
                     return (
-                      <tr key={d} className="hover:bg-slate-50/70 transition">
-                        <td className="px-4 py-2.5 font-bold text-slate-900">{d}</td>
-                        <td className="px-3 py-2.5 font-bold text-teal-800">
-                          {row.POSTS_DONE ?? 0}
-                        </td>
-                        <td className="px-3 py-2.5 font-semibold text-emerald-700">
-                          {formatTaka(row.SALES_AMOUNT || 0)}
-                        </td>
-                        <td className="px-3 py-2.5 font-semibold text-slate-700">
-                          {formatTaka(row.PROFIT_AMOUNT || 0)}
-                        </td>
-                        <td className="px-3 py-2.5 font-bold text-slate-900">
-                          {row.CONFIRMED_ORDERS ?? 0}
-                        </td>
-                        <td className="px-3 py-2.5 text-slate-700">{row.NEW_LEADS ?? 0}</td>
-                        <td className="px-3 py-2.5 text-slate-700">{row.NEW_CLIENTS ?? 0}</td>
-                        <td className="px-3 py-2.5 text-slate-700">
-                          {formatTaka(row.AD_SPEND || 0)}
-                        </td>
-                        <td className="px-3 py-2.5 text-slate-700">{row.FOLLOWUPS_DONE ?? 0}</td>
-                        <td className="px-3 py-2.5 font-semibold text-blue-700">
-                          {row.B2B_ORDERS ?? 0}
-                        </td>
+                      <tr key={d}>
+                        <td className="font-medium text-slate-900">{d}</td>
+                        <td>{row.POSTS_DONE ?? 0}</td>
+                        <td className="font-medium text-slate-900">{formatTaka(row.SALES_AMOUNT || 0)}</td>
+                        <td>{formatTaka(row.PROFIT_AMOUNT || 0)}</td>
+                        <td>{row.CONFIRMED_ORDERS ?? 0}</td>
+                        <td>{row.NEW_LEADS ?? 0}</td>
+                        <td>{row.NEW_CLIENTS ?? 0}</td>
+                        <td>{formatTaka(row.AD_SPEND || 0)}</td>
+                        <td>{row.FOLLOWUPS_DONE ?? 0}</td>
+                        <td>{row.B2B_ORDERS ?? 0}</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
+          </>
+        )}
       </div>
     </div>
   );

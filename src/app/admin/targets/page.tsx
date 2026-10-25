@@ -10,10 +10,13 @@ import {
   Edit2,
   AlertCircle,
   CheckCircle2,
-  Filter,
   TrendingUp,
   Info,
+  Loader2,
+  X,
 } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
+import EmptyState from '@/components/ui/EmptyState';
 import { formatTaka } from '@/lib/date';
 import {
   calculateTargetLivePreview,
@@ -70,7 +73,7 @@ const METRIC_LABELS: Record<string, { bn: string; unit: string; isCurrency: bool
   FOLLOWUPS_DONE: { bn: 'ইনবক্স ফলো-আপ', unit: 'টি', isCurrency: false },
   CONFIRMED_ORDERS: { bn: 'কনফার্মড অর্ডার', unit: 'টি', isCurrency: false },
   NEW_LEADS: { bn: 'নতুন লিড', unit: 'টি', isCurrency: false },
-  AD_SPEND: { bn: 'বিজ্ঞাপন খরচ (Ad Spend)', unit: '৳', isCurrency: true },
+  AD_SPEND: { bn: 'বিজ্ঞাপন খরচ', unit: '৳', isCurrency: true },
   B2B_INQUIRIES: { bn: 'B2B ইনকোয়ারি', unit: 'টি', isCurrency: false },
   B2B_INQUIRY_VALUE: { bn: 'B2B ইনকোয়ারি মূল্য', unit: '৳', isCurrency: true },
 };
@@ -382,233 +385,201 @@ export default function AdminTargetsPage() {
     isCurrency: false,
   };
 
+  const budgetTone =
+    budgetStatus.color === 'emerald' ? 'green' : budgetStatus.color === 'amber' ? 'amber' : 'red';
+  const budgetBar =
+    budgetStatus.color === 'emerald' ? 'bg-emerald-500' : budgetStatus.color === 'amber' ? 'bg-amber-500' : 'bg-rose-500';
+
+  const sectionOptions = sections.map((s) => (
+    <option key={s.id} value={s.id}>
+      {s.name}
+    </option>
+  ));
+
+  const modalFooter = (onCancel: () => void, submitLabel: string) => (
+    <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
+      <button type="button" onClick={onCancel} className="btn btn-secondary">
+        বাতিল · Cancel
+      </button>
+      <button type="submit" className="btn btn-primary">
+        {submitLabel}
+      </button>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            টার্গেট ও বাজেট ব্যবস্থাপনা (Targets & Budgets)
-          </h1>
-          <p className="text-sm text-slate-500">
-            সেকশন ভিত্তিক লক্ষ্যমাত্রা নির্ধারণ, বিজ্ঞাপন বাজেট ট্র্যাকিং ও বাল্ক কপি নিয়ন্ত্রণ
-          </p>
-        </div>
+      <PageHeader
+        icon={<Target className="h-5 w-5" />}
+        title="টার্গেট ও বাজেট · Targets & budgets"
+        subtitle="Section targets, ad budget tracking and bulk copy"
+        actions={
+          <>
+            <button onClick={() => setShowBudgetModal(true)} className="btn btn-secondary">
+              <DollarSign className="h-4 w-4" />
+              বাজেট · Budget
+            </button>
+            <button onClick={() => setShowCopyModal(true)} className="btn btn-secondary">
+              <Copy className="h-4 w-4" />
+              বাল্ক কপি · Bulk copy
+            </button>
+            <button
+              onClick={() => {
+                setEditingTarget(null);
+                setTargetForm({
+                  section_id: sections[0]?.id || '',
+                  metric_type: 'SALES_AMOUNT',
+                  target_value: '',
+                  period_type: 'MONTHLY',
+                  period_start: new Date().toISOString().slice(0, 7),
+                  period_end: '',
+                });
+                setShowAddModal(true);
+              }}
+              className="btn btn-primary"
+            >
+              <Plus className="h-4 w-4" />
+              নতুন টার্গেট · New target
+            </button>
+          </>
+        }
+      />
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setShowBudgetModal(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition"
-          >
-            <DollarSign className="h-4 w-4 text-emerald-600" />
-            বাজেট নির্ধারণ (Monthly & Campaign)
-          </button>
-          <button
-            onClick={() => setShowCopyModal(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 transition"
-          >
-            <Copy className="h-4 w-4 text-blue-600" />
-            বাল্ক কপি (Bulk Copy)
-          </button>
-          <button
-            onClick={() => {
-              setEditingTarget(null);
-              setTargetForm({
-                section_id: sections[0]?.id || '',
-                metric_type: 'SALES_AMOUNT',
-                target_value: '',
-                period_type: 'MONTHLY',
-                period_start: new Date().toISOString().slice(0, 7),
-                period_end: '',
-              });
-              setShowAddModal(true);
-            }}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 transition"
-          >
-            <Plus className="h-4 w-4" />
-            নতুন টার্গেট সেট করুন
-          </button>
-        </div>
-      </div>
-
-      {/* Alerts */}
       {errorMsg && (
-        <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3.5 text-xs font-semibold text-red-800 border border-red-200">
-          <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+        <div className="alert alert-error">
+          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
       {successMsg && (
-        <div className="flex items-center gap-2 rounded-lg bg-emerald-50 p-3.5 text-xs font-semibold text-emerald-800 border border-emerald-200">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+        <div className="alert alert-success">
+          <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
-      {/* Monthly Budget Card with dynamic progress: Green <80%, Yellow 80-100%, Red >100% */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Monthly Budget Card: Green <80%, Amber 80-100%, Red >100% */}
+      <div className="card">
+        <div className="card-header">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
-              <DollarSign className="h-4 w-4 text-emerald-600" />
-              চলতি মাসের মার্কেটিং বাজেট ({new Date().toISOString().slice(0, 7)})
-            </div>
-            <div className="mt-1 flex items-baseline gap-3">
-              <span className="text-2xl font-black text-slate-900">
-                {monthlyBudget ? formatTaka(monthlyBudget.amount) : '৳ ০ (সেট করা হয়নি)'}
-              </span>
-              <span className="text-xs text-slate-500">
-                (মোট খরচ: <span className="font-semibold text-slate-800">{formatTaka(actualSpend)}</span>)
-              </span>
-            </div>
+            <h2 className="card-title">মাসিক বিজ্ঞাপন বাজেট · Monthly ad budget</h2>
+            <p className="card-subtitle">{new Date().toISOString().slice(0, 7)} · not a scoring metric</p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-                budgetStatus.color === 'emerald'
-                  ? 'bg-emerald-100 text-emerald-800'
-                  : budgetStatus.color === 'amber'
-                  ? 'bg-amber-100 text-amber-800'
-                  : 'bg-red-100 text-red-800'
-              }`}
-            >
-              <span
-                className={`h-2 w-2 rounded-full ${
-                  budgetStatus.color === 'emerald'
-                    ? 'bg-emerald-500'
-                    : budgetStatus.color === 'amber'
-                    ? 'bg-amber-500'
-                    : 'bg-red-500'
-                }`}
-              ></span>
-              {budgetStatus.statusLabelBn} ({budgetStatus.spendPercentage}%)
-            </span>
-          </div>
+          <span className={`badge badge-${budgetTone}`}>
+            {budgetStatus.statusLabelBn} · {budgetStatus.spendPercentage}%
+          </span>
         </div>
-
-        {/* Dynamic Progress Bar */}
-        <div>
-          <div className="flex justify-between text-xs text-slate-500 mb-1">
-            <span className="flex items-center gap-1">
-              <span>বিজ্ঞাপন বাজেট খরচ ট্র্যাকিং</span>
-              <span className="text-[11px] text-slate-400">
-                (বাজেট স্কোরিং মেট্রিক নয় — spend বাড়লে স্কোর বা পয়েন্ট কমে না)
-              </span>
-            </span>
-            <span className="font-semibold text-slate-700">
-              {budgetStatus.spendPercentage}%
-            </span>
-          </div>
-          <div className="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-300 ${
-                budgetStatus.color === 'emerald'
-                  ? 'bg-emerald-500'
-                  : budgetStatus.color === 'amber'
-                  ? 'bg-amber-500'
-                  : 'bg-red-500'
-              }`}
-              style={{
-                width: `${monthlyBudget ? Math.min(100, Math.max(3, budgetStatus.spendPercentage)) : 0}%`,
-              }}
-            ></div>
-          </div>
-          <div className="mt-2 flex items-center justify-between text-[11px] text-slate-400">
-            <span>নিরাপদ সীমা: &lt; ৮০%</span>
-            <span>সতর্কবার্তা: ৮০% - ১০০%</span>
-            <span>সীমা অতিক্রান্ত: &gt; ১০০%</span>
-          </div>
-        </div>
-
-        {/* Campaign Budgets Overview if any */}
-        {campaignBudgets.length > 0 && (
-          <div className="pt-3 border-t border-slate-100">
-            <div className="text-xs font-bold text-slate-700 mb-2">ক্যাম্পেইন বাজেট ওভারভিউ:</div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-              {campaignBudgets.map((cb) => (
-                <div key={cb.id} className="rounded-lg bg-slate-50 p-2.5 border border-slate-200 text-xs">
-                  <div className="font-semibold text-slate-800 truncate">
-                    {cb.campaign?.name || 'ক্যাম্পেইন'}
-                  </div>
-                  <div className="text-slate-500 text-[11px] flex justify-between mt-1">
-                    <span>বাজেট: {formatTaka(cb.amount)}</span>
-                    <span className="text-emerald-600 font-medium">{cb.campaign?.channel}</span>
-                  </div>
-                </div>
-              ))}
+        <div className="card-body space-y-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+            <div>
+              <p className="text-xs text-slate-500">বাজেট · Budget</p>
+              <p className="text-2xl font-semibold tracking-tight tabular-nums text-slate-900">
+                {monthlyBudget ? formatTaka(monthlyBudget.amount) : '—'}
+              </p>
+              {!monthlyBudget && <p className="hint">সেট করা হয়নি · Not set</p>}
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-slate-500">খরচ · Spent</p>
+              <p className="text-lg font-semibold tabular-nums text-slate-900">{formatTaka(actualSpend)}</p>
             </div>
           </div>
-        )}
+
+          <div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${budgetBar}`}
+                style={{
+                  width: `${monthlyBudget ? Math.min(100, Math.max(3, budgetStatus.spendPercentage)) : 0}%`,
+                }}
+              />
+            </div>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+              <span>&lt; 80% OK</span>
+              <span>80–100% Warning</span>
+              <span>&gt; 100% Over</span>
+            </div>
+          </div>
+
+          {campaignBudgets.length > 0 && (
+            <div className="border-t border-slate-100 pt-4">
+              <p className="mb-2 text-xs font-medium text-slate-700">ক্যাম্পেইন বাজেট · Campaign budgets</p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {campaignBudgets.map((cb) => (
+                  <div key={cb.id} className="rounded-lg border border-slate-200 p-3 text-xs">
+                    <div className="truncate font-medium text-slate-900">{cb.campaign?.name || 'ক্যাম্পেইন'}</div>
+                    <div className="mt-1 flex items-center justify-between gap-2 text-slate-500">
+                      <span className="tabular-nums">{formatTaka(cb.amount)}</span>
+                      {cb.campaign?.channel && <span className="badge badge-gray">{cb.campaign.channel}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Targets Table & Filter */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 bg-slate-50/50 p-4">
-          <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-            <Target className="h-4 w-4 text-emerald-600" />
-            সেকশন টার্গেট তালিকা ({filteredTargets.length})
+      <div className="card">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">সেকশন টার্গেট · Section targets</h2>
+            <p className="card-subtitle">{filteredTargets.length} shown</p>
           </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1.5 text-xs text-slate-600">
-              <Filter className="h-3.5 w-3.5" />
-              <span>সেকশন:</span>
-              <select
-                value={filterSection}
-                onChange={(e) => setFilterSection(e.target.value)}
-                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 shadow-sm focus:border-emerald-500 focus:outline-none"
-              >
-                <option value="ALL">সব সেকশন</option>
-                {sections.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center gap-1.5 text-xs text-slate-600">
-              <span>মেয়াদ:</span>
-              <select
-                value={filterPeriod}
-                onChange={(e) => setFilterPeriod(e.target.value)}
-                className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 shadow-sm focus:border-emerald-500 focus:outline-none"
-              >
-                <option value="ALL">সব মেয়াদ</option>
-                <option value="MONTHLY">মাসিক (Monthly)</option>
-                <option value="DAILY">দৈনিক (Daily)</option>
-                <option value="CUSTOM">কাস্টম (Custom)</option>
-              </select>
-            </div>
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+            <label htmlFor="filter_section" className="sr-only">Section</label>
+            <select
+              id="filter_section"
+              value={filterSection}
+              onChange={(e) => setFilterSection(e.target.value)}
+              className="input w-full py-1.5 text-xs sm:w-auto"
+            >
+              <option value="ALL">সব সেকশন · All sections</option>
+              {sectionOptions}
+            </select>
+            <label htmlFor="filter_period" className="sr-only">Period</label>
+            <select
+              id="filter_period"
+              value={filterPeriod}
+              onChange={(e) => setFilterPeriod(e.target.value)}
+              className="input w-full py-1.5 text-xs sm:w-auto"
+            >
+              <option value="ALL">সব মেয়াদ · All periods</option>
+              <option value="MONTHLY">মাসিক · Monthly</option>
+              <option value="DAILY">দৈনিক · Daily</option>
+              <option value="CUSTOM">কাস্টম · Custom</option>
+            </select>
           </div>
         </div>
 
-        {loading ? (
-          <div className="p-8 text-center text-sm text-slate-500">ডাটা লোড হচ্ছে...</div>
-        ) : filteredTargets.length === 0 ? (
-          <div className="p-8 text-center">
-            <Target className="mx-auto h-8 w-8 text-slate-300 mb-2" />
-            <p className="text-sm font-semibold text-slate-700">কোনো টার্গেট সেট করা নেই</p>
-            <p className="text-xs text-slate-500 mt-1">
-              উপরে &quot;নতুন টার্গেট সেট করুন&quot; বোতাম ক্লিক করে সেকশনের টার্গেট নির্ধারণ করুন।
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
-              <thead className="bg-slate-50 font-bold text-slate-600 uppercase tracking-wider">
+        <div className="overflow-x-auto">
+          {loading ? (
+            <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              লোড হচ্ছে · Loading…
+            </div>
+          ) : filteredTargets.length === 0 ? (
+            <EmptyState
+              icon={<Target className="h-5 w-5" />}
+              title="কোনো টার্গেট নেই · No targets yet"
+              description="Use “New target” to set a goal for a section."
+            />
+          ) : (
+            <table className="table-pro">
+              <thead>
                 <tr>
-                  <th className="px-4 py-3">সেকশন</th>
-                  <th className="px-4 py-3">মেট্রিক টাইপ</th>
-                  <th className="px-4 py-3">লক্ষ্যমাত্রা (Target Value)</th>
-                  <th className="px-4 py-3">মেয়াদ (Period)</th>
-                  <th className="px-4 py-3">সময়সীমা</th>
-                  <th className="px-4 py-3">সেট করেছেন</th>
-                  <th className="px-4 py-3 text-right">অ্যাকশন</th>
+                  <th>সেকশন · Section</th>
+                  <th>মেট্রিক · Metric</th>
+                  <th className="text-right">লক্ষ্য · Target</th>
+                  <th>মেয়াদ · Period</th>
+                  <th>সময় · Dates</th>
+                  <th>সেট করেছেন · By</th>
+                  <th className="text-right">
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody>
                 {filteredTargets.map((t) => {
                   const metricInfo = METRIC_LABELS[t.metric_type] || {
                     bn: t.metric_type,
@@ -617,45 +588,41 @@ export default function AdminTargetsPage() {
                   };
 
                   return (
-                    <tr key={t.id} className="hover:bg-slate-50/70 transition">
-                      <td className="px-4 py-3 font-semibold text-slate-900">
-                        {t.section.name}
+                    <tr key={t.id}>
+                      <td className="whitespace-nowrap font-medium text-slate-900">{t.section.name}</td>
+                      <td className="min-w-[150px]">
+                        <div className="text-slate-900">{metricInfo.bn}</div>
+                        <div className="text-[11px] text-slate-400">{t.metric_type}</div>
                       </td>
-                      <td className="px-4 py-3 text-slate-700">
-                        <span className="font-medium text-slate-800">{metricInfo.bn}</span>
-                        <span className="block text-[10px] text-slate-400">{t.metric_type}</span>
-                      </td>
-                      <td className="px-4 py-3 font-bold text-slate-900">
+                      <td className="whitespace-nowrap text-right font-medium tabular-nums text-slate-900">
                         {metricInfo.isCurrency
                           ? formatTaka(t.target_value)
                           : `${Number(t.target_value).toLocaleString()} ${metricInfo.unit}`}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="whitespace-nowrap">
                         <span
-                          className={`inline-block rounded px-2 py-0.5 text-[11px] font-semibold ${
+                          className={`badge ${
                             t.period_type === 'MONTHLY'
-                              ? 'bg-blue-50 text-blue-700'
+                              ? 'badge-blue'
                               : t.period_type === 'DAILY'
-                              ? 'bg-amber-50 text-amber-700'
-                              : 'bg-purple-50 text-purple-700'
+                              ? 'badge-amber'
+                              : 'badge-violet'
                           }`}
                         >
-                          {t.period_type}
+                          {t.period_type === 'MONTHLY' ? 'Monthly' : t.period_type === 'DAILY' ? 'Daily' : t.period_type === 'CUSTOM' ? 'Custom' : t.period_type}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-500">
-                        {t.period_type === 'DAILY' && 'প্রতিদিন'}
+                      <td className="whitespace-nowrap text-slate-500 tabular-nums">
+                        {t.period_type === 'DAILY' && 'প্রতিদিন · Every day'}
                         {t.period_type === 'MONTHLY' &&
                           t.period_start &&
                           new Date(t.period_start).toISOString().slice(0, 7)}
                         {t.period_type === 'CUSTOM' &&
-                          `${t.period_start?.slice(0, 10)} হতে ${t.period_end?.slice(0, 10)}`}
+                          `${t.period_start?.slice(0, 10)} – ${t.period_end?.slice(0, 10)}`}
                       </td>
-                      <td className="px-4 py-3 text-slate-500">
-                        {t.creator.name}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="whitespace-nowrap text-slate-500">{t.creator.name}</td>
+                      <td className="whitespace-nowrap text-right">
+                        <div className="inline-flex items-center gap-1">
                           <button
                             onClick={() => {
                               setEditingTarget(t);
@@ -673,17 +640,19 @@ export default function AdminTargetsPage() {
                               });
                               setShowAddModal(true);
                             }}
-                            className="p-1 rounded text-slate-500 hover:text-emerald-700 hover:bg-slate-100"
-                            title="সম্পাদনা"
+                            className="btn-icon"
+                            aria-label="Edit target"
+                            title="সম্পাদনা · Edit"
                           >
-                            <Edit2 className="h-3.5 w-3.5" />
+                            <Edit2 className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteTarget(t.id)}
-                            className="p-1 rounded text-slate-400 hover:text-red-700 hover:bg-red-50"
-                            title="মুছে ফেলুন"
+                            className="btn-icon hover:bg-rose-50 hover:text-rose-600"
+                            aria-label="Delete target"
+                            title="মুছুন · Delete"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       </td>
@@ -692,169 +661,169 @@ export default function AdminTargetsPage() {
                 })}
               </tbody>
             </table>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Add / Edit Target Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-bold text-slate-900 mb-1">
-              {editingTarget ? 'টার্গেট সম্পাদনা করুন' : 'নতুন টার্গেট নির্ধারণ করুন'}
-            </h2>
-            <p className="text-xs text-slate-500 mb-4">
-              সেকশন ও মেট্রিক নির্বাচন করে লক্ষ্যমাত্রা নির্ধারণ করুন।
-            </p>
+        <div className="modal-backdrop">
+          <div className="modal-panel">
+            <div className="card-header">
+              <h2 className="card-title">
+                {editingTarget ? 'টার্গেট সম্পাদনা · Edit target' : 'নতুন টার্গেট · New target'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddModal(false);
+                  setEditingTarget(null);
+                }}
+                className="btn-icon"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
-            {/* Overlap Warning Alert */}
-            {overlappingTarget && (
-              <div className="mb-4 flex items-start gap-2 rounded-lg bg-amber-50 p-3 text-xs font-medium text-amber-800 border border-amber-200">
-                <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+            <form onSubmit={handleCreateOrUpdateTarget}>
+              <div className="card-body space-y-4">
+                {overlappingTarget && (
+                  <div className="alert alert-warning">
+                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <div className="text-xs">
+                      <p className="font-medium">ওভারল্যাপ · Overlap</p>
+                      <p className="mt-0.5">
+                        A <span className="font-medium">{overlappingTarget.period_type}</span> target already exists
+                        for this section and metric. Priority: CUSTOM &gt; MONTHLY &gt; DAILY.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div>
-                  <div className="font-bold text-amber-900">ওভারল্যাপ সতর্কতা (Overlap Warning)</div>
+                  <label className="label" htmlFor="t_section">সেকশন · Section</label>
+                  <select
+                    id="t_section"
+                    disabled={!!editingTarget}
+                    value={targetForm.section_id}
+                    onChange={(e) => setTargetForm({ ...targetForm, section_id: e.target.value })}
+                    className="input"
+                    required
+                  >
+                    {sectionOptions}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="label" htmlFor="t_metric">মেট্রিক · Metric</label>
+                  <select
+                    id="t_metric"
+                    disabled={!!editingTarget}
+                    value={targetForm.metric_type}
+                    onChange={(e) => setTargetForm({ ...targetForm, metric_type: e.target.value })}
+                    className="input"
+                  >
+                    {Object.entries(METRIC_LABELS).map(([k, v]) => (
+                      <option key={k} value={k}>
+                        {v.bn} · {k}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    এই সেকশন ও মেট্রিকের জন্য ইতিমধ্যে একটি{' '}
-                    <span className="font-semibold">{overlappingTarget.period_type}</span> টার্গেট বিদ্যমান।
-                    নির্দিষ্টতার নিয়ম অনুসারে (CUSTOM &gt; MONTHLY &gt; DAILY) অগ্রাধিকার নির্ধারিত হবে।
+                    <label className="label" htmlFor="t_value">লক্ষ্য · Target value</label>
+                    <input
+                      id="t_value"
+                      type="number"
+                      step="any"
+                      value={targetForm.target_value}
+                      onChange={(e) => setTargetForm({ ...targetForm, target_value: e.target.value })}
+                      placeholder="50000"
+                      className="input tabular-nums"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="label" htmlFor="t_period">মেয়াদ · Period</label>
+                    <select
+                      id="t_period"
+                      disabled={!!editingTarget}
+                      value={targetForm.period_type}
+                      onChange={(e) => setTargetForm({ ...targetForm, period_type: e.target.value })}
+                      className="input"
+                    >
+                      <option value="MONTHLY">মাসিক · Monthly</option>
+                      <option value="DAILY">দৈনিক · Daily</option>
+                      <option value="CUSTOM">কাস্টম · Custom range</option>
+                    </select>
                   </div>
                 </div>
-              </div>
-            )}
 
-            <form onSubmit={handleCreateOrUpdateTarget} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">গ্রুপ সেকশন</label>
-                <select
-                  disabled={!!editingTarget}
-                  value={targetForm.section_id}
-                  onChange={(e) => setTargetForm({ ...targetForm, section_id: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-slate-800 focus:border-emerald-500 focus:outline-none"
-                  required
-                >
-                  {sections.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">মেট্রিক টাইপ</label>
-                <select
-                  disabled={!!editingTarget}
-                  value={targetForm.metric_type}
-                  onChange={(e) => setTargetForm({ ...targetForm, metric_type: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-slate-800 focus:border-emerald-500 focus:outline-none"
-                >
-                  {Object.entries(METRIC_LABELS).map(([k, v]) => (
-                    <option key={k} value={k}>
-                      {v.bn} ({k})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">লক্ষ্যমাত্রা মান (Target Value)</label>
-                <input
-                  type="number"
-                  step="any"
-                  value={targetForm.target_value}
-                  onChange={(e) => setTargetForm({ ...targetForm, target_value: e.target.value })}
-                  placeholder="যেমন: 50000 বা 100"
-                  className="w-full rounded-lg border border-slate-300 p-2 text-slate-800 focus:border-emerald-500 focus:outline-none"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">মেয়াদের ধরন (Period Type)</label>
-                <select
-                  disabled={!!editingTarget}
-                  value={targetForm.period_type}
-                  onChange={(e) => setTargetForm({ ...targetForm, period_type: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-slate-800 focus:border-emerald-500 focus:outline-none"
-                >
-                  <option value="MONTHLY">মাসিক (Monthly)</option>
-                  <option value="DAILY">দৈনিক (Daily)</option>
-                  <option value="CUSTOM">কাস্টম নির্দিষ্ট তারিখ রেঞ্জ (Custom)</option>
-                </select>
-              </div>
-
-              {targetForm.period_type === 'MONTHLY' && (
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">মাস (YYYY-MM)</label>
-                  <input
-                    type="month"
-                    value={targetForm.period_start}
-                    onChange={(e) => setTargetForm({ ...targetForm, period_start: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 p-2 text-slate-800 focus:border-emerald-500 focus:outline-none"
-                    required
-                  />
-                </div>
-              )}
-
-              {targetForm.period_type === 'CUSTOM' && (
-                <div className="grid grid-cols-2 gap-2">
+                {targetForm.period_type === 'MONTHLY' && (
                   <div>
-                    <label className="block font-semibold text-slate-700 mb-1">শুরুর তারিখ</label>
+                    <label className="label" htmlFor="t_month">মাস · Month</label>
                     <input
-                      type="date"
+                      id="t_month"
+                      type="month"
                       value={targetForm.period_start}
                       onChange={(e) => setTargetForm({ ...targetForm, period_start: e.target.value })}
-                      className="w-full rounded-lg border border-slate-300 p-2 text-slate-800 focus:border-emerald-500 focus:outline-none"
+                      className="input"
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">শেষের তারিখ</label>
-                    <input
-                      type="date"
-                      value={targetForm.period_end}
-                      onChange={(e) => setTargetForm({ ...targetForm, period_end: e.target.value })}
-                      className="w-full rounded-lg border border-slate-300 p-2 text-slate-800 focus:border-emerald-500 focus:outline-none"
-                      required
-                    />
+                )}
+
+                {targetForm.period_type === 'CUSTOM' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="label" htmlFor="t_start">শুরু · Start</label>
+                      <input
+                        id="t_start"
+                        type="date"
+                        value={targetForm.period_start}
+                        onChange={(e) => setTargetForm({ ...targetForm, period_start: e.target.value })}
+                        className="input"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="label" htmlFor="t_end">শেষ · End</label>
+                      <input
+                        id="t_end"
+                        type="date"
+                        value={targetForm.period_end}
+                        onChange={(e) => setTargetForm({ ...targetForm, period_end: e.target.value })}
+                        className="input"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Live Preview: "প্রতিদিন X, মোট Y" */}
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    প্রিভিউ · Preview
+                  </div>
+                  <div className="mt-1 text-sm font-semibold text-slate-900">
+                    {livePreview.previewText}
+                    {selectedMetric.isCurrency ? ' ৳' : ` ${selectedMetric.unit}`}
+                  </div>
+                  <div className="mt-0.5 text-xs text-slate-500">
+                    {livePreview.days} দিন · daily avg {livePreview.dailyRate}
+                    {selectedMetric.isCurrency ? ' ৳' : ` ${selectedMetric.unit}`}
                   </div>
                 </div>
-              )}
-
-              {/* Live Preview Display: "প্রতিদিন X, মোট Y" */}
-              <div className="rounded-lg bg-emerald-50 p-3 border border-emerald-200">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900">
-                  <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
-                  <span>লাইভ ক্যালকুলেশন প্রিভিউ:</span>
-                </div>
-                <div className="mt-1 text-sm font-black text-emerald-800">
-                  {livePreview.previewText}
-                  {selectedMetric.isCurrency ? ' ৳' : ` ${selectedMetric.unit}`}
-                </div>
-                <div className="text-[11px] text-emerald-600 mt-0.5">
-                  ({livePreview.days} দিনের হিসাব, দৈনিক গড়: {livePreview.dailyRate}
-                  {selectedMetric.isCurrency ? ' ৳' : ` ${selectedMetric.unit}`})
-                </div>
               </div>
 
-              <div className="mt-6 flex justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setEditingTarget(null);
-                  }}
-                  className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                >
-                  বাতিল
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
-                >
-                  সংরক্ষণ করুন
-                </button>
-              </div>
+              {modalFooter(() => {
+                setShowAddModal(false);
+                setEditingTarget(null);
+              }, 'সংরক্ষণ · Save')}
             </form>
           </div>
         </div>
@@ -862,89 +831,82 @@ export default function AdminTargetsPage() {
 
       {/* Budget Modal supporting MONTHLY_TOTAL and CAMPAIGN scopes */}
       {showBudgetModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-bold text-slate-900 mb-1">বিজ্ঞাপন ও মার্কেটিং বাজেট নির্ধারণ</h2>
-            <p className="text-xs text-slate-500 mb-4">
-              মাসিক মোট বাজেট অথবা নির্দিষ্ট ক্যাম্পেইনের বাজেট লিমিট নির্ধারণ করুন।
-            </p>
+        <div className="modal-backdrop">
+          <div className="modal-panel">
+            <div className="card-header">
+              <h2 className="card-title">বাজেট নির্ধারণ · Set budget</h2>
+              <button type="button" onClick={() => setShowBudgetModal(false)} className="btn-icon" aria-label="Close">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
-            <form onSubmit={handleSaveBudget} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">বাজেট স্কোপ (Scope)</label>
-                <select
-                  value={budgetForm.scope}
-                  onChange={(e) => setBudgetForm({ ...budgetForm, scope: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-slate-800 focus:border-emerald-500 focus:outline-none"
-                >
-                  <option value="MONTHLY_TOTAL">মাসিক মোট বাজেট (Monthly Total)</option>
-                  <option value="CAMPAIGN">ক্যাম্পেইন বাজেট (Campaign)</option>
-                </select>
-              </div>
-
-              {budgetForm.scope === 'MONTHLY_TOTAL' ? (
+            <form onSubmit={handleSaveBudget}>
+              <div className="card-body space-y-4">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">মাস (Month)</label>
-                  <input
-                    type="month"
-                    value={budgetForm.month}
-                    onChange={(e) => setBudgetForm({ ...budgetForm, month: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 p-2 text-slate-800 focus:border-emerald-500 focus:outline-none"
-                    required
-                  />
-                </div>
-              ) : (
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">ক্যাম্পেইন নির্বাচন করুন</label>
+                  <label className="label" htmlFor="b_scope">ধরন · Scope</label>
                   <select
-                    value={budgetForm.campaign_id}
-                    onChange={(e) => setBudgetForm({ ...budgetForm, campaign_id: e.target.value })}
-                    className="w-full rounded-lg border border-slate-300 p-2 text-slate-800 focus:border-emerald-500 focus:outline-none"
-                    required
+                    id="b_scope"
+                    value={budgetForm.scope}
+                    onChange={(e) => setBudgetForm({ ...budgetForm, scope: e.target.value })}
+                    className="input"
                   >
-                    <option value="">ক্যাম্পেইন বেছে নিন</option>
-                    {campaigns.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} ({c.channel})
-                      </option>
-                    ))}
+                    <option value="MONTHLY_TOTAL">মাসিক মোট · Monthly total</option>
+                    <option value="CAMPAIGN">ক্যাম্পেইন · Campaign</option>
                   </select>
                 </div>
-              )}
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">বাজেট পরিমাণ (৳)</label>
-                <input
-                  type="number"
-                  step="any"
-                  value={budgetForm.amount}
-                  onChange={(e) => setBudgetForm({ ...budgetForm, amount: e.target.value })}
-                  placeholder="যেমন: 50000"
-                  className="w-full rounded-lg border border-slate-300 p-2 text-slate-800 focus:border-emerald-500 focus:outline-none"
-                  required
-                />
+                {budgetForm.scope === 'MONTHLY_TOTAL' ? (
+                  <div>
+                    <label className="label" htmlFor="b_month">মাস · Month</label>
+                    <input
+                      id="b_month"
+                      type="month"
+                      value={budgetForm.month}
+                      onChange={(e) => setBudgetForm({ ...budgetForm, month: e.target.value })}
+                      className="input"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="label" htmlFor="b_campaign">ক্যাম্পেইন · Campaign</label>
+                    <select
+                      id="b_campaign"
+                      value={budgetForm.campaign_id}
+                      onChange={(e) => setBudgetForm({ ...budgetForm, campaign_id: e.target.value })}
+                      className="input"
+                      required
+                    >
+                      <option value="">বেছে নিন · Select</option>
+                      {campaigns.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name} ({c.channel})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div>
+                  <label className="label" htmlFor="b_amount">পরিমাণ · Amount (৳)</label>
+                  <input
+                    id="b_amount"
+                    type="number"
+                    step="any"
+                    value={budgetForm.amount}
+                    onChange={(e) => setBudgetForm({ ...budgetForm, amount: e.target.value })}
+                    placeholder="50000"
+                    className="input tabular-nums"
+                    required
+                  />
+                  <p className="hint flex items-start gap-1">
+                    <Info className="mt-0.5 h-3 w-3 shrink-0" />
+                    Ad budget does not affect employee points.
+                  </p>
+                </div>
               </div>
 
-              <div className="rounded-lg bg-slate-50 p-2.5 text-[11px] text-slate-500 flex items-start gap-1.5">
-                <Info className="h-3.5 w-3.5 text-slate-400 shrink-0 mt-0.5" />
-                <span>বিজ্ঞাপন বাজেট কোনো স্কোরিং মেট্রিক নয় — spend কম বা বেশি হলেও এমপ্লয়ী পয়েন্ট কমবে না।</span>
-              </div>
-
-              <div className="mt-6 flex justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowBudgetModal(false)}
-                  className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                >
-                  বাতিল
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700"
-                >
-                  বাজেট সংরক্ষণ
-                </button>
-              </div>
+              {modalFooter(() => setShowBudgetModal(false), 'সংরক্ষণ · Save budget')}
             </form>
           </div>
         </div>
@@ -952,133 +914,117 @@ export default function AdminTargetsPage() {
 
       {/* Bulk Copy Modal */}
       {showCopyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-bold text-slate-900 mb-1">বাল্ক কপি (Bulk Copy Targets & Budgets)</h2>
-            <p className="text-xs text-slate-500 mb-4">
-              এক মাসের টার্গেট/বাজেট পরবর্তী মাসে অথবা এক সেকশনের টার্গেট অন্য সেকশনে দ্রুত কপি করুন।
-            </p>
-
-            <form onSubmit={handleBulkCopy} className="space-y-4 text-xs">
+        <div className="modal-backdrop">
+          <div className="modal-panel">
+            <div className="card-header">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">কপি টাইপ</label>
-                <select
-                  value={copyForm.copy_type}
-                  onChange={(e) => setCopyForm({ ...copyForm, copy_type: e.target.value })}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-slate-800 focus:border-emerald-500 focus:outline-none"
-                >
-                  <option value="MONTH_TO_MONTH">মাস থেকে পরবর্তী মাস (Month to Month)</option>
-                  <option value="SECTION_TO_SECTION">সেকশন থেকে অন্য সেকশন (Section to Section)</option>
-                </select>
+                <h2 className="card-title">বাল্ক কপি · Bulk copy</h2>
+                <p className="card-subtitle">Copy targets to another month or section</p>
               </div>
+              <button type="button" onClick={() => setShowCopyModal(false)} className="btn-icon" aria-label="Close">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
-              {copyForm.copy_type === 'MONTH_TO_MONTH' ? (
-                <>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block font-semibold text-slate-700 mb-1">যে মাস থেকে (From)</label>
-                      <input
-                        type="month"
-                        value={copyForm.from_month}
-                        onChange={(e) => setCopyForm({ ...copyForm, from_month: e.target.value })}
-                        className="w-full rounded-lg border border-slate-300 p-2 text-slate-800"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block font-semibold text-slate-700 mb-1">যে মাসে কপি হবে (To)</label>
-                      <input
-                        type="month"
-                        value={copyForm.to_month}
-                        onChange={(e) => setCopyForm({ ...copyForm, to_month: e.target.value })}
-                        className="w-full rounded-lg border border-slate-300 p-2 text-slate-800"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">নির্দিষ্ট সেকশন (ঐচ্ছিক)</label>
-                    <select
-                      value={copyForm.section_id}
-                      onChange={(e) => setCopyForm({ ...copyForm, section_id: e.target.value })}
-                      className="w-full rounded-lg border border-slate-300 p-2 text-slate-800"
-                    >
-                      <option value="">সব সেকশনের টার্গেট কপি করুন</option>
-                      {sections.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-1">
-                    <input
-                      type="checkbox"
-                      id="copy_budget_cb"
-                      checked={copyForm.copy_budget}
-                      onChange={(e) => setCopyForm({ ...copyForm, copy_budget: e.target.checked })}
-                      className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                    />
-                    <label htmlFor="copy_budget_cb" className="font-medium text-slate-700">
-                      মাসিক বাজেটও একসাথে পরবর্তী মাসে কপি করুন
-                    </label>
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">উৎস সেকশন (From Section)</label>
-                    <select
-                      value={copyForm.from_section_id}
-                      onChange={(e) => setCopyForm({ ...copyForm, from_section_id: e.target.value })}
-                      className="w-full rounded-lg border border-slate-300 p-2 text-slate-800"
-                      required
-                    >
-                      <option value="">উৎস সেকশন নির্বাচন করুন</option>
-                      {sections.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">গন্তব্য সেকশন (To Section)</label>
-                    <select
-                      value={copyForm.to_section_id}
-                      onChange={(e) => setCopyForm({ ...copyForm, to_section_id: e.target.value })}
-                      className="w-full rounded-lg border border-slate-300 p-2 text-slate-800"
-                      required
-                    >
-                      <option value="">গন্তব্য সেকশন নির্বাচন করুন</option>
-                      {sections.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+            <form onSubmit={handleBulkCopy}>
+              <div className="card-body space-y-4">
+                <div>
+                  <label className="label" htmlFor="c_type">কপি ধরন · Copy type</label>
+                  <select
+                    id="c_type"
+                    value={copyForm.copy_type}
+                    onChange={(e) => setCopyForm({ ...copyForm, copy_type: e.target.value })}
+                    className="input"
+                  >
+                    <option value="MONTH_TO_MONTH">মাস → মাস · Month to month</option>
+                    <option value="SECTION_TO_SECTION">সেকশন → সেকশন · Section to section</option>
+                  </select>
                 </div>
-              )}
 
-              <div className="mt-6 flex justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowCopyModal(false)}
-                  className="rounded-lg border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                >
-                  বাতিল
-                </button>
-                <button
-                  type="submit"
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
-                >
-                  কপি সম্পন্ন করুন
-                </button>
+                {copyForm.copy_type === 'MONTH_TO_MONTH' ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="label" htmlFor="c_from">থেকে · From</label>
+                        <input
+                          id="c_from"
+                          type="month"
+                          value={copyForm.from_month}
+                          onChange={(e) => setCopyForm({ ...copyForm, from_month: e.target.value })}
+                          className="input"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="label" htmlFor="c_to">পর্যন্ত · To</label>
+                        <input
+                          id="c_to"
+                          type="month"
+                          value={copyForm.to_month}
+                          onChange={(e) => setCopyForm({ ...copyForm, to_month: e.target.value })}
+                          className="input"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="label" htmlFor="c_section">সেকশন · Section</label>
+                      <select
+                        id="c_section"
+                        value={copyForm.section_id}
+                        onChange={(e) => setCopyForm({ ...copyForm, section_id: e.target.value })}
+                        className="input"
+                      >
+                        <option value="">সব সেকশন · All sections</option>
+                        {sectionOptions}
+                      </select>
+                    </div>
+
+                    <label htmlFor="copy_budget_cb" className="flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        id="copy_budget_cb"
+                        checked={copyForm.copy_budget}
+                        onChange={(e) => setCopyForm({ ...copyForm, copy_budget: e.target.checked })}
+                        className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                      />
+                      মাসিক বাজেটও কপি · Also copy monthly budget
+                    </label>
+                  </>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="label" htmlFor="c_from_section">উৎস · From section</label>
+                      <select
+                        id="c_from_section"
+                        value={copyForm.from_section_id}
+                        onChange={(e) => setCopyForm({ ...copyForm, from_section_id: e.target.value })}
+                        className="input"
+                        required
+                      >
+                        <option value="">বেছে নিন · Select</option>
+                        {sectionOptions}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label" htmlFor="c_to_section">গন্তব্য · To section</label>
+                      <select
+                        id="c_to_section"
+                        value={copyForm.to_section_id}
+                        onChange={(e) => setCopyForm({ ...copyForm, to_section_id: e.target.value })}
+                        className="input"
+                        required
+                      >
+                        <option value="">বেছে নিন · Select</option>
+                        {sectionOptions}
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {modalFooter(() => setShowCopyModal(false), 'কপি করুন · Copy')}
             </form>
           </div>
         </div>

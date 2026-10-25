@@ -29,7 +29,7 @@ export default function LogoutButton({ redirectTo = '/login' }: { redirectTo?: s
     <button
       onClick={handleLogout}
       disabled={loading}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+      className="btn btn-ghost btn-sm hover:text-rose-700"
       title={logoutText}
     >
       {loading ? (

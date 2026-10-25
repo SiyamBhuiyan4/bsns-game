@@ -12,6 +12,7 @@ import {
   Target,
 } from 'lucide-react';
 import { formatTaka } from '@/lib/date';
+import PageHeader from '@/components/ui/PageHeader';
 import { EmployeeScoreResult, SectionScoreDetail, MetricScoreDetail } from '@/lib/scoring';
 import {
   ResponsiveContainer,
@@ -93,8 +94,8 @@ export default function EmployeePerformancePage() {
 
   if (loading && !data) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="text-sm font-semibold text-slate-500">পারফরম্যান্স ডাটা লোড হচ্ছে...</div>
+      <div className="flex h-64 items-center justify-center text-sm text-slate-500">
+        লোড হচ্ছে... · Loading...
       </div>
     );
   }
@@ -123,100 +124,79 @@ export default function EmployeePerformancePage() {
     value: ps.amount,
   }));
 
+  const tooltipStyle = {
+    backgroundColor: '#ffffff',
+    borderColor: '#e2e8f0',
+    borderRadius: '8px',
+    fontSize: '11px',
+  };
+
+  const achievementTone = (r: number) =>
+    r >= 1.0 ? 'text-brand-700' : r >= failingRatio ? 'text-slate-700' : 'text-amber-700';
+  const achievementBar = (r: number) =>
+    r >= 1.0 ? 'bg-brand-600' : r >= failingRatio ? 'bg-brand-500' : 'bg-amber-500';
+
   return (
     <div className="space-y-6">
-      {/* Header & Period Switcher */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            আমার পারফরম্যান্স রিপোর্ট (My Performance)
-          </h1>
-          <p className="text-sm text-slate-500">
-            লক্ষ্যমাত্রা অর্জন, পয়েন্ট স্কোরিং এবং অগ্রগতি পর্যবেক্ষণ
-          </p>
-        </div>
-
-        {/* Period Selector Tabs */}
-        <div className="flex rounded-lg border border-slate-300 bg-white p-1 text-xs font-semibold shadow-sm">
-          <button
-            onClick={() => setPeriod('daily')}
-            className={`rounded-md px-3.5 py-1.5 transition ${
-              period === 'daily'
-                ? 'bg-teal-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            আজ (Daily)
-          </button>
-          <button
-            onClick={() => setPeriod('weekly')}
-            className={`rounded-md px-3.5 py-1.5 transition ${
-              period === 'weekly'
-                ? 'bg-teal-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            এই সপ্তাহ (Weekly)
-          </button>
-          <button
-            onClick={() => setPeriod('monthly')}
-            className={`rounded-md px-3.5 py-1.5 transition ${
-              period === 'monthly'
-                ? 'bg-teal-600 text-white shadow-sm'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            এই মাস (Monthly)
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        icon={<TrendingUp className="h-5 w-5" />}
+        title="পারফরম্যান্স · Performance"
+        subtitle="লক্ষ্য অর্জন, স্কোর ও অগ্রগতি · Targets, score and progress"
+        actions={
+          <div className="segmented">
+            <button data-active={period === 'daily'} onClick={() => setPeriod('daily')}>
+              আজ · Day
+            </button>
+            <button data-active={period === 'weekly'} onClick={() => setPeriod('weekly')}>
+              সপ্তাহ · Week
+            </button>
+            <button data-active={period === 'monthly'} onClick={() => setPeriod('monthly')}>
+              মাস · Month
+            </button>
+          </div>
+        }
+      />
 
       {errorMsg && (
-        <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3.5 text-xs font-semibold text-red-800 border border-red-200">
-          <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+        <div className="alert alert-error">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
-      {/* Primary KPI Card: Total Score & Status */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="md:col-span-1 rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-6 shadow-sm flex flex-col justify-between">
+      {/* Total score + sections */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="card card-body flex flex-col justify-between md:col-span-1">
           <div>
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
+            <div className="flex items-center justify-between text-xs font-medium text-slate-500">
               <span className="flex items-center gap-1.5">
-                <Award className="h-4 w-4 text-teal-600" />
-                মোট অর্জিত স্কোর
+                <Award className="h-4 w-4 text-brand-600" />
+                মোট স্কোর · Total score
               </span>
-              <span className="text-[11px] text-slate-400">সর্বোচ্চ ১০০</span>
             </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-5xl font-black tracking-tight text-slate-900">
-                {totalScore}
-              </span>
-              <span className="text-slate-400 font-bold">/ ১০০</span>
+            <div className="mt-3 flex items-baseline gap-1.5">
+              <span className="text-4xl font-semibold tracking-tight text-slate-900 tabular-nums">{totalScore}</span>
+              <span className="text-sm text-slate-400">/ ১০০</span>
             </div>
           </div>
 
-          <div className="mt-6 border-t border-slate-200/80 pt-4">
+          <div className="mt-5 space-y-2 border-t border-slate-100 pt-4">
             {isFailing ? (
-              <div className="flex items-center gap-2 text-xs font-bold text-red-700 bg-red-50 border border-red-200 rounded-lg p-2.5">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>উন্নতি প্রয়োজন ({threshold}% এর নিচে)</span>
-              </div>
+              <span className="badge badge-red">
+                <AlertCircle className="h-3 w-3" />
+                উন্নতি প্রয়োজন · Below {threshold}%
+              </span>
             ) : (
-              <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-2.5">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <span>সন্তোষজনক ফলাফল ({threshold}% বা তদূর্ধ্ব)</span>
-              </div>
+              <span className="badge badge-green">
+                <CheckCircle2 className="h-3 w-3" />
+                সন্তোষজনক · {threshold}%+
+              </span>
             )}
-            <p className="text-[11px] text-slate-500 mt-2">
-              * ন্যূনতম সফলতার মানদণ্ড: {threshold}% পয়েন্ট।
-            </p>
+            <p className="text-xs text-slate-500">পাস সীমা · Pass mark: {threshold}%</p>
           </div>
         </div>
 
-        {/* 5 Component Mini-Cards */}
-        <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:col-span-2 lg:grid-cols-3">
           {Object.entries(sections).map(([key, sec]: [string, SectionScoreDetail]) => {
             const bengaliTitle = sec.bengaliName.split('(')[0].trim();
             const englishSubtitle = sec.bengaliName.includes('(')
@@ -227,276 +207,247 @@ export default function EmployeePerformancePage() {
             const isPassingSec = sec.scaledScore >= sec.weight * failingRatio;
 
             return (
-              <div
-                key={key}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col justify-between"
-              >
+              <div key={key} className="card flex flex-col justify-between p-4">
                 <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-slate-700 block truncate" title={sec.bengaliName}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-xs font-medium text-slate-700" title={sec.bengaliName}>
                       {bengaliTitle}
                     </span>
-                    <span className="text-[10px] font-semibold text-slate-400">
-                      {percentAchieved}%
-                    </span>
+                    <span className="text-[11px] text-slate-400 tabular-nums">{percentAchieved}%</span>
                   </div>
                   {englishSubtitle && (
-                    <span className="text-[10px] text-slate-400 block truncate">
-                      {englishSubtitle}
-                    </span>
+                    <span className="block truncate text-[11px] text-slate-400">{englishSubtitle}</span>
                   )}
                   <div className="mt-2 flex items-baseline justify-between">
-                    <span className="text-2xl font-extrabold text-slate-900">
-                      {sec.scaledScore}
-                    </span>
-                    <span className="text-xs font-bold text-slate-400">
-                      / {sec.weight} পয়েন্ট
-                    </span>
+                    <span className="text-2xl font-semibold text-slate-900 tabular-nums">{sec.scaledScore}</span>
+                    <span className="text-xs text-slate-400">/ {sec.weight} পয়েন্ট</span>
                   </div>
                 </div>
-
-                {/* Achievement Bar */}
-                <div className="mt-3">
-                  <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        isPassingSec ? 'bg-teal-500' : 'bg-amber-500'
-                      }`}
-                      style={{
-                        width: `${percentAchieved}%`,
-                      }}
-                    ></div>
-                  </div>
+                <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div
+                    className={`h-full rounded-full transition-all duration-300 ${
+                      isPassingSec ? 'bg-brand-600' : 'bg-amber-500'
+                    }`}
+                    style={{ width: `${percentAchieved}%` }}
+                  ></div>
                 </div>
               </div>
             );
           })}
-          <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 shadow-sm flex flex-col justify-center text-xs text-slate-500">
-            <span className="font-bold text-slate-700 mb-1">সময়কাল ও সেকশন:</span>
-            <div className="flex items-center gap-1 text-[11px] text-slate-600">
-              <Calendar className="h-3 w-3" />
-              <span>{data?.start_date} হতে {data?.end_date}</span>
+          <div className="card flex flex-col justify-center gap-1.5 bg-slate-50/70 p-4 text-xs text-slate-600">
+            <span className="font-medium text-slate-700">সময়কাল ও সেকশন · Period</span>
+            <div className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <span className="tabular-nums">
+                {data?.start_date} – {data?.end_date}
+              </span>
             </div>
-            <div className="flex items-center gap-1 text-[11px] text-slate-600 mt-1">
-              <Layers className="h-3 w-3" />
-              <span>{data?.assigned_sections?.join(', ') || 'কোনো সেকশন নেই'}</span>
+            <div className="flex items-start gap-1.5">
+              <Layers className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <span>{data?.assigned_sections?.join(', ') || 'কোনো সেকশন নেই · No sections'}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Visual Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Chart 1: 14-Day Performance Trend */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+      {/* Charts */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="card">
+          <div className="card-header">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-teal-600" />
-              <h2 className="text-sm font-bold text-slate-900">
-                গত ১৪ দিনের স্কোরের গতিধারা (14-Day Trend)
-              </h2>
+              <TrendingUp className="h-4 w-4 text-slate-400" />
+              <h2 className="card-title">গত ১৪ দিন · 14-day trend</h2>
             </div>
-            <span className="text-xs text-slate-400">স্কোর ট্রেন্ড</span>
+            <span className="card-subtitle">স্কোর · Score</span>
           </div>
+          <div className="card-body">
+            {trend.length === 0 ? (
+              <div className="flex h-64 items-center justify-center text-sm text-slate-500">কোনো ডাটা নেই · No data</div>
+            ) : (
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={trend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#64748b' }} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#64748b' }} width={32} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <ReferenceLine
+                      y={threshold}
+                      label={{ value: `${threshold}% পাস`, fill: '#e11d48', fontSize: 10 }}
+                      stroke="#e11d48"
+                      strokeDasharray="4 4"
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="score"
+                      name="দৈনিক স্কোর"
+                      stroke="#059669"
+                      strokeWidth={2}
+                      dot={{ r: 2.5, fill: '#059669' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+        </div>
 
-          {trend.length === 0 ? (
-            <div className="h-64 flex items-center justify-center text-xs text-slate-400">
-              কোনো ডাটা নেই
+        <div className="card">
+          <div className="card-header">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-slate-400" />
+              <h2 className="card-title">কম্পোনেন্ট পয়েন্ট · By component</h2>
             </div>
-          ) : (
+            <span className="card-subtitle">ওয়েটেড · Weighted</span>
+          </div>
+          <div className="card-body">
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trend}>
+                <BarChart data={componentChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#ffffff',
-                      borderColor: '#e2e8f0',
-                      borderRadius: '8px',
-                      fontSize: '11px',
-                    }}
-                  />
-                  <ReferenceLine
-                    y={threshold}
-                    label={{ value: `${threshold}% পাস সীমা`, fill: '#ef4444', fontSize: 10 }}
-                    stroke="#ef4444"
-                    strokeDasharray="4 4"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="score"
-                    name="দৈনিক স্কোর"
-                    stroke="#0d9488"
-                    strokeWidth={2.5}
-                    dot={{ r: 3, fill: '#0d9488' }}
-                  />
-                </LineChart>
+                  <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#64748b' }} interval={0} />
+                  <YAxis domain={[0, 'auto']} tick={{ fontSize: 10, fill: '#64748b' }} width={32} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="score" name="অর্জিত স্কোর" fill="#059669" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="weight" name="সর্বোচ্চ ওয়েট" fill="#e2e8f0" radius={[4, 4, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
-          )}
-        </div>
-
-        {/* Chart 2: Component Breakdown Bar Chart */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-blue-600" />
-              <h2 className="text-sm font-bold text-slate-900">
-                কম্পোনেন্ট ভিত্তিক পয়েন্ট অর্জন
-              </h2>
-            </div>
-            <span className="text-xs text-slate-400">ওয়েটেড স্কোর</span>
-          </div>
-
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={componentChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fontSize: 9 }} interval={0} />
-                <YAxis domain={[0, 'auto']} tick={{ fontSize: 10 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#ffffff',
-                    borderColor: '#e2e8f0',
-                    borderRadius: '8px',
-                    fontSize: '11px',
-                  }}
-                />
-                <Bar dataKey="score" name="অর্জিত স্কোর" fill="#0d9488" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="weight" name="সর্বোচ্চ ওয়েট" fill="#e2e8f0" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
           </div>
         </div>
       </div>
 
-      {/* Product Breakdown & Metrics Detail */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Product Sales Pie Chart */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <ShoppingBag className="h-4 w-4 text-emerald-600" />
-            <h2 className="text-sm font-bold text-slate-900">
-              পণ্য বিক্রির অনুপাত (Product Sales)
-            </h2>
+      {/* Products + metric detail */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="card">
+          <div className="card-header">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4 text-slate-400" />
+              <h2 className="card-title">পণ্য বিক্রি · Product sales</h2>
+            </div>
           </div>
-
-          {pieData.length === 0 ? (
-            <div className="h-56 flex items-center justify-center text-xs text-slate-400">
-              কোনো পণ্য বিক্রির রেকর্ড নেই
-            </div>
-          ) : (
-            <div className="h-56 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={70}
-                    dataKey="value"
-                    labelLine={false}
-                  >
-                    {pieData.map((_, index: number) => (
-                      <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(val) => formatTaka(Number(val))}
-                    contentStyle={{
-                      backgroundColor: '#ffffff',
-                      borderColor: '#e2e8f0',
-                      borderRadius: '8px',
-                      fontSize: '11px',
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: '11px' }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+          <div className="card-body">
+            {pieData.length === 0 ? (
+              <div className="flex h-56 items-center justify-center text-sm text-slate-500">
+                কোনো বিক্রি নেই · No sales yet
+              </div>
+            ) : (
+              <div className="h-56 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={pieData} cx="50%" cy="50%" outerRadius={70} dataKey="value" labelLine={false}>
+                      {pieData.map((_, index: number) => (
+                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(val) => formatTaka(Number(val))} contentStyle={tooltipStyle} />
+                    <Legend wrapperStyle={{ fontSize: '11px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Detailed Metrics Table */}
-        <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <div className="border-b border-slate-200 bg-slate-50/50 p-4">
-            <h2 className="text-sm font-bold text-slate-900">
-              টার্গেট বনাম অর্জনের বিস্তারিত বিশ্লেষণ (Target vs Actual)
-            </h2>
+        <div className="card overflow-hidden lg:col-span-2">
+          <div className="card-header">
+            <h2 className="card-title">টার্গেট বনাম অর্জন · Target vs actual</h2>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
-              <thead className="bg-slate-50 font-bold text-slate-600 uppercase tracking-wider">
+          {/* Phone: stacked rows */}
+          <ul className="divide-y divide-slate-100 md:hidden">
+            {(Object.values(metrics) as MetricScoreDetail[]).map((m) => {
+              const isCurrency = m.metricType.includes('AMOUNT');
+              return (
+                <li key={m.metricType} className="px-4 py-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-slate-900">{m.bengaliName}</div>
+                      <div className="text-[11px] text-slate-400">{m.metricType}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold text-slate-900 tabular-nums">{m.isNA ? '-' : m.scaledScore}</div>
+                      <div className="text-[11px] text-slate-400">ওয়েট {m.weight}%</div>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between gap-3 text-xs tabular-nums">
+                    <span className="text-slate-500">
+                      {isCurrency ? formatTaka(m.achieved) : Number(m.achieved).toLocaleString()}
+                      {' / '}
+                      {m.isNA ? 'N/A' : isCurrency ? formatTaka(m.target) : Number(m.target).toLocaleString()}
+                    </span>
+                    {m.isNA ? (
+                      <span className="badge badge-gray">N/A</span>
+                    ) : (
+                      <span className={`font-medium ${achievementTone(m.rawAchievement)}`}>
+                        {(m.rawAchievement * 100).toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                  {!m.isNA && (
+                    <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className={`h-full rounded-full ${achievementBar(m.rawAchievement)}`}
+                        style={{ width: `${Math.min(100, Math.round(m.rawAchievement * 100))}%` }}
+                      />
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* Desktop: table */}
+          <div className="hidden overflow-x-auto md:block">
+            <table className="table-pro">
+              <thead>
                 <tr>
-                  <th className="px-3.5 py-2.5">মেট্রিক নাম</th>
-                  <th className="px-3.5 py-2.5">টার্গেট</th>
-                  <th className="px-3.5 py-2.5">অর্জিত</th>
-                  <th className="px-3.5 py-2.5">অর্জনের হার</th>
-                  <th className="px-3.5 py-2.5">ওয়েট</th>
-                  <th className="px-3.5 py-2.5 text-right">স্কোর</th>
+                  <th>মেট্রিক · Metric</th>
+                  <th>টার্গেট</th>
+                  <th>অর্জিত</th>
+                  <th>হার · Rate</th>
+                  <th>ওয়েট</th>
+                  <th className="text-right">স্কোর</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="tabular-nums">
                 {(Object.values(metrics) as MetricScoreDetail[]).map((m) => {
                   const isCurrency = m.metricType.includes('AMOUNT');
                   return (
-                    <tr key={m.metricType} className="hover:bg-slate-50/70">
-                      <td className="px-3.5 py-2.5">
-                        <span className="font-bold text-slate-900">{m.bengaliName}</span>
-                        <span className="block text-[10px] text-slate-400">{m.metricType}</span>
+                    <tr key={m.metricType}>
+                      <td>
+                        <span className="font-medium text-slate-900">{m.bengaliName}</span>
+                        <span className="block text-[11px] text-slate-400">{m.metricType}</span>
                       </td>
-                      <td className="px-3.5 py-2.5 text-slate-600">
+                      <td>
                         {m.isNA
                           ? 'N/A (সেট নেই)'
                           : isCurrency
                           ? formatTaka(m.target)
                           : Number(m.target).toLocaleString()}
                       </td>
-                      <td className="px-3.5 py-2.5 font-semibold text-slate-900">
+                      <td className="font-medium text-slate-900">
                         {isCurrency ? formatTaka(m.achieved) : Number(m.achieved).toLocaleString()}
                       </td>
-                      <td className="px-3.5 py-2.5">
+                      <td>
                         {m.isNA ? (
-                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">
-                            N/A
-                          </span>
+                          <span className="badge badge-gray">N/A</span>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <div className="w-14 bg-slate-100 rounded-full h-1.5 overflow-hidden hidden sm:block">
+                            <div className="h-1.5 w-14 overflow-hidden rounded-full bg-slate-100">
                               <div
-                                className={`h-full rounded-full transition-all duration-300 ${
-                                  m.rawAchievement >= 1.0
-                                    ? 'bg-emerald-500'
-                                    : m.rawAchievement >= failingRatio
-                                    ? 'bg-teal-500'
-                                    : 'bg-amber-500'
-                                }`}
-                                style={{
-                                  width: `${Math.min(100, Math.round(m.rawAchievement * 100))}%`,
-                                }}
+                                className={`h-full rounded-full ${achievementBar(m.rawAchievement)}`}
+                                style={{ width: `${Math.min(100, Math.round(m.rawAchievement * 100))}%` }}
                               />
                             </div>
-                            <span
-                              className={`font-bold ${
-                                m.rawAchievement >= 1.0
-                                  ? 'text-emerald-600'
-                                  : m.rawAchievement >= failingRatio
-                                  ? 'text-teal-600'
-                                  : 'text-amber-600'
-                              }`}
-                            >
+                            <span className={`font-medium ${achievementTone(m.rawAchievement)}`}>
                               {(m.rawAchievement * 100).toFixed(1)}%
                             </span>
                           </div>
                         )}
                       </td>
-                      <td className="px-3.5 py-2.5 text-slate-500">{m.weight}%</td>
-                      <td className="px-3.5 py-2.5 text-right font-black text-slate-900">
-                        {m.isNA ? '-' : m.scaledScore}
-                      </td>
+                      <td className="text-slate-500">{m.weight}%</td>
+                      <td className="text-right font-semibold text-slate-900">{m.isNA ? '-' : m.scaledScore}</td>
                     </tr>
                   );
                 })}

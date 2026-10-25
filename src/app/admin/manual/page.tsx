@@ -15,9 +15,9 @@ import {
   Settings,
   ShieldCheck,
   AlertTriangle,
-  Sparkles,
   type LucideIcon,
 } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
 
 type Mode = 'both' | 'bn' | 'en';
 type Pair = { bn: string; en: string };
@@ -255,17 +255,17 @@ const SECTIONS: ManualSection[] = [
 ];
 
 function Line({ pair, mode, strong = false }: { pair: Pair; mode: Mode; strong?: boolean }) {
-  const base = strong ? 'font-semibold text-slate-900' : 'text-slate-800';
+  const base = strong ? 'font-medium text-slate-900' : 'text-slate-700';
   if (mode === 'bn') {
-    return <p className={`${base} text-[15px] leading-relaxed break-words`}>{pair.bn}</p>;
+    return <p className={`${base} text-sm leading-relaxed break-words`}>{pair.bn}</p>;
   }
   if (mode === 'en') {
-    return <p className={`${base} text-[15px] leading-relaxed break-words`}>{pair.en}</p>;
+    return <p className={`${base} text-sm leading-relaxed break-words`}>{pair.en}</p>;
   }
   return (
     <div className="space-y-0.5">
-      <p className={`${base} text-[15px] leading-relaxed break-words`}>{pair.bn}</p>
-      <p className="text-sm leading-relaxed text-slate-500 break-words">{pair.en}</p>
+      <p className={`${base} text-sm leading-relaxed break-words`}>{pair.bn}</p>
+      <p className="text-[13px] leading-relaxed text-slate-500 break-words">{pair.en}</p>
     </div>
   );
 }
@@ -274,23 +274,19 @@ export default function AdminManualPage() {
   const [mode, setMode] = useState<Mode>('both');
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-12">
-      <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto max-w-3xl px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white">
-              <BookOpen className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="truncate text-base font-bold text-slate-900">অ্যাডমিন ম্যানুয়াল</h1>
-              <p className="truncate text-xs text-slate-500">Admin Manual</p>
-            </div>
-          </div>
-          <div
-            role="group"
-            aria-label="Language"
-            className="mt-3 grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1"
-          >
+    <div>
+      <PageHeader
+        icon={<BookOpen className="h-5 w-5" />}
+        title={mode === 'en' ? 'Admin manual' : 'অ্যাডমিন ম্যানুয়াল'}
+        subtitle={
+          mode === 'en'
+            ? 'How the admin panel works, step by step.'
+            : mode === 'bn'
+              ? 'অ্যাডমিন প্যানেল কীভাবে কাজ করে, ধাপে ধাপে।'
+              : 'অ্যাডমিন প্যানেল কীভাবে কাজ করে, ধাপে ধাপে। / How the admin panel works.'
+        }
+        actions={
+          <div role="group" aria-label="Language" className="segmented">
             {MODE_LABELS.map((item) => {
               const active = mode === item.mode;
               return (
@@ -298,98 +294,82 @@ export default function AdminManualPage() {
                   key={item.mode}
                   type="button"
                   aria-pressed={active}
+                  data-active={active ? 'true' : undefined}
                   onClick={() => setMode(item.mode)}
-                  className={`rounded-lg px-2 py-2 text-sm font-semibold transition ${
-                    active
-                      ? 'bg-white text-emerald-700 shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
                 >
                   {item.label}
                 </button>
               );
             })}
           </div>
-        </div>
-      </div>
+        }
+      />
 
-      <main className="mx-auto max-w-3xl space-y-5 px-4 pt-5">
-        <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-          <div className="flex items-start gap-2.5">
-            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-            <div className="min-w-0 space-y-1">
-              <Line
-                mode={mode}
-                strong
-                pair={{
-                  bn: 'এই পেজটি অ্যাডমিন প্যানেল কীভাবে কাজ করে তা সহজ ভাষায় বুঝিয়ে দেয়। প্রতিটি বিষয় ধাপে ধাপে লেখা আছে।',
-                  en: 'This page explains how the admin panel works in simple steps. Each topic is written step by step.',
-                }}
-              />
-            </div>
+      <div className="space-y-6">
+        <nav aria-label="Contents" className="card">
+          <div className="card-header">
+            <h2 className="card-title">{mode === 'en' ? 'Contents' : 'সূচিপত্র'}</h2>
           </div>
-          <nav aria-label="Contents" className="mt-4 flex flex-wrap gap-2">
+          <ol className="grid grid-cols-1 gap-x-4 gap-y-1 p-3 sm:grid-cols-2">
             {SECTIONS.map((s, i) => (
-              <a
-                key={s.id}
-                href={`#${s.id}`}
-                className="rounded-full border border-emerald-200 bg-white px-3 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
-              >
-                {i + 1}. {mode === 'en' ? s.title.en : s.title.bn}
-              </a>
+              <li key={s.id}>
+                <a
+                  href={`#${s.id}`}
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                >
+                  <span className="w-5 shrink-0 text-xs tabular-nums text-slate-400">{i + 1}.</span>
+                  <span className="min-w-0 truncate">{mode === 'en' ? s.title.en : s.title.bn}</span>
+                </a>
+              </li>
             ))}
-          </nav>
-        </section>
+          </ol>
+        </nav>
 
         {SECTIONS.map((section, index) => {
           const Icon = section.icon;
           return (
-            <section
-              key={section.id}
-              id={section.id}
-              className="scroll-mt-28 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
-            >
-              <div className="mb-3 flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white">
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 pt-0.5">
-                  <h2 className="text-base font-bold leading-snug text-slate-900 break-words">
+            <section key={section.id} id={section.id} className="card scroll-mt-24">
+              <div className="card-header justify-start">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="card-title break-words">
                     {index + 1}. {mode === 'en' ? section.title.en : section.title.bn}
                   </h2>
-                  {mode === 'both' && (
-                    <p className="text-sm text-slate-500 break-words">{section.title.en}</p>
-                  )}
+                  {mode === 'both' && <p className="card-subtitle break-words">{section.title.en}</p>}
                 </div>
               </div>
 
-              <ol className="space-y-3">
-                {section.steps.map((step, i) => (
-                  <li key={i} className="flex gap-3">
-                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">
-                      {i + 1}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <Line pair={step} mode={mode} />
-                    </div>
-                  </li>
-                ))}
-              </ol>
+              <div className="card-body">
+                <ol className="space-y-3">
+                  {section.steps.map((step, i) => (
+                    <li key={i} className="flex gap-3">
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-600 tabular-nums">
+                        {i + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <Line pair={step} mode={mode} />
+                      </div>
+                    </li>
+                  ))}
+                </ol>
 
-              {section.tips && section.tips.length > 0 && (
-                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3">
-                  <p className="mb-1.5 text-xs font-bold uppercase tracking-wide text-amber-700">
-                    {mode === 'en' ? 'Tip' : mode === 'bn' ? 'পরামর্শ' : 'পরামর্শ / Tip'}
-                  </p>
-                  <ul className="list-disc space-y-1.5 pl-5">
-                    {section.tips.map((tip, i) => (
-                      <li key={i} className="marker:text-amber-500">
-                        <Line pair={tip} mode={mode} />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+                {section.tips && section.tips.length > 0 && (
+                  <div className="alert alert-warning mt-5 flex-col gap-1.5">
+                    <p className="text-xs font-semibold">
+                      {mode === 'en' ? 'Tip' : mode === 'bn' ? 'পরামর্শ' : 'পরামর্শ / Tip'}
+                    </p>
+                    <ul className="list-disc space-y-1.5 pl-5">
+                      {section.tips.map((tip, i) => (
+                        <li key={i} className="marker:text-amber-500">
+                          <Line pair={tip} mode={mode} />
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             </section>
           );
         })}
@@ -397,7 +377,7 @@ export default function AdminManualPage() {
         <p className="pb-4 text-center text-xs text-slate-400">
           {mode === 'en' ? 'Need more help? Ask the admin team.' : mode === 'bn' ? 'আরও সাহায্য লাগলে অ্যাডমিন টিমকে জানান।' : 'আরও সাহায্য লাগলে অ্যাডমিন টিমকে জানান। / Need more help? Ask the admin team.'}
         </p>
-      </main>
+      </div>
     </div>
   );
 }

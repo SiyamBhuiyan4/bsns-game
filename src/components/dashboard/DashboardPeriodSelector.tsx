@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Calendar, Check } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { DashboardPeriodKey } from '@/lib/dashboard';
 
 interface Props {
@@ -78,61 +78,52 @@ export default function DashboardPeriodSelector({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-xs">
-      <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
-          <Calendar className="h-4 w-4" />
-        </div>
-        <div>
-          <div className="text-xs font-bold text-slate-900">সময়কাল</div>
-        </div>
+    <div className="card flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
+        <Calendar className="h-4 w-4 text-slate-400" />
+        <span>সময়কাল</span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5">
-        <div className="inline-flex flex-wrap rounded-xl bg-slate-100 p-1">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="segmented max-w-full flex-wrap" role="group" aria-label="সময়কাল">
           {PERIOD_OPTIONS.map((opt) => {
             const isActive = isOptionActive(opt.key);
             return (
               <button
                 key={opt.key}
                 type="button"
+                aria-pressed={isActive}
+                data-active={isActive ? 'true' : undefined}
                 onClick={() => handlePeriodChange(opt.key)}
-                className={`flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-white text-emerald-800 shadow-xs font-bold'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                }`}
               >
-                {isActive && <Check className="h-3 w-3 text-emerald-600" />}
-                <span>{opt.label}</span>
+                {opt.label}
               </button>
             );
           })}
         </div>
 
         {isCustomOpen && (
-          <form onSubmit={handleCustomApply} className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
+          <form onSubmit={handleCustomApply} className="flex flex-wrap items-center gap-2">
             <input
               type="date"
+              aria-label="শুরুর তারিখ"
               value={fromDate}
               max={toDate || undefined}
               onChange={(e) => setFromDate(e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="input w-auto py-1.5 text-xs"
               required
             />
             <span className="text-xs text-slate-400">থেকে</span>
             <input
               type="date"
+              aria-label="শেষ তারিখ"
               value={toDate}
               min={fromDate || undefined}
               onChange={(e) => setToDate(e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="input w-auto py-1.5 text-xs"
               required
             />
-            <button
-              type="submit"
-              className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-colors cursor-pointer"
-            >
+            <button type="submit" className="btn btn-primary btn-sm">
               দেখুন
             </button>
           </form>

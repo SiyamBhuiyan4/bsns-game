@@ -1,12 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { GraduationCap, Trash2, Loader2, Plus } from 'lucide-react';
+import { GraduationCap, Trash2, Loader2, Plus, ArrowRight, MessageSquareText } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
+import EmptyState from '@/components/ui/EmptyState';
+import { useLanguage } from '@/components/LanguageContext';
 
 type Phrase = { id: string; phrase: string; href: string; label: string };
 type Page = { id: string; href: string; labelBn: string; labelEn: string };
 
 export default function TeachAssistantPage() {
+  const { t } = useLanguage();
   const [phrases, setPhrases] = useState<Phrase[]>([]);
   const [pages, setPages] = useState<Page[]>([]);
   const [phrase, setPhrase] = useState('');
@@ -60,75 +64,96 @@ export default function TeachAssistantPage() {
   };
 
   return (
-    <div className="space-y-6 pb-12">
-      <div>
-        <h1 className="flex items-center gap-2 text-xl sm:text-2xl font-bold text-slate-900">
-          <GraduationCap className="h-6 w-6 text-emerald-600" />
-          সহকারীকে শেখান
-        </h1>
-        <p className="text-sm text-slate-600 mt-1">
-          Teach the assistant: when you type this phrase, it opens this page.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        icon={<GraduationCap className="h-5 w-5" />}
+        title={t('assistant.title', 'সহকারীকে শেখান', 'Teach assistant')}
+        subtitle={t('assistant.subtitle', 'কোন বাক্য লিখলে কোন পেজ খুলবে, তা ঠিক করুন।', 'Choose which page opens when you type a phrase.')}
+      />
 
-      <form onSubmit={add} className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-700">যখন আমি লিখব / When I type</span>
-            <input
-              required
-              value={phrase}
-              onChange={(e) => setPhrase(e.target.value)}
-              placeholder="যেমন: গ্রুপের হিসাব"
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
-            />
-          </label>
-          <label className="block">
-            <span className="text-xs font-semibold text-slate-700">এই পেজ খুলবে / Open this page</span>
-            <select
-              value={intentId}
-              onChange={(e) => setIntentId(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none"
-            >
-              {pages.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.labelBn} / {p.labelEn}
-                </option>
-              ))}
-            </select>
-          </label>
+      <form onSubmit={add} className="card">
+        <div className="card-body space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="teach-phrase" className="label">
+                {t('assistant.phrase', 'যখন আমি লিখব', 'When I type')}
+              </label>
+              <input
+                id="teach-phrase"
+                required
+                value={phrase}
+                onChange={(e) => setPhrase(e.target.value)}
+                placeholder={t('assistant.phrasePh', 'যেমন: গ্রুপের হিসাব', 'e.g. group report')}
+                className="input"
+              />
+            </div>
+            <div>
+              <label htmlFor="teach-page" className="label">
+                {t('assistant.page', 'এই পেজ খুলবে', 'Open this page')}
+              </label>
+              <select
+                id="teach-page"
+                value={intentId}
+                onChange={(e) => setIntentId(e.target.value)}
+                className="input"
+              >
+                {pages.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.labelBn} / {p.labelEn}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {error && (
+            <div className="alert alert-error" role="alert">
+              {error}
+            </div>
+          )}
+          <div className="flex justify-end">
+            <button type="submit" disabled={saving} className="btn btn-primary">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              {t('assistant.teach', 'শেখান', 'Teach')}
+            </button>
+          </div>
         </div>
-        {error && <p className="text-sm text-rose-700">{error}</p>}
-        <button
-          type="submit"
-          disabled={saving}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
-        >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-          শেখান / Teach
-        </button>
       </form>
 
-      <div className="rounded-2xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-100 px-4 py-3 text-sm font-semibold text-slate-800">
-          শেখানো বাক্য / Taught phrases ({phrases.length})
+      <div className="card">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">{t('assistant.list', 'শেখানো বাক্য', 'Taught phrases')}</h2>
+          </div>
+          <span className="badge badge-gray">{phrases.length}</span>
         </div>
         {loading ? (
-          <div className="p-4 text-sm text-slate-500">লোড হচ্ছে… / Loading…</div>
+          <div className="flex items-center gap-2 px-5 py-8 text-sm text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t('common.loading', 'লোড হচ্ছে…', 'Loading…')}
+          </div>
         ) : phrases.length === 0 ? (
-          <div className="p-4 text-sm text-slate-500">এখনো কিছু শেখানো হয়নি। / Nothing taught yet.</div>
+          <EmptyState
+            icon={<MessageSquareText className="h-5 w-5" />}
+            title={t('assistant.empty', 'এখনো কিছু শেখানো হয়নি', 'Nothing taught yet')}
+            description={t('assistant.emptyDesc', 'উপরের ফর্মে একটি বাক্য ও পেজ যোগ করুন।', 'Add a phrase and a page using the form above.')}
+          />
         ) : (
           <ul className="divide-y divide-slate-100">
             {phrases.map((p) => (
-              <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-3">
+              <li key={p.id} className="flex items-center justify-between gap-3 px-5 py-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-slate-900 break-words">“{p.phrase}”</p>
-                  <p className="text-xs text-slate-500">→ {p.label} ({p.href})</p>
+                  <p className="break-words text-sm font-medium text-slate-900">“{p.phrase}”</p>
+                  <p className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-slate-500">
+                    <ArrowRight className="h-3 w-3 shrink-0" />
+                    <span className="truncate">
+                      {p.label} <span className="font-mono text-slate-400">{p.href}</span>
+                    </span>
+                  </p>
                 </div>
                 <button
                   onClick={() => remove(p.id)}
-                  className="shrink-0 rounded-lg p-2 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                  aria-label="Delete phrase"
+                  className="btn-icon shrink-0 hover:bg-rose-50 hover:text-rose-600"
+                  aria-label={t('assistant.delete', 'বাক্য মুছুন', 'Delete phrase')}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>

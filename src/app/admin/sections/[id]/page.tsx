@@ -11,17 +11,19 @@ import {
   ExternalLink,
   Edit2,
   CheckCircle,
-  XCircle,
   AlertCircle,
   Loader2,
-  Trash2,
   CheckSquare,
   Square,
   Users,
-  UserCheck,
   FileSpreadsheet,
   PowerOff,
+  X,
 } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
+import StatCard from '@/components/ui/StatCard';
+import EmptyState from '@/components/ui/EmptyState';
+import { useLanguage } from '@/components/LanguageContext';
 
 interface GroupLinkItem {
   id: string;
@@ -63,6 +65,7 @@ export default function SectionDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: sectionId } = use(params);
+  const { t } = useLanguage();
 
   const [section, setSection] = useState<SectionInfo | null>(null);
   const [links, setLinks] = useState<GroupLinkItem[]>([]);
@@ -261,301 +264,251 @@ export default function SectionDetailsPage({
     );
   };
 
+
+  const totalCount = section?._count?.group_links ?? totalLinks;
+  const assignedCount = section?.assignments?.length ?? section?._count?.assignments ?? 0;
+
   return (
     <div className="space-y-6">
-      {/* Breadcrumbs & Header */}
-      <div>
-        <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
-          <Link href="/admin/sections" className="hover:text-emerald-700 flex items-center gap-1">
-            <ArrowLeft className="h-3.5 w-3.5" />
-            সেকশন তালিকা
-          </Link>
-          <span>/</span>
-          <span className="font-semibold text-slate-700">{section?.name || 'সেকশন বিবরণ'}</span>
-        </div>
+      {/* Breadcrumb */}
+      <Link href="/admin/sections" className="-mb-2 inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-900">
+        <ArrowLeft className="h-3.5 w-3.5" />
+        {t('sec.back', 'সব সেকশন', 'All sections')}
+      </Link>
 
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-                <Layers className="h-6 w-6 text-emerald-600" />
-                {section?.name || 'সেকশন লিঙ্ক ব্যবস্থাপনা'}
-              </h1>
-              {section && (
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                    section.is_active
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : 'bg-slate-100 text-slate-600 border border-slate-200'
-                  }`}
-                >
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${
-                      section.is_active ? 'bg-emerald-500' : 'bg-slate-400'
-                    }`}
-                  />
-                  {section.is_active ? 'সক্রিয় সেকশন' : 'নিষ্ক্রিয় সেকশন'}
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-slate-600 mt-1 max-w-2xl">
-              {section?.description || 'এই সেকশনের অধীনে থাকা সকল ফেসবুক ও সামাজিক গ্রুপ লিঙ্ক পরিচালনা করুন।'}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <Link
-              href={`/admin/sections/${sectionId}/upload`}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-600 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer"
-            >
+      <PageHeader
+        icon={<Layers className="h-5 w-5" />}
+        title={
+          <span className="flex flex-wrap items-center gap-2">
+            {section?.name || t('sec.detail', 'সেকশন', 'Section')}
+            {section && (
+              <span className={`badge ${section.is_active ? 'badge-green' : 'badge-gray'}`}>
+                {section.is_active ? t('sec.active_s', 'সক্রিয়', 'Active') : t('sec.inactive_s', 'নিষ্ক্রিয়', 'Inactive')}
+              </span>
+            )}
+          </span>
+        }
+        subtitle={section?.description || t('sec.detail_sub', 'এই সেকশনের গ্রুপ লিংক পরিচালনা করুন', 'Manage group links in this section')}
+        actions={
+          <>
+            <Link href={`/admin/sections/${sectionId}/upload`} className="btn btn-secondary">
               <Upload className="h-4 w-4" />
-              CSV আপলোড (Upload CSV)
+              {t('sec.upload_csv', 'CSV আপলোড', 'Upload CSV')}
             </Link>
-
             <button
               onClick={() => {
                 setIsAddOpen(true);
                 setErrorMessage(null);
               }}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-700 shadow-sm transition-colors cursor-pointer"
+              className="btn btn-primary"
             >
               <Plus className="h-4 w-4" />
-              একক লিঙ্ক যোগ করুন (Add Link)
+              {t('sec.add_link', 'লিংক যোগ করুন', 'Add link')}
             </button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      {/* Section Overview Cards: Link Count, Employee Assignments, Status */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Card 1: Links Stats */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-            <span>লিঙ্ক পরিসংখ্যান (Links)</span>
-            <Layers className="h-4 w-4 text-emerald-600" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">
-              {section?._count?.group_links ?? totalLinks}
-            </span>
-            <span className="text-xs text-slate-500">মোট লিঙ্ক</span>
-          </div>
-          <div className="mt-2 flex items-center gap-2 text-xs">
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700 border border-emerald-200/50">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-              {section?.active_links_count ?? links.filter((l) => l.is_active).length} সক্রিয়
-            </span>
-            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 font-semibold text-slate-600 border border-slate-200/50">
-              {(section?._count?.group_links ?? totalLinks) - (section?.active_links_count ?? 0)} নিষ্ক্রিয়
-            </span>
-          </div>
-        </div>
-
-        {/* Card 2: Assigned Employees */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-            <span>নির্ধারিত মার্কেটার (Assigned Marketers)</span>
-            <Users className="h-4 w-4 text-blue-600" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">
-              {section?.assignments?.length ?? section?._count?.assignments ?? 0}
-            </span>
-            <span className="text-xs text-slate-500">জন কর্মী</span>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-1.5 max-h-16 overflow-y-auto">
-            {section?.assignments && section.assignments.length > 0 ? (
-              section.assignments.map((a) => (
-                <span
-                  key={a.id}
-                  className="inline-flex items-center gap-1 rounded-lg bg-blue-50 border border-blue-200/60 px-2 py-0.5 text-xs font-medium text-blue-700"
-                  title={a.employee.email}
-                >
-                  <UserCheck className="h-3 w-3 text-blue-600" />
-                  {a.employee.name}
-                </span>
-              ))
-            ) : (
-              <span className="text-xs text-amber-600 flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" /> কোনো কর্মী নির্ধারিত নেই
-                <Link href="/admin/employees" className="underline font-semibold ml-1 hover:text-amber-800">
-                  কর্মী যুক্ত করুন
-                </Link>
+      {/* Overview */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <StatCard
+          label={t('sec.total_links', 'মোট লিংক', 'Total links')}
+          value={totalCount}
+          icon={<Layers className="h-4 w-4" />}
+          note={
+            <span className="flex flex-wrap gap-1.5">
+              <span className="badge badge-green">
+                {section?.active_links_count ?? links.filter((l) => l.is_active).length} {t('sec.active_s', 'সক্রিয়', 'Active')}
               </span>
-            )}
-          </div>
-        </div>
-
-        {/* Card 3: Batch Uploads & Quick Actions */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-slate-500 font-medium">
-            <span>CSV আপলোড ও বাল্ক নিয়ন্ত্রণ</span>
-            <FileSpreadsheet className="h-4 w-4 text-purple-600" />
-          </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-slate-900">
-              {section?._count?.csv_batches ?? 0}
+              <span className="badge badge-gray">
+                {(section?._count?.group_links ?? totalLinks) - (section?.active_links_count ?? 0)} {t('sec.inactive_s', 'নিষ্ক্রিয়', 'Inactive')}
+              </span>
             </span>
-            <span className="text-xs text-slate-500">টি CSV ব্যাচ</span>
-          </div>
-          <div className="mt-2 flex items-center gap-2">
-            {(section?.active_links_count ?? 0) > 0 && (
+          }
+        />
+
+        <StatCard
+          label={t('sec.assigned', 'নির্ধারিত কর্মী', 'Assigned team')}
+          value={assignedCount}
+          icon={<Users className="h-4 w-4" />}
+          tone="blue"
+          note={
+            <span className="flex max-h-16 flex-wrap gap-1.5 overflow-y-auto">
+              {section?.assignments && section.assignments.length > 0 ? (
+                section.assignments.map((a) => (
+                  <span key={a.id} className="badge badge-blue" title={a.employee.email}>
+                    {a.employee.name}
+                  </span>
+                ))
+              ) : (
+                <span>
+                  {t('sec.no_team', 'কেউ নির্ধারিত নেই।', 'No one assigned.')}{' '}
+                  <Link href="/admin/employees" className="font-medium text-brand-700 hover:underline">
+                    {t('sec.assign_team', 'কর্মী যুক্ত করুন', 'Assign team')}
+                  </Link>
+                </span>
+              )}
+            </span>
+          }
+        />
+
+        <StatCard
+          label={t('sec.csv_batches', 'CSV ব্যাচ', 'CSV batches')}
+          value={section?._count?.csv_batches ?? 0}
+          icon={<FileSpreadsheet className="h-4 w-4" />}
+          tone="violet"
+          note={
+            (section?.active_links_count ?? 0) > 0 ? (
               <button
                 onClick={handleBulkDeactivateAll}
                 disabled={bulkLoading}
-                className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer disabled:opacity-50"
-                title="এই সেকশনের সকল সক্রিয় লিঙ্ক এক ক্লিকে নিষ্ক্রিয় করুন"
+                className="btn btn-secondary btn-sm"
+                title={t('sec.deactivate_all_tip', 'এই সেকশনের সব সক্রিয় লিংক নিষ্ক্রিয় করুন', 'Deactivate every active link in this section')}
               >
-                <PowerOff className="h-3 w-3 text-amber-600" />
-                সব নিষ্ক্রিয় করুন
+                <PowerOff className="h-3.5 w-3.5" />
+                {t('sec.deactivate_all', 'সব নিষ্ক্রিয় করুন', 'Deactivate all')}
               </button>
-            )}
-          </div>
-        </div>
+            ) : undefined
+          }
+        />
       </div>
 
       {/* Notifications */}
       {errorMessage && (
-        <div className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-rose-600 shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-          <button onClick={() => setErrorMessage(null)} className="text-rose-600 hover:text-rose-800 font-bold">×</button>
+        <div className="alert alert-error">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span className="flex-1">{errorMessage}</span>
+          <button onClick={() => setErrorMessage(null)} className="btn-icon -my-1 h-6 w-6" aria-label={t('common.dismiss', 'বন্ধ করুন', 'Dismiss')}>
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
       {successMessage && (
-        <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0" />
-            <span>{successMessage}</span>
-          </div>
-          <button onClick={() => setSuccessMessage(null)} className="text-emerald-600 hover:text-emerald-800 font-bold">×</button>
+        <div className="alert alert-success">
+          <CheckCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span className="flex-1">{successMessage}</span>
+          <button onClick={() => setSuccessMessage(null)} className="btn-icon -my-1 h-6 w-6" aria-label={t('common.dismiss', 'বন্ধ করুন', 'Dismiss')}>
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
-      {/* Filter and Bulk Action Toolbar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
-        <div className="flex flex-1 items-center gap-2">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="লিঙ্ক বা শিরোনাম দিয়ে অনুসন্ধান..."
-              value={searchQuery}
+      {/* Links Table */}
+      <div className="card">
+        <div className="card-header">
+          <div className="flex w-full flex-1 flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                aria-label={t('common.search', 'অনুসন্ধান', 'Search')}
+                placeholder={t('sec.link_search_ph', 'লিংক বা শিরোনাম খুঁজুন...', 'Search URL or title...')}
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
+                className="input pl-9"
+              />
+            </div>
+
+            <select
+              aria-label={t('sec.col_status', 'স্ট্যাটাস', 'Status')}
+              value={statusFilter}
               onChange={(e) => {
-                setSearchQuery(e.target.value);
+                setStatusFilter(e.target.value as 'ALL' | 'ACTIVE' | 'INACTIVE');
                 setPage(1);
               }}
-              className="w-full rounded-xl border border-slate-300 py-1.5 pl-9 pr-3 text-xs text-slate-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
-            />
+              className="input w-full sm:w-40"
+            >
+              <option value="ALL">{t('sec.f_all', 'সব স্ট্যাটাস', 'All statuses')}</option>
+              <option value="ACTIVE">{t('sec.active_s', 'সক্রিয়', 'Active')}</option>
+              <option value="INACTIVE">{t('sec.inactive_s', 'নিষ্ক্রিয়', 'Inactive')}</option>
+            </select>
           </div>
 
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value as 'ALL' | 'ACTIVE' | 'INACTIVE');
-              setPage(1);
-            }}
-            className="rounded-xl border border-slate-300 py-1.5 px-3 text-xs text-slate-700 bg-white focus:border-emerald-600 focus:outline-none cursor-pointer"
-          >
-            <option value="ALL">সব স্ট্যাটাস (All)</option>
-            <option value="ACTIVE">শুধুমাত্র সক্রিয় (Active)</option>
-            <option value="INACTIVE">নিষ্ক্রিয় (Inactive)</option>
-          </select>
+          {/* Bulk Action Button */}
+          {selectedIds.length > 0 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-slate-600">
+                {t('sec.selected', `${selectedIds.length}টি নির্বাচিত`, `${selectedIds.length} selected`)}
+              </span>
+              <button onClick={handleBulkDeactivate} disabled={bulkLoading} className="btn btn-secondary btn-sm">
+                {bulkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <PowerOff className="h-3.5 w-3.5" />}
+                {t('sec.deactivate', 'নিষ্ক্রিয় করুন', 'Deactivate')}
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Bulk Action Button */}
-        {selectedIds.length > 0 && (
-          <div className="flex items-center gap-2 animate-in fade-in">
-            <span className="text-xs font-semibold text-slate-600">
-              {selectedIds.length}টি নির্বাচিত
-            </span>
-            <button
-              onClick={handleBulkDeactivate}
-              disabled={bulkLoading}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition-colors cursor-pointer"
-            >
-              {bulkLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-              বাল্ক নিষ্ক্রিয় করুন (Deactivate Selected)
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Links Table */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-            <Loader2 className="h-8 w-8 animate-spin text-emerald-600 mb-2" />
-            <p className="text-sm">লিংক তালিকা লোড হচ্ছে...</p>
+          <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t('common.loading', 'লোড হচ্ছে...', 'Loading...')}
           </div>
         ) : links.length === 0 ? (
-          <div className="py-12 text-center text-slate-500">
-            <Layers className="mx-auto h-12 w-12 text-slate-300 mb-3" />
-            <p className="text-base font-semibold text-slate-700">কোনো গ্রুপ লিঙ্ক পাওয়া যায়নি</p>
-            <p className="text-xs text-slate-400 mt-1">
-              {searchQuery ? 'অনুসন্ধানের সাথে কোনো লিঙ্ক মেলেনি' : 'উপরে CSV আপলোড বা একক লিঙ্ক যোগ করুন'}
-            </p>
-          </div>
+          <EmptyState
+            icon={<Layers className="h-5 w-5" />}
+            title={t('sec.no_links', 'কোনো লিংক পাওয়া যায়নি', 'No links found')}
+            description={
+              searchQuery
+                ? t('sec.empty_search', 'অনুসন্ধানের সাথে কিছু মেলেনি', 'Nothing matches your search')
+                : t('sec.no_links_hint', 'CSV আপলোড করুন বা একটি লিংক যোগ করুন', 'Upload a CSV or add a link')
+            }
+          />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="table-pro">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/75 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="py-3 px-4 w-10 text-center">
+                <tr>
+                  <th className="w-10">
                     <button
                       onClick={toggleSelectAll}
-                      className="text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
-                      title="সব নির্বাচন করুন"
+                      className="flex cursor-pointer items-center text-slate-400 hover:text-slate-600"
+                      title={t('sec.select_all', 'সব নির্বাচন', 'Select all')}
+                      aria-label={t('sec.select_all', 'সব নির্বাচন', 'Select all')}
                     >
                       {selectedIds.length === links.length ? (
-                        <CheckSquare className="h-4 w-4 text-emerald-600" />
+                        <CheckSquare className="h-4 w-4 text-brand-600" />
                       ) : (
                         <Square className="h-4 w-4" />
                       )}
                     </button>
                   </th>
-                  <th className="py-3 px-4">গ্রুপ শিরোনাম ও লিঙ্ক (Title & URL)</th>
-                  <th className="py-3 px-4 text-center">সম্পন্ন সংখ্যা (Done)</th>
-                  <th className="py-3 px-4">আপলোড ব্যাচ (Batch)</th>
-                  <th className="py-3 px-4 text-center">স্ট্যাটাস (Status)</th>
-                  <th className="py-3 px-4 sm:px-6 text-right">কার্যক্রম (Action)</th>
+                  <th>{t('sec.col_link', 'গ্রুপ', 'Group')}</th>
+                  <th className="text-right">{t('sec.col_done', 'সম্পন্ন', 'Done')}</th>
+                  <th>{t('sec.col_batch', 'ব্যাচ', 'Batch')}</th>
+                  <th>{t('sec.col_status', 'স্ট্যাটাস', 'Status')}</th>
+                  <th className="text-right">
+                    <span className="sr-only">{t('sec.col_actions', 'কার্যক্রম', 'Actions')}</span>
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
+              <tbody>
                 {links.map((link) => {
                   const isSelected = selectedIds.includes(link.id);
                   return (
-                    <tr
-                      key={link.id}
-                      className={`hover:bg-slate-50/60 transition-colors ${
-                        isSelected ? 'bg-emerald-50/30' : ''
-                      }`}
-                    >
-                      <td className="py-3 px-4 text-center">
+                    <tr key={link.id} className={isSelected ? '[&>td]:bg-brand-50/40' : ''}>
+                      <td>
                         <button
                           onClick={() => toggleSelectOne(link.id)}
-                          className="text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+                          className="flex cursor-pointer items-center text-slate-400 hover:text-slate-600"
+                          aria-label={t('sec.select', 'নির্বাচন', 'Select')}
                         >
-                          {isSelected ? (
-                            <CheckSquare className="h-4 w-4 text-emerald-600" />
-                          ) : (
-                            <Square className="h-4 w-4" />
-                          )}
+                          {isSelected ? <CheckSquare className="h-4 w-4 text-brand-600" /> : <Square className="h-4 w-4" />}
                         </button>
                       </td>
 
-                      <td className="py-3 px-4 max-w-md">
-                        <div className="font-semibold text-slate-900 truncate">
-                          {link.title || 'শিরোনাম নেই (Untitled)'}
+                      <td className="max-w-md">
+                        <div className="truncate font-medium text-slate-900">
+                          {link.title || t('sec.untitled', 'শিরোনাম নেই', 'Untitled')}
                         </div>
                         <a
                           href={link.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 font-mono text-xs text-emerald-700 hover:underline truncate max-w-full"
+                          className="inline-flex max-w-full items-center gap-1 text-xs text-slate-500 hover:text-brand-700 hover:underline"
                           title={link.url}
                         >
                           <span className="truncate">{link.url}</span>
@@ -563,35 +516,25 @@ export default function SectionDetailsPage({
                         </a>
                       </td>
 
-                      <td className="py-3 px-4 text-center">
-                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-800">
-                          {link.completions_count} বার
-                        </span>
-                      </td>
+                      <td className="text-right tabular-nums font-medium text-slate-900">{link.completions_count}</td>
 
-                      <td className="py-3 px-4 text-xs text-slate-500">
+                      <td className="text-xs text-slate-500">
                         {link.batch_file ? (
-                          <span className="font-mono bg-slate-100 px-2 py-0.5 rounded text-[11px]">
-                            {link.batch_file}
-                          </span>
+                          <span className="font-mono text-[11px]">{link.batch_file}</span>
                         ) : (
-                          'ম্যানুয়াল এন্ট্রি'
+                          t('sec.manual', 'ম্যানুয়াল', 'Manual')
                         )}
                       </td>
 
-                      <td className="py-3 px-4 text-center">
+                      <td>
                         {link.is_active ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
-                            <CheckCircle className="h-3 w-3 text-emerald-600" /> সক্রিয়
-                          </span>
+                          <span className="badge badge-green">{t('sec.active_s', 'সক্রিয়', 'Active')}</span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 border border-slate-200">
-                            <XCircle className="h-3 w-3 text-slate-400" /> নিষ্ক্রিয়
-                          </span>
+                          <span className="badge badge-gray">{t('sec.inactive_s', 'নিষ্ক্রিয়', 'Inactive')}</span>
                         )}
                       </td>
 
-                      <td className="py-3 px-4 sm:px-6 text-right whitespace-nowrap">
+                      <td className="whitespace-nowrap text-right">
                         <button
                           onClick={() => {
                             setEditingLink(link);
@@ -600,10 +543,11 @@ export default function SectionDetailsPage({
                             setEditActive(link.is_active);
                             setErrorMessage(null);
                           }}
-                          className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-xs text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                          title="সম্পাদনা করুন"
+                          className="btn-icon"
+                          title={t('common.edit', 'সম্পাদনা', 'Edit')}
+                          aria-label={t('common.edit', 'সম্পাদনা', 'Edit')}
                         >
-                          <Edit2 className="h-3.5 w-3.5" />
+                          <Edit2 className="h-4 w-4" />
                         </button>
                       </td>
                     </tr>
@@ -616,29 +560,27 @@ export default function SectionDetailsPage({
 
         {/* Pagination Footer */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50/50 px-4 py-3 sm:px-6">
-            <div className="text-xs text-slate-500">
-              মোট <strong>{totalLinks}</strong> টির মধ্যে{' '}
-              <strong>{(page - 1) * 25 + 1}</strong> থেকে{' '}
-              <strong>{Math.min(page * 25, totalLinks)}</strong> দেখানো হচ্ছে
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3">
+            <div className="text-xs text-slate-500 tabular-nums">
+              {(page - 1) * 25 + 1}–{Math.min(page * 25, totalLinks)} / {totalLinks}
             </div>
             <div className="flex items-center gap-1">
               <button
                 disabled={page <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                className="btn btn-secondary btn-sm"
               >
-                আগের পাতা (Prev)
+                {t('common.prev', 'আগের', 'Prev')}
               </button>
-              <span className="px-2 text-xs font-medium text-slate-600">
+              <span className="px-2 text-xs font-medium text-slate-600 tabular-nums">
                 {page} / {totalPages}
               </span>
               <button
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                className="btn btn-secondary btn-sm"
               >
-                পরের পাতা (Next)
+                {t('common.next', 'পরের', 'Next')}
               </button>
             </div>
           </div>
@@ -647,54 +589,48 @@ export default function SectionDetailsPage({
 
       {/* Modal: Add Link */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
-            <h3 className="text-lg font-bold text-slate-900 mb-1">নতুন গ্রুপ লিঙ্ক যোগ করুন</h3>
-            <p className="text-xs text-slate-500 mb-4">Add single Facebook or social group URL</p>
+        <div className="modal-backdrop">
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="add-link-title">
+            <div className="card-header">
+              <h3 id="add-link-title" className="card-title">{t('sec.add_link', 'লিংক যোগ করুন', 'Add link')}</h3>
+            </div>
 
-            <form onSubmit={handleAddLink} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  গ্রুপ URL *
-                </label>
-                <input
-                  type="url"
-                  required
-                  placeholder="https://www.facebook.com/groups/..."
-                  value={addUrl}
-                  onChange={(e) => setAddUrl(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
-                />
+            <form onSubmit={handleAddLink}>
+              <div className="card-body space-y-4">
+                <div>
+                  <label htmlFor="add_link_url" className="label">{t('sec.f_url', 'গ্রুপ URL', 'Group URL')} *</label>
+                  <input
+                    id="add_link_url"
+                    type="url"
+                    required
+                    placeholder="https://www.facebook.com/groups/..."
+                    value={addUrl}
+                    onChange={(e) => setAddUrl(e.target.value)}
+                    className="input"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="add_link_title" className="label">{t('sec.f_title', 'শিরোনাম', 'Title')}</label>
+                  <input
+                    id="add_link_title"
+                    type="text"
+                    placeholder="Agro Farmers BD"
+                    value={addTitle}
+                    onChange={(e) => setAddTitle(e.target.value)}
+                    className="input"
+                  />
+                  <p className="hint">{t('common.optional', 'ঐচ্ছিক', 'Optional')}</p>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  গ্রুপের নাম / শিরোনাম (ঐচ্ছিক)
-                </label>
-                <input
-                  type="text"
-                  placeholder="যেমন: Agro Farmers BD"
-                  value={addTitle}
-                  onChange={(e) => setAddTitle(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsAddOpen(false)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                >
-                  বাতিল (Cancel)
+              <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
+                <button type="button" onClick={() => setIsAddOpen(false)} className="btn btn-secondary">
+                  {t('common.cancel', 'বাতিল', 'Cancel')}
                 </button>
-                <button
-                  type="submit"
-                  disabled={addSubmitting}
-                  className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 cursor-pointer"
-                >
-                  {addSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                  যুক্ত করুন (Add)
+                <button type="submit" disabled={addSubmitting} className="btn btn-primary">
+                  {addSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {t('common.add', 'যোগ করুন', 'Add')}
                 </button>
               </div>
             </form>
@@ -704,65 +640,56 @@ export default function SectionDetailsPage({
 
       {/* Modal: Edit Link */}
       {editingLink && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
-            <h3 className="text-lg font-bold text-slate-900 mb-1">গ্রুপ লিঙ্ক সম্পাদনা করুন</h3>
-            <p className="text-xs text-slate-500 mb-4">Edit Group Link Details</p>
+        <div className="modal-backdrop">
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="edit-link-title">
+            <div className="card-header">
+              <h3 id="edit-link-title" className="card-title">{t('sec.edit_link', 'লিংক সম্পাদনা', 'Edit link')}</h3>
+            </div>
 
-            <form onSubmit={handleEditLink} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  গ্রুপ URL *
+            <form onSubmit={handleEditLink}>
+              <div className="card-body space-y-4">
+                <div>
+                  <label htmlFor="edit_link_url" className="label">{t('sec.f_url', 'গ্রুপ URL', 'Group URL')} *</label>
+                  <input
+                    id="edit_link_url"
+                    type="url"
+                    required
+                    value={editUrl}
+                    onChange={(e) => setEditUrl(e.target.value)}
+                    className="input"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="edit_link_title" className="label">{t('sec.f_title', 'শিরোনাম', 'Title')}</label>
+                  <input
+                    id="edit_link_title"
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="input"
+                  />
+                </div>
+
+                <label htmlFor="edit_link_active" className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    id="edit_link_active"
+                    checked={editActive}
+                    onChange={(e) => setEditActive(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 accent-brand-600"
+                  />
+                  {t('sec.link_active', 'সক্রিয় (কর্মীদের কিউতে থাকবে)', 'Active (shown in team queue)')}
                 </label>
-                <input
-                  type="url"
-                  required
-                  value={editUrl}
-                  onChange={(e) => setEditUrl(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
-                />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  গ্রুপ শিরোনাম
-                </label>
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="edit_link_active"
-                  checked={editActive}
-                  onChange={(e) => setEditActive(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <label htmlFor="edit_link_active" className="text-xs font-semibold text-slate-700">
-                  লিঙ্কটি সক্রিয় রাখুন (Keep Active in Marketer Queue)
-                </label>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setEditingLink(null)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                >
-                  বাতিল (Cancel)
+              <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
+                <button type="button" onClick={() => setEditingLink(null)} className="btn btn-secondary">
+                  {t('common.cancel', 'বাতিল', 'Cancel')}
                 </button>
-                <button
-                  type="submit"
-                  disabled={editSubmitting}
-                  className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 cursor-pointer"
-                >
-                  {editSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                  আপডেট করুন (Update)
+                <button type="submit" disabled={editSubmitting} className="btn btn-primary">
+                  {editSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {t('common.save', 'সংরক্ষণ', 'Save')}
                 </button>
               </div>
             </form>

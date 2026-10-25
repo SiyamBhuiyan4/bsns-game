@@ -45,7 +45,7 @@ export default function LanguageToggle() {
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 transition-colors cursor-pointer"
+        className="btn btn-secondary btn-sm"
         aria-haspopup="true"
         aria-expanded={isOpen}
         title={lang === 'bn' ? 'ভাষা ও সংখ্যার রূপ পরিবর্তন করুন' : 'Change language and number format'}

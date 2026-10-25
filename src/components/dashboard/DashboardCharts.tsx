@@ -24,13 +24,7 @@ import {
   LeadSourceItem,
 } from '@/lib/dashboard';
 import { toBengaliDigits, formatTaka } from '@/lib/date';
-import {
-  BarChart3,
-  PieChart as PieIcon,
-  TrendingUp,
-  Megaphone,
-  Users2,
-} from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 
 interface Props {
   sectionTargets: SectionTargetChartItem[];
@@ -40,33 +34,22 @@ interface Props {
   leadSources: LeadSourceItem[];
 }
 
-const PIE_COLORS = [
-  '#10B981', // emerald
-  '#0EA5E9', // sky blue
-  '#8B5CF6', // violet
-  '#F59E0B', // amber
-  '#EC4899', // pink
-  '#14B8A6', // teal
-  '#F97316', // orange
-  '#6366F1', // indigo
-];
+// Brand green first, then sky, amber, violet, slate.
+const PALETTE = ['#059669', '#0EA5E9', '#F59E0B', '#8B5CF6', '#64748B'];
+const PIE_COLORS = PALETTE;
+const LINE_COLORS = PALETTE;
 
-const LINE_COLORS = [
-  '#10B981',
-  '#3B82F6',
-  '#8B5CF6',
-  '#F59E0B',
-  '#EC4899',
-  '#14B8A6',
-];
+const GRID = '#EEF2F6';
+const AXIS = '#94A3B8';
+const TARGET = '#CBD5E1';
 
 function EmptyChartState({ message = 'এই সময়ে কোনো তথ্য নেই' }: { message?: string }) {
   return (
-    <div className="flex h-72 sm:h-80 w-full flex-col items-center justify-center rounded-xl bg-slate-50/80 border border-dashed border-slate-200 text-center p-6">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-2">
-        <BarChart3 className="h-6 w-6" />
+    <div className="flex h-full w-full flex-col items-center justify-center rounded-lg border border-dashed border-slate-200 p-6 text-center">
+      <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+        <BarChart3 className="h-5 w-5" />
       </div>
-      <p className="text-sm font-semibold text-slate-600">{message}</p>
+      <p className="text-sm text-slate-500">{message}</p>
     </div>
   );
 }
@@ -86,16 +69,16 @@ export default function DashboardCharts({
 
   if (!isMounted) {
     return (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {[1, 2, 3, 4, 5].map((i) => (
           <div
             key={i}
-            className={`h-80 rounded-2xl bg-white border border-slate-200 p-5 shadow-xs animate-pulse ${
+            className={`card h-80 p-5 animate-pulse ${
               i === 3 ? 'lg:col-span-2' : ''
             }`}
           >
-            <div className="h-5 w-40 bg-slate-200 rounded mb-4" />
-            <div className="h-60 bg-slate-100 rounded-xl" />
+            <div className="mb-4 h-4 w-40 rounded bg-slate-200" />
+            <div className="h-60 rounded-lg bg-slate-100" />
           </div>
         ))}
       </div>
@@ -139,30 +122,21 @@ export default function DashboardCharts({
     leadSources.some((item) => item.count > 0);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* 2-Column Responsive Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* ========================================================= */}
         {/* 1. Bar Chart: Section Achieved vs Target */}
         {/* ========================================================= */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                <BarChart3 className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  সেকশন অনুযায়ী লক্ষ্য ও অর্জন
-                </h3>
-                <p className="text-[11px] text-slate-500">
-                  Target vs achieved, by section
-                </p>
-              </div>
+        <div className="card flex min-w-0 flex-col">
+          <div className="card-header">
+            <div className="min-w-0">
+              <h3 className="card-title">সেকশন অনুযায়ী লক্ষ্য ও অর্জন</h3>
+              <p className="card-subtitle">Target vs achieved, by section</p>
             </div>
           </div>
 
-          <div className="w-full min-w-0 h-72 sm:h-80 overflow-hidden">
+          <div className="h-72 w-full min-w-0 overflow-hidden p-4 sm:h-80 sm:p-5">
             {!hasSectionData ? (
               <EmptyChartState />
             ) : (
@@ -171,10 +145,10 @@ export default function DashboardCharts({
                   data={sectionTargets}
                   margin={{ top: 15, right: 15, left: -10, bottom: 25 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                  <CartesianGrid vertical={false} stroke={GRID} />
                   <XAxis
                     dataKey="name"
-                    stroke="#64748B"
+                    stroke={AXIS}
                     fontSize={11}
                     tickLine={false}
                     interval={0}
@@ -182,7 +156,7 @@ export default function DashboardCharts({
                     textAnchor="end"
                   />
                   <YAxis
-                    stroke="#64748B"
+                    stroke={AXIS}
                     fontSize={11}
                     tickLine={false}
                     axisLine={false}
@@ -193,12 +167,12 @@ export default function DashboardCharts({
                       if (!active || !payload || !payload.length) return null;
                       const item = payload[0].payload as SectionTargetChartItem;
                       return (
-                        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-lg text-xs">
+                        <div className="rounded-lg border border-slate-200 bg-white p-3 text-xs shadow-md">
                           <p className="font-bold text-slate-900 mb-1.5">{item.name}</p>
                           <div className="space-y-1">
                             <div className="flex items-center justify-between gap-4 text-slate-600">
                               <span className="flex items-center gap-1.5">
-                                <span className="h-2.5 w-2.5 rounded-full bg-slate-400"></span>
+                                <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
                                 লক্ষ্য:
                               </span>
                               <span className="font-semibold text-slate-800">
@@ -207,16 +181,16 @@ export default function DashboardCharts({
                             </div>
                             <div className="flex items-center justify-between gap-4 text-slate-600">
                               <span className="flex items-center gap-1.5">
-                                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                                <span className="h-2.5 w-2.5 rounded-full bg-brand-600"></span>
                                 অর্জন:
                               </span>
-                              <span className="font-semibold text-emerald-700">
+                              <span className="font-semibold text-brand-700">
                                 {item.unit === '৳' ? formatTaka(item.achieved) : `${item.achieved.toLocaleString()} ${item.unit}`}
                               </span>
                             </div>
                             <div className="pt-1 mt-1 border-t border-slate-100 flex items-center justify-between font-bold">
                               <span>অর্জন হার:</span>
-                              <span className={item.percent >= 100 ? 'text-emerald-600' : 'text-blue-600'}>
+                              <span className={item.percent >= 100 ? 'text-brand-700' : 'text-slate-700'}>
                                 {toBengaliDigits(item.percent)}%
                               </span>
                             </div>
@@ -234,14 +208,14 @@ export default function DashboardCharts({
                   <Bar
                     dataKey="target"
                     name="লক্ষ্য"
-                    fill="#94A3B8"
+                    fill={TARGET}
                     radius={[4, 4, 0, 0]}
                     maxBarSize={32}
                   />
                   <Bar
                     dataKey="achieved"
                     name="অর্জন"
-                    fill="#10B981"
+                    fill={PALETTE[0]}
                     radius={[4, 4, 0, 0]}
                     maxBarSize={32}
                   />
@@ -254,24 +228,15 @@ export default function DashboardCharts({
         {/* ========================================================= */}
         {/* 2. Pie Chart: Team Score Share by Employee */}
         {/* ========================================================= */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-teal-600">
-                <PieIcon className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  টিমের স্কোর ভাগ
-                </h3>
-                <p className="text-[11px] text-slate-500">
-                  Score share by employee
-                </p>
-              </div>
+        <div className="card flex min-w-0 flex-col">
+          <div className="card-header">
+            <div className="min-w-0">
+              <h3 className="card-title">টিমের স্কোর ভাগ</h3>
+              <p className="card-subtitle">Score share by employee</p>
             </div>
           </div>
 
-          <div className="w-full min-w-0 h-72 sm:h-80 overflow-hidden">
+          <div className="h-72 w-full min-w-0 overflow-hidden p-4 sm:h-80 sm:p-5">
             {!hasTeamScoreData ? (
               <EmptyChartState />
             ) : (
@@ -282,13 +247,13 @@ export default function DashboardCharts({
                       if (!active || !payload || !payload.length) return null;
                       const item = payload[0].payload as TeamScoreShareItem;
                       return (
-                        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-lg text-xs">
+                        <div className="rounded-lg border border-slate-200 bg-white p-3 text-xs shadow-md">
                           <p className="font-bold text-slate-900">{item.name}</p>
                           <p className="text-slate-600 mt-1">
                             মোট স্কোর: <strong className="text-slate-800">{toBengaliDigits(item.score)} পয়েন্ট</strong>
                           </p>
                           <p className="text-slate-600">
-                            টিমে অবদান: <strong className="text-emerald-700">{toBengaliDigits(item.percent)}%</strong>
+                            টিমে অবদান: <strong className="text-brand-700">{toBengaliDigits(item.percent)}%</strong>
                           </p>
                           {item.sales > 0 && (
                             <p className="text-slate-500 mt-1">
@@ -307,7 +272,7 @@ export default function DashboardCharts({
                     formatter={(value: string) => {
                       const item = teamScoreShare.find((t) => t.name === value);
                       return (
-                        <span className="text-[11px] text-slate-700 font-medium">
+                        <span className="text-[11px] text-slate-700 ">
                           {value} ({item?.percent ? toBengaliDigits(item.percent) : '০'}%)
                         </span>
                       );
@@ -344,24 +309,15 @@ export default function DashboardCharts({
       {/* ========================================================= */}
       {/* 3. Line Chart: Daily Team Trend (Last 30 Days) Full Width */}
       {/* ========================================================= */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 mb-4 gap-2">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-              <TrendingUp className="h-4 w-4" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">
-                দৈনিক টিম ট্রেন্ড (৩০ দিন)
-              </h3>
-              <p className="text-[11px] text-slate-500">
-                Daily score per employee, team total
-              </p>
+      <div className="card min-w-0">
+        <div className="card-header">
+            <div className="min-w-0">
+              <h3 className="card-title">দৈনিক টিম ট্রেন্ড (৩০ দিন)</h3>
+              <p className="card-subtitle">Daily score per employee, team total</p>
             </div>
           </div>
-        </div>
 
-        <div className="w-full min-w-0 h-72 sm:h-80 overflow-hidden">
+        <div className="h-72 w-full min-w-0 overflow-hidden p-4 sm:h-80 sm:p-5">
           {!hasTrendData ? (
             <EmptyChartState />
           ) : (
@@ -370,16 +326,16 @@ export default function DashboardCharts({
                 data={dailyTeamTrend}
                 margin={{ top: 15, right: 20, left: -10, bottom: 20 }}
               >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                <CartesianGrid vertical={false} stroke={GRID} />
                 <XAxis
                   dataKey="date"
-                  stroke="#64748B"
+                  stroke={AXIS}
                   fontSize={10}
                   tickLine={false}
                   interval="preserveStartEnd"
                 />
                 <YAxis
-                  stroke="#64748B"
+                  stroke={AXIS}
                   fontSize={11}
                   tickLine={false}
                   axisLine={false}
@@ -389,7 +345,7 @@ export default function DashboardCharts({
                   content={({ active, payload, label }) => {
                     if (!active || !payload || !payload.length) return null;
                     return (
-                      <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-lg text-xs max-w-xs">
+                      <div className="rounded-lg border border-slate-200 bg-white p-3 text-xs shadow-md max-w-xs">
                         <p className="font-bold text-slate-900 mb-1.5 border-b border-slate-100 pb-1">
                           তারিখ: {label}
                         </p>
@@ -428,8 +384,8 @@ export default function DashboardCharts({
                   type="monotone"
                   dataKey="total"
                   name="টিম মোট"
-                  stroke="#0F172A"
-                  strokeWidth={2.5}
+                  stroke="#334155"
+                  strokeWidth={2}
                   strokeDasharray="4 4"
                   dot={false}
                 />
@@ -453,28 +409,19 @@ export default function DashboardCharts({
       </div>
 
       {/* 2-Column Responsive Grid for Chart 4 & 5 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* ========================================================= */}
         {/* 4. Bar Chart: Ad Spend vs Budget per Campaign */}
         {/* ========================================================= */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-                <Megaphone className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  ক্যাম্পেইন বাজেট বনাম খরচ
-                </h3>
-                <p className="text-[11px] text-slate-500">
-                  Budget vs ad spend, per campaign
-                </p>
-              </div>
+        <div className="card flex min-w-0 flex-col">
+          <div className="card-header">
+            <div className="min-w-0">
+              <h3 className="card-title">ক্যাম্পেইন বাজেট বনাম খরচ</h3>
+              <p className="card-subtitle">Budget vs ad spend, per campaign</p>
             </div>
           </div>
 
-          <div className="w-full min-w-0 h-72 sm:h-80 overflow-hidden">
+          <div className="h-72 w-full min-w-0 overflow-hidden p-4 sm:h-80 sm:p-5">
             {!hasCampaignData ? (
               <EmptyChartState />
             ) : (
@@ -483,10 +430,10 @@ export default function DashboardCharts({
                   data={campaignBudgets}
                   margin={{ top: 15, right: 15, left: -10, bottom: 25 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+                  <CartesianGrid vertical={false} stroke={GRID} />
                   <XAxis
                     dataKey="name"
-                    stroke="#64748B"
+                    stroke={AXIS}
                     fontSize={11}
                     tickLine={false}
                     interval={0}
@@ -494,7 +441,7 @@ export default function DashboardCharts({
                     textAnchor="end"
                   />
                   <YAxis
-                    stroke="#64748B"
+                    stroke={AXIS}
                     fontSize={11}
                     tickLine={false}
                     axisLine={false}
@@ -505,15 +452,15 @@ export default function DashboardCharts({
                       if (!active || !payload || !payload.length) return null;
                       const item = payload[0].payload as CampaignBudgetItem;
                       return (
-                        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-lg text-xs">
+                        <div className="rounded-lg border border-slate-200 bg-white p-3 text-xs shadow-md">
                           <p className="font-bold text-slate-900 mb-1">{item.name}</p>
-                          <span className="inline-block text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-sm mb-2">
+                          <span className="badge badge-gray mb-2">
                             {item.channelBn}
                           </span>
                           <div className="space-y-1">
                             <div className="flex items-center justify-between gap-4 text-slate-600">
                               <span className="flex items-center gap-1.5">
-                                <span className="h-2.5 w-2.5 rounded-full bg-indigo-500"></span>
+                                <span className="h-2.5 w-2.5 rounded-full bg-sky-500"></span>
                                 বাজেট:
                               </span>
                               <span className="font-semibold text-slate-800">
@@ -522,16 +469,16 @@ export default function DashboardCharts({
                             </div>
                             <div className="flex items-center justify-between gap-4 text-slate-600">
                               <span className="flex items-center gap-1.5">
-                                <span className="h-2.5 w-2.5 rounded-full bg-rose-500"></span>
+                                <span className="h-2.5 w-2.5 rounded-full bg-amber-500"></span>
                                 খরচ:
                               </span>
-                              <span className="font-semibold text-rose-700">
+                              <span className="font-semibold text-slate-800">
                                 {formatTaka(item.spend)}
                               </span>
                             </div>
                             <div className="pt-1 mt-1 border-t border-slate-100 flex items-center justify-between font-bold">
                               <span>ব্যবহার হার:</span>
-                              <span className={item.usagePercent > 100 ? 'text-rose-600' : 'text-emerald-600'}>
+                              <span className={item.usagePercent > 100 ? 'text-rose-600' : 'text-brand-700'}>
                                 {toBengaliDigits(item.usagePercent)}%
                               </span>
                             </div>
@@ -549,14 +496,14 @@ export default function DashboardCharts({
                   <Bar
                     dataKey="budget"
                     name="বাজেট"
-                    fill="#6366F1"
+                    fill={PALETTE[1]}
                     radius={[4, 4, 0, 0]}
                     maxBarSize={32}
                   />
                   <Bar
                     dataKey="spend"
                     name="খরচ"
-                    fill="#F43F5E"
+                    fill={PALETTE[2]}
                     radius={[4, 4, 0, 0]}
                     maxBarSize={32}
                   />
@@ -569,24 +516,15 @@ export default function DashboardCharts({
         {/* ========================================================= */}
         {/* 5. Pie Chart: Lead Sources Distribution */}
         {/* ========================================================= */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-                <Users2 className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  লিড উৎস
-                </h3>
-                <p className="text-[11px] text-slate-500">
-                  Where leads came from
-                </p>
-              </div>
+        <div className="card flex min-w-0 flex-col">
+          <div className="card-header">
+            <div className="min-w-0">
+              <h3 className="card-title">লিড উৎস</h3>
+              <p className="card-subtitle">Where leads came from</p>
             </div>
           </div>
 
-          <div className="w-full min-w-0 h-72 sm:h-80 overflow-hidden">
+          <div className="h-72 w-full min-w-0 overflow-hidden p-4 sm:h-80 sm:p-5">
             {!hasLeadSourceData ? (
               <EmptyChartState />
             ) : (
@@ -597,13 +535,13 @@ export default function DashboardCharts({
                       if (!active || !payload || !payload.length) return null;
                       const item = payload[0].payload as LeadSourceItem;
                       return (
-                        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-lg text-xs">
+                        <div className="rounded-lg border border-slate-200 bg-white p-3 text-xs shadow-md">
                           <p className="font-bold text-slate-900">{item.name}</p>
                           <p className="text-slate-600 mt-1">
                             মোট লিড: <strong className="text-slate-800">{toBengaliDigits(item.count)} জন</strong>
                           </p>
                           <p className="text-slate-600">
-                            শতকরা হার: <strong className="text-amber-700">{toBengaliDigits(item.percent)}%</strong>
+                            শতকরা হার: <strong className="text-slate-800">{toBengaliDigits(item.percent)}%</strong>
                           </p>
                         </div>
                       );
@@ -617,7 +555,7 @@ export default function DashboardCharts({
                     formatter={(value: string) => {
                       const item = leadSources.find((l) => l.name === value);
                       return (
-                        <span className="text-[11px] text-slate-700 font-medium">
+                        <span className="text-[11px] text-slate-700 ">
                           {value} ({item?.percent ? toBengaliDigits(item.percent) : '০'}%)
                         </span>
                       );
@@ -640,7 +578,7 @@ export default function DashboardCharts({
                     {leadSources.map((_, index) => (
                       <Cell
                         key={`cell-lead-${index}`}
-                        fill={PIE_COLORS[(index + 2) % PIE_COLORS.length]}
+                        fill={PIE_COLORS[index % PIE_COLORS.length]}
                       />
                     ))}
                   </Pie>

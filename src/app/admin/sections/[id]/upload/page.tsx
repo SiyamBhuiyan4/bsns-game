@@ -15,7 +15,11 @@ import {
   Download,
   Layers,
   Info,
+  X,
 } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
+import StatCard from '@/components/ui/StatCard';
+import { useLanguage } from '@/components/LanguageContext';
 import { exportInvalidRowsToCsv } from '@/lib/csv';
 
 interface PreviewRow {
@@ -53,6 +57,7 @@ export default function SectionCsvUploadPage({
 }) {
   const { id: sectionId } = use(params);
   const router = useRouter();
+  const { t } = useLanguage();
 
   const [sectionName, setSectionName] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
@@ -203,152 +208,123 @@ export default function SectionCsvUploadPage({
     document.body.removeChild(link);
   };
 
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
-          <Link href={`/admin/sections/${sectionId}`} className="hover:text-emerald-700 flex items-center gap-1">
-            <ArrowLeft className="h-3.5 w-3.5" />
-            {sectionName || 'সেকশন লিঙ্ক তালিকা'}
-          </Link>
-          <span>/</span>
-          <span className="font-semibold text-slate-700">CSV আপলোড</span>
-        </div>
+      <Link
+        href={`/admin/sections/${sectionId}`}
+        className="-mb-2 inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-slate-900"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        {sectionName || t('sec.detail', 'সেকশন', 'Section')}
+      </Link>
 
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-          <Upload className="h-6 w-6 text-emerald-600" />
-          গ্রুপ লিঙ্ক CSV আপলোড (Upload CSV)
-        </h1>
-        <p className="text-sm text-slate-600 mt-1">
-          <strong>{sectionName}</strong> সেকশনে ফেসবুক গ্রুপ লিঙ্ক বাল্ক আপলোড করুন। (সর্বোচ্চ ৫ MB, ১০,০০০ সারি)
-        </p>
-      </div>
+      <PageHeader
+        icon={<Upload className="h-5 w-5" />}
+        title={t('up.title', 'CSV আপলোড', 'Upload CSV')}
+        subtitle={
+          sectionName
+            ? t('up.subtitle', `${sectionName} সেকশনে গ্রুপ লিংক আপলোড করুন · সর্বোচ্চ ৫ MB, ১০,০০০ সারি`, `Bulk-add group links to ${sectionName} · max 5 MB, 10,000 rows`)
+            : t('up.subtitle_plain', 'সর্বোচ্চ ৫ MB, ১০,০০০ সারি', 'Max 5 MB, 10,000 rows')
+        }
+      />
 
       {/* Notifications */}
       {errorMessage && (
-        <div className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-rose-600 shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-          <button onClick={() => setErrorMessage(null)} className="text-rose-600 hover:text-rose-800 font-bold">×</button>
+        <div className="alert alert-error">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span className="flex-1">{errorMessage}</span>
+          <button onClick={() => setErrorMessage(null)} className="btn-icon -my-1 h-6 w-6" aria-label={t('common.dismiss', 'বন্ধ করুন', 'Dismiss')}>
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
       {/* Result Screen (After Confirm) */}
       {uploadResult ? (
-        <div className="rounded-2xl border border-emerald-200 bg-white p-6 sm:p-8 shadow-sm text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600 mb-4">
-            <CheckCircle2 className="h-10 w-10" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-900">
-            CSV আপলোড সফলভাবে সম্পন্ন হয়েছে!
-          </h2>
-          <p className="text-sm text-slate-600 mt-1">
-            ডাটাবেসে গ্রুপ লিঙ্ক সংরক্ষণ করা হয়েছে এবং ইতিহাস আপডেট করা হয়েছে।
-          </p>
+        <div className="card">
+          <div className="card-body flex flex-col items-center py-10 text-center">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+              <CheckCircle2 className="h-6 w-6" />
+            </div>
+            <h2 className="text-lg font-semibold text-slate-900">{t('up.done', 'আপলোড সম্পন্ন', 'Upload complete')}</h2>
+            <p className="mt-1 text-sm text-slate-500">{t('up.done_sub', 'লিংকগুলো সংরক্ষিত হয়েছে।', 'Links have been saved.')}</p>
 
-          <div className="mt-6 mx-auto grid max-w-lg grid-cols-3 gap-3">
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-4">
-              <div className="text-xs font-semibold text-emerald-700">সংরক্ষিত (Inserted)</div>
-              <div className="mt-1 text-2xl font-bold text-emerald-900">{uploadResult.inserted} টি</div>
+            <div className="mt-6 grid w-full max-w-lg grid-cols-3 gap-4 text-left">
+              <StatCard label={t('up.inserted', 'সংরক্ষিত', 'Inserted')} value={uploadResult.inserted} />
+              <StatCard label={t('up.duplicates', 'ডুপ্লিকেট', 'Duplicates')} value={uploadResult.duplicates} />
+              <StatCard label={t('up.invalid', 'অবৈধ', 'Invalid')} value={uploadResult.invalid} />
             </div>
-            <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4">
-              <div className="text-xs font-semibold text-amber-700">ডুপ্লিকেট (Duplicates)</div>
-              <div className="mt-1 text-2xl font-bold text-amber-900">{uploadResult.duplicates} টি</div>
-            </div>
-            <div className="rounded-xl border border-rose-200 bg-rose-50/70 p-4">
-              <div className="text-xs font-semibold text-rose-700">অবৈধ (Invalid)</div>
-              <div className="mt-1 text-2xl font-bold text-rose-900">{uploadResult.invalid} টি</div>
-            </div>
-          </div>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            {uploadResult.invalid > 0 && previewData && previewData.invalidRows.length > 0 && (
-              <button
-                onClick={downloadInvalidCsv}
-                className="inline-flex items-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-4 py-2.5 text-xs font-bold text-rose-800 hover:bg-rose-100 transition-colors cursor-pointer"
-              >
-                <Download className="h-4 w-4" />
-                অবৈধ সারিসমূহ CSV ডাউনলোড করুন (Download Invalid Rows)
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+              {uploadResult.invalid > 0 && previewData && previewData.invalidRows.length > 0 && (
+                <button onClick={downloadInvalidCsv} className="btn btn-secondary">
+                  <Download className="h-4 w-4" />
+                  {t('up.download_invalid', 'অবৈধ সারি ডাউনলোড', 'Download invalid rows')}
+                </button>
+              )}
+
+              <Link href="/admin/csv/history" className="btn btn-secondary">
+                {t('sec.upload_history', 'আপলোড হিস্ট্রি', 'Upload history')}
+              </Link>
+
+              <button onClick={() => router.push(`/admin/sections/${sectionId}`)} className="btn btn-primary">
+                <Layers className="h-4 w-4" />
+                {t('up.back_to_section', 'সেকশনে ফিরুন', 'Back to section')}
               </button>
-            )}
-
-            <button
-              onClick={() => router.push(`/admin/sections/${sectionId}`)}
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-semibold text-white hover:bg-emerald-700 transition-colors cursor-pointer"
-            >
-              <Layers className="h-4 w-4" />
-              সেকশন লিঙ্ক তালিকায় ফিরে যান
-            </button>
-
-            <Link
-              href="/admin/csv/history"
-              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
-            >
-              আপলোড হিস্ট্রি দেখুন (View History)
-            </Link>
+            </div>
           </div>
         </div>
       ) : (
         /* Upload & Preview Step */
         <div className="space-y-6">
           {/* File Picker Card */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 className="text-base font-bold text-slate-900 mb-2">
-              ধাপ ১: CSV ফাইল নির্বাচন করুন
-            </h2>
-            <p className="text-xs text-slate-500 mb-4">
-              ফাইলে অবশ্যই <code className="bg-slate-100 px-1 py-0.5 rounded text-emerald-700">url</code> কলাম থাকতে হবে। ঐচ্ছিক কলাম: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">title</code>
-            </p>
+          <div className="card">
+            <div className="card-header">
+              <div>
+                <h2 className="card-title">{t('up.step1', '১. ফাইল নির্বাচন', '1. Choose file')}</h2>
+                <p className="card-subtitle mt-0.5">
+                  {t('up.cols_pre', 'প্রয়োজনীয় কলাম:', 'Required column:')} <code className="rounded bg-slate-100 px-1 py-0.5 text-slate-700">url</code>
+                  {' · '}
+                  {t('up.cols_opt', 'ঐচ্ছিক:', 'Optional:')} <code className="rounded bg-slate-100 px-1 py-0.5 text-slate-700">title</code>
+                </p>
+              </div>
+            </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-4">
+            <div className="card-body flex flex-col items-stretch gap-4 sm:flex-row sm:items-center">
               <label
                 onDragOver={handleDragOver}
                 onDragEnter={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`flex-1 w-full flex flex-col items-center justify-center border-2 border-dashed rounded-2xl p-6 transition-all cursor-pointer ${
-                  isDragging
-                    ? 'border-emerald-500 bg-emerald-50/70 scale-[1.01] shadow-inner'
-                    : 'border-slate-300 hover:border-emerald-500 hover:bg-emerald-50/30'
+                className={`flex w-full flex-1 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed p-6 text-center transition-colors ${
+                  isDragging ? 'border-brand-500 bg-brand-50/60' : 'border-slate-300 hover:border-brand-500 hover:bg-slate-50'
                 }`}
               >
-                <FileSpreadsheet className={`h-10 w-10 mb-2 transition-colors ${isDragging ? 'text-emerald-700 animate-bounce' : 'text-emerald-600'}`} />
-                <span className="text-sm font-semibold text-slate-700">
+                <FileSpreadsheet className={`mb-2 h-8 w-8 ${isDragging || file ? 'text-brand-600' : 'text-slate-400'}`} />
+                <span className="break-all text-sm font-medium text-slate-700">
                   {isDragging
-                    ? 'CSV ফাইলটি এখানে ছেড়ে দিন (Drop file here)...'
+                    ? t('up.drop', 'এখানে ছেড়ে দিন', 'Drop file here')
                     : file
                     ? file.name
-                    : 'কম্পিউটার থেকে .csv ফাইল টেনে আনুন বা নির্বাচন করুন (Drag & drop or browse)'}
+                    : t('up.pick', '.csv ফাইল টেনে আনুন বা নির্বাচন করুন', 'Drag a .csv file here or browse')}
                 </span>
-                <span className="text-xs text-slate-400 mt-0.5">
-                  {file ? `${(file.size / 1024).toFixed(1)} KB` : 'সর্বোচ্চ ৫ মেগাবাইট, ১০,০০০ সারি'}
+                <span className="mt-0.5 text-xs text-slate-500">
+                  {file ? `${(file.size / 1024).toFixed(1)} KB` : t('up.limits', 'সর্বোচ্চ ৫ MB', 'Max 5 MB')}
                 </span>
-                <input
-                  type="file"
-                  accept=".csv,text/csv"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
+                <input type="file" accept=".csv,text/csv" className="hidden" onChange={handleFileChange} />
               </label>
 
-              <button
-                type="button"
-                disabled={!file || parsing}
-                onClick={handleParsePreview}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 transition-all cursor-pointer"
-              >
+              <button type="button" disabled={!file || parsing} onClick={handleParsePreview} className="btn btn-primary w-full sm:w-auto">
                 {parsing ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    প্রিভিউ যাচাই হচ্ছে...
+                    {t('up.checking', 'যাচাই হচ্ছে...', 'Checking...')}
                   </>
                 ) : (
                   <>
                     <Upload className="h-4 w-4" />
-                    ফাইল প্রিভিউ করুন (Preview CSV)
+                    {t('up.preview', 'প্রিভিউ', 'Preview')}
                   </>
                 )}
               </button>
@@ -357,150 +333,79 @@ export default function SectionCsvUploadPage({
 
           {/* Step 2: Preview Screen */}
           {previewData && (
-            <div className="space-y-6 animate-in fade-in duration-300">
-              {/* Summary Cards */}
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-100">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900">
-                      ধাপ ২: আপলোড প্রিভিউ ও ফলাফল সারসংক্ষেপ
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      ফাইল: <strong className="font-mono text-slate-800">{previewData.fileName}</strong> | মোট সারি: <strong>{previewData.totalRows}</strong>
+            <div className="space-y-6">
+              {/* Summary */}
+              <div className="card">
+                <div className="card-header">
+                  <div className="min-w-0">
+                    <h3 className="card-title">{t('up.step2', '২. প্রিভিউ ও নিশ্চিতকরণ', '2. Review and confirm')}</h3>
+                    <p className="card-subtitle mt-0.5 break-all">
+                      <span className="font-mono">{previewData.fileName}</span> · {previewData.totalRows} {t('up.rows', 'সারি', 'rows')}
                     </p>
                   </div>
 
-                  <button
-                    onClick={handleConfirmSave}
-                    disabled={confirming || previewData.validCount === 0}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 disabled:opacity-50 cursor-pointer transition-all"
-                  >
+                  <button onClick={handleConfirmSave} disabled={confirming || previewData.validCount === 0} className="btn btn-primary">
                     {confirming ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        সংরক্ষণ হচ্ছে...
+                        {t('up.saving', 'সংরক্ষণ হচ্ছে...', 'Saving...')}
                       </>
                     ) : (
                       <>
                         <CheckCircle2 className="h-4 w-4" />
-                        নিশ্চিত করুন ও ডাটাবেসে সেভ করুন ({previewData.validCount} টি)
+                        {t('up.confirm', `${previewData.validCount}টি লিংক সংরক্ষণ করুন`, `Save ${previewData.validCount} links`)}
                       </>
                     )}
                   </button>
                 </div>
 
-                {/* Counter Badges */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-3.5">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-emerald-800">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                      যুক্ত হবে (Will Insert)
-                    </div>
-                    <div className="mt-1 text-2xl font-bold text-emerald-900">
-                      {previewData.validCount} টি
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-3.5">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-amber-800">
-                      <AlertTriangle className="h-4 w-4 text-amber-600" />
-                      ডুপ্লিকেট (Duplicates)
-                    </div>
-                    <div className="mt-1 text-2xl font-bold text-amber-900">
-                      {previewData.duplicateCount} টি
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-3.5">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-rose-800">
-                      <XCircle className="h-4 w-4 text-rose-600" />
-                      অবৈধ (Invalid URLs)
-                    </div>
-                    <div className="mt-1 text-2xl font-bold text-rose-900">
-                      {previewData.invalidCount} টি
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-3.5">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-blue-800">
-                      <Info className="h-4 w-4 text-blue-600" />
-                      অন্য সেকশনে আছে (Warnings)
-                    </div>
-                    <div className="mt-1 text-2xl font-bold text-blue-900">
-                      {previewData.warningCount} টি
-                    </div>
-                  </div>
+                <div className="card-body grid grid-cols-2 gap-4 lg:grid-cols-4">
+                  <StatCard label={t('up.will_insert', 'যুক্ত হবে', 'Will insert')} value={previewData.validCount} icon={<CheckCircle2 className="h-4 w-4" />} tone="brand" />
+                  <StatCard label={t('up.duplicates', 'ডুপ্লিকেট', 'Duplicates')} value={previewData.duplicateCount} icon={<AlertTriangle className="h-4 w-4" />} tone="amber" />
+                  <StatCard label={t('up.invalid', 'অবৈধ', 'Invalid')} value={previewData.invalidCount} icon={<XCircle className="h-4 w-4" />} tone="red" />
+                  <StatCard label={t('up.other_section', 'অন্য সেকশনে আছে', 'In other section')} value={previewData.warningCount} icon={<Info className="h-4 w-4" />} tone="blue" />
                 </div>
               </div>
 
               {/* First 50 Rows Preview Table */}
-              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <div className="bg-slate-50/80 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-700">
-                    প্রথম ৫০টি সারির প্রিভিউ (Preview of First 50 Rows)
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    {previewData.previewRows.length} টি সারি প্রদর্শিত
+              <div className="card">
+                <div className="card-header">
+                  <h3 className="card-title">{t('up.preview_rows', 'প্রথম ৫০ সারি', 'First 50 rows')}</h3>
+                  <span className="card-subtitle">
+                    {t('up.shown', `${previewData.previewRows.length}টি দেখানো হচ্ছে`, `${previewData.previewRows.length} shown`)}
                   </span>
                 </div>
 
-                <div className="overflow-x-auto max-h-96">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead className="sticky top-0 bg-slate-100 z-10 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider">
+                <div className="max-h-96 overflow-auto">
+                  <table className="table-pro [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-slate-50">
+                    <thead>
                       <tr>
-                        <th className="py-2.5 px-4 w-16">সারি #</th>
-                        <th className="py-2.5 px-4">গ্রুপ URL</th>
-                        <th className="py-2.5 px-4">গ্রুপের নাম (Title)</th>
-                        <th className="py-2.5 px-4 text-center">স্ট্যাটাস (Status)</th>
-                        <th className="py-2.5 px-4">মন্তব্য / কারণ (Reason)</th>
+                        <th className="w-16">#</th>
+                        <th>URL</th>
+                        <th>{t('sec.f_title', 'শিরোনাম', 'Title')}</th>
+                        <th>{t('sec.col_status', 'স্ট্যাটাস', 'Status')}</th>
+                        <th>{t('up.reason', 'কারণ', 'Reason')}</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody>
                       {previewData.previewRows.map((row) => (
-                        <tr
-                          key={row.rowNumber}
-                          className={`hover:bg-slate-50/80 transition-colors ${
-                            row.status === 'INVALID'
-                              ? 'bg-rose-50/30'
-                              : row.status === 'DUPLICATE_IN_FILE' || row.status === 'DUPLICATE_IN_SECTION'
-                              ? 'bg-amber-50/30'
-                              : row.status === 'EXISTS_IN_OTHER_SECTION'
-                              ? 'bg-blue-50/20'
-                              : ''
-                          }`}
-                        >
-                          <td className="py-2 px-4 font-mono text-slate-500">{row.rowNumber}</td>
-                          <td className="py-2 px-4 font-mono text-slate-800 max-w-xs truncate" title={row.url}>
+                        <tr key={row.rowNumber}>
+                          <td className="tabular-nums text-slate-500">{row.rowNumber}</td>
+                          <td className="max-w-xs truncate font-mono text-xs text-slate-800" title={row.url}>
                             {row.url}
                           </td>
-                          <td className="py-2 px-4 text-slate-700 max-w-xs truncate">
-                            {row.title || '—'}
-                          </td>
-                          <td className="py-2 px-4 text-center whitespace-nowrap">
-                            {row.status === 'VALID' && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
-                                <CheckCircle2 className="h-3 w-3" /> বৈধ (Valid)
-                              </span>
-                            )}
+                          <td className="max-w-xs truncate">{row.title || '—'}</td>
+                          <td className="whitespace-nowrap">
+                            {row.status === 'VALID' && <span className="badge badge-green">{t('up.valid', 'বৈধ', 'Valid')}</span>}
                             {row.status === 'EXISTS_IN_OTHER_SECTION' && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-bold text-blue-800">
-                                <Info className="h-3 w-3" /> অন্য সেকশনে আছে
-                              </span>
+                              <span className="badge badge-blue">{t('up.other_section', 'অন্য সেকশনে আছে', 'In other section')}</span>
                             )}
                             {(row.status === 'DUPLICATE_IN_FILE' || row.status === 'DUPLICATE_IN_SECTION') && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">
-                                <AlertTriangle className="h-3 w-3" /> ডুপ্লিকেট
-                              </span>
+                              <span className="badge badge-amber">{t('up.duplicate', 'ডুপ্লিকেট', 'Duplicate')}</span>
                             )}
-                            {row.status === 'INVALID' && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">
-                                <XCircle className="h-3 w-3" /> অবৈধ (Invalid)
-                              </span>
-                            )}
+                            {row.status === 'INVALID' && <span className="badge badge-red">{t('up.invalid', 'অবৈধ', 'Invalid')}</span>}
                           </td>
-                          <td className="py-2 px-4 text-slate-500 text-[11px]">
-                            {row.reason || row.warning || '—'}
-                          </td>
+                          <td className="text-xs text-slate-500">{row.reason || row.warning || '—'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -510,28 +415,30 @@ export default function SectionCsvUploadPage({
 
               {/* Invalid Rows Section if any */}
               {previewData.invalidRows.length > 0 && (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-5 shadow-sm">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-2 text-rose-800 font-bold text-sm">
-                      <AlertCircle className="h-5 w-5 text-rose-600" />
-                      <span>সকল অবৈধ সারি ({previewData.invalidRows.length} টি) - সংশোধন প্রয়োজন</span>
+                <div className="card">
+                  <div className="card-header">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-rose-600" />
+                      <h3 className="card-title">
+                        {t('up.invalid_rows', 'অবৈধ সারি', 'Invalid rows')}{' '}
+                        <span className="badge badge-red ml-1 align-middle">{previewData.invalidRows.length}</span>
+                      </h3>
                     </div>
 
-                    <button
-                      onClick={downloadInvalidCsv}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-rose-300 bg-white px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-50 cursor-pointer shadow-xs transition-colors"
-                    >
+                    <button onClick={downloadInvalidCsv} className="btn btn-secondary btn-sm">
                       <Download className="h-3.5 w-3.5" />
-                      অবৈধ সারিগুলো ডাউনলোড করুন (Download CSV)
+                      {t('up.download_csv', 'CSV ডাউনলোড', 'Download CSV')}
                     </button>
                   </div>
 
-                  <div className="space-y-1.5 max-h-48 overflow-y-auto text-xs text-rose-900 bg-white rounded-xl p-3 border border-rose-200">
+                  <div className="max-h-48 divide-y divide-slate-100 overflow-y-auto text-xs">
                     {previewData.invalidRows.map((inv) => (
-                      <div key={inv.rowNumber} className="flex items-start gap-2 border-b border-rose-100 pb-1 last:border-0">
-                        <span className="font-mono font-bold text-rose-700">সারি {inv.rowNumber}:</span>
-                        <span className="font-mono truncate max-w-sm">{inv.url || '[খালি URL]'}</span>
-                        <span className="text-rose-600 italic">({inv.reason})</span>
+                      <div key={inv.rowNumber} className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 px-5 py-2">
+                        <span className="w-14 shrink-0 font-medium tabular-nums text-slate-500">
+                          {t('up.row', 'সারি', 'Row')} {inv.rowNumber}
+                        </span>
+                        <span className="min-w-0 max-w-sm truncate font-mono text-slate-800">{inv.url || t('up.empty_url', '[খালি URL]', '[empty URL]')}</span>
+                        <span className="text-rose-600">{inv.reason}</span>
                       </div>
                     ))}
                   </div>

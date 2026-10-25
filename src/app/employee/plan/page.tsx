@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { toBengaliDigits, getDhakaDateString } from '@/lib/date';
 import { format, parseISO } from 'date-fns';
+import PageHeader from '@/components/ui/PageHeader';
+import EmptyState from '@/components/ui/EmptyState';
 
 interface Owner {
   id: string;
@@ -127,25 +129,26 @@ export default function EmployeePlanPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <Loader2 className="h-9 w-9 animate-spin text-teal-600" />
-        <p className="text-sm font-medium text-slate-600">৯০ দিনের কর্মপরিকল্পনা লোড হচ্ছে...</p>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
+        <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+        <p className="text-sm text-slate-500">লোড হচ্ছে... · Loading...</p>
       </div>
     );
   }
 
   if (!plan) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
-        <AlertCircle className="mx-auto h-8 w-8 text-red-500 mb-2" />
-        <h3 className="text-base font-bold text-red-800">প্ল্যান ডাটা পাওয়া যায়নি</h3>
-        <p className="text-sm text-red-600 mt-1">সার্ভারের সাথে সংযোগ স্থাপন করা যায়নি। অনুগ্রহ করে রিফ্রেশ করুন।</p>
-        <button
-          onClick={fetchPlanData}
-          className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2 text-xs font-semibold text-white hover:bg-teal-700"
-        >
-          <RefreshCw className="h-4 w-4" /> পুনরায় চেষ্টা করুন
-        </button>
+      <div className="card">
+        <EmptyState
+          icon={<AlertCircle className="h-5 w-5 text-rose-600" />}
+          title="প্ল্যান পাওয়া যায়নি · Plan not found"
+          description="সার্ভারে সংযোগ করা যায়নি, আবার চেষ্টা করুন। Could not reach the server, please retry."
+          action={
+            <button onClick={fetchPlanData} className="btn btn-primary">
+              <RefreshCw className="h-4 w-4" /> আবার চেষ্টা · Retry
+            </button>
+          }
+        />
       </div>
     );
   }
@@ -162,82 +165,82 @@ export default function EmployeePlanPage() {
     (t) => t.owner_id === currentUser?.id
   ).length;
 
+  const milestoneBadge =
+    activeMilestone?.status === 'MET'
+      ? 'badge-green'
+      : activeMilestone?.status === 'PARTIAL'
+      ? 'badge-blue'
+      : activeMilestone?.status === 'MISSED'
+      ? 'badge-red'
+      : 'badge-amber';
+
+  const taskBadge = (s: PlanTask['status']) =>
+    s === 'DONE' ? 'badge-green' : s === 'IN_PROGRESS' ? 'badge-blue' : s === 'BLOCKED' ? 'badge-red' : 'badge-gray';
+
   return (
-    <div className="space-y-6 pb-12 font-sans">
-      {/* READ-ONLY BANNER FOR EMPLOYEES */}
-      <div className="rounded-2xl border border-teal-200 bg-teal-50/70 p-4 shadow-sm flex items-start gap-3">
-        <Info className="h-5 w-5 text-teal-700 shrink-0 mt-0.5" />
-        <div className="text-xs sm:text-sm text-teal-900 leading-relaxed">
-          <strong className="font-bold">দৃষ্টি আকর্ষণ:</strong> কর্মীদের জন্য এটি পাঠযোগ্য (Read-only) ভিউ। টাস্ক হালনাগাদের জন্য হেড অব মার্কেটিংয়ের সাথে যোগাযোগ করুন।
+    <div className="space-y-6">
+      <PageHeader
+        icon={<CalendarCheck className="h-5 w-5" />}
+        title={plan.name}
+        subtitle={
+          <span className="inline-flex items-center gap-1.5">
+            <Calendar className="h-3.5 w-3.5 text-slate-400" />
+            শুরু · Start: {format(parseISO(plan.start_date), 'dd MMMM, yyyy')} ({toBengaliDigits(plan.start_date)})
+          </span>
+        }
+        actions={
+          <>
+            <span className="badge badge-blue">
+              <Clock className="h-3 w-3" />
+              দিন {toBengaliDigits(stats?.current_day || 1)} / ৯০ · ফেজ {toBengaliDigits(stats?.current_phase_order || 1)}
+            </span>
+            {stats && stats.overdue_tasks > 0 ? (
+              <span className="badge badge-red">
+                <AlertTriangle className="h-3 w-3" />
+                {toBengaliDigits(stats.overdue_tasks)}টি বিলম্বিত · overdue
+              </span>
+            ) : (
+              <span className="badge badge-gray">
+                <CheckCircle2 className="h-3 w-3" />
+                কোনো ওভারডিউ নেই · None overdue
+              </span>
+            )}
+          </>
+        }
+      />
+
+      <div className="alert alert-info">
+        <Info className="mt-0.5 h-4 w-4 shrink-0" />
+        <span>
+          শুধু দেখার জন্য; টাস্ক বদলাতে হেড অব মার্কেটিংয়ের সাথে যোগাযোগ করুন। Read-only — contact the Head of Marketing to update tasks.
+        </span>
+      </div>
+
+      {/* Overall progress */}
+      <div className="card card-body">
+        <div className="flex items-center justify-between text-sm">
+          <span className="flex items-center gap-1.5 font-medium text-slate-700">
+            <TrendingUp className="h-4 w-4 text-slate-400" />
+            সার্বিক অগ্রগতি · Overall progress
+          </span>
+          <span className="text-lg font-semibold text-brand-700 tabular-nums">
+            {toBengaliDigits(stats?.overall_progress || 0)}%
+          </span>
+        </div>
+        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+          <div
+            className="h-full rounded-full bg-brand-600 transition-all duration-500"
+            style={{ width: `${stats?.overall_progress || 0}%` }}
+          ></div>
+        </div>
+        <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+          <span>মোট টাস্ক · Total: {toBengaliDigits(stats?.total_tasks || 0)}</span>
+          <span>সম্পন্ন · Done: {toBengaliDigits(stats?.completed_tasks || 0)}</span>
         </div>
       </div>
 
-      {/* SUMMARY HEADER */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-100 px-3 py-1 text-xs font-bold text-teal-800">
-                <CalendarCheck className="h-3.5 w-3.5" />
-                ৯০ দিনের কর্মপরিকল্পনা
-              </span>
-
-              {/* Current Phase Indicator */}
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-800">
-                <Clock className="h-3.5 w-3.5" />
-                দিন {toBengaliDigits(stats?.current_day || 1)} / ৯০ (ফেজ {toBengaliDigits(stats?.current_phase_order || 1)} সক্রিয়)
-              </span>
-
-              {/* Overdue Tasks Badge */}
-              {stats && stats.overdue_tasks > 0 ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-800">
-                  <AlertTriangle className="h-3.5 w-3.5 text-rose-600" />
-                  {toBengaliDigits(stats.overdue_tasks)}টি টাস্ক বিলম্বিত
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-teal-600" />
-                  কোনো ওভারডিউ টাস্ক নেই
-                </span>
-              )}
-            </div>
-
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{plan.name}</h1>
-              <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                <span>
-                  শুরুর তারিখ: <strong className="text-slate-700">{format(parseISO(plan.start_date), 'dd MMMM, yyyy')}</strong> ({toBengaliDigits(plan.start_date)})
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Overall Progress Box */}
-          <div className="w-full lg:w-80 rounded-xl border border-slate-200 bg-slate-50/80 p-4">
-            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-              <span className="flex items-center gap-1.5">
-                <TrendingUp className="h-4 w-4 text-teal-600" />
-                সার্বিক অগ্রগতি (Overall Progress)
-              </span>
-              <span className="text-base text-teal-700">{toBengaliDigits(stats?.overall_progress || 0)}%</span>
-            </div>
-            <div className="mt-2 h-3 w-full overflow-hidden rounded-full bg-slate-200">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-teal-500 to-emerald-600 transition-all duration-500"
-                style={{ width: `${stats?.overall_progress || 0}%` }}
-              ></div>
-            </div>
-            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 font-medium">
-              <span>মোট টাস্ক: {toBengaliDigits(stats?.total_tasks || 0)}টি</span>
-              <span>সম্পন্ন: {toBengaliDigits(stats?.completed_tasks || 0)}টি</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* PHASE TABS */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      {/* Phase tabs */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {plan.phases.map((phase) => {
           const isCurrentActiveTab = activePhaseOrder === phase.order_no;
           const isSystemCurrentPhase = stats?.current_phase_order === phase.order_no;
@@ -251,153 +254,116 @@ export default function EmployeePlanPage() {
             <button
               key={phase.id}
               onClick={() => setActivePhaseOrder(phase.order_no)}
-              className={`relative flex flex-col text-left rounded-2xl p-4 transition-all border ${
-                isCurrentActiveTab
-                  ? 'bg-white border-teal-600 shadow-md ring-2 ring-teal-600/20'
-                  : 'bg-white/70 border-slate-200 hover:bg-white hover:border-slate-300 shadow-sm'
+              aria-pressed={isCurrentActiveTab}
+              className={`card flex flex-col p-4 text-left transition-colors ${
+                isCurrentActiveTab ? 'border-brand-600 ring-2 ring-brand-600/15' : 'hover:border-slate-300'
               }`}
             >
-              <div className="flex items-center justify-between w-full">
-                <span className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                  phase.order_no === 1
-                    ? 'bg-blue-100 text-blue-800'
-                    : phase.order_no === 2
-                    ? 'bg-teal-100 text-teal-800'
-                    : 'bg-purple-100 text-purple-800'
-                }`}>
+              <div className="flex w-full items-center justify-between gap-2">
+                <span className="badge badge-gray">
                   দিন {toBengaliDigits(phase.day_start)}–{toBengaliDigits(phase.day_end)}
                 </span>
                 {isSystemCurrentPhase && (
-                  <span className="flex items-center gap-1 text-[11px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
-                    <span className="h-1.5 w-1.5 rounded-full bg-teal-600 animate-ping"></span>
-                    চলমান ফেজ
+                  <span className="badge badge-green">
+                    <span className="h-1.5 w-1.5 rounded-full bg-brand-600"></span>
+                    চলমান · Current
                   </span>
                 )}
               </div>
 
-              <div className="mt-2">
-                <div className="text-base font-bold text-slate-900">{phase.name_bn}</div>
-                <div className="text-xs text-slate-500 font-mono mt-0.5">{phase.name_en}</div>
+              <div className="mt-3">
+                <div className="text-[15px] font-semibold text-slate-900">{phase.name_bn}</div>
+                <div className="mt-0.5 text-xs text-slate-500">{phase.name_en}</div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
                 <span className="text-slate-500">
-                  মোট: <strong>{toBengaliDigits(phaseCompleted)}/{toBengaliDigits(phaseTotal)}</strong>
+                  <span className="font-medium text-slate-700 tabular-nums">
+                    {toBengaliDigits(phaseCompleted)}/{toBengaliDigits(phaseTotal)}
+                  </span>
                   {myTasksInPhase > 0 && (
-                    <span className="ml-1 text-teal-700 font-semibold">({toBengaliDigits(myTasksInPhase)}টি আপনার)</span>
+                    <span className="ml-1 text-brand-700">({toBengaliDigits(myTasksInPhase)}টি আপনার)</span>
                   )}
                 </span>
-                <span className="font-bold text-teal-700">{toBengaliDigits(phasePct)}% সম্পন্ন</span>
+                <span className="font-medium text-brand-700 tabular-nums">{toBengaliDigits(phasePct)}%</span>
               </div>
             </button>
           );
         })}
       </div>
 
-      {/* PHASE CONTENT */}
       {activePhase && (
         <div className="space-y-6">
-          {/* MILESTONE CARD (READ ONLY) */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-              <div className="space-y-2 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="p-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-200">
-                    <Award className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                      ফেজ {toBengaliDigits(activePhase.order_no)} মাইলস্টোন
-                    </span>
-                    <h3 className="text-lg font-bold text-slate-900">
-                      {activeMilestone?.title_bn || 'মাইলস্টোন বিবরণ'}
-                    </h3>
-                  </div>
+          {/* Milestone */}
+          <div className="card">
+            <div className="card-header">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+                  <Award className="h-4 w-4" />
                 </div>
-
-                <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-100 text-xs sm:text-sm space-y-1.5">
-                  <div>
-                    <span className="font-semibold text-slate-600">প্রত্যাশিত ফলাফল:</span>{' '}
-                    <span className="text-slate-800">{activeMilestone?.expected_result}</span>
-                  </div>
-                  {activeMilestone?.achieved_result && (
-                    <div className="pt-1 border-t border-slate-200 text-teal-800">
-                      <span className="font-semibold">অর্জিত অগ্রগতি:</span>{' '}
-                      <span>{activeMilestone.achieved_result}</span>
-                    </div>
-                  )}
+                <div className="min-w-0">
+                  <p className="card-subtitle">ফেজ {toBengaliDigits(activePhase.order_no)} মাইলস্টোন · Milestone</p>
+                  <h3 className="card-title">{activeMilestone?.title_bn || 'মাইলস্টোন বিবরণ'}</h3>
                 </div>
               </div>
-
-              {/* Milestone Status Badge */}
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs text-slate-500 font-medium">মূল্যায়ন স্ট্যাটাস:</span>
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${
-                    activeMilestone?.status === 'MET'
-                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                      : activeMilestone?.status === 'PARTIAL'
-                      ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                      : activeMilestone?.status === 'MISSED'
-                      ? 'bg-rose-100 text-rose-800 border border-rose-300'
-                      : 'bg-amber-100 text-amber-800 border border-amber-300'
-                  }`}
-                >
-                  {activeMilestone?.status === 'MET' && 'অর্জিত (Met)'}
-                  {activeMilestone?.status === 'PARTIAL' && 'আংশিক অর্জিত (Partial)'}
-                  {activeMilestone?.status === 'MISSED' && 'অনর্জিত (Missed)'}
-                  {activeMilestone?.status === 'PENDING' && 'অপেক্ষমাণ (Pending)'}
-                </span>
+              <span className={`badge ${milestoneBadge}`}>
+                {activeMilestone?.status === 'MET' && 'অর্জিত · Met'}
+                {activeMilestone?.status === 'PARTIAL' && 'আংশিক · Partial'}
+                {activeMilestone?.status === 'MISSED' && 'অনর্জিত · Missed'}
+                {activeMilestone?.status === 'PENDING' && 'অপেক্ষমাণ · Pending'}
+              </span>
+            </div>
+            <div className="card-body space-y-3 text-sm">
+              <div>
+                <div className="text-xs font-medium text-slate-500">প্রত্যাশিত ফলাফল · Expected</div>
+                <div className="mt-0.5 text-slate-800">{activeMilestone?.expected_result}</div>
               </div>
+              {activeMilestone?.achieved_result && (
+                <div className="border-t border-slate-100 pt-3">
+                  <div className="text-xs font-medium text-slate-500">অর্জিত অগ্রগতি · Achieved</div>
+                  <div className="mt-0.5 text-slate-800">{activeMilestone.achieved_result}</div>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* TASKS LIST */}
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            {/* Header & Filter Toggle */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 border-b border-slate-200 bg-slate-50/50">
-              <div>
-                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <span>{activePhase.name_bn} — টাস্ক তালিকা</span>
-                  <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700">
-                    {toBengaliDigits(displayTasks.length)}টি
-                  </span>
+          {/* Tasks */}
+          <div className="card overflow-hidden">
+            <div className="card-header">
+              <div className="min-w-0">
+                <h2 className="card-title flex items-center gap-2">
+                  <span className="truncate">{activePhase.name_bn} · টাস্ক</span>
+                  <span className="badge badge-gray tabular-nums">{toBengaliDigits(displayTasks.length)}</span>
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  ফেজের সকল কর্মপরিকল্পনা ও দায়িত্ব
-                </p>
+                <p className="card-subtitle">এই ফেজের কাজ ও দায়িত্ব · Tasks in this phase</p>
               </div>
 
-              {/* Filter Button */}
               {myAssignedCountInCurrentPhase > 0 && (
                 <button
                   onClick={() => setFilterOnlyMyTasks(!filterOnlyMyTasks)}
-                  className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
-                    filterOnlyMyTasks
-                      ? 'bg-teal-600 text-white shadow-sm'
-                      : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'
-                  }`}
+                  aria-pressed={filterOnlyMyTasks}
+                  className={`btn btn-sm ${filterOnlyMyTasks ? 'btn-primary' : 'btn-secondary'}`}
                 >
                   <Filter className="h-3.5 w-3.5" />
-                  {filterOnlyMyTasks ? 'সকল টাস্ক দেখুন' : `শুধু আমার দায়িত্ব (${toBengaliDigits(myAssignedCountInCurrentPhase)}টি)`}
+                  {filterOnlyMyTasks
+                    ? 'সকল টাস্ক · All tasks'
+                    : `শুধু আমার · Mine (${toBengaliDigits(myAssignedCountInCurrentPhase)})`}
                 </button>
               )}
             </div>
 
-            {/* Empty State */}
             {displayTasks.length === 0 ? (
-              <div className="p-12 text-center">
-                <FileText className="mx-auto h-10 w-10 text-slate-300 mb-2" />
-                <h4 className="text-sm font-bold text-slate-700">কোনো টাস্ক পাওয়া যায়নি</h4>
-                <p className="text-xs text-slate-500 mt-1">
-                  {filterOnlyMyTasks
-                    ? 'এই ফেজে আপনার কোনো দায়িত্বপ্রাপ্ত টাস্ক নেই।'
-                    : 'এই ফেজে এখনও কোনো টাস্ক যোগ করা হয়নি।'}
-                </p>
-              </div>
+              <EmptyState
+                icon={<FileText className="h-5 w-5" />}
+                title="কোনো টাস্ক নেই · No tasks"
+                description={
+                  filterOnlyMyTasks
+                    ? 'এই ফেজে আপনার কোনো টাস্ক নেই · No tasks assigned to you here'
+                    : 'এই ফেজে এখনও টাস্ক যোগ হয়নি · No tasks added yet'
+                }
+              />
             ) : (
-              /* Tasks List */
-              <div className="divide-y divide-slate-100">
+              <ul className="divide-y divide-slate-100">
                 {displayTasks.map((task) => {
                   const todayStr = stats?.today || getDhakaDateString();
                   const isOverdue =
@@ -408,114 +374,85 @@ export default function EmployeePlanPage() {
                   const isMyTask = task.owner_id === currentUser?.id;
 
                   return (
-                    <div
+                    <li
                       key={task.id}
-                      className={`p-5 transition-colors ${
+                      className={`px-4 py-4 sm:px-5 ${
                         isMyTask
-                          ? 'bg-teal-50/40 border-l-4 border-l-teal-600'
+                          ? 'bg-brand-50/50 shadow-[inset_3px_0_0_var(--color-brand-600)]'
                           : isOverdue
-                          ? 'bg-rose-50/30'
-                          : 'hover:bg-slate-50/70'
+                          ? 'bg-rose-50/40'
+                          : ''
                       }`}
                     >
-                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        {/* Task Information */}
-                        <div className="space-y-1.5 flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            {/* Prominent Badge for Assigned Task */}
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <div className="flex flex-wrap items-center gap-1.5">
                             {isMyTask && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-teal-600 text-white px-2.5 py-0.5 text-xs font-bold shadow-xs">
-                                <UserCheck className="h-3.5 w-3.5" />
-                                আপনার দায়িত্ব (Assigned to You)
+                              <span className="badge badge-green">
+                                <UserCheck className="h-3 w-3" />
+                                আপনার · Yours
                               </span>
                             )}
-
-                            {/* Read-only Status Badge */}
-                            <span
-                              className={`text-xs font-bold rounded-lg px-2.5 py-0.5 border ${
-                                task.status === 'DONE'
-                                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                  : task.status === 'IN_PROGRESS'
-                                  ? 'bg-blue-100 text-blue-800 border-blue-300'
-                                  : task.status === 'BLOCKED'
-                                  ? 'bg-rose-100 text-rose-800 border-rose-300'
-                                  : 'bg-slate-100 text-slate-700 border-slate-300'
-                              }`}
-                            >
-                              {task.status === 'DONE' && 'সম্পন্ন (Done)'}
-                              {task.status === 'IN_PROGRESS' && 'চলমান (In Progress)'}
-                              {task.status === 'NOT_STARTED' && 'শুরু হয়নি (Not Started)'}
-                              {task.status === 'BLOCKED' && 'স্থগিত (Blocked)'}
+                            <span className={`badge ${taskBadge(task.status)}`}>
+                              {task.status === 'DONE' && 'সম্পন্ন · Done'}
+                              {task.status === 'IN_PROGRESS' && 'চলমান · In progress'}
+                              {task.status === 'NOT_STARTED' && 'শুরু হয়নি · Not started'}
+                              {task.status === 'BLOCKED' && 'স্থগিত · Blocked'}
                             </span>
-
-                            {/* Overdue Badge */}
                             {isOverdue && (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-700 border border-rose-200">
+                              <span className="badge badge-red">
                                 <AlertTriangle className="h-3 w-3" />
-                                বিলম্বিত (Overdue)
+                                বিলম্বিত · Overdue
                               </span>
                             )}
-
-                            {/* Due Date */}
-                            <span className="flex items-center gap-1 text-xs text-slate-500 font-mono">
+                            <span className="inline-flex items-center gap-1 text-xs text-slate-500 tabular-nums">
                               <Calendar className="h-3.5 w-3.5 text-slate-400" />
                               {task.due_date ? format(new Date(task.due_date), 'dd MMM, yyyy') : 'তারিখ নেই'}
                             </span>
                           </div>
 
-                          {/* Titles & Description */}
                           <div>
-                            <h4 className="text-sm font-bold text-slate-900 leading-snug">
-                              {task.title_bn}
-                            </h4>
-                            <p className="text-xs text-slate-500 font-mono mt-0.5">{task.title_en}</p>
-                            {task.description && (
-                              <p className="text-xs text-slate-600 mt-1">{task.description}</p>
-                            )}
+                            <h4 className="text-sm font-medium leading-snug text-slate-900">{task.title_bn}</h4>
+                            <p className="mt-0.5 text-xs text-slate-500">{task.title_en}</p>
+                            {task.description && <p className="mt-1 text-sm text-slate-600">{task.description}</p>}
                           </div>
 
-                          {/* Outcome note if present */}
                           {task.outcome_note && (
-                            <div className="pt-1 text-xs text-slate-700">
-                              <span className="font-semibold text-slate-500">ফলাফল নোট:</span>{' '}
-                              <span className="italic bg-slate-100 px-2 py-0.5 rounded-md">
-                                &ldquo;{task.outcome_note}&rdquo;
-                              </span>
-                            </div>
+                            <p className="text-xs text-slate-600">
+                              <span className="font-medium text-slate-500">ফলাফল · Outcome:</span>{' '}
+                              <span className="italic">&ldquo;{task.outcome_note}&rdquo;</span>
+                            </p>
                           )}
                         </div>
 
-                        {/* Read-Only Stats (Owner & Progress) */}
-                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-6 shrink-0 pt-2 lg:pt-0">
-                          {/* Owner Details */}
-                          <div className="text-xs min-w-32">
-                            <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
-                              দায়িত্বপ্রাপ্ত
-                            </span>
-                            <div className="font-semibold text-slate-800">
-                              {task.owner ? task.owner.name : <span className="text-slate-400 italic">অবণ্টিত</span>}
+                        <div className="grid shrink-0 grid-cols-2 gap-4 sm:flex sm:items-center sm:gap-6">
+                          <div className="min-w-0 text-xs sm:min-w-32">
+                            <span className="mb-0.5 block text-[11px] text-slate-500">দায়িত্বপ্রাপ্ত · Owner</span>
+                            <div className="truncate font-medium text-slate-800">
+                              {task.owner ? task.owner.name : <span className="italic text-slate-400">অবণ্টিত</span>}
                             </div>
                           </div>
 
-                          {/* Progress Indicator */}
-                          <div className="w-36">
-                            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-600 mb-1">
+                          <div className="sm:w-36">
+                            <div className="mb-1 flex items-center justify-between text-[11px] text-slate-500">
                               <span>অগ্রগতি</span>
-                              <span className="text-teal-700 font-bold">{toBengaliDigits(task.progress_percent)}%</span>
+                              <span className="font-medium text-brand-700 tabular-nums">
+                                {toBengaliDigits(task.progress_percent)}%
+                              </span>
                             </div>
-                            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                               <div
-                                className="h-full rounded-full bg-teal-600 transition-all duration-300"
+                                className="h-full rounded-full bg-brand-600 transition-all duration-300"
                                 style={{ width: `${task.progress_percent}%` }}
                               ></div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </li>
                   );
                 })}
-              </div>
+              </ul>
             )}
           </div>
         </div>

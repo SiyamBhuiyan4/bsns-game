@@ -12,7 +12,11 @@ import {
   Award,
   MessageSquare,
   X,
+  BarChart3,
 } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
+import StatCard from '@/components/ui/StatCard';
+import EmptyState from '@/components/ui/EmptyState';
 import { formatTaka, getDhakaDateString } from '@/lib/date';
 
 interface DailyEmployeeReport {
@@ -95,231 +99,163 @@ export default function AdminDailyReportPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header & Controls */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            দৈনিক পারফরম্যান্স রিপোর্ট (Daily Performance Report)
-          </h1>
-          <p className="text-sm text-slate-500">
-            দলের প্রতিটি সদস্যের লক্ষ্যমাত্রা অর্জন, স্কোরিং ও দৈনন্দিন কাজের পর্যবেক্ষণ
-          </p>
-        </div>
-
-        {/* Date Selector & Export Actions */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold shadow-sm">
-            <Calendar className="h-4 w-4 text-emerald-600" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="border-none bg-transparent p-0 font-bold text-slate-800 focus:outline-none"
-            />
-          </div>
-
-          <a
-            href={`/api/reports/daily/export?type=excel&date=${selectedDate}`}
-            download
-            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 shadow-sm hover:bg-emerald-100 transition"
-          >
-            <FileSpreadsheet className="h-4 w-4 text-emerald-700" />
-            এক্সেল ডাউনলোড
-          </a>
-
-          <a
-            href={`/api/reports/daily/export?type=pdf&date=${selectedDate}`}
-            download
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition"
-          >
-            <Download className="h-4 w-4 text-slate-600" />
-            পিডিএফ
-          </a>
-        </div>
-      </div>
+      <PageHeader
+        icon={<BarChart3 className="h-5 w-5" />}
+        title="দৈনিক রিপোর্ট"
+        subtitle="প্রতিটি সদস্যের লক্ষ্য অর্জন ও স্কোর"
+        actions={
+          <>
+            <label className="sr-only" htmlFor="daily-date">তারিখ</label>
+            <div className="relative">
+              <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                id="daily-date"
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="input w-auto pl-9"
+              />
+            </div>
+            <a
+              href={`/api/reports/daily/export?type=excel&date=${selectedDate}`}
+              download
+              className="btn btn-secondary"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Excel
+            </a>
+            <a
+              href={`/api/reports/daily/export?type=pdf&date=${selectedDate}`}
+              download
+              className="btn btn-secondary"
+            >
+              <Download className="h-4 w-4" />
+              PDF
+            </a>
+          </>
+        }
+      />
 
       {errorMsg && (
-        <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3.5 text-xs font-semibold text-red-800 border border-red-200">
-          <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+        <div className="alert alert-error">
+          <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
-      {/* Summary KPI Cards */}
       {summary && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-              <span className="flex items-center gap-1.5">
-                <DollarSign className="h-4 w-4 text-emerald-600" />
-                মোট বিক্রয়
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            label="মোট বিক্রয়"
+            value={formatTaka(summary.team_sales)}
+            note={`লাভ: ${formatTaka(summary.team_profit)}`}
+            icon={<DollarSign className="h-4 w-4" />}
+            tone="brand"
+          />
+          <StatCard
+            label="দলের গড় স্কোর"
+            value={
+              <span className="flex items-baseline gap-2">
+                {summary.team_avg_score}
+                <span className="text-sm font-medium text-slate-400">/ ১০০</span>
+                <span className={`badge ${summary.team_avg_score >= 80 ? 'badge-green' : 'badge-red'}`}>
+                  {summary.team_avg_score >= 80 ? 'পাস' : 'ফেল'}
+                </span>
               </span>
-              <span className="text-emerald-700 bg-emerald-50 rounded px-1.5 py-0.5 text-[10px]">
-                লাভ: {formatTaka(summary.team_profit)}
-              </span>
-            </div>
-            <div className="mt-2 text-2xl font-black text-slate-900">
-              {formatTaka(summary.team_sales)}
-            </div>
-            <span className="text-[11px] text-slate-400 mt-1 block">
-              আজকের মোট দলীয় বিক্রয়
-            </span>
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-              <span className="flex items-center gap-1.5">
-                <Award className="h-4 w-4 text-teal-600" />
-                দলের গড় স্কোর
-              </span>
-              <span
-                className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
-                  summary.team_avg_score >= 80
-                    ? 'bg-emerald-50 text-emerald-800'
-                    : 'bg-red-50 text-red-800'
-                }`}
-              >
-                {summary.team_avg_score >= 80 ? 'পাস' : 'ফেল'}
-              </span>
-            </div>
-            <div className="mt-2 text-2xl font-black text-slate-900">
-              {summary.team_avg_score} <span className="text-sm font-bold text-slate-400">/ ১০০</span>
-            </div>
-            <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-1">
-              <span className="text-emerald-600 font-semibold">{summary.passing_count} পাস</span>
-              <span>•</span>
-              <span className="text-red-600 font-semibold">{summary.failing_count} উন্নতি প্রয়োজন</span>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4 text-blue-600" />
-                গ্রুপ পোস্ট সম্পন্ন
-              </span>
-            </div>
-            <div className="mt-2 text-2xl font-black text-slate-900">
-              {summary.team_posts}{' '}
-              <span className="text-sm font-semibold text-slate-500">টি</span>
-            </div>
-            <span className="text-[11px] text-slate-400 mt-1 block">
-              অনুমোদিত ফেসবুক গ্রুপে পোস্ট সংখ্যা
-            </span>
-          </div>
-
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-              <span className="flex items-center gap-1.5">
-                <Users className="h-4 w-4 text-purple-600" />
-                গ্রাহক ও অর্ডার
-              </span>
-            </div>
-            <div className="mt-2 text-xl font-black text-slate-900">
-              {summary.team_new_clients} নতুন / {summary.team_b2b} B2B
-            </div>
-            <span className="text-[11px] text-slate-400 mt-1 block">
-              রিটেনশন: {summary.team_retention} | ফলো-আপ: {summary.team_followups}
-            </span>
-          </div>
+            }
+            note={`${summary.passing_count} পাস · ${summary.failing_count} উন্নতি প্রয়োজন`}
+            icon={<Award className="h-4 w-4" />}
+            tone="blue"
+          />
+          <StatCard
+            label="গ্রুপ পোস্ট"
+            value={summary.team_posts}
+            note="অনুমোদিত গ্রুপে পোস্ট"
+            icon={<CheckCircle2 className="h-4 w-4" />}
+            tone="amber"
+          />
+          <StatCard
+            label="গ্রাহক ও অর্ডার"
+            value={`${summary.team_new_clients} নতুন / ${summary.team_b2b} B2B`}
+            note={`রিটেনশন: ${summary.team_retention} · ফলো-আপ: ${summary.team_followups}`}
+            icon={<Users className="h-4 w-4" />}
+            tone="violet"
+          />
         </div>
       )}
 
-      {/* Employee Breakdown Table */}
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/50 p-4">
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-emerald-600" />
-            <h2 className="text-sm font-bold text-slate-800">
-              মার্কেটারভিত্তিক দৈনিক পারফরম্যান্স ও স্কোরিং তালিকা ({employees.length})
-            </h2>
+      <div className="card">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">সদস্যভিত্তিক পারফরম্যান্স ({employees.length})</h2>
+            <p className="card-subtitle">তারিখ: {selectedDate}</p>
           </div>
-          <span className="text-xs text-slate-500">তারিখ: {selectedDate}</span>
         </div>
 
         {loading ? (
-          <div className="p-12 text-center text-sm text-slate-500">ডাটা লোড হচ্ছে...</div>
+          <div className="p-12 text-center text-sm text-slate-500">লোড হচ্ছে...</div>
         ) : employees.length === 0 ? (
-          <div className="p-8 text-center text-xs text-slate-500">কোনো তথ্য পাওয়া যায়নি।</div>
+          <EmptyState
+            icon={<Users className="h-5 w-5" />}
+            title="কোনো তথ্য পাওয়া যায়নি"
+            description="এই তারিখে কোনো রিপোর্ট নেই।"
+          />
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
-              <thead className="bg-slate-50 font-bold text-slate-600 uppercase tracking-wider">
+            <table className="table-pro">
+              <thead>
                 <tr>
-                  <th className="px-3.5 py-3">মার্কেটার নাম</th>
-                  <th className="px-3.5 py-3">সেকশন</th>
-                  <th className="px-3.5 py-3 text-center">পোস্ট</th>
-                  <th className="px-3.5 py-3 text-right">বিক্রয় (৳)</th>
-                  <th className="px-3.5 py-3 text-right">মুনাফা (৳)</th>
-                  <th className="px-3.5 py-3 text-center">নতুন ক্রেতা</th>
-                  <th className="px-3.5 py-3 text-center">B2B</th>
-                  <th className="px-3.5 py-3 text-center">রিটেনশন</th>
-                  <th className="px-3.5 py-3 text-center">ফলো-আপ</th>
-                  <th className="px-3.5 py-3 text-right">স্কোর (%)</th>
-                  <th className="px-3.5 py-3 text-center">স্ট্যাটাস</th>
-                  <th className="px-3.5 py-3 text-center">প্রতিফলন</th>
+                  <th>নাম</th>
+                  <th>সেকশন</th>
+                  <th className="text-center">পোস্ট</th>
+                  <th className="text-right">বিক্রয় (৳)</th>
+                  <th className="text-right">মুনাফা (৳)</th>
+                  <th className="text-center">নতুন ক্রেতা</th>
+                  <th className="text-center">B2B</th>
+                  <th className="text-center">রিটেনশন</th>
+                  <th className="text-center">ফলো-আপ</th>
+                  <th className="text-right">স্কোর</th>
+                  <th className="text-center">স্ট্যাটাস</th>
+                  <th className="text-center">প্রতিফলন</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody>
                 {employees.map((emp) => {
                   const isFail = emp.is_failing;
                   return (
-                    <tr
-                      key={emp.employee_id}
-                      className={`hover:bg-slate-50/70 transition ${
-                        isFail ? 'bg-red-50/30' : ''
-                      }`}
-                    >
-                      <td className="px-3.5 py-3 font-bold text-slate-900">
-                        {emp.name}
-                        <span className="block text-[10px] font-normal text-slate-400">
-                          {emp.email}
-                        </span>
+                    <tr key={emp.employee_id}>
+                      <td className="whitespace-nowrap">
+                        <span className="font-medium text-slate-900">{emp.name}</span>
+                        <span className="block text-xs text-slate-500">{emp.email}</span>
                       </td>
-                      <td className="px-3.5 py-3 text-slate-600 max-w-[120px] truncate">
+                      <td className="max-w-[140px] truncate text-slate-600">
                         {emp.sections.length > 0 ? emp.sections.join(', ') : '-'}
                       </td>
-                      <td className="px-3.5 py-3 text-center font-semibold text-slate-800">
+                      <td className="text-center tabular-nums">
                         {emp.metrics.POSTS_DONE}
                         {emp.targets.POSTS_DONE && (
-                          <span className="text-[10px] text-slate-400 block">
+                          <span className="text-xs text-slate-400">
                             /{Math.round(emp.targets.POSTS_DONE)}
                           </span>
                         )}
                       </td>
-                      <td className="px-3.5 py-3 text-right font-bold text-slate-900">
+                      <td className="text-right font-medium tabular-nums text-slate-900">
                         {formatTaka(emp.metrics.SALES_AMOUNT)}
                       </td>
-                      <td className="px-3.5 py-3 text-right text-emerald-700 font-semibold">
-                        {formatTaka(emp.metrics.PROFIT_AMOUNT)}
-                      </td>
-                      <td className="px-3.5 py-3 text-center text-slate-800">
-                        {emp.metrics.NEW_CLIENTS}
-                      </td>
-                      <td className="px-3.5 py-3 text-center font-bold text-blue-700">
-                        {emp.metrics.B2B_ORDERS}
-                      </td>
-                      <td className="px-3.5 py-3 text-center text-slate-700">
-                        {emp.metrics.RETENTION_COUNT}
-                      </td>
-                      <td className="px-3.5 py-3 text-center text-slate-700">
-                        {emp.metrics.FOLLOWUPS_DONE}
-                      </td>
-                      <td className="px-3.5 py-3 text-right font-black text-slate-900 text-sm">
-                        {emp.score}
-                      </td>
-                      <td className="px-3.5 py-3 text-center">
+                      <td className="text-right tabular-nums">{formatTaka(emp.metrics.PROFIT_AMOUNT)}</td>
+                      <td className="text-center tabular-nums">{emp.metrics.NEW_CLIENTS}</td>
+                      <td className="text-center tabular-nums">{emp.metrics.B2B_ORDERS}</td>
+                      <td className="text-center tabular-nums">{emp.metrics.RETENTION_COUNT}</td>
+                      <td className="text-center tabular-nums">{emp.metrics.FOLLOWUPS_DONE}</td>
+                      <td className="text-right font-semibold tabular-nums text-slate-900">{emp.score}</td>
+                      <td className="text-center">
                         {isFail ? (
-                          <span className="inline-block rounded bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-800 border border-red-200">
-                            উন্নতি প্রয়োজন
-                          </span>
+                          <span className="badge badge-red">উন্নতি প্রয়োজন</span>
                         ) : (
-                          <span className="inline-block rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
-                            পাস (≥৮০%)
-                          </span>
+                          <span className="badge badge-green">পাস</span>
                         )}
                       </td>
-                      <td className="px-3.5 py-3 text-center">
+                      <td className="text-center">
                         {emp.daily_text?.main_issue || emp.daily_text?.next_priorities ? (
                           <button
                             onClick={() =>
@@ -329,13 +265,13 @@ export default function AdminDailyReportPage() {
                                 next_priorities: emp.daily_text?.next_priorities || null,
                               })
                             }
-                            className="inline-flex items-center gap-1 text-[11px] font-bold text-teal-700 hover:text-teal-900 hover:underline"
+                            className="btn btn-ghost btn-sm"
                           >
-                            <MessageSquare className="h-3 w-3" />
+                            <MessageSquare className="h-3.5 w-3.5" />
                             দেখুন
                           </button>
                         ) : (
-                          <span className="text-[11px] text-slate-300">-</span>
+                          <span className="text-slate-300">-</span>
                         )}
                       </td>
                     </tr>
@@ -347,50 +283,40 @@ export default function AdminDailyReportPage() {
         )}
       </div>
 
-      {/* Reflection Modal */}
       {selectedReflection && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-panel">
+            <div className="card-header">
               <div>
-                <h3 className="text-base font-bold text-slate-900">
-                  দৈনিক প্রতিক্রিয়া: {selectedReflection.name}
-                </h3>
-                <span className="text-xs text-slate-500">তারিখ: {selectedDate}</span>
+                <h3 className="card-title">দৈনিক প্রতিফলন: {selectedReflection.name}</h3>
+                <p className="card-subtitle">তারিখ: {selectedDate}</p>
               </div>
               <button
                 onClick={() => setSelectedReflection(null)}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                className="btn-icon"
+                aria-label="বন্ধ করুন"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="space-y-4 text-xs">
+            <div className="card-body space-y-4 text-sm">
               <div>
-                <span className="block font-bold text-slate-700 mb-1">
-                  আজকের প্রধান সমস্যা / বাধা:
-                </span>
-                <p className="rounded-lg bg-slate-50 p-3 text-slate-800 border border-slate-200 leading-relaxed">
+                <span className="label">প্রধান সমস্যা / বাধা</span>
+                <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 leading-relaxed text-slate-800">
                   {selectedReflection.main_issue || 'কোনো সমস্যা উল্লেখ করা হয়নি।'}
                 </p>
               </div>
-
               <div>
-                <span className="block font-bold text-slate-700 mb-1">
-                  কালকের প্রধান ৩টি অগ্রাধিকার:
-                </span>
-                <p className="rounded-lg bg-slate-50 p-3 text-slate-800 border border-slate-200 leading-relaxed">
+                <span className="label">আগামীকালের ৩টি অগ্রাধিকার</span>
+                <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 leading-relaxed text-slate-800">
                   {selectedReflection.next_priorities || 'কোনো অগ্রাধিকার উল্লেখ করা হয়নি।'}
                 </p>
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={() => setSelectedReflection(null)}
-                className="rounded-lg bg-slate-800 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-900"
-              >
+            <div className="flex justify-end border-t border-slate-100 px-5 py-4">
+              <button onClick={() => setSelectedReflection(null)} className="btn btn-secondary">
                 বন্ধ করুন
               </button>
             </div>

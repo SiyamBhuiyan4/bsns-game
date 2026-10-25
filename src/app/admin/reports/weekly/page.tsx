@@ -14,7 +14,9 @@ import {
   Share2,
   History,
   Lock,
+  CalendarRange,
 } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
 import { formatTaka } from '@/lib/date';
 import { WeeklyAutoData } from '@/lib/reports';
 
@@ -143,353 +145,285 @@ export default function AdminWeeklyReportPage() {
   const autoData = report?.auto_data;
   const isPublished = report?.status === 'PUBLISHED';
 
+  const publishNote = isPublished
+    ? 'প্রকাশিত রিপোর্ট আর খসড়ায় ফেরানো যায় না।'
+    : 'প্রকাশ চূড়ান্ত: এরপর আর খসড়ায় ফেরানো যাবে না, রিপোর্টটি আর্কাইভে যাবে।';
+
   return (
     <div className="space-y-6">
-      {/* Header & Controls */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              সাপ্তাহিক মূল্যায়ন প্রতিবেদন (Weekly Report)
-            </h1>
+      <PageHeader
+        icon={<CalendarRange className="h-5 w-5" />}
+        title={
+          <span className="flex flex-wrap items-center gap-2">
+            সাপ্তাহিক রিপোর্ট
             {report && (
-              <span
-                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                  isPublished
-                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                    : 'bg-amber-100 text-amber-800 border border-amber-300'
-                }`}
-              >
+              <span className={`badge ${isPublished ? 'badge-green' : 'badge-amber'}`}>
                 {isPublished ? (
                   <>
                     <Lock className="h-3 w-3" />
-                    প্রকাশিত (PUBLISHED)
+                    প্রকাশিত
                   </>
                 ) : (
-                  'খসড়া (DRAFT)'
+                  'খসড়া'
                 )}
               </span>
             )}
-          </div>
-          <p className="text-sm text-slate-500">
-            স্বয়ংক্রিয় অ্যানালিটিক্স, পণ্য ও ক্যাম্পেইন পর্যালোচনা এবং কৌশলগত ৫টি প্রশ্নের উত্তর প্রদান
-          </p>
-        </div>
+          </span>
+        }
+        subtitle="স্বয়ংক্রিয় বিশ্লেষণ ও ৫টি কৌশলগত প্রশ্ন"
+        actions={
+          <>
+            <label className="sr-only" htmlFor="weekly-date">তারিখ</label>
+            <div className="relative">
+              <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                id="weekly-date"
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="input w-auto pl-9"
+              />
+            </div>
+            {report && (
+              <>
+                <a
+                  href={`/api/reports/weekly/export?type=excel&weekStart=${report.week_start.slice(0, 10)}&id=${report.id}`}
+                  download
+                  className="btn btn-secondary"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  Excel
+                </a>
+                <a
+                  href={`/api/reports/weekly/export?type=pdf&weekStart=${report.week_start.slice(0, 10)}&id=${report.id}`}
+                  download
+                  className="btn btn-secondary"
+                >
+                  <Download className="h-4 w-4" />
+                  PDF
+                </a>
+              </>
+            )}
+          </>
+        }
+      />
 
-        {/* Date Selector & Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold shadow-sm">
-            <Calendar className="h-4 w-4 text-emerald-600" />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="border-none bg-transparent p-0 font-bold text-slate-800 focus:outline-none"
-            />
-          </div>
-
-          {report && (
-            <>
-              <a
-                href={`/api/reports/weekly/export?type=excel&weekStart=${report.week_start.slice(0, 10)}&id=${report.id}`}
-                download
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition"
-              >
-                <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
-                এক্সেল
-              </a>
-
-              <a
-                href={`/api/reports/weekly/export?type=pdf&weekStart=${report.week_start.slice(0, 10)}&id=${report.id}`}
-                download
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition"
-              >
-                <Download className="h-4 w-4 text-slate-600" />
-                পিডিএফ
-              </a>
-
-              <button
-                type="button"
-                onClick={() => handleSave(false)}
-                disabled={saving}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50 transition"
-              >
-                <Save className="h-4 w-4 text-blue-600" />
-                ড্রাফট সংরক্ষণ
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleSave(true)}
-                disabled={saving || isPublished}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition disabled:opacity-50"
-              >
-                <Send className="h-4 w-4" />
-                {isPublished ? 'ইতিমধ্যে প্রকাশিত' : 'রিপোর্ট প্রকাশ করুন'}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Alerts */}
       {errorMsg && (
-        <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3.5 text-xs font-semibold text-red-800 border border-red-200">
-          <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+        <div className="alert alert-error">
+          <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
       {successMsg && (
-        <div className="flex items-center gap-2 rounded-lg bg-emerald-50 p-3.5 text-xs font-semibold text-emerald-800 border border-emerald-200">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+        <div className="alert alert-success">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {loading || !report || !autoData ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center text-sm text-slate-500">
-          সাপ্তাহিক রিপোর্ট তৈরি ও ডাটা লোড হচ্ছে...
-        </div>
+        <div className="card p-12 text-center text-sm text-slate-500">লোড হচ্ছে...</div>
       ) : (
         <div className="space-y-6">
-          {/* Week Summary Banner */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                সপ্তাহের সময়কাল: {report.week_start.slice(0, 10)} হতে {report.week_end.slice(0, 10)} (রবিবার - শনিবার)
-              </span>
-              <span className="text-xs font-semibold text-slate-500">
-                প্রস্তুতকারক: {report.creator?.name}
-              </span>
+          <div className="card">
+            <div className="card-header">
+              <div>
+                <h2 className="card-title">সপ্তাহের সারাংশ</h2>
+                <p className="card-subtitle">
+                  {report.week_start.slice(0, 10)} – {report.week_end.slice(0, 10)} (রবি–শনি)
+                </p>
+              </div>
+              <span className="text-xs text-slate-500">প্রস্তুতকারক: {report.creator?.name}</span>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div className="rounded-lg bg-slate-50 p-3">
-                <span className="text-[11px] font-bold text-slate-500 block">মোট বিক্রয়</span>
-                <span className="text-base font-black text-slate-900 mt-1 block">
-                  {formatTaka(autoData.summary.total_sales)}
-                </span>
-              </div>
-              <div className="rounded-lg bg-slate-50 p-3">
-                <span className="text-[11px] font-bold text-slate-500 block">মোট মুনাফা</span>
-                <span className="text-base font-black text-emerald-700 mt-1 block">
-                  {formatTaka(autoData.summary.total_profit)}
-                </span>
-              </div>
-              <div className="rounded-lg bg-slate-50 p-3">
-                <span className="text-[11px] font-bold text-slate-500 block">গ্রুপ পোস্ট</span>
-                <span className="text-base font-black text-slate-900 mt-1 block">
-                  {autoData.summary.total_posts} টি
-                </span>
-              </div>
-              <div className="rounded-lg bg-slate-50 p-3">
-                <span className="text-[11px] font-bold text-slate-500 block">নতুন ক্রেতা</span>
-                <span className="text-base font-black text-slate-900 mt-1 block">
-                  {autoData.summary.total_new_clients} জন
-                </span>
-              </div>
-              <div className="rounded-lg bg-slate-50 p-3">
-                <span className="text-[11px] font-bold text-slate-500 block">B2B অর্ডার</span>
-                <span className="text-base font-black text-blue-700 mt-1 block">
-                  {autoData.summary.total_b2b_orders} টি
-                </span>
-              </div>
-              <div className="rounded-lg bg-slate-50 p-3">
-                <span className="text-[11px] font-bold text-slate-500 block">টিম গড় স্কোর</span>
-                <span className="text-base font-black text-slate-900 mt-1 block">
-                  {autoData.summary.team_avg_score}%
-                </span>
-              </div>
+            <div className="card-body grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+              {[
+                { label: 'মোট বিক্রয়', value: formatTaka(autoData.summary.total_sales) },
+                { label: 'মোট মুনাফা', value: formatTaka(autoData.summary.total_profit) },
+                { label: 'গ্রুপ পোস্ট', value: `${autoData.summary.total_posts} টি` },
+                { label: 'নতুন ক্রেতা', value: `${autoData.summary.total_new_clients} জন` },
+                { label: 'B2B অর্ডার', value: `${autoData.summary.total_b2b_orders} টি` },
+                { label: 'গড় স্কোর', value: `${autoData.summary.team_avg_score}%` },
+              ].map((m) => (
+                <div key={m.label} className="min-w-0">
+                  <span className="block text-xs text-slate-500">{m.label}</span>
+                  <span className="mt-1 block truncate text-lg font-semibold tabular-nums text-slate-900">
+                    {m.value}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Section A: Automated Marketing Data (Questions 1 - 3) */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Auto Q1: Top Selling Products */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
-                <Package className="h-4 w-4 text-emerald-600" />
-                <h3 className="text-xs font-bold text-slate-900">
-                  প্রশ্ন ১: কোন পণ্য সবচেয়ে বেশি বিক্রি হয়েছে?
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title flex items-center gap-2">
+                  <Package className="h-4 w-4 text-slate-400" />
+                  শীর্ষ বিক্রিত পণ্য
                 </h3>
               </div>
-
               {autoData.top_products.length === 0 ? (
-                <div className="p-4 text-center text-xs text-slate-400">কোনো তথ্য নেই</div>
+                <div className="p-6 text-center text-sm text-slate-400">কোনো তথ্য নেই</div>
               ) : (
-                <div className="space-y-3">
+                <ul className="divide-y divide-slate-100">
                   {autoData.top_products.slice(0, 4).map((p, i) => (
-                    <div
-                      key={p.product_id}
-                      className="flex items-center justify-between text-xs p-2 rounded-lg bg-slate-50"
-                    >
-                      <div>
-                        <span className="font-bold text-slate-800 block">
+                    <li key={p.product_id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+                      <div className="min-w-0">
+                        <span className="block truncate font-medium text-slate-800">
                           {i + 1}. {p.product_name_bn}
                         </span>
-                        <span className="text-[10px] text-slate-400">
+                        <span className="text-xs text-slate-500">
                           {p.total_quantity} {p.unit}
                         </span>
                       </div>
-                      <span className="font-bold text-slate-900">
+                      <span className="shrink-0 font-medium tabular-nums text-slate-900">
                         {formatTaka(p.total_amount)}
                       </span>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </div>
 
-            {/* Auto Q2: Campaign Performance */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
-                <Megaphone className="h-4 w-4 text-blue-600" />
-                <h3 className="text-xs font-bold text-slate-900">
-                  প্রশ্ন ২: কোন ক্যাম্পেইন ভালো পারফর্ম করেছে?
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title flex items-center gap-2">
+                  <Megaphone className="h-4 w-4 text-slate-400" />
+                  ক্যাম্পেইন পারফরম্যান্স
                 </h3>
               </div>
-
               {autoData.campaign_performance.length === 0 ? (
-                <div className="p-4 text-center text-xs text-slate-400">কোনো ক্যাম্পেইন সক্রিয় নেই</div>
+                <div className="p-6 text-center text-sm text-slate-400">কোনো ক্যাম্পেইন সক্রিয় নেই</div>
               ) : (
-                <div className="space-y-3">
+                <ul className="divide-y divide-slate-100">
                   {autoData.campaign_performance.slice(0, 4).map((c, i) => (
-                    <div
-                      key={c.campaign_id}
-                      className="flex items-center justify-between text-xs p-2 rounded-lg bg-slate-50"
-                    >
-                      <div>
-                        <span className="font-bold text-slate-800 block">
+                    <li key={c.campaign_id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+                      <div className="min-w-0">
+                        <span className="block truncate font-medium text-slate-800">
                           {i + 1}. {c.campaign_name}
                         </span>
-                        <span className="text-[10px] text-slate-400">
-                          {c.leads_count} লিড | কনভার্সন: {c.conversion_rate}%
+                        <span className="text-xs text-slate-500">
+                          {c.leads_count} লিড · কনভার্সন {c.conversion_rate}%
                         </span>
                       </div>
-                      <span className="font-bold text-slate-900">
+                      <span className="shrink-0 font-medium tabular-nums text-slate-900">
                         {formatTaka(c.orders_amount)}
                       </span>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </div>
 
-            {/* Auto Q3: Channel Breakdown */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
-                <Share2 className="h-4 w-4 text-purple-600" />
-                <h3 className="text-xs font-bold text-slate-900">
-                  প্রশ্ন ৩: কোন চ্যানেলে কত বিক্রি হয়েছে?
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title flex items-center gap-2">
+                  <Share2 className="h-4 w-4 text-slate-400" />
+                  চ্যানেলভিত্তিক বিক্রয়
                 </h3>
               </div>
-
-              <div className="space-y-3">
+              <ul className="divide-y divide-slate-100">
                 {autoData.channel_breakdown.map((ch) => (
-                  <div
-                    key={ch.channel}
-                    className="flex items-center justify-between text-xs p-2 rounded-lg bg-slate-50"
-                  >
-                    <div>
-                      <span className="font-bold text-slate-800 block">{ch.channel_bn}</span>
-                      <span className="text-[10px] text-slate-400">
-                        লিড: {ch.leads_count} | অর্ডার: {ch.orders_count}
+                  <li key={ch.channel} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+                    <div className="min-w-0">
+                      <span className="block truncate font-medium text-slate-800">{ch.channel_bn}</span>
+                      <span className="text-xs text-slate-500">
+                        লিড {ch.leads_count} · অর্ডার {ch.orders_count}
                       </span>
                     </div>
-                    <span className="font-bold text-slate-900">
+                    <span className="shrink-0 font-medium tabular-nums text-slate-900">
                       {formatTaka(ch.total_amount)}
                     </span>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           </div>
 
-          {/* Section B: Fixed 5 Marketing Questions */}
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="border-b border-slate-100 pb-3 mb-5">
-              <h2 className="text-base font-bold text-slate-900">
-                কৌশলগত ও মূল্যায়নমূলক প্রশ্নসমূহ (Fixed Marketing Questions)
-              </h2>
-              <p className="text-xs text-slate-500">
-                হেড অব মার্কেটিং সাপ্তাহিক মূল্যায়নে নিচের ৫টি প্রশ্নের উত্তর প্রদান করবেন:
-              </p>
+          <div className="card">
+            <div className="card-header">
+              <div>
+                <h2 className="card-title">কৌশলগত প্রশ্নসমূহ</h2>
+                <p className="card-subtitle">হেড অব মার্কেটিং নিচের ৫টি প্রশ্নের উত্তর দেবেন</p>
+              </div>
             </div>
-
-            <div className="space-y-5">
+            <div className="card-body space-y-5">
               {report.answers.map((ans) => (
-                <div key={ans.question_no} className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
-                  <label className="block text-xs font-bold text-slate-900 mb-2">
-                    প্রশ্ন {ans.question_no}: {ans.question_text}
+                <div key={ans.question_no}>
+                  <label className="label" htmlFor={`weekly-q-${ans.question_no}`}>
+                    {ans.question_no}. {ans.question_text}
                   </label>
                   <textarea
+                    id={`weekly-q-${ans.question_no}`}
                     rows={3}
                     value={answers[ans.question_no] ?? ans.answer_text}
                     onChange={(e) => handleAnswerChange(ans.question_no, e.target.value)}
-                    placeholder="এখানে বিস্তারিত মূল্যায়ন বা দিকনির্দেশনা লিখুন..."
-                    className="w-full rounded-lg border border-slate-300 p-3 text-xs text-slate-900 focus:border-emerald-500 focus:outline-none bg-white shadow-sm"
+                    placeholder="মূল্যায়ন বা দিকনির্দেশনা লিখুন..."
+                    className="input"
                   />
                 </div>
               ))}
             </div>
 
-            {/* Bottom Actions */}
-            <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100">
-              <button
-                type="button"
-                onClick={() => handleSave(false)}
-                disabled={saving}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-800 shadow-sm hover:bg-slate-50"
-              >
-                <Save className="h-4 w-4 text-blue-600" />
-                ড্রাফট সংরক্ষণ করুন
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSave(true)}
-                disabled={saving || isPublished}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
-              >
-                <Send className="h-4 w-4" />
-                {isPublished ? 'ইতিমধ্যে প্রকাশিত' : 'রিপোর্ট প্রকাশ করুন'}
-              </button>
+            <div className="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className={`flex items-start gap-2 text-xs ${isPublished ? 'text-slate-500' : 'text-amber-800'}`}>
+                <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                {publishNote}
+              </p>
+              <div className="flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSave(false)}
+                  disabled={saving}
+                  className="btn btn-secondary"
+                >
+                  <Save className="h-4 w-4" />
+                  {isPublished ? 'সংরক্ষণ' : 'খসড়া সংরক্ষণ'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSave(true)}
+                  disabled={saving || isPublished}
+                  className="btn btn-primary"
+                >
+                  <Send className="h-4 w-4" />
+                  {isPublished ? 'প্রকাশিত' : 'প্রকাশ করুন'}
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Past Reports History */}
           {pastReports.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-              <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50/50 p-4">
-                <History className="h-4 w-4 text-slate-600" />
-                <h3 className="text-xs font-bold text-slate-800">
-                  বিগত সপ্তাহের রিপোর্ট হিস্ট্রি (Archive)
+            <div className="card">
+              <div className="card-header">
+                <h3 className="card-title flex items-center gap-2">
+                  <History className="h-4 w-4 text-slate-400" />
+                  আগের রিপোর্ট
                 </h3>
               </div>
-              <div className="divide-y divide-slate-100">
+              <ul className="divide-y divide-slate-100">
                 {pastReports.map((r) => (
-                  <div
-                    key={r.id}
-                    className="flex items-center justify-between p-3.5 hover:bg-slate-50 text-xs transition"
-                  >
-                    <div>
-                      <span className="font-bold text-slate-800">
-                        সপ্তাহ: {r.week_start.slice(0, 10)} হতে {r.week_end.slice(0, 10)}
+                  <li key={r.id} className="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+                    <div className="min-w-0">
+                      <span className="block font-medium text-slate-800">
+                        {r.week_start.slice(0, 10)} – {r.week_end.slice(0, 10)}
                       </span>
-                      <span className="text-[10px] text-slate-400 block mt-0.5">
-                        প্রস্তুতকারক: {r.creator?.name} | স্ট্যাটাস: {r.status}
+                      <span className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                        {r.creator?.name}
+                        <span className={`badge ${r.status === 'PUBLISHED' ? 'badge-green' : 'badge-amber'}`}>
+                          {r.status === 'PUBLISHED' ? 'প্রকাশিত' : 'খসড়া'}
+                        </span>
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setSelectedDate(r.week_start.slice(0, 10))}
-                        className="rounded border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
-                      >
-                        লোড করুন
-                      </button>
-                    </div>
-                  </div>
+                    <button
+                      onClick={() => setSelectedDate(r.week_start.slice(0, 10))}
+                      className="btn btn-secondary btn-sm"
+                    >
+                      খুলুন
+                    </button>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           )}
         </div>

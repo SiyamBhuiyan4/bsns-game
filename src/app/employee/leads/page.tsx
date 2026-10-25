@@ -17,6 +17,8 @@ import {
   Send,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import PageHeader from '@/components/ui/PageHeader';
+import EmptyState from '@/components/ui/EmptyState';
 
 interface ProductRef {
   id: string;
@@ -158,9 +160,9 @@ export default function EmployeeLeadsPage() {
         const data = await res.json();
         if (data.exists) {
           if (data.isOwnLead) {
-            setPhoneWarning('⚠️ সতর্কবার্তা: এই মোবাইল নম্বরটি ইতিমধ্যে আপনার নিজস্ব তালিকায় লিড হিসেবে যুক্ত রয়েছে');
+            setPhoneWarning('সতর্কবার্তা: এই মোবাইল নম্বরটি ইতিমধ্যে আপনার নিজস্ব তালিকায় লিড হিসেবে যুক্ত রয়েছে');
           } else {
-            setPhoneWarning('⚠️ সতর্কবার্তা: এই মোবাইল নম্বরটি ইতিমধ্যে সিস্টেমে অন্য লিড হিসেবে যুক্ত রয়েছে (অন্য কর্মীর নাম গোপন রাখা হয়েছে)');
+            setPhoneWarning('সতর্কবার্তা: এই মোবাইল নম্বরটি ইতিমধ্যে সিস্টেমে অন্য লিড হিসেবে যুক্ত রয়েছে (অন্য কর্মীর নাম গোপন রাখা হয়েছে)');
           }
         } else {
           setPhoneWarning(null);
@@ -303,338 +305,375 @@ export default function EmployeeLeadsPage() {
   const getStatusBadge = (st: string) => {
     switch (st) {
       case 'NEW':
-        return <span className="rounded-full bg-blue-100 text-blue-800 px-2.5 py-0.5 text-xs font-bold">নতুন (New)</span>;
+        return <span className="badge badge-blue">নতুন · New</span>;
       case 'CONTACTED':
-        return <span className="rounded-full bg-purple-100 text-purple-800 px-2.5 py-0.5 text-xs font-bold">যোগাযোগকৃত (Contacted)</span>;
+        return <span className="badge badge-violet">যোগাযোগ · Contacted</span>;
       case 'QUALIFIED':
-        return <span className="rounded-full bg-amber-100 text-amber-800 px-2.5 py-0.5 text-xs font-bold">যোগ্য (Qualified)</span>;
+        return <span className="badge badge-amber">যোগ্য · Qualified</span>;
       case 'ORDERED':
-        return <span className="rounded-full bg-emerald-100 text-emerald-800 px-2.5 py-0.5 text-xs font-bold">অর্ডার সম্পন্ন (Ordered)</span>;
+        return <span className="badge badge-green">অর্ডার · Ordered</span>;
       case 'LOST':
-        return <span className="rounded-full bg-rose-100 text-rose-800 px-2.5 py-0.5 text-xs font-bold">বাতিল (Lost)</span>;
+        return <span className="badge badge-red">বাতিল · Lost</span>;
     }
   };
 
   const getBuyerTypeLabel = (bt: string) => {
     switch (bt) {
-      case 'FARMER': return 'কৃষক (Farmer)';
-      case 'WHOLESALER': return 'পাইকার (Wholesaler)';
-      case 'RESTAURANT': return 'রেস্টুরেন্ট (Restaurant)';
-      case 'DEALER': return 'ডিলার (Dealer)';
-      case 'RETAIL': return 'খুচরা (Retail)';
-      default: return 'অন্যান্য (Other)';
+      case 'FARMER': return 'কৃষক · Farmer';
+      case 'WHOLESALER': return 'পাইকার · Wholesaler';
+      case 'RESTAURANT': return 'রেস্টুরেন্ট · Restaurant';
+      case 'DEALER': return 'ডিলার · Dealer';
+      case 'RETAIL': return 'খুচরা · Retail';
+      default: return 'অন্যান্য · Other';
     }
   };
 
+  const openStatus = (l: LeadItem) => {
+    setStatusLead(l);
+    setTargetStatus(l.status);
+    setOrderAmount(l.order_amount ? String(l.order_amount) : '');
+    setLostReason(l.lost_reason || '');
+    setStatusError(null);
+  };
+
+  const renderValue = (l: LeadItem) =>
+    l.status === 'ORDERED' && l.order_amount ? (
+      <span className="font-medium text-brand-700">৳ {l.order_amount.toLocaleString('en-IN')}</span>
+    ) : l.expected_value ? (
+      <span className="text-slate-600">
+        ৳ {l.expected_value.toLocaleString('en-IN')} <span className="text-xs text-slate-400">(সম্ভাব্য · est.)</span>
+      </span>
+    ) : (
+      <span className="text-slate-400">—</span>
+    );
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <UserPlus className="h-6 w-6 text-teal-600" />
-            আমার লিড ও বিক্রয় পাইপলাইন (My Leads Pipeline)
-          </h1>
-          <p className="text-sm text-slate-600 mt-1">
-            গ্রুপ পোস্ট ও প্রচারণার মাধ্যমে প্রাপ্ত ক্রেতার লিড সংগ্রহ, ফলোআপ ও নিশ্চিত অর্ডারে রূপান্তর করুন।
-          </p>
-        </div>
+      <PageHeader
+        icon={<UserPlus className="h-5 w-5" />}
+        title="আমার লিড · My Leads"
+        subtitle="লিড সংগ্রহ, ফলোআপ ও অর্ডারে রূপান্তর করুন। Capture, follow up and convert leads."
+        actions={
+          <button
+            onClick={() => {
+              setIsAddOpen(true);
+              setErrorMessage(null);
+              setPhoneWarning(null);
+            }}
+            className="btn btn-primary min-h-10 w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4" />
+            <span>নতুন লিড · Add lead</span>
+          </button>
+        }
+      />
 
-        <button
-          onClick={() => {
-            setIsAddOpen(true);
-            setErrorMessage(null);
-            setPhoneWarning(null);
-          }}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-teal-700 transition-colors cursor-pointer"
-        >
-          <Plus className="h-4 w-4" />
-          <span>নতুন লিড যুক্ত করুন (Add Lead)</span>
-        </button>
-      </div>
-
-      {/* Acceptance Test 15: Unfinished Orders Alert Box */}
       {unfinishedCount > 0 && (
-        <div className="rounded-2xl border border-amber-300 bg-amber-50 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="alert alert-warning flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-2.5">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
-              <div className="text-sm font-bold text-amber-900">
-                ৩+ দিন ধরে অপেক্ষমাণ অর্ডারহীন লিড: {unfinishedCount} জন (Unfinished Orders)
+              <div className="font-medium">
+                ৩+ দিন অর্ডার ছাড়া অপেক্ষমাণ: {unfinishedCount} · Waiting 3+ days
               </div>
-              <div className="text-xs text-amber-700 mt-0.5">
-                এই ক্রেতারা &quot;পছন্দ/যোগ্য (Qualified)&quot; পর্যায়ে থাকা সত্ত্বেও গত ৩ দিনের মধ্যে কোনো অর্ডার নিশ্চিত হয়নি। এখনই ফলোআপ করুন।
+              <div className="mt-0.5 text-xs">
+                যোগ্য (Qualified) লিড, গত ৩ দিনে অর্ডার হয়নি। এখনই ফলোআপ করুন।
               </div>
             </div>
           </div>
-
           <button
             onClick={() => setShowUnfinishedOnly(!showUnfinishedOnly)}
-            className="self-start sm:self-auto rounded-xl bg-amber-700 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-amber-800 transition-colors cursor-pointer"
+            className="btn btn-secondary btn-sm self-start sm:self-auto"
           >
-            {showUnfinishedOnly ? 'সকল লিড দেখুন' : 'অপেক্ষমাণ লিডগুলো ফিল্টার করুন'}
+            {showUnfinishedOnly ? 'সকল লিড · Show all' : 'শুধু এগুলো · Show these'}
           </button>
         </div>
       )}
 
-      {/* Notifications */}
       {errorMessage && (
-        <div className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+        <div className="alert alert-error items-center justify-between">
           <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-rose-600 shrink-0" />
+            <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
-          <button onClick={() => setErrorMessage(null)} className="text-rose-600 hover:text-rose-800 font-bold">×</button>
+          <button
+            onClick={() => setErrorMessage(null)}
+            className="btn-icon h-7 w-7 text-rose-600 hover:bg-rose-100 hover:text-rose-800"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
         </div>
       )}
 
       {successMessage && (
-        <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+        <div className="alert alert-success items-center justify-between">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
             <span>{successMessage}</span>
           </div>
-          <button onClick={() => setSuccessMessage(null)} className="text-emerald-600 hover:text-emerald-800 font-bold">×</button>
+          <button
+            onClick={() => setSuccessMessage(null)}
+            className="btn-icon h-7 w-7 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-800"
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
         </div>
       )}
 
-      {/* Pipeline Stage Tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1 border-b border-slate-200 text-xs font-bold">
-        {[
-          { key: 'ALL', label: 'সকল লিড (All)' },
-          { key: 'NEW', label: 'নতুন (New)' },
-          { key: 'CONTACTED', label: 'যোগাযোগকৃত (Contacted)' },
-          { key: 'QUALIFIED', label: 'যোগ্য/পছন্দ (Qualified)' },
-          { key: 'ORDERED', label: 'অর্ডার সম্পন্ন (Ordered)' },
-          { key: 'LOST', label: 'বাতিল (Lost)' },
-        ].map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => {
-              setActiveTab(tab.key);
-              setShowUnfinishedOnly(false);
-            }}
-            className={`px-3.5 py-2 rounded-t-xl transition-colors whitespace-nowrap cursor-pointer ${
-              activeTab === tab.key && !showUnfinishedOnly
-                ? 'bg-white border-t border-x border-slate-200 text-teal-700 shadow-2xs font-extrabold'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
-        <div className="relative flex-1 max-w-md">
-          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="ক্রেতার নাম, ফোন বা চ্যানেল দিয়ে খুঁজুন..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-slate-300 py-1.5 pl-9 pr-3 text-xs text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20"
-          />
+      {/* Stage tabs + search */}
+      <div className="space-y-3">
+        <div className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <div className="segmented">
+            {[
+              { key: 'ALL', label: 'সকল · All' },
+              { key: 'NEW', label: 'নতুন · New' },
+              { key: 'CONTACTED', label: 'যোগাযোগ · Contacted' },
+              { key: 'QUALIFIED', label: 'যোগ্য · Qualified' },
+              { key: 'ORDERED', label: 'অর্ডার · Ordered' },
+              { key: 'LOST', label: 'বাতিল · Lost' },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                data-active={activeTab === tab.key && !showUnfinishedOnly}
+                onClick={() => {
+                  setActiveTab(tab.key);
+                  setShowUnfinishedOnly(false);
+                }}
+                className="whitespace-nowrap"
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {showUnfinishedOnly && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 text-amber-900 px-3 py-1 text-xs font-bold">
-            <AlertTriangle className="h-3.5 w-3.5 text-amber-700" />
-            ৩+ দিন ধরে অপেক্ষমাণ লিড ফিল্টার সক্রিয়
-          </span>
-        )}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1 sm:max-w-md">
+            <label htmlFor="leads-search" className="sr-only">
+              অনুসন্ধান · Search
+            </label>
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              id="leads-search"
+              type="text"
+              placeholder="নাম, ফোন বা চ্যানেল · Search name, phone, channel"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input pl-9"
+            />
+          </div>
+          {showUnfinishedOnly && (
+            <span className="badge badge-amber self-start sm:self-auto">
+              <AlertTriangle className="h-3 w-3" />
+              ৩+ দিন অপেক্ষমাণ ফিল্টার · 3+ day filter on
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Leads Table */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      {/* Leads list */}
+      <div className="card overflow-hidden">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-            <Loader2 className="h-8 w-8 animate-spin text-teal-600 mb-2" />
-            <p className="text-sm">লিড লোড হচ্ছে...</p>
+            <Loader2 className="mb-2 h-6 w-6 animate-spin text-brand-600" />
+            <p className="text-sm">লোড হচ্ছে... · Loading...</p>
           </div>
         ) : leads.length === 0 ? (
-          <div className="py-12 text-center text-slate-500">
-            <UserPlus className="mx-auto h-12 w-12 text-slate-300 mb-3" />
-            <p className="text-base font-semibold text-slate-700">কোনো লিড পাওয়া যায়নি</p>
-          </div>
+          <EmptyState icon={<UserPlus className="h-5 w-5" />} title="কোনো লিড পাওয়া যায়নি · No leads found" />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/75 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="py-3 px-4 sm:px-6">ক্রেতার নাম ও মোবাইল (Masked)</th>
-                  <th className="py-3 px-4">ধরন (Buyer Type)</th>
-                  <th className="py-3 px-4">লক্ষ্য পণ্য</th>
-                  <th className="py-3 px-4 text-center">স্ট্যাটাস (Stage)</th>
-                  <th className="py-3 px-4 text-right">সম্ভাব্য / অর্ডার মূল্য</th>
-                  <th className="py-3 px-4 sm:px-6 text-right">কার্যক্রম (Action)</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
-                {leads.map((l) => (
-                  <tr
-                    key={l.id}
-                    className={`hover:bg-slate-50/70 transition-colors ${
-                      l.is_unfinished ? 'bg-amber-50/40' : ''
-                    }`}
-                  >
-                    <td className="py-3.5 px-4 sm:px-6">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => openDetail(l.id)}
-                          className="font-semibold text-slate-900 hover:text-teal-700 hover:underline text-left cursor-pointer"
-                        >
-                          {l.name}
-                        </button>
-                        {l.is_unfinished && (
-                          <span className="rounded-full bg-amber-200 text-amber-900 px-2 py-0.5 text-[10px] font-bold">
-                            {l.days_since_update} দিন অপেক্ষমাণ
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 font-mono mt-0.5">
+          <>
+            {/* Phone: stacked rows */}
+            <ul className="divide-y divide-slate-100 md:hidden">
+              {leads.map((l) => (
+                <li key={l.id} className={`px-4 py-3.5 ${l.is_unfinished ? 'bg-amber-50/40' : ''}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <button
+                        onClick={() => openDetail(l.id)}
+                        className="block max-w-full truncate text-left text-sm font-medium text-slate-900 hover:text-brand-700"
+                      >
+                        {l.name}
+                      </button>
+                      <div className="mt-0.5 flex items-center gap-1.5 font-mono text-xs text-slate-500">
                         <Phone className="h-3 w-3 text-slate-400" />
                         <span>{l.masked_phone}</span>
                       </div>
-                    </td>
+                    </div>
+                    {getStatusBadge(l.status)}
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                    <span>{getBuyerTypeLabel(l.buyer_type)}</span>
+                    {l.product && <span>{l.product.name_bn}</span>}
+                    {l.is_unfinished && (
+                      <span className="badge badge-amber">{l.days_since_update} দিন অপেক্ষমাণ · days waiting</span>
+                    )}
+                  </div>
+                  <div className="mt-1 text-sm tabular-nums">{renderValue(l)}</div>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button onClick={() => openStatus(l)} className="btn btn-secondary min-h-10">
+                      <span>স্টেজ · Stage</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => openDetail(l.id)} className="btn btn-secondary min-h-10">
+                      <MessageSquare className="h-4 w-4" />
+                      <span>নোট · Notes{l.notes_count > 0 ? ` (${l.notes_count})` : ''}</span>
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
 
-                    <td className="py-3.5 px-4 text-xs font-medium text-slate-700">
-                      {getBuyerTypeLabel(l.buyer_type)}
-                    </td>
-
-                    <td className="py-3.5 px-4 text-xs text-slate-600">
-                      {l.product ? l.product.name_bn : '—'}
-                    </td>
-
-                    <td className="py-3.5 px-4 text-center">
-                      {getStatusBadge(l.status)}
-                    </td>
-
-                    <td className="py-3.5 px-4 text-right font-mono text-xs">
-                      {l.status === 'ORDERED' && l.order_amount ? (
-                        <span className="font-bold text-emerald-700">
-                          ৳ {l.order_amount.toLocaleString('en-IN')}
-                        </span>
-                      ) : l.expected_value ? (
-                        <span className="text-slate-600">
-                          ৳ {l.expected_value.toLocaleString('en-IN')} (সম্ভাব্য)
-                        </span>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
-                    </td>
-
-                    <td className="py-3.5 px-4 sm:px-6 text-right whitespace-nowrap space-x-1.5">
-                      <button
-                        onClick={() => {
-                          setStatusLead(l);
-                          setTargetStatus(l.status);
-                          setOrderAmount(l.order_amount ? String(l.order_amount) : '');
-                          setLostReason(l.lost_reason || '');
-                          setStatusError(null);
-                        }}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700 transition-colors cursor-pointer"
-                      >
-                        <span>স্টেজ পরিবর্তন</span>
-                        <ChevronRight className="h-3 w-3" />
-                      </button>
-
-                      <button
-                        onClick={() => openDetail(l.id)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1 text-xs text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                        title="বিস্তারিত ও নোট দেখুন"
-                      >
-                        <MessageSquare className="h-3.5 w-3.5" />
-                        {l.notes_count > 0 && <span className="text-[10px] font-bold">{l.notes_count}</span>}
-                      </button>
-                    </td>
+            {/* Desktop: table */}
+            <div className="hidden overflow-x-auto md:block">
+              <table className="table-pro">
+                <thead>
+                  <tr>
+                    <th>ক্রেতা · Customer</th>
+                    <th>ধরন · Type</th>
+                    <th>পণ্য · Product</th>
+                    <th>স্টেজ · Stage</th>
+                    <th className="text-right">মূল্য · Value</th>
+                    <th className="text-right">
+                      <span className="sr-only">Actions</span>
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {leads.map((l) => (
+                    <tr key={l.id} className={l.is_unfinished ? 'bg-amber-50/40' : ''}>
+                      <td>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() => openDetail(l.id)}
+                            className="text-left font-medium text-slate-900 hover:text-brand-700 hover:underline"
+                          >
+                            {l.name}
+                          </button>
+                          {l.is_unfinished && (
+                            <span className="badge badge-amber">{l.days_since_update} দিন অপেক্ষমাণ</span>
+                          )}
+                        </div>
+                        <div className="mt-0.5 flex items-center gap-1.5 font-mono text-xs text-slate-500">
+                          <Phone className="h-3 w-3 text-slate-400" />
+                          <span>{l.masked_phone}</span>
+                        </div>
+                      </td>
+                      <td className="text-xs">{getBuyerTypeLabel(l.buyer_type)}</td>
+                      <td className="text-xs">{l.product ? l.product.name_bn : '—'}</td>
+                      <td>{getStatusBadge(l.status)}</td>
+                      <td className="text-right tabular-nums">{renderValue(l)}</td>
+                      <td className="whitespace-nowrap text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <button onClick={() => openStatus(l)} className="btn btn-secondary btn-sm">
+                            <span>স্টেজ · Stage</span>
+                            <ChevronRight className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => openDetail(l.id)}
+                            className="btn btn-ghost btn-sm"
+                            title="বিস্তারিত ও নোট · Details and notes"
+                            aria-label="বিস্তারিত ও নোট · Details and notes"
+                          >
+                            <MessageSquare className="h-3.5 w-3.5" />
+                            {l.notes_count > 0 && <span className="tabular-nums">{l.notes_count}</span>}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
       {/* Modal: Add Lead */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-slate-900 mb-1">নতুন লিড যুক্ত করুন</h3>
-            <p className="text-xs text-slate-500 mb-4">Add potential customer lead with verification</p>
-
-            <form onSubmit={handleAddLead} className="space-y-4">
+        <div className="modal-backdrop">
+          <div className="modal-panel">
+            <div className="card-header">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  ক্রেতার নাম (Customer Name) *
+                <h3 className="card-title">নতুন লিড · Add lead</h3>
+                <p className="card-subtitle">সম্ভাব্য ক্রেতার তথ্য দিন · Enter the customer&apos;s details</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleAddLead} className="card-body space-y-4">
+              <div>
+                <label htmlFor="add-name" className="label">
+                  ক্রেতার নাম · Name *
                 </label>
                 <input
+                  id="add-name"
                   type="text"
                   required
                   placeholder="যেমন: মো: আরিফুল ইসলাম"
                   value={addName}
                   onChange={(e) => setAddName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20"
+                  className="input"
                 />
               </div>
 
-              {/* Mobile Phone with Acceptance Test 14 live duplicate warning */}
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  মোবাইল নম্বর (১১ ডিজিট) *
+                <label htmlFor="add-phone" className="label">
+                  মোবাইল (১১ ডিজিট) · Phone *
                 </label>
                 <div className="relative">
                   <input
+                    id="add-phone"
                     type="tel"
                     required
                     placeholder="017XXXXXXXX"
                     value={addPhone}
                     onChange={(e) => handlePhoneChange(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm font-mono focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20"
+                    className="input pr-9 font-mono"
                   />
                   {checkingPhone && (
-                    <Loader2 className="absolute right-3 top-3 h-4 w-4 animate-spin text-slate-400" />
+                    <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />
                   )}
                 </div>
-
                 {phoneWarning && (
-                  <div className="mt-1.5 flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 p-2 text-xs font-bold text-amber-900 animate-in fade-in">
-                    <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+                  <div className="alert alert-warning mt-2 py-2 text-xs">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
                     <span>{phoneWarning}</span>
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    ক্রেতার ধরন (Buyer Type) *
+                  <label htmlFor="add-type" className="label">
+                    ক্রেতার ধরন · Buyer type *
                   </label>
                   <select
+                    id="add-type"
                     value={addBuyerType}
                     onChange={(e) => setAddBuyerType(e.target.value as LeadItem['buyer_type'])}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm bg-white focus:border-teal-600 focus:outline-none"
+                    className="input"
                   >
-                    <option value="RETAIL">খুচরা ক্রেতা (Retail)</option>
-                    <option value="WHOLESALER">পাইকার (Wholesaler)</option>
-                    <option value="FARMER">কৃষক / চাষি (Farmer)</option>
-                    <option value="RESTAURANT">রেস্টুরেন্ট (Restaurant)</option>
-                    <option value="DEALER">ডিলার (Dealer)</option>
-                    <option value="OTHER">অন্যান্য (Other)</option>
+                    <option value="RETAIL">খুচরা · Retail</option>
+                    <option value="WHOLESALER">পাইকার · Wholesaler</option>
+                    <option value="FARMER">কৃষক · Farmer</option>
+                    <option value="RESTAURANT">রেস্টুরেন্ট · Restaurant</option>
+                    <option value="DEALER">ডিলার · Dealer</option>
+                    <option value="OTHER">অন্যান্য · Other</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    আগ্রহী পণ্য
+                  <label htmlFor="add-product" className="label">
+                    আগ্রহী পণ্য · Product
                   </label>
                   <select
+                    id="add-product"
                     value={addProductId}
                     onChange={(e) => setAddProductId(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm bg-white focus:border-teal-600 focus:outline-none"
+                    className="input"
                   >
-                    <option value="">পণ্য নির্বাচন করুন...</option>
+                    <option value="">নির্বাচন করুন · Select...</option>
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name_bn}
@@ -642,33 +681,33 @@ export default function EmployeeLeadsPage() {
                     ))}
                   </select>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    সোর্স চ্যানেল *
+                  <label htmlFor="add-source" className="label">
+                    সোর্স · Source *
                   </label>
                   <input
+                    id="add-source"
                     type="text"
                     required
                     placeholder="ফেসবুক গ্রুপ / অ্যাড / কল"
                     value={addSource}
                     onChange={(e) => setAddSource(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20"
+                    className="input"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    ক্যাম্পেইন (ঐচ্ছিক)
+                  <label htmlFor="add-campaign" className="label">
+                    ক্যাম্পেইন · Campaign
                   </label>
                   <select
+                    id="add-campaign"
                     value={addCampaignId}
                     onChange={(e) => setAddCampaignId(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm bg-white focus:border-teal-600 focus:outline-none"
+                    className="input"
                   >
-                    <option value="">ক্যাম্পেইন নেই</option>
+                    <option value="">ক্যাম্পেইন নেই · None</option>
                     {campaigns.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -676,77 +715,71 @@ export default function EmployeeLeadsPage() {
                     ))}
                   </select>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    সম্ভাব্য মূল্য (Expected ৳)
+                  <label htmlFor="add-value" className="label">
+                    সম্ভাব্য মূল্য · Expected (৳)
                   </label>
                   <input
+                    id="add-value"
                     type="number"
                     min="0"
                     placeholder="যেমন: 5000"
                     value={addExpectedValue}
                     onChange={(e) => setAddExpectedValue(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm font-mono focus:border-teal-600 focus:outline-none"
+                    className="input tabular-nums"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    পরবর্তী ফলোআপ তারিখ
+                  <label htmlFor="add-followup" className="label">
+                    পরবর্তী ফলোআপ · Next follow-up
                   </label>
                   <input
+                    id="add-followup"
                     type="date"
                     value={addNextFollowup}
                     onChange={(e) => setAddNextFollowup(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm font-mono focus:border-teal-600 focus:outline-none"
+                    className="input"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  ঠিকানা (ঐচ্ছিক)
+                <label htmlFor="add-address" className="label">
+                  ঠিকানা · Address
                 </label>
                 <input
+                  id="add-address"
                   type="text"
                   placeholder="যেমন: মিরপুর ১০, ঢাকা"
                   value={addAddress}
                   onChange={(e) => setAddAddress(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-teal-600 focus:outline-none"
+                  className="input"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  প্রাথমিক নোট (Initial Note)
+                <label htmlFor="add-note" className="label">
+                  প্রাথমিক নোট · Initial note
                 </label>
                 <textarea
+                  id="add-note"
                   rows={2}
                   placeholder="ক্রেতার চাহিদা বা যোগাযোগের বিবরণ..."
                   value={addNote}
                   onChange={(e) => setAddNote(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-teal-600 focus:outline-none"
+                  className="input"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsAddOpen(false)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                >
-                  বাতিল (Cancel)
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                <button type="button" onClick={() => setIsAddOpen(false)} className="btn btn-secondary min-h-10">
+                  বাতিল · Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={addSubmitting}
-                  className="flex items-center gap-1.5 rounded-xl bg-teal-600 px-4 py-2 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-60 cursor-pointer"
-                >
-                  {addSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                  সংরক্ষণ করুন (Save)
+                <button type="submit" disabled={addSubmitting} className="btn btn-primary min-h-10">
+                  {addSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  সংরক্ষণ · Save
                 </button>
               </div>
             </form>
@@ -754,98 +787,92 @@ export default function EmployeeLeadsPage() {
         </div>
       )}
 
-      {/* Modal: Update Lead Status (Acceptance Test 13) */}
+      {/* Modal: Update Lead Status */}
       {statusLead && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
-            <h3 className="text-lg font-bold text-slate-900 mb-1">লিড স্ট্যাটাস পরিবর্তন করুন</h3>
-            <p className="text-xs text-slate-500 mb-4">
-              ক্রেতা: <strong>{statusLead.name}</strong> ({statusLead.masked_phone})
-            </p>
-
-            {statusError && (
-              <div className="mb-3 rounded-lg bg-rose-50 border border-rose-200 p-2.5 text-xs text-rose-800">
-                {statusError}
+        <div className="modal-backdrop">
+          <div className="modal-panel sm:max-w-md">
+            <div className="card-header">
+              <div className="min-w-0">
+                <h3 className="card-title">স্টেজ পরিবর্তন · Change stage</h3>
+                <p className="card-subtitle truncate">
+                  {statusLead.name} · <span className="font-mono">{statusLead.masked_phone}</span>
+                </p>
               </div>
-            )}
+            </div>
 
-            <form onSubmit={handleUpdateStatus} className="space-y-4">
+            <form onSubmit={handleUpdateStatus} className="card-body space-y-4">
+              {statusError && (
+                <div className="alert alert-error">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{statusError}</span>
+                </div>
+              )}
+
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  নতুন স্ট্যাটাস (Stage) *
+                <label htmlFor="status-target" className="label">
+                  নতুন স্টেজ · New stage *
                 </label>
                 <select
+                  id="status-target"
                   value={targetStatus}
                   onChange={(e) => setTargetStatus(e.target.value as LeadItem['status'])}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm bg-white focus:border-teal-600 focus:outline-none"
+                  className="input"
                 >
-                  <option value="NEW">নতুন (NEW)</option>
-                  <option value="CONTACTED">যোগাযোগকৃত (CONTACTED)</option>
-                  <option value="QUALIFIED">যোগ্য/পছন্দ (QUALIFIED)</option>
-                  <option value="ORDERED">অর্ডার সম্পন্ন (ORDERED)</option>
-                  <option value="LOST">বাতিল (LOST)</option>
+                  <option value="NEW">নতুন · New</option>
+                  <option value="CONTACTED">যোগাযোগ · Contacted</option>
+                  <option value="QUALIFIED">যোগ্য · Qualified</option>
+                  <option value="ORDERED">অর্ডার · Ordered</option>
+                  <option value="LOST">বাতিল · Lost</option>
                 </select>
               </div>
 
-              {/* Acceptance Test 13: ORDERED requires order_amount */}
               {targetStatus === 'ORDERED' && (
-                <div className="rounded-xl border border-emerald-300 bg-emerald-50/70 p-3.5 space-y-2 animate-in fade-in">
-                  <div className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
-                    <DollarSign className="h-4 w-4 text-emerald-700" />
-                    অর্ডার সম্পন্ন বিক্রয় মূল্য (Order Amount) *
-                  </div>
+                <div>
+                  <label htmlFor="status-amount" className="label flex items-center gap-1.5">
+                    <DollarSign className="h-3.5 w-3.5 text-slate-400" />
+                    অর্ডারের মূল্য · Order amount (৳) *
+                  </label>
                   <input
+                    id="status-amount"
                     type="number"
                     step="0.01"
                     min="1"
                     required
-                    placeholder="যেমন: 2500.00 (বাধ্যতামূলক)"
+                    placeholder="যেমন: 2500.00"
                     value={orderAmount}
                     onChange={(e) => setOrderAmount(e.target.value)}
-                    className="w-full rounded-xl border border-emerald-300 bg-white p-2.5 text-sm font-mono focus:border-emerald-600 focus:outline-none"
+                    className="input tabular-nums"
                   />
-                  <p className="text-[11px] text-emerald-800">
-                    * অর্ডার নিশ্চিত লিডের ক্ষেত্রে বিক্রয় মূল্য প্রদান করা আবশ্যক।
-                  </p>
+                  <p className="hint">অর্ডার হলে মূল্য দেওয়া আবশ্যক · Required for ordered leads</p>
                 </div>
               )}
 
-              {/* Acceptance Test 13: LOST requires lost_reason */}
               {targetStatus === 'LOST' && (
-                <div className="rounded-xl border border-rose-300 bg-rose-50/70 p-3.5 space-y-2 animate-in fade-in">
-                  <div className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
-                    <XCircle className="h-4 w-4 text-rose-700" />
-                    অর্ডার বাতিলের কারণ (Lost Reason) *
-                  </div>
+                <div>
+                  <label htmlFor="status-reason" className="label flex items-center gap-1.5">
+                    <XCircle className="h-3.5 w-3.5 text-slate-400" />
+                    বাতিলের কারণ · Lost reason *
+                  </label>
                   <textarea
+                    id="status-reason"
                     rows={2}
                     required
-                    placeholder="যেমন: মূল্য বেশি মনে হয়েছে / অন্যখান থেকে কিনেছে (বাধ্যতামূলক)"
+                    placeholder="যেমন: মূল্য বেশি / অন্যখান থেকে কিনেছে"
                     value={lostReason}
                     onChange={(e) => setLostReason(e.target.value)}
-                    className="w-full rounded-xl border border-rose-300 bg-white p-2.5 text-sm focus:border-rose-600 focus:outline-none"
+                    className="input"
                   />
-                  <p className="text-[11px] text-rose-800">
-                    * লিড বাতিলের ক্ষেত্রে কারণ উল্লেখ করা বাধ্যতামূলক।
-                  </p>
+                  <p className="hint">বাতিলের কারণ আবশ্যক · Required for lost leads</p>
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setStatusLead(null)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                >
-                  বাতিল (Cancel)
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                <button type="button" onClick={() => setStatusLead(null)} className="btn btn-secondary min-h-10">
+                  বাতিল · Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={statusSubmitting}
-                  className="flex items-center gap-1.5 rounded-xl bg-teal-600 px-4 py-2 text-xs font-semibold text-white hover:bg-teal-700 disabled:opacity-60 cursor-pointer"
-                >
-                  {statusSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                  আপডেট করুন (Update)
+                <button type="submit" disabled={statusSubmitting} className="btn btn-primary min-h-10">
+                  {statusSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  আপডেট · Update
                 </button>
               </div>
             </form>
@@ -855,65 +882,79 @@ export default function EmployeeLeadsPage() {
 
       {/* Lead Detail & Notes Drawer */}
       {selectedLeadId && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white h-full shadow-2xl p-6 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-300">
-            <div>
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                <h3 className="text-lg font-bold text-slate-900">লিড বিবরণ ও ফলোআপ নোট</h3>
-                <button
-                  onClick={() => {
-                    setSelectedLeadId(null);
-                    setLeadDetail(null);
-                  }}
-                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 text-base font-bold cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
+        <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-[2px]">
+          <div className="flex h-full w-full max-w-md flex-col bg-white shadow-xl animate-in slide-in-from-right duration-300">
+            <div className="card-header">
+              <h3 className="card-title">লিড বিবরণ · Lead details</h3>
+              <button
+                onClick={() => {
+                  setSelectedLeadId(null);
+                  setLeadDetail(null);
+                }}
+                className="btn-icon"
+                aria-label="বন্ধ করুন · Close"
+              >
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
 
+            <div className="flex-1 overflow-y-auto">
               {detailLoading || !leadDetail ? (
-                <div className="py-12 flex justify-center text-slate-400">
-                  <Loader2 className="h-6 w-6 animate-spin text-teal-600" />
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
                 </div>
               ) : (
-                <div className="py-4 space-y-4 text-xs">
-                  {/* Lead Info Box with Unmasked Phone */}
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-bold text-slate-900">{leadDetail.name}</span>
+                <div className="card-body space-y-5">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-[15px] font-semibold text-slate-900">{leadDetail.name}</span>
                       {getStatusBadge(leadDetail.status)}
                     </div>
 
-                    <div className="flex items-center gap-2 font-mono text-xs text-teal-700 font-bold bg-white p-2 rounded-lg border border-slate-200">
-                      <Phone className="h-3.5 w-3.5 text-teal-600" />
-                      <span>{leadDetail.phone} (সম্পূর্ণ নম্বর)</span>
-                    </div>
+                    <a
+                      href={`tel:${leadDetail.phone}`}
+                      className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-sm font-medium text-slate-900 hover:bg-slate-100"
+                    >
+                      <Phone className="h-4 w-4 text-brand-600" />
+                      <span>{leadDetail.phone}</span>
+                    </a>
 
-                    <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 pt-1">
-                      <div>ধরন: <strong>{getBuyerTypeLabel(leadDetail.buyer_type)}</strong></div>
-                      <div>পণ্য: <strong>{leadDetail.product ? leadDetail.product.name_bn : '—'}</strong></div>
-                      <div>সোর্স: <strong>{leadDetail.source_channel}</strong></div>
-                      <div>ক্যাম্পেইন: <strong>{leadDetail.campaign ? leadDetail.campaign.name : '—'}</strong></div>
-                    </div>
-
-                    {leadDetail.address && (
-                      <div className="text-[11px] text-slate-500 pt-1">
-                        ঠিকানা: {leadDetail.address}
+                    <dl className="grid grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <dt className="text-slate-500">ধরন · Type</dt>
+                        <dd className="font-medium text-slate-900">{getBuyerTypeLabel(leadDetail.buyer_type)}</dd>
                       </div>
-                    )}
+                      <div>
+                        <dt className="text-slate-500">পণ্য · Product</dt>
+                        <dd className="font-medium text-slate-900">{leadDetail.product ? leadDetail.product.name_bn : '—'}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-slate-500">সোর্স · Source</dt>
+                        <dd className="font-medium text-slate-900">{leadDetail.source_channel}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-slate-500">ক্যাম্পেইন · Campaign</dt>
+                        <dd className="font-medium text-slate-900">{leadDetail.campaign ? leadDetail.campaign.name : '—'}</dd>
+                      </div>
+                      {leadDetail.address && (
+                        <div className="col-span-2">
+                          <dt className="text-slate-500">ঠিকানা · Address</dt>
+                          <dd className="font-medium text-slate-900">{leadDetail.address}</dd>
+                        </div>
+                      )}
+                    </dl>
                   </div>
 
-                  {/* Notes Timeline */}
                   <div>
-                    <h4 className="text-xs font-bold text-slate-800 mb-2">ফলোআপ নোট ইতিহাস:</h4>
+                    <h4 className="mb-2 text-sm font-semibold text-slate-900">ফলোআপ নোট · Notes</h4>
                     {leadDetail.notes.length === 0 ? (
-                      <p className="text-slate-400 text-xs italic">কোনো পূর্ববর্তী নোট নেই</p>
+                      <p className="text-sm text-slate-500">কোনো নোট নেই · No notes yet</p>
                     ) : (
-                      <div className="space-y-2 max-h-56 overflow-y-auto">
+                      <div className="space-y-2">
                         {leadDetail.notes.map((n) => (
-                          <div key={n.id} className="rounded-lg bg-slate-50 p-2.5 border border-slate-200 text-xs">
-                            <p className="text-slate-800 leading-relaxed">{n.note}</p>
-                            <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400">
+                          <div key={n.id} className="rounded-lg border border-slate-200 p-3 text-sm">
+                            <p className="leading-relaxed text-slate-800">{n.note}</p>
+                            <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-400">
                               <span>{n.author.name}</span>
                               <span>{format(new Date(n.created_at), 'dd MMM yyyy, hh:mm a')}</span>
                             </div>
@@ -926,23 +967,27 @@ export default function EmployeeLeadsPage() {
               )}
             </div>
 
-            {/* Add Note Form */}
             {leadDetail && (
-              <form onSubmit={handleAddNote} className="pt-4 border-t border-slate-100 flex gap-2">
+              <form onSubmit={handleAddNote} className="flex gap-2 border-t border-slate-100 p-4">
+                <label htmlFor="new-note" className="sr-only">
+                  নতুন নোট · New note
+                </label>
                 <input
+                  id="new-note"
                   type="text"
                   required
-                  placeholder="নতুন ফলোআপ নোট লিখুন..."
+                  placeholder="নতুন ফলোআপ নোট · New note..."
                   value={newNoteText}
                   onChange={(e) => setNewNoteText(e.target.value)}
-                  className="flex-1 rounded-xl border border-slate-300 p-2 text-xs focus:border-teal-600 focus:outline-none"
+                  className="input flex-1"
                 />
                 <button
                   type="submit"
                   disabled={noteSubmitting}
-                  className="rounded-xl bg-teal-600 px-3 py-2 text-xs font-bold text-white hover:bg-teal-700 disabled:opacity-50 cursor-pointer flex items-center gap-1"
+                  className="btn btn-primary min-h-10"
+                  aria-label="নোট পাঠান · Send note"
                 >
-                  <Send className="h-3.5 w-3.5" />
+                  <Send className="h-4 w-4" />
                 </button>
               </form>
             )}

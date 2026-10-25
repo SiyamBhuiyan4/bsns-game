@@ -16,7 +16,12 @@ import {
   Search,
   Phone,
   Mail,
+  X,
 } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
+import StatCard from '@/components/ui/StatCard';
+import EmptyState from '@/components/ui/EmptyState';
+import { useLanguage } from '@/components/LanguageContext';
 
 interface SectionRef {
   id: string;
@@ -36,6 +41,7 @@ interface EmployeeItem {
 }
 
 export default function EmployeesPage() {
+  const { t } = useLanguage();
   const [employees, setEmployees] = useState<EmployeeItem[]>([]);
   const [sections, setSections] = useState<SectionRef[]>([]);
   const [loading, setLoading] = useState(true);
@@ -249,145 +255,127 @@ export default function EmployeesPage() {
       (e.phone && e.phone.includes(searchQuery))
   );
 
+  const activeCount = employees.filter((e) => e.is_active).length;
+  const totalDone = employees.reduce((acc, e) => acc + e.total_completed_links, 0);
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-            <Users className="h-6 w-6 text-emerald-600" />
-            টিম ও কর্মী ব্যবস্থাপনা (Employee Management)
-          </h1>
-          <p className="text-sm text-slate-600 mt-1">
-            ডিজিটাল মার্কেটিং টিমের কর্মীদের প্রোফাইল, মোবাইল নম্বর, সেকশন অ্যাসাইনমেন্ট ও পাসওয়ার্ড পরিচালনা করুন।
-          </p>
-        </div>
-
-        <button
-          onClick={() => {
-            setIsAddOpen(true);
-            setErrorMessage(null);
-          }}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 transition-colors cursor-pointer"
-        >
-          <UserPlus className="h-4 w-4" />
-          <span>নতুন কর্মী যোগ করুন (Add Employee)</span>
-        </button>
-      </div>
+      <PageHeader
+        icon={<Users className="h-5 w-5" />}
+        title={t('emp.title', 'টিম', 'Team')}
+        subtitle={t('emp.subtitle', 'কর্মীদের প্রোফাইল, সেকশন ও পাসওয়ার্ড পরিচালনা করুন', 'Manage employee profiles, sections and passwords')}
+        actions={
+          <button
+            onClick={() => {
+              setIsAddOpen(true);
+              setErrorMessage(null);
+            }}
+            className="btn btn-primary"
+          >
+            <UserPlus className="h-4 w-4" />
+            {t('emp.add', 'কর্মী যোগ করুন', 'Add employee')}
+          </button>
+        }
+      />
 
       {/* Notifications */}
       {errorMessage && (
-        <div className="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-rose-600 shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-          <button onClick={() => setErrorMessage(null)} className="text-rose-600 hover:text-rose-800 font-bold">×</button>
+        <div className="alert alert-error">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span className="flex-1">{errorMessage}</span>
+          <button onClick={() => setErrorMessage(null)} className="btn-icon -my-1 h-6 w-6" aria-label={t('common.dismiss', 'বন্ধ করুন', 'Dismiss')}>
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
       {successMessage && (
-        <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-          <div className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-emerald-600 shrink-0" />
-            <span>{successMessage}</span>
-          </div>
-          <button onClick={() => setSuccessMessage(null)} className="text-emerald-600 hover:text-emerald-800 font-bold">×</button>
+        <div className="alert alert-success">
+          <CheckCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span className="flex-1">{successMessage}</span>
+          <button onClick={() => setSuccessMessage(null)} className="btn-icon -my-1 h-6 w-6" aria-label={t('common.dismiss', 'বন্ধ করুন', 'Dismiss')}>
+            <X className="h-4 w-4" />
+          </button>
         </div>
       )}
 
       {/* Stats row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs font-semibold text-slate-500">মোট কর্মী</div>
-          <div className="mt-1 text-2xl font-bold text-slate-900">{employees.length} জন</div>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs font-semibold text-slate-500">সক্রিয় কর্মী</div>
-          <div className="mt-1 text-2xl font-bold text-emerald-600">
-            {employees.filter((e) => e.is_active).length} জন
-          </div>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs font-semibold text-slate-500">নিষ্ক্রিয় কর্মী</div>
-          <div className="mt-1 text-2xl font-bold text-slate-400">
-            {employees.filter((e) => !e.is_active).length} জন
-          </div>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-xs font-semibold text-slate-500">সম্পন্ন গ্রুপ লিংক (মোট)</div>
-          <div className="mt-1 text-2xl font-bold text-teal-600">
-            {employees.reduce((acc, e) => acc + e.total_completed_links, 0)} বার
-          </div>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="relative max-w-md">
-        <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <input
-          type="text"
-          placeholder="নাম, মোবাইল বা ইমেইল দিয়ে খুঁজুন..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full rounded-xl border border-slate-300 bg-white py-2 pl-9 pr-4 text-sm text-slate-900 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
-        />
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard label={t('emp.total', 'মোট কর্মী', 'Total')} value={employees.length} icon={<Users className="h-4 w-4" />} tone="gray" />
+        <StatCard label={t('emp.active', 'সক্রিয়', 'Active')} value={activeCount} icon={<CheckCircle className="h-4 w-4" />} tone="brand" />
+        <StatCard label={t('emp.inactive', 'নিষ্ক্রিয়', 'Inactive')} value={employees.length - activeCount} icon={<XCircle className="h-4 w-4" />} tone="gray" />
+        <StatCard label={t('emp.done_links', 'সম্পন্ন লিংক', 'Completed links')} value={totalDone} icon={<Layers className="h-4 w-4" />} tone="blue" />
       </div>
 
       {/* Employees Table */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="card">
+        <div className="card-header">
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              aria-label={t('emp.search', 'খুঁজুন', 'Search')}
+              placeholder={t('emp.search_ph', 'নাম, মোবাইল বা ইমেইল...', 'Name, phone or email...')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input pl-9"
+            />
+          </div>
+          <span className="card-subtitle">
+            {filteredEmployees.length} / {employees.length}
+          </span>
+        </div>
+
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-            <Loader2 className="h-8 w-8 animate-spin text-emerald-600 mb-2" />
-            <p className="text-sm">কর্মী তালিকা লোড হচ্ছে...</p>
+          <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t('common.loading', 'লোড হচ্ছে...', 'Loading...')}
           </div>
         ) : filteredEmployees.length === 0 ? (
-          <div className="py-12 text-center text-slate-500">
-            <Users className="mx-auto h-12 w-12 text-slate-300 mb-3" />
-            <p className="text-base font-semibold text-slate-700">কোনো কর্মী পাওয়া যায়নি</p>
-          </div>
+          <EmptyState
+            icon={<Users className="h-5 w-5" />}
+            title={t('emp.empty', 'কোনো কর্মী পাওয়া যায়নি', 'No employees found')}
+          />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="table-pro">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/75 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="py-3 px-4 sm:px-6">কর্মী (Marketer Name & Phone)</th>
-                  <th className="py-3 px-4">ইমেইল (Email)</th>
-                  <th className="py-3 px-4">নির্ধারিত সেকশন (Assigned Sections)</th>
-                  <th className="py-3 px-4 text-center">সম্পন্ন লিংক (Done)</th>
-                  <th className="py-3 px-4 text-center">স্ট্যাটাস (Status)</th>
-                  <th className="py-3 px-4 sm:px-6 text-right">কার্যক্রম (Actions)</th>
+                <tr>
+                  <th>{t('emp.col_name', 'কর্মী', 'Employee')}</th>
+                  <th>{t('emp.col_email', 'ইমেইল', 'Email')}</th>
+                  <th>{t('emp.col_sections', 'সেকশন', 'Sections')}</th>
+                  <th className="text-right">{t('emp.col_done', 'সম্পন্ন', 'Done')}</th>
+                  <th>{t('emp.col_status', 'স্ট্যাটাস', 'Status')}</th>
+                  <th className="text-right">
+                    <span className="sr-only">{t('emp.col_actions', 'কার্যক্রম', 'Actions')}</span>
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-sm">
+              <tbody>
                 {filteredEmployees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-3.5 px-4 sm:px-6">
-                      <div className="font-semibold text-slate-900">{emp.name}</div>
-                      <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
-                        <Phone className="h-3 w-3 text-slate-400" />
-                        <span className="font-mono">{emp.phone || 'ফোন নম্বর নেই'}</span>
+                  <tr key={emp.id}>
+                    <td>
+                      <div className="font-medium text-slate-900">{emp.name}</div>
+                      <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+                        <Phone className="h-3 w-3" />
+                        <span className="tabular-nums">{emp.phone || '—'}</span>
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 text-xs font-mono text-slate-600">
+                    <td className="text-xs text-slate-600">
                       <div className="flex items-center gap-1.5">
                         <Mail className="h-3 w-3 text-slate-400" />
                         <span>{emp.email}</span>
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4">
-                      <div className="flex flex-wrap gap-1 max-w-xs">
+                    <td>
+                      <div className="flex max-w-xs flex-wrap gap-1">
                         {emp.sections.length === 0 ? (
-                          <span className="text-xs text-amber-600 italic">কোনো সেকশন নির্ধারিত নেই</span>
+                          <span className="text-xs text-slate-400">{t('emp.no_sections', 'নেই', 'None')}</span>
                         ) : (
                           emp.sections.map((sec) => (
-                            <span
-                              key={sec.id}
-                              className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[11px] font-semibold text-emerald-800"
-                            >
-                              <Layers className="h-2.5 w-2.5" />
+                            <span key={sec.id} className="badge badge-gray">
                               {sec.name}
                             </span>
                           ))
@@ -395,67 +383,63 @@ export default function EmployeesPage() {
                       </div>
                     </td>
 
-                    <td className="py-3.5 px-4 text-center">
-                      <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-800">
-                        {emp.total_completed_links} বার
-                      </span>
-                    </td>
+                    <td className="text-right tabular-nums font-medium text-slate-900">{emp.total_completed_links}</td>
 
-                    <td className="py-3.5 px-4 text-center">
+                    <td>
                       {emp.is_active ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">
-                          <CheckCircle className="h-3 w-3 text-emerald-600" /> সক্রিয়
-                        </span>
+                        <span className="badge badge-green">{t('emp.active', 'সক্রিয়', 'Active')}</span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600 border border-slate-200">
-                          <XCircle className="h-3 w-3 text-slate-400" /> নিষ্ক্রিয়
-                        </span>
+                        <span className="badge badge-gray">{t('emp.inactive', 'নিষ্ক্রিয়', 'Inactive')}</span>
                       )}
                     </td>
 
-                    <td className="py-3.5 px-4 sm:px-6 text-right space-x-1 sm:space-x-2 whitespace-nowrap">
-                      {/* Assign Sections */}
-                      <button
-                        onClick={() => {
-                          setAssigningEmp(emp);
-                          setAssignSelectedSections(emp.sections.map((s) => s.id));
-                          setErrorMessage(null);
-                        }}
-                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition-colors cursor-pointer"
-                        title="সেকশন অ্যাসাইন করুন"
-                      >
-                        <Layers className="h-3.5 w-3.5 text-emerald-600" />
-                        <span className="hidden sm:inline">অ্যাসাইন</span>
-                      </button>
+                    <td className="whitespace-nowrap text-right">
+                      <div className="inline-flex items-center gap-0.5">
+                        {/* Assign Sections */}
+                        <button
+                          onClick={() => {
+                            setAssigningEmp(emp);
+                            setAssignSelectedSections(emp.sections.map((s) => s.id));
+                            setErrorMessage(null);
+                          }}
+                          className="btn-icon"
+                          title={t('emp.assign', 'সেকশন অ্যাসাইন', 'Assign sections')}
+                          aria-label={t('emp.assign', 'সেকশন অ্যাসাইন', 'Assign sections')}
+                        >
+                          <Layers className="h-4 w-4" />
+                        </button>
 
-                      {/* Reset Password */}
-                      <button
-                        onClick={() => {
-                          setResetEmp(emp);
-                          setTempPassword(null);
-                          setErrorMessage(null);
-                        }}
-                        className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-xs text-amber-700 hover:bg-amber-50 hover:border-amber-300 transition-colors cursor-pointer"
-                        title="পাসওয়ার্ড রিসেট করুন"
-                      >
-                        <KeyRound className="h-3.5 w-3.5" />
-                      </button>
+                        {/* Reset Password */}
+                        <button
+                          onClick={() => {
+                            setResetEmp(emp);
+                            setTempPassword(null);
+                            setErrorMessage(null);
+                          }}
+                          className="btn-icon"
+                          title={t('emp.reset', 'পাসওয়ার্ড রিসেট', 'Reset password')}
+                          aria-label={t('emp.reset', 'পাসওয়ার্ড রিসেট', 'Reset password')}
+                        >
+                          <KeyRound className="h-4 w-4" />
+                        </button>
 
-                      {/* Edit */}
-                      <button
-                        onClick={() => {
-                          setEditingEmp(emp);
-                          setEditName(emp.name);
-                          setEditPhone(emp.phone || '');
-                          setEditEmail(emp.email);
-                          setEditActive(emp.is_active);
-                          setErrorMessage(null);
-                        }}
-                        className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-1.5 text-xs text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                        title="সম্পাদনা করুন"
-                      >
-                        <Edit3 className="h-3.5 w-3.5" />
-                      </button>
+                        {/* Edit */}
+                        <button
+                          onClick={() => {
+                            setEditingEmp(emp);
+                            setEditName(emp.name);
+                            setEditPhone(emp.phone || '');
+                            setEditEmail(emp.email);
+                            setEditActive(emp.is_active);
+                            setErrorMessage(null);
+                          }}
+                          className="btn-icon"
+                          title={t('emp.edit', 'সম্পাদনা', 'Edit')}
+                          aria-label={t('emp.edit', 'সম্পাদনা', 'Edit')}
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -467,111 +451,100 @@ export default function EmployeesPage() {
 
       {/* Modal: Add Employee */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-slate-900 mb-1">নতুন ডিজিটাল মার্কেটার যোগ করুন</h3>
-            <p className="text-xs text-slate-500 mb-4">Add new employee with login credentials and assigned sections</p>
+        <div className="modal-backdrop">
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="add-emp-title">
+            <div className="card-header">
+              <h3 id="add-emp-title" className="card-title">{t('emp.add_title', 'নতুন কর্মী', 'New employee')}</h3>
+            </div>
 
-            <form onSubmit={handleAddEmployee} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  কর্মীর নাম (Full Name) *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="যেমন: রাকিব হাসান"
-                  value={addName}
-                  onChange={(e) => setAddName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <form onSubmit={handleAddEmployee}>
+              <div className="card-body space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    ইমেইল (Email) *
-                  </label>
+                  <label htmlFor="add_emp_name" className="label">{t('emp.f_name', 'নাম', 'Name')} *</label>
                   <input
-                    type="email"
+                    id="add_emp_name"
+                    type="text"
                     required
-                    placeholder="employee@example.com"
-                    value={addEmail}
-                    onChange={(e) => setAddEmail(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
+                    placeholder="যেমন: রাকিব হাসান"
+                    value={addName}
+                    onChange={(e) => setAddName(e.target.value)}
+                    className="input"
                   />
                 </div>
 
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="add_emp_email" className="label">{t('emp.f_email', 'ইমেইল', 'Email')} *</label>
+                    <input
+                      id="add_emp_email"
+                      type="email"
+                      required
+                      placeholder="employee@example.com"
+                      value={addEmail}
+                      onChange={(e) => setAddEmail(e.target.value)}
+                      className="input"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="add_emp_phone" className="label">{t('emp.f_phone', 'মোবাইল', 'Phone')} *</label>
+                    <input
+                      id="add_emp_phone"
+                      type="tel"
+                      required
+                      placeholder="017XXXXXXXX"
+                      value={addPhone}
+                      onChange={(e) => setAddPhone(e.target.value)}
+                      className="input tabular-nums"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    মোবাইল নম্বর (BD Mobile) *
-                  </label>
+                  <label htmlFor="add_emp_pw" className="label">{t('emp.f_password', 'পাসওয়ার্ড', 'Password')} *</label>
                   <input
-                    type="tel"
+                    id="add_emp_pw"
+                    type="password"
                     required
-                    placeholder="017XXXXXXXX"
-                    value={addPhone}
-                    onChange={(e) => setAddPhone(e.target.value)}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-sm font-mono focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
+                    value={addPassword}
+                    onChange={(e) => setAddPassword(e.target.value)}
+                    className="input"
                   />
+                  <p className="hint">{t('emp.pw_hint', 'ন্যূনতম ৬ অক্ষর', 'At least 6 characters')}</p>
                 </div>
+
+                {/* Assign Sections Checkbox List */}
+                <fieldset>
+                  <legend className="label">{t('emp.col_sections', 'সেকশন', 'Sections')}</legend>
+                  <div className="grid max-h-40 grid-cols-1 gap-1 overflow-y-auto rounded-lg border border-slate-200 p-2 sm:grid-cols-2">
+                    {sections.map((sec) => (
+                      <label key={sec.id} className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
+                        <input
+                          type="checkbox"
+                          checked={addSelectedSections.includes(sec.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setAddSelectedSections([...addSelectedSections, sec.id]);
+                            } else {
+                              setAddSelectedSections(addSelectedSections.filter((id) => id !== sec.id));
+                            }
+                          }}
+                          className="h-4 w-4 rounded border-slate-300 accent-brand-600"
+                        />
+                        <span>{sec.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  লগইন পাসওয়ার্ড (Password) *
-                </label>
-                <input
-                  type="password"
-                  required
-                  placeholder="ন্যূনতম ৬ অক্ষর"
-                  value={addPassword}
-                  onChange={(e) => setAddPassword(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
-                />
-              </div>
-
-              {/* Assign Sections Checkbox List */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                  নির্ধারিত গ্রুপ সেকশন (Assign Group Sections)
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 border border-slate-200 rounded-xl p-3 bg-slate-50 max-h-36 overflow-y-auto">
-                  {sections.map((sec) => (
-                    <label key={sec.id} className="flex items-center gap-2 text-xs text-slate-800 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={addSelectedSections.includes(sec.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setAddSelectedSections([...addSelectedSections, sec.id]);
-                          } else {
-                            setAddSelectedSections(addSelectedSections.filter((id) => id !== sec.id));
-                          }
-                        }}
-                        className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                      />
-                      <span className="font-medium">{sec.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsAddOpen(false)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                >
-                  বাতিল (Cancel)
+              <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
+                <button type="button" onClick={() => setIsAddOpen(false)} className="btn btn-secondary">
+                  {t('common.cancel', 'বাতিল', 'Cancel')}
                 </button>
-                <button
-                  type="submit"
-                  disabled={addSubmitting}
-                  className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 cursor-pointer"
-                >
-                  {addSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                  কর্মী তৈরি করুন (Save)
+                <button type="submit" disabled={addSubmitting} className="btn btn-primary">
+                  {addSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {t('emp.create', 'তৈরি করুন', 'Create')}
                 </button>
               </div>
             </form>
@@ -581,78 +554,68 @@ export default function EmployeesPage() {
 
       {/* Modal: Edit Employee */}
       {editingEmp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
-            <h3 className="text-lg font-bold text-slate-900 mb-1">কর্মী তথ্য সম্পাদনা করুন</h3>
-            <p className="text-xs text-slate-500 mb-4">Edit Employee Information</p>
+        <div className="modal-backdrop">
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="edit-emp-title">
+            <div className="card-header">
+              <h3 id="edit-emp-title" className="card-title">{t('emp.edit_title', 'কর্মী সম্পাদনা', 'Edit employee')}</h3>
+            </div>
 
-            <form onSubmit={handleEditEmployee} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  নাম (Name) *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
-                />
-              </div>
+            <form onSubmit={handleEditEmployee}>
+              <div className="card-body space-y-4">
+                <div>
+                  <label htmlFor="edit_emp_name" className="label">{t('emp.f_name', 'নাম', 'Name')} *</label>
+                  <input
+                    id="edit_emp_name"
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="input"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  মোবাইল নম্বর (Phone)
-                </label>
-                <input
-                  type="tel"
-                  value={editPhone}
-                  onChange={(e) => setEditPhone(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm font-mono focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
-                />
-              </div>
+                <div>
+                  <label htmlFor="edit_emp_phone" className="label">{t('emp.f_phone', 'মোবাইল', 'Phone')}</label>
+                  <input
+                    id="edit_emp_phone"
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    className="input tabular-nums"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  ইমেইল (Email) *
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={editEmail}
-                  onChange={(e) => setEditEmail(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
-                />
-              </div>
+                <div>
+                  <label htmlFor="edit_emp_email" className="label">{t('emp.f_email', 'ইমেইল', 'Email')} *</label>
+                  <input
+                    id="edit_emp_email"
+                    type="email"
+                    required
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    className="input"
+                  />
+                </div>
 
-              <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="edit_emp_active"
-                  checked={editActive}
-                  onChange={(e) => setEditActive(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <label htmlFor="edit_emp_active" className="text-xs font-semibold text-slate-700">
-                  অ্যাকাউন্ট সক্রিয় রাখুন (Active Account)
+                <label htmlFor="edit_emp_active" className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    id="edit_emp_active"
+                    checked={editActive}
+                    onChange={(e) => setEditActive(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-300 accent-brand-600"
+                  />
+                  {t('emp.f_active', 'অ্যাকাউন্ট সক্রিয়', 'Account active')}
                 </label>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setEditingEmp(null)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                >
-                  বাতিল (Cancel)
+              <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
+                <button type="button" onClick={() => setEditingEmp(null)} className="btn btn-secondary">
+                  {t('common.cancel', 'বাতিল', 'Cancel')}
                 </button>
-                <button
-                  type="submit"
-                  disabled={editSubmitting}
-                  className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 cursor-pointer"
-                >
-                  {editSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                  আপডেট করুন (Update)
+                <button type="submit" disabled={editSubmitting} className="btn btn-primary">
+                  {editSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {t('common.save', 'সংরক্ষণ', 'Save')}
                 </button>
               </div>
             </form>
@@ -662,54 +625,50 @@ export default function EmployeesPage() {
 
       {/* Modal: Assign Sections */}
       {assigningEmp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
-            <h3 className="text-lg font-bold text-slate-900 mb-1">
-              গ্রুপ সেকশন নির্ধারণ (Assign Sections)
-            </h3>
-            <p className="text-xs text-slate-500 mb-4">
-              কর্মী: <strong>{assigningEmp.name}</strong> ({assigningEmp.email})
-            </p>
+        <div className="modal-backdrop">
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="assign-emp-title">
+            <div className="card-header">
+              <div>
+                <h3 id="assign-emp-title" className="card-title">{t('emp.assign', 'সেকশন অ্যাসাইন', 'Assign sections')}</h3>
+                <p className="card-subtitle mt-0.5">
+                  {assigningEmp.name} · {assigningEmp.email}
+                </p>
+              </div>
+            </div>
 
-            <form onSubmit={handleSaveAssignments} className="space-y-4">
-              <div className="space-y-2 border border-slate-200 rounded-xl p-3 bg-slate-50 max-h-60 overflow-y-auto">
-                {sections.map((sec) => (
-                  <label
-                    key={sec.id}
-                    className="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200 hover:bg-emerald-50/50 cursor-pointer transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={assignSelectedSections.includes(sec.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setAssignSelectedSections([...assignSelectedSections, sec.id]);
-                        } else {
-                          setAssignSelectedSections(assignSelectedSections.filter((id) => id !== sec.id));
-                        }
-                      }}
-                      className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                    />
-                    <span className="text-xs font-semibold text-slate-800">{sec.name}</span>
-                  </label>
-                ))}
+            <form onSubmit={handleSaveAssignments}>
+              <div className="card-body">
+                <div className="max-h-72 space-y-1 overflow-y-auto">
+                  {sections.map((sec) => (
+                    <label
+                      key={sec.id}
+                      className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={assignSelectedSections.includes(sec.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setAssignSelectedSections([...assignSelectedSections, sec.id]);
+                          } else {
+                            setAssignSelectedSections(assignSelectedSections.filter((id) => id !== sec.id));
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-slate-300 accent-brand-600"
+                      />
+                      <span>{sec.name}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setAssigningEmp(null)}
-                  className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                >
-                  বাতিল (Cancel)
+              <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
+                <button type="button" onClick={() => setAssigningEmp(null)} className="btn btn-secondary">
+                  {t('common.cancel', 'বাতিল', 'Cancel')}
                 </button>
-                <button
-                  type="submit"
-                  disabled={assignSubmitting}
-                  className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 cursor-pointer"
-                >
-                  {assignSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                  সংরক্ষণ করুন (Save)
+                <button type="submit" disabled={assignSubmitting} className="btn btn-primary">
+                  {assignSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {t('common.save', 'সংরক্ষণ', 'Save')}
                 </button>
               </div>
             </form>
@@ -719,74 +678,68 @@ export default function EmployeesPage() {
 
       {/* Modal: Reset Password */}
       {resetEmp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95">
-            <div className="flex items-center gap-2.5 text-amber-600 mb-2">
-              <KeyRound className="h-6 w-6" />
-              <h3 className="text-lg font-bold text-slate-900">পাসওয়ার্ড রিসেট করুন</h3>
+        <div className="modal-backdrop">
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="reset-emp-title">
+            <div className="card-header">
+              <div>
+                <h3 id="reset-emp-title" className="card-title">{t('emp.reset', 'পাসওয়ার্ড রিসেট', 'Reset password')}</h3>
+                <p className="card-subtitle mt-0.5">
+                  {resetEmp.name} · {resetEmp.email}
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-slate-500 mb-4">
-              কর্মী: <strong>{resetEmp.name}</strong> ({resetEmp.email})
-            </p>
 
             {tempPassword ? (
-              <div className="space-y-4">
-                <div className="rounded-xl bg-amber-50 border border-amber-200 p-4">
-                  <div className="text-xs font-bold text-amber-900 mb-1">
-                    নতুন সাময়িক পাসওয়ার্ড (Temporary Password):
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg bg-white border border-amber-300 p-2.5 font-mono text-base font-bold text-slate-900">
-                    <span>{tempPassword}</span>
-                    <button
-                      onClick={() => copyToClipboard(tempPassword)}
-                      className="inline-flex items-center gap-1 text-xs text-emerald-700 hover:underline cursor-pointer"
-                    >
-                      {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
-                      <span>{copied ? 'কপি হয়েছে' : 'কপি করুন'}</span>
+              <>
+                <div className="card-body space-y-3">
+                  <label className="label">{t('emp.temp_pw', 'সাময়িক পাসওয়ার্ড', 'Temporary password')}</label>
+                  <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                    <span className="font-mono text-base font-semibold text-slate-900 break-all">{tempPassword}</span>
+                    <button onClick={() => copyToClipboard(tempPassword)} className="btn btn-secondary btn-sm">
+                      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                      {copied ? t('common.copied', 'কপি হয়েছে', 'Copied') : t('common.copy', 'কপি', 'Copy')}
                     </button>
                   </div>
-                  <p className="mt-2 text-[11px] text-amber-800">
-                    ⚠️ এটি শুধুমাত্র একবার দেখানো হবে। কর্মীকে পাসওয়ার্ডটি পৌঁছে দিন।
-                  </p>
+                  <div className="alert alert-warning">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>{t('emp.temp_pw_note', 'এটি একবারই দেখানো হবে। কর্মীকে পৌঁছে দিন।', 'Shown only once. Share it with the employee.')}</span>
+                  </div>
                 </div>
 
-                <div className="flex justify-end pt-2">
+                <div className="flex justify-end border-t border-slate-100 px-5 py-4">
                   <button
                     onClick={() => {
                       setResetEmp(null);
                       setTempPassword(null);
                     }}
-                    className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800 cursor-pointer"
+                    className="btn btn-secondary"
                   >
-                    বন্ধ করুন (Close)
+                    {t('common.close', 'বন্ধ করুন', 'Close')}
                   </button>
                 </div>
-              </div>
+              </>
             ) : (
-              <div className="space-y-4">
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  পাসওয়ার্ড রিসেট করলে একটি স্বয়ংক্রিয় নিরাপদ সাময়িক পাসওয়ার্ড তৈরি হবে এবং কর্মীর পূর্ববর্তী পাসওয়ার্ড বাতিল হয়ে যাবে।
-                </p>
+              <>
+                <div className="card-body">
+                  <p className="text-sm text-slate-600">
+                    {t(
+                      'emp.reset_desc',
+                      'একটি নতুন সাময়িক পাসওয়ার্ড তৈরি হবে এবং আগের পাসওয়ার্ড বাতিল হবে।',
+                      'A new temporary password will be generated and the old one will stop working.'
+                    )}
+                  </p>
+                </div>
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setResetEmp(null)}
-                    className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
-                  >
-                    বাতিল (Cancel)
+                <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
+                  <button type="button" onClick={() => setResetEmp(null)} className="btn btn-secondary">
+                    {t('common.cancel', 'বাতিল', 'Cancel')}
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleResetPassword}
-                    disabled={resetSubmitting}
-                    className="flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-60 cursor-pointer"
-                  >
-                    {resetSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                    নতুন পাসওয়ার্ড তৈরি করুন (Generate)
+                  <button type="button" onClick={handleResetPassword} disabled={resetSubmitting} className="btn btn-primary">
+                    {resetSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                    {t('emp.generate', 'পাসওয়ার্ড তৈরি', 'Generate')}
                   </button>
                 </div>
-              </div>
+              </>
             )}
           </div>
         </div>
