@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Lock, Mail, ShieldCheck, UserCheck, AlertCircle, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 import LanguageToggle from '@/components/LanguageToggle';
 
 export default function LoginPage() {
@@ -40,12 +40,6 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const setCredentials = (userEmail: string, userPass: string) => {
-    setEmail(userEmail);
-    setPassword(userPass);
-    setErrorMessage(null);
   };
 
   return (
@@ -100,7 +94,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@example.com"
+                  placeholder="you@example.com"
                   className="w-full rounded-xl border border-slate-300 bg-slate-50/50 py-2.5 pl-10 pr-3.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/20 transition-all"
                 />
               </div>
@@ -149,49 +143,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Quick Login Test Helpers */}
-          <div className="mt-8 border-t border-slate-100 pt-5">
-            <p className="text-xs font-semibold text-slate-500 mb-2.5 uppercase tracking-wider">
-              টেস্টিং অ্যাকাউন্ট (Quick Test Credentials):
-            </p>
-            <div className="grid grid-cols-1 gap-2">
-              <button
-                type="button"
-                onClick={() => setCredentials('admin@example.com', 'AdminPassword123!')}
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs font-medium text-slate-700 hover:border-emerald-500 hover:bg-emerald-50/60 transition-colors cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                  <strong>হেড অব মার্কেটিং (Admin)</strong>
-                </span>
-                <span className="font-mono text-[11px] text-slate-500">admin@example.com</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setCredentials('employee1@example.com', 'EmployeePassword123!')}
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs font-medium text-slate-700 hover:border-teal-500 hover:bg-teal-50/60 transition-colors cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  <UserCheck className="h-3.5 w-3.5 text-teal-600" />
-                  <strong>ডিজিটাল মার্কেটার ১ (Employee)</strong>
-                </span>
-                <span className="font-mono text-[11px] text-slate-500">employee1@example.com</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setCredentials('employee2@example.com', 'EmployeePassword123!')}
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-left text-xs font-medium text-slate-700 hover:border-teal-500 hover:bg-teal-50/60 transition-colors cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  <UserCheck className="h-3.5 w-3.5 text-teal-600" />
-                  <strong>ডিজিটাল মার্কেটার ২ (Employee)</strong>
-                </span>
-                <span className="font-mono text-[11px] text-slate-500">employee2@example.com</span>
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Footer */}
