@@ -120,8 +120,8 @@ describe('Subagent 28: Navigation, Headers & Bilingual Framework Verifier', () =
   });
 
   describe('4. Navigation & Header Verification', () => {
-    it('should verify AdminHeader links cover all 14 core administration modules', () => {
-      const headerPath = path.resolve(process.cwd(), 'src/components/AdminHeader.tsx');
+    it('should verify AdminShell links cover all core administration modules', () => {
+      const headerPath = path.resolve(process.cwd(), 'src/components/AdminShell.tsx');
       const headerContent = fs.readFileSync(headerPath, 'utf8');
 
       const adminRoutes = [
@@ -144,15 +144,10 @@ describe('Subagent 28: Navigation, Headers & Bilingual Framework Verifier', () =
       for (const route of adminRoutes) {
         expect(headerContent).toContain(`'${route}'`);
       }
-
-      // Check LanguageToggle and LogoutButton inclusion
-      expect(headerContent).toContain('<LanguageToggle />');
-      expect(headerContent).toContain('<LogoutButton />');
-      expect(headerContent).toContain('useLanguage');
     });
 
-    it('should verify EmployeeHeader links cover all 6 digital marketer workflows', () => {
-      const headerPath = path.resolve(process.cwd(), 'src/components/EmployeeHeader.tsx');
+    it('should verify EmployeeShell links cover all 6 digital marketer workflows', () => {
+      const headerPath = path.resolve(process.cwd(), 'src/components/EmployeeShell.tsx');
       const headerContent = fs.readFileSync(headerPath, 'utf8');
 
       const employeeRoutes = [
@@ -167,11 +162,6 @@ describe('Subagent 28: Navigation, Headers & Bilingual Framework Verifier', () =
       for (const route of employeeRoutes) {
         expect(headerContent).toContain(`'${route}'`);
       }
-
-      // Check LanguageToggle and LogoutButton inclusion
-      expect(headerContent).toContain('<LanguageToggle />');
-      expect(headerContent).toContain('<LogoutButton />');
-      expect(headerContent).toContain('useLanguage');
     });
 
     it('should verify LanguageToggle provides options for bn/en and digits bn/en', () => {

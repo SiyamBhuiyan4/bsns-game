@@ -13,6 +13,7 @@ import {
 import { toBengaliDigits } from '@/lib/date';
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
+import { useLanguage } from '@/components/LanguageContext';
 
 interface SectionScores {
   sales_profit: number;
@@ -43,6 +44,8 @@ const PERIOD_OPTIONS: { id: PeriodType; label: string; sub: string }[] = [
 ];
 
 export default function EmployeeLeaderboardPage() {
+  const { lang } = useLanguage();
+  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
   const [period, setPeriod] = useState<PeriodType>('thisMonth');
   const [loading, setLoading] = useState(true);
   const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
@@ -122,8 +125,8 @@ export default function EmployeeLeaderboardPage() {
     <div className="space-y-6">
       <PageHeader
         icon={<Trophy className="h-5 w-5" />}
-        title="লিডারবোর্ড · Leaderboard"
-        subtitle="টিমের পয়েন্ট র‍্যাঙ্কিং; শুধু পয়েন্ট দেখানো হয়। Team ranking by points only."
+        title={L('লিডারবোর্ড', 'Leaderboard')}
+        subtitle={L('টিমের পয়েন্ট র‍্যাঙ্কিং; শুধু পয়েন্ট দেখানো হয়।', 'Team ranking by points only.')}
         actions={
           <div className="segmented">
               {PERIOD_OPTIONS.map((opt) => (
@@ -134,7 +137,7 @@ export default function EmployeeLeaderboardPage() {
                   className="whitespace-nowrap"
                   title={opt.sub}
                 >
-                  {opt.label}
+                  {L(opt.label, opt.sub)}
                 </button>
               ))}
           </div>
@@ -151,10 +154,10 @@ export default function EmployeeLeaderboardPage() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="truncate text-[15px] font-semibold text-slate-900">{currentEmployee.name}</span>
-                <span className="badge badge-green">আপনি · You</span>
+                <span className="badge badge-green">{L('আপনি', 'You')}</span>
               </div>
               <div className="mt-0.5 text-sm text-slate-500">
-                মোট পয়েন্ট · Points:{' '}
+                {L('মোট পয়েন্ট', 'Points')}:{' '}
                 <span className="font-semibold text-slate-900 tabular-nums">
                   {toBengaliDigits(currentEmployee.total_score.toFixed(2))}
                 </span>{' '}
@@ -179,7 +182,7 @@ export default function EmployeeLeaderboardPage() {
       {leaderboard.length > 0 && !loading && (
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">সেরা ৩ · Top 3</h2>
+            <h2 className="card-title">{L('সেরা ৩', 'Top 3')}</h2>
           </div>
           <div className="card-body">
             <div className="mx-auto grid max-w-lg grid-cols-3 items-end gap-2 sm:gap-4">
@@ -220,23 +223,23 @@ export default function EmployeeLeaderboardPage() {
         <div className="card-header">
           <div className="flex items-center gap-2">
             <Flame className="h-4 w-4 text-slate-400" />
-            <h2 className="card-title">র‍্যাঙ্কিং · Ranking</h2>
+            <h2 className="card-title">{L('র‍্যাঙ্কিং', 'Ranking')}</h2>
           </div>
           <span className="card-subtitle">
-            সদস্য · Members: {toBengaliDigits(leaderboard.length)}
+            {L('সদস্য', 'Members')}: {toBengaliDigits(leaderboard.length)}
           </span>
         </div>
 
         {loading ? (
           <div className="flex h-64 flex-col items-center justify-center gap-2 text-slate-500">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
-            <span className="text-sm">লোড হচ্ছে... · Loading...</span>
+            <span className="text-sm">{L('লোড হচ্ছে...', 'Loading...')}</span>
           </div>
         ) : leaderboard.length === 0 ? (
           <EmptyState
             icon={<Trophy className="h-5 w-5" />}
-            title="কোনো তথ্য নেই · No data"
-            description="এই সময়কালের লিডারবোর্ড পাওয়া যায়নি · No leaderboard for this period"
+            title={L('কোনো তথ্য নেই', 'No data')}
+            description={L('এই সময়কালের লিডারবোর্ড পাওয়া যায়নি', 'No leaderboard for this period')}
           />
         ) : (
           <>
@@ -308,7 +311,7 @@ export default function EmployeeLeaderboardPage() {
                         <td className="whitespace-nowrap font-medium text-slate-900">
                           <div className="flex items-center gap-2">
                             <span>{emp.name}</span>
-                            {isCurrent && <span className="badge badge-green">আপনি · You</span>}
+                            {isCurrent && <span className="badge badge-green">{L('আপনি', 'You')}</span>}
                           </div>
                         </td>
                         {SECTION_COLS.map((c) => (
@@ -332,7 +335,7 @@ export default function EmployeeLeaderboardPage() {
 
       {/* How it works */}
       <div className="card card-body">
-        <h2 className="card-title mb-3">কীভাবে কাজ করে · How it works</h2>
+        <h2 className="card-title mb-3">{L('কীভাবে কাজ করে', 'How it works')}</h2>
         <ul className="grid grid-cols-1 gap-4 text-sm text-slate-600 md:grid-cols-3">
           <li className="flex gap-2.5">
             <Trophy className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />

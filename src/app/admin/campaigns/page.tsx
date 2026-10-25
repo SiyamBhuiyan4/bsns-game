@@ -1,5 +1,6 @@
 'use client';
 
+import { useLanguage } from '@/components/LanguageContext';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Megaphone,
@@ -59,6 +60,8 @@ interface SummaryData {
 }
 
 export default function AdminCampaignsPage() {
+  const { lang } = useLanguage();
+  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
   const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [products, setProducts] = useState<ProductRef[]>([]);
@@ -222,7 +225,7 @@ export default function AdminCampaignsPage() {
       case 'YOUTUBE':
         return <span className="badge badge-red">YouTube</span>;
       default:
-        return <span className="badge badge-gray">অন্যান্য · Other</span>;
+        return <span className="badge badge-gray">{L('অন্যান্য', 'Other')}</span>;
     }
   };
 
@@ -232,15 +235,15 @@ export default function AdminCampaignsPage() {
         return (
           <span className="badge badge-green">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            চলমান · Running
+            {L('চলমান', 'Running')}
           </span>
         );
       case 'PLANNED':
-        return <span className="badge badge-blue">পরিকল্পিত · Planned</span>;
+        return <span className="badge badge-blue">{L('পরিকল্পিত', 'Planned')}</span>;
       case 'PAUSED':
-        return <span className="badge badge-amber">স্থগিত · Paused</span>;
+        return <span className="badge badge-amber">{L('স্থগিত', 'Paused')}</span>;
       case 'ENDED':
-        return <span className="badge badge-gray">সমাপ্ত · Ended</span>;
+        return <span className="badge badge-gray">{L('সমাপ্ত', 'Ended')}</span>;
       default:
         return null;
     }
@@ -249,12 +252,12 @@ export default function AdminCampaignsPage() {
   const getBudgetStatusBadge = (status: 'SAFE' | 'WARNING' | 'EXCEEDED', pct: number) => {
     switch (status) {
       case 'EXCEEDED':
-        return <span className="badge badge-red">অতিক্রান্ত · Over · {pct}%</span>;
+        return <span className="badge badge-red">{L('অতিক্রান্ত', 'Over')} · {pct}%</span>;
       case 'WARNING':
-        return <span className="badge badge-amber">সতর্কতা · Warning · {pct}%</span>;
+        return <span className="badge badge-amber">{L('সতর্কতা', 'Warning')} · {pct}%</span>;
       case 'SAFE':
       default:
-        return <span className="badge badge-green">নিরাপদ · OK · {pct}%</span>;
+        return <span className="badge badge-green">{L('নিরাপদ', 'OK')} · {pct}%</span>;
     }
   };
 
@@ -291,16 +294,16 @@ export default function AdminCampaignsPage() {
       <option value="FACEBOOK_GROUP">Facebook Group</option>
       <option value="GOOGLE_AD">Google Ad</option>
       <option value="YOUTUBE">YouTube</option>
-      <option value="OTHER">অন্যান্য · Other</option>
+      <option value="OTHER">{L('অন্যান্য', 'Other')}</option>
     </>
   );
 
   const statusOptions = (
     <>
-      <option value="RUNNING">চলমান · Running</option>
-      <option value="PLANNED">পরিকল্পিত · Planned</option>
-      <option value="PAUSED">স্থগিত · Paused</option>
-      <option value="ENDED">সমাপ্ত · Ended</option>
+      <option value="RUNNING">{L('চলমান', 'Running')}</option>
+      <option value="PLANNED">{L('পরিকল্পিত', 'Planned')}</option>
+      <option value="PAUSED">{L('স্থগিত', 'Paused')}</option>
+      <option value="ENDED">{L('সমাপ্ত', 'Ended')}</option>
     </>
   );
 
@@ -308,7 +311,7 @@ export default function AdminCampaignsPage() {
     <div className="space-y-6">
       <PageHeader
         icon={<Megaphone className="h-5 w-5" />}
-        title="ক্যাম্পেইন · Campaigns"
+        title={L('ক্যাম্পেইন', 'Campaigns')}
         subtitle="Budget, ad spend and ROAS per campaign"
         actions={
           <button
@@ -319,7 +322,7 @@ export default function AdminCampaignsPage() {
             className="btn btn-primary"
           >
             <Plus className="h-4 w-4" />
-            নতুন ক্যাম্পেইন · New campaign
+            {L('নতুন ক্যাম্পেইন', 'New campaign')}
           </button>
         }
       />
@@ -357,7 +360,7 @@ export default function AdminCampaignsPage() {
           )}
           <div className="min-w-0 flex-1">
             <p className="font-medium">
-              বাজেট সতর্কতা · {alertCampaigns.length} campaign(s) at or over budget
+              {L('বাজেট সতর্কতা', 'Budget alert')} · {alertCampaigns.length} {L('টি ক্যাম্পেইন বাজেট ছুঁয়েছে বা ছাড়িয়েছে', 'campaign(s) at or over budget')}
             </p>
             <ul className="mt-1.5 space-y-0.5 text-xs">
               {alertCampaigns.map((c) => (
@@ -373,31 +376,31 @@ export default function AdminCampaignsPage() {
       {summary && (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
           <StatCard
-            label="মোট ক্যাম্পেইন · Total"
+            label={L('মোট ক্যাম্পেইন', 'Total')}
             value={summary.total_campaigns}
             icon={<Megaphone className="h-4 w-4" />}
             tone="blue"
           />
           <StatCard
-            label="সক্রিয় · Running"
+            label={L('সক্রিয়', 'Running')}
             value={summary.active_campaigns}
             icon={<Zap className="h-4 w-4" />}
           />
           <StatCard
-            label="মোট বাজেট · Budget"
+            label={L('মোট বাজেট', 'Budget')}
             value={`৳ ${summary.total_budget.toLocaleString('en-IN')}`}
             icon={<DollarSign className="h-4 w-4" />}
             tone="gray"
           />
           <StatCard
-            label="অ্যাড স্পেন্ড · Spend"
+            label={L('অ্যাড স্পেন্ড', 'Spend')}
             value={`৳ ${summary.total_spend.toLocaleString('en-IN')}`}
             note={`${summary.total_budget > 0 ? ((summary.total_spend / summary.total_budget) * 100).toFixed(1) : 0}% of budget`}
             icon={<TrendingUp className="h-4 w-4" />}
             tone="violet"
           />
           <StatCard
-            label="রাজস্ব · Revenue"
+            label={L('রাজস্ব', 'Revenue')}
             value={`৳ ${summary.total_revenue.toLocaleString('en-IN')}`}
             icon={<Package className="h-4 w-4" />}
           />
@@ -414,7 +417,7 @@ export default function AdminCampaignsPage() {
       <div className="card">
         <div className="card-header">
           <div>
-            <h2 className="card-title">সব ক্যাম্পেইন · All campaigns</h2>
+            <h2 className="card-title">{L('সব ক্যাম্পেইন', 'All campaigns')}</h2>
             <p className="card-subtitle">{filteredCampaigns.length} shown</p>
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -425,7 +428,7 @@ export default function AdminCampaignsPage() {
               onChange={(e) => setSelectedChannel(e.target.value)}
               className="input w-full py-1.5 text-xs sm:w-auto"
             >
-              <option value="ALL">সব চ্যানেল · All channels</option>
+              <option value="ALL">{L('সব চ্যানেল', 'All channels')}</option>
               {channelOptions}
             </select>
             <label htmlFor="filter_status" className="sr-only">Status</label>
@@ -435,7 +438,7 @@ export default function AdminCampaignsPage() {
               onChange={(e) => setSelectedStatus(e.target.value)}
               className="input w-full py-1.5 text-xs sm:w-auto"
             >
-              <option value="ALL">সব স্ট্যাটাস · All statuses</option>
+              <option value="ALL">{L('সব স্ট্যাটাস', 'All statuses')}</option>
               {statusOptions}
             </select>
           </div>
@@ -445,27 +448,27 @@ export default function AdminCampaignsPage() {
           {loading ? (
             <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
               <Loader2 className="h-4 w-4 animate-spin" />
-              লোড হচ্ছে · Loading…
+              {L('লোড হচ্ছে', 'Loading…')}
             </div>
           ) : filteredCampaigns.length === 0 ? (
             <EmptyState
               icon={<Megaphone className="h-5 w-5" />}
-              title="কোনো ক্যাম্পেইন নেই · No campaigns"
+              title={L('কোনো ক্যাম্পেইন নেই', 'No campaigns')}
               description="Create a campaign or change the filters."
             />
           ) : (
             <table className="table-pro">
               <thead>
                 <tr>
-                  <th>ক্যাম্পেইন · Campaign</th>
-                  <th>চ্যানেল · Channel</th>
-                  <th>পণ্য · Product</th>
-                  <th className="text-right">বাজেট · Budget</th>
-                  <th>খরচ · Spend</th>
-                  <th className="text-right">রাজস্ব · Revenue</th>
+                  <th>{L('ক্যাম্পেইন', 'Campaign')}</th>
+                  <th>{L('চ্যানেল', 'Channel')}</th>
+                  <th>{L('পণ্য', 'Product')}</th>
+                  <th className="text-right">{L('বাজেট', 'Budget')}</th>
+                  <th>{L('খরচ', 'Spend')}</th>
+                  <th className="text-right">{L('রাজস্ব', 'Revenue')}</th>
                   <th className="text-center">ROAS</th>
                   <th className="text-center">লিড / অর্ডার</th>
-                  <th className="text-center">স্ট্যাটাস · Status</th>
+                  <th className="text-center">{L('স্ট্যাটাস', 'Status')}</th>
                   <th className="text-right">
                     <span className="sr-only">Actions</span>
                   </th>
@@ -486,7 +489,7 @@ export default function AdminCampaignsPage() {
                     <td className="whitespace-nowrap">{getChannelBadge(c.channel)}</td>
 
                     <td className="whitespace-nowrap text-slate-600">
-                      {c.product ? c.product.name_bn : <span className="text-slate-400">সকল পণ্য · All</span>}
+                      {c.product ? c.product.name_bn : <span className="text-slate-400">{L('সকল পণ্য', 'All')}</span>}
                     </td>
 
                     <td className="whitespace-nowrap text-right tabular-nums text-slate-900">
@@ -532,7 +535,7 @@ export default function AdminCampaignsPage() {
                         onClick={() => handleOpenEdit(c)}
                         className="btn-icon"
                         aria-label="Edit campaign"
-                        title="সম্পাদনা · Edit"
+                        title={L('সম্পাদনা', 'Edit')}
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
@@ -550,7 +553,7 @@ export default function AdminCampaignsPage() {
         <div className="modal-backdrop">
           <div className="modal-panel">
             <div className="card-header">
-              <h3 className="card-title">নতুন ক্যাম্পেইন · New campaign</h3>
+              <h3 className="card-title">{L('নতুন ক্যাম্পেইন', 'New campaign')}</h3>
               <button type="button" onClick={() => setIsAddOpen(false)} className="btn-icon" aria-label="Close">
                 <X className="h-4 w-4" />
               </button>
@@ -559,7 +562,7 @@ export default function AdminCampaignsPage() {
             <form onSubmit={handleAdd}>
               <div className="card-body space-y-4">
                 <div>
-                  <label className="label" htmlFor="camp_name">নাম · Name *</label>
+                  <label className="label" htmlFor="camp_name">{L('নাম', 'Name *')}</label>
                   <input
                     id="camp_name"
                     type="text"
@@ -573,7 +576,7 @@ export default function AdminCampaignsPage() {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="label" htmlFor="camp_channel">চ্যানেল · Channel *</label>
+                    <label className="label" htmlFor="camp_channel">{L('চ্যানেল', 'Channel *')}</label>
                     <select
                       id="camp_channel"
                       value={channel}
@@ -584,14 +587,14 @@ export default function AdminCampaignsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="label" htmlFor="camp_product">পণ্য · Product</label>
+                    <label className="label" htmlFor="camp_product">{L('পণ্য', 'Product')}</label>
                     <select
                       id="camp_product"
                       value={productId}
                       onChange={(e) => setProductId(e.target.value)}
                       className="input"
                     >
-                      <option value="">সকল পণ্য · All products</option>
+                      <option value="">{L('সকল পণ্য', 'All products')}</option>
                       {products.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name_bn}
@@ -603,7 +606,7 @@ export default function AdminCampaignsPage() {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="label" htmlFor="camp_budget">বাজেট · Budget (৳) *</label>
+                    <label className="label" htmlFor="camp_budget">{L('বাজেট', 'Budget (৳) *')}</label>
                     <input
                       id="camp_budget"
                       type="number"
@@ -617,7 +620,7 @@ export default function AdminCampaignsPage() {
                     />
                   </div>
                   <div>
-                    <label className="label" htmlFor="camp_status">স্ট্যাটাস · Status *</label>
+                    <label className="label" htmlFor="camp_status">{L('স্ট্যাটাস', 'Status *')}</label>
                     <select
                       id="camp_status"
                       value={status}
@@ -631,7 +634,7 @@ export default function AdminCampaignsPage() {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="label" htmlFor="camp_start">শুরু · Start date *</label>
+                    <label className="label" htmlFor="camp_start">{L('শুরু', 'Start date *')}</label>
                     <input
                       id="camp_start"
                       type="date"
@@ -642,7 +645,7 @@ export default function AdminCampaignsPage() {
                     />
                   </div>
                   <div>
-                    <label className="label" htmlFor="camp_end">শেষ · End date</label>
+                    <label className="label" htmlFor="camp_end">{L('শেষ', 'End date')}</label>
                     <input
                       id="camp_end"
                       type="date"
@@ -656,11 +659,11 @@ export default function AdminCampaignsPage() {
 
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
                 <button type="button" onClick={() => setIsAddOpen(false)} className="btn btn-secondary">
-                  বাতিল · Cancel
+                  {L('বাতিল', 'Cancel')}
                 </button>
                 <button type="submit" disabled={addSubmitting} className="btn btn-primary">
                   {addSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  তৈরি করুন · Create
+                  {L('তৈরি করুন', 'Create')}
                 </button>
               </div>
             </form>
@@ -674,7 +677,7 @@ export default function AdminCampaignsPage() {
           <div className="modal-panel">
             <div className="card-header">
               <div className="min-w-0">
-                <h3 className="card-title">ক্যাম্পেইন আপডেট · Edit campaign</h3>
+                <h3 className="card-title">{L('ক্যাম্পেইন আপডেট', 'Edit campaign')}</h3>
                 <p className="card-subtitle truncate">{editingCampaign.name}</p>
               </div>
               <button type="button" onClick={() => setEditingCampaign(null)} className="btn-icon" aria-label="Close">
@@ -685,7 +688,7 @@ export default function AdminCampaignsPage() {
             <form onSubmit={handleSaveEdit}>
               <div className="card-body space-y-4">
                 <div>
-                  <label className="label" htmlFor="edit_camp_name">নাম · Name *</label>
+                  <label className="label" htmlFor="edit_camp_name">{L('নাম', 'Name *')}</label>
                   <input
                     id="edit_camp_name"
                     type="text"
@@ -697,7 +700,7 @@ export default function AdminCampaignsPage() {
                 </div>
 
                 <div>
-                  <label className="label" htmlFor="edit_camp_channel">চ্যানেল · Channel *</label>
+                  <label className="label" htmlFor="edit_camp_channel">{L('চ্যানেল', 'Channel *')}</label>
                   <select
                     id="edit_camp_channel"
                     value={editChannel}
@@ -709,7 +712,7 @@ export default function AdminCampaignsPage() {
                 </div>
 
                 <div>
-                  <label className="label" htmlFor="edit_camp_budget">বাজেট · Budget (৳) *</label>
+                  <label className="label" htmlFor="edit_camp_budget">{L('বাজেট', 'Budget (৳) *')}</label>
                   <input
                     id="edit_camp_budget"
                     type="number"
@@ -721,12 +724,12 @@ export default function AdminCampaignsPage() {
                     className="input tabular-nums"
                   />
                   <p className="hint">
-                    বর্তমান খরচ · Current spend: ৳{editingCampaign.spend.toLocaleString('en-IN')}
+                    {L('বর্তমান খরচ', 'Current spend')}: ৳{editingCampaign.spend.toLocaleString('en-IN')}
                   </p>
                 </div>
 
                 <div>
-                  <label className="label" htmlFor="edit_camp_status">স্ট্যাটাস · Status *</label>
+                  <label className="label" htmlFor="edit_camp_status">{L('স্ট্যাটাস', 'Status *')}</label>
                   <select
                     id="edit_camp_status"
                     value={editStatus}
@@ -740,11 +743,11 @@ export default function AdminCampaignsPage() {
 
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
                 <button type="button" onClick={() => setEditingCampaign(null)} className="btn btn-secondary">
-                  বাতিল · Cancel
+                  {L('বাতিল', 'Cancel')}
                 </button>
                 <button type="submit" disabled={editSubmitting} className="btn btn-primary">
                   {editSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  সংরক্ষণ · Save
+                  {L('সংরক্ষণ', 'Save')}
                 </button>
               </div>
             </form>

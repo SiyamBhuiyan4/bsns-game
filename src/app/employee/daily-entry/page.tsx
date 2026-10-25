@@ -28,6 +28,7 @@ import {
   SAVE_SUCCESS_MESSAGE,
 } from '@/lib/daily-entry';
 import PageHeader from '@/components/ui/PageHeader';
+import { useLanguage } from '@/components/LanguageContext';
 import EmptyState from '@/components/ui/EmptyState';
 
 interface Product {
@@ -65,6 +66,8 @@ interface ProductSaleResponse {
 }
 
 export default function EmployeeDailyEntryPage() {
+  const { lang } = useLanguage();
+  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
   const [selectedDate, setSelectedDate] = useState(() => getDhakaDateString());
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -384,14 +387,14 @@ export default function EmployeeDailyEntryPage() {
             onClick={() => toggleNoteField(metricKey)}
             className="text-xs font-medium text-brand-700 hover:text-brand-800"
           >
-            + নোট · Add note
+            {L('+ নোট', '+ Add note')}
           </button>
         )}
         {isOpen && (
           <div className="mt-1 space-y-1">
             <div className="flex items-center justify-between">
               <label htmlFor={`note-${metricKey}`} className="text-[11px] font-medium text-slate-500">
-                নোট · Note
+                {L('নোট', 'Note')}
               </label>
               <span className="text-[11px] text-slate-400 tabular-nums">{noteVal.length}/300</span>
             </div>
@@ -402,7 +405,7 @@ export default function EmployeeDailyEntryPage() {
               disabled={!canEdit}
               value={noteVal}
               onChange={(e) => setNote(metricKey, e.target.value)}
-              placeholder="বিস্তারিত লিখুন · Details"
+              placeholder={L('বিস্তারিত লিখুন', 'Details')}
               className="input py-1.5 text-xs"
             />
           </div>
@@ -444,11 +447,11 @@ export default function EmployeeDailyEntryPage() {
       <div className="card">
         <EmptyState
           icon={<ShieldAlert className="h-5 w-5 text-rose-600" />}
-          title="অ্যাডমিন প্রবেশাধিকার নেই · Admin access not allowed"
-          description="অ্যাডমিন কর্মচারীর দৈনিক এন্ট্রি খুলতে বা জমা দিতে পারবেন না। Admins cannot open or submit the employee daily entry."
+          title={L('অ্যাডমিন প্রবেশাধিকার নেই', 'Admin access not allowed')}
+          description={L('অ্যাডমিন কর্মচারীর দৈনিক এন্ট্রি খুলতে বা জমা দিতে পারবেন না।', 'Admins cannot open or submit the employee daily entry.')}
           action={
             <Link href="/admin/dashboard" className="btn btn-primary">
-              অ্যাডমিন ড্যাশবোর্ড · Admin dashboard
+              {L('অ্যাডমিন ড্যাশবোর্ড', 'Admin dashboard')}
             </Link>
           }
         />
@@ -460,13 +463,13 @@ export default function EmployeeDailyEntryPage() {
     <div className="space-y-6">
       <PageHeader
         icon={<FileText className="h-5 w-5" />}
-        title="দৈনিক এন্ট্রি · Daily Entry"
-        subtitle="আজকের বিক্রি, লিড, বিজ্ঞাপন ও কাজের হিসাব লিখুন। Log today's sales, leads and work."
+        title={L('দৈনিক এন্ট্রি', 'Daily Entry')}
+        subtitle={L('আজকের বিক্রি, লিড, বিজ্ঞাপন ও কাজের হিসাব লিখুন।', "Log today's sales, leads and work.")}
         actions={
           <>
             <div className="relative">
               <label htmlFor="de-date" className="sr-only">
-                তারিখ · Date
+                {L('তারিখ', 'Date')}
               </label>
               <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -486,7 +489,7 @@ export default function EmployeeDailyEntryPage() {
                   setSelectedDate(todayDhaka || getDhakaDateString());
                 }}
               >
-                আজ · Today
+                {L('আজ', 'Today')}
               </button>
               {oldestAllowed && (
                 <button
@@ -494,7 +497,7 @@ export default function EmployeeDailyEntryPage() {
                   data-active={selectedDate === oldestAllowed}
                   onClick={() => setSelectedDate(oldestAllowed)}
                 >
-                  গতকাল · Yesterday
+                  {L('গতকাল', 'Yesterday')}
                 </button>
               )}
             </div>
@@ -509,11 +512,11 @@ export default function EmployeeDailyEntryPage() {
           <div className="space-y-1">
             <div className="font-medium">{LOCK_NOTICE}</div>
             <p className="text-xs">
-              শুধু আজ ও গতকালের তথ্য সম্পাদন করা যায়; এই তারিখ শুধু দেখা যাবে। Only today and yesterday can be edited; this date is read-only.
+              {L('শুধু আজ ও গতকালের তথ্য সম্পাদন করা যায়; এই তারিখ শুধু দেখা যাবে।', 'Only today and yesterday can be edited; this date is read-only.')}
             </p>
             {oldestAllowed && todayDhaka && (
               <p className="text-xs font-medium tabular-nums">
-                সম্পাদনযোগ্য · Editable: {oldestAllowed} – {todayDhaka}
+                {L('সম্পাদনযোগ্য:', 'Editable:')} {oldestAllowed} – {todayDhaka}
               </p>
             )}
           </div>
@@ -522,12 +525,12 @@ export default function EmployeeDailyEntryPage() {
         <div className="alert alert-info flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <Unlock className="h-4 w-4 shrink-0" />
-            <span>আজ ও গতকালের এন্ট্রি সম্পাদন করা যাবে · Today and yesterday are editable</span>
+            <span>{L('আজ ও গতকালের এন্ট্রি সম্পাদন করা যাবে', 'Today and yesterday are editable')}</span>
           </div>
           <div className="flex items-center gap-1.5 text-xs">
             <CheckCircle2 className="h-3.5 w-3.5" />
             <span>
-              টাস্ক কিউ পোস্ট · Queue posts: <strong className="font-semibold tabular-nums">{postsDone}</strong>
+              {L('টাস্ক কিউ পোস্ট:', 'Queue posts:')} <strong className="font-semibold tabular-nums">{postsDone}</strong>
             </span>
           </div>
         </div>
@@ -547,24 +550,24 @@ export default function EmployeeDailyEntryPage() {
       )}
 
       {loading ? (
-        <div className="card p-12 text-center text-sm text-slate-500">লোড হচ্ছে... · Loading...</div>
+        <div className="card p-12 text-center text-sm text-slate-500">{L('লোড হচ্ছে...', 'Loading...')}</div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Posts done */}
           <div className="card">
             {sectionHeader(
               <Megaphone className="h-4 w-4" />,
-              'গ্রুপ পোস্ট · Group posts',
-              'আজকের সম্পন্ন ফেসবুক গ্রুপ পোস্ট · Facebook group posts done today',
+              L('গ্রুপ পোস্ট', 'Group posts'),
+              L('আজকের সম্পন্ন ফেসবুক গ্রুপ পোস্ট', 'Facebook group posts done today'),
               <span className="badge badge-green">
                 <CheckCircle2 className="h-3 w-3" />
-                কিউ থেকে · From queue: {postsDone}
+                {L('কিউ থেকে:', 'From queue:')} {postsDone}
               </span>
             )}
             <div className="card-body">
               <div className="max-w-md">
                 <label htmlFor="de-posts" className="label">
-                  গ্রুপ পোস্ট সম্পন্ন · Posts done <span className="text-rose-500">*</span>
+                  {L('গ্রুপ পোস্ট সম্পন্ন', 'Posts done')} <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">#</span>
@@ -581,7 +584,7 @@ export default function EmployeeDailyEntryPage() {
                     required
                   />
                 </div>
-                <p className="hint">টাস্ক কিউ থেকে স্বয়ংক্রিয়; প্রয়োজনে বদলান। Filled from your task queue; adjust if needed.</p>
+                <p className="hint">{L('টাস্ক কিউ থেকে স্বয়ংক্রিয়; প্রয়োজনে বদলান।', 'Filled from your task queue; adjust if needed.')}</p>
                 {renderNoteInput('POSTS_DONE')}
               </div>
             </div>
@@ -591,14 +594,14 @@ export default function EmployeeDailyEntryPage() {
           <div className="card">
             {sectionHeader(
               <DollarSign className="h-4 w-4" />,
-              '১. বিক্রি · Sales',
-              'মোট বিক্রি, লাভ ও নিশ্চিত অর্ডার · Sales, profit and confirmed orders'
+              L('১. বিক্রি', '1. Sales'),
+              L('মোট বিক্রি, লাভ ও নিশ্চিত অর্ডার', 'Sales, profit and confirmed orders')
             )}
             <div className="card-body space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                   <label htmlFor="de-sales" className="label">
-                    মোট বিক্রি · Sales (৳) <span className="text-rose-500">*</span>
+                    {L('মোট বিক্রি (৳)', 'Sales (৳)')} <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
                     <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">৳</span>
@@ -620,7 +623,7 @@ export default function EmployeeDailyEntryPage() {
 
                 <div>
                   <label htmlFor="de-profit" className="label">
-                    লাভ · Profit (৳) <span className="text-rose-500">*</span>
+                    {L('লাভ (৳)', 'Profit (৳)')} <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
                     <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">৳</span>
@@ -642,7 +645,7 @@ export default function EmployeeDailyEntryPage() {
 
                 <div>
                   <label htmlFor="de-orders" className="label">
-                    নিশ্চিত অর্ডার · Confirmed orders <span className="text-rose-500">*</span>
+                    {L('নিশ্চিত অর্ডার', 'Confirmed orders')} <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
                     <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">#</span>
@@ -676,11 +679,11 @@ export default function EmployeeDailyEntryPage() {
           <div className="card">
             {sectionHeader(
               <Package className="h-4 w-4" />,
-              '২. পণ্যভিত্তিক বিক্রি · Products',
-              'প্রতিটি পণ্যের পরিমাণ ও টাকা · Quantity and amount per product',
+              L('২. পণ্যভিত্তিক বিক্রি', '2. Products'),
+              L('প্রতিটি পণ্যের পরিমাণ ও টাকা', 'Quantity and amount per product'),
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-slate-500">
-                  মোট · Total:{' '}
+                  {L('মোট:', 'Total:')}{' '}
                   <span className="text-sm font-semibold text-slate-900 tabular-nums">
                     {formatTaka(totalProductSalesAmount)}
                   </span>
@@ -690,9 +693,9 @@ export default function EmployeeDailyEntryPage() {
                     type="button"
                     onClick={() => setSalesAmount(String(totalProductSalesAmount))}
                     className="btn btn-secondary btn-sm"
-                    title="পণ্যের মোট টাকা 'মোট বিক্রি' ঘরে বসান · Copy to Sales"
+                    title={L("পণ্যের মোট টাকা 'মোট বিক্রি' ঘরে বসান", 'Copy to Sales')}
                   >
-                    বিক্রিতে কপি · Copy to sales
+                    {L('বিক্রিতে কপি', 'Copy to sales')}
                   </button>
                 )}
               </div>
@@ -700,15 +703,15 @@ export default function EmployeeDailyEntryPage() {
 
             {productSales.length === 0 ? (
               <div className="px-5 py-8 text-center text-sm text-slate-500">
-                কোনো সক্রিয় পণ্য নেই · No active products
+                {L('কোনো সক্রিয় পণ্য নেই', 'No active products')}
               </div>
             ) : (
               <>
                 <div className="hidden border-b border-slate-200 bg-slate-50/80 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:gap-4">
-                  <span>পণ্য · Product</span>
-                  <span>মূল্য · Price</span>
-                  <span>পরিমাণ · Qty</span>
-                  <span>মোট · Amount (৳)</span>
+                  <span>{L('পণ্য', 'Product')}</span>
+                  <span>{L('মূল্য', 'Price')}</span>
+                  <span>{L('পরিমাণ', 'Qty')}</span>
+                  <span>{L('মোট (৳)', 'Amount (৳)')}</span>
                 </div>
                 <ul className="divide-y divide-slate-100">
                   {productSales.map((ps, idx) => (
@@ -721,12 +724,12 @@ export default function EmployeeDailyEntryPage() {
                         <div className="text-xs text-slate-500">{ps.unit}</div>
                       </div>
                       <div className="col-span-2 text-xs text-slate-500 sm:col-span-1 sm:text-sm sm:text-slate-700 tabular-nums">
-                        <span className="sm:hidden">মূল্য · Price: </span>
+                        <span className="sm:hidden">{L('মূল্য: ', 'Price: ')}</span>
                         {formatTaka(ps.selling_price)}
                       </div>
                       <div>
                         <label htmlFor={`de-qty-${ps.product_id}`} className="label sm:sr-only">
-                          পরিমাণ · Qty
+                          {L('পরিমাণ', 'Qty')}
                         </label>
                         <input
                           id={`de-qty-${ps.product_id}`}
@@ -744,7 +747,7 @@ export default function EmployeeDailyEntryPage() {
                       </div>
                       <div>
                         <label htmlFor={`de-amt-${ps.product_id}`} className="label sm:sr-only">
-                          মোট · Amount (৳)
+                          {L('মোট (৳)', 'Amount (৳)')}
                         </label>
                         <input
                           id={`de-amt-${ps.product_id}`}
@@ -766,7 +769,7 @@ export default function EmployeeDailyEntryPage() {
               </>
             )}
             <div className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
-              পরিমাণ লিখলে মূল্য × পরিমাণ স্বয়ংক্রিয় হিসাব হয়; প্রয়োজনে বদলান। Amount is auto-calculated from quantity × price; you can adjust it.
+              {L('পরিমাণ লিখলে মূল্য × পরিমাণ স্বয়ংক্রিয় হিসাব হয়; প্রয়োজনে বদলান।', 'Amount is auto-calculated from quantity × price; you can adjust it.')}
             </div>
           </div>
 
@@ -774,14 +777,14 @@ export default function EmployeeDailyEntryPage() {
           <div className="card">
             {sectionHeader(
               <Users className="h-4 w-4" />,
-              '৩. লিড ও ক্রেতা · Leads & clients',
-              'নতুন লিড, নতুন ও পুরোনো ক্রেতা · New leads, new and returning clients'
+              L('৩. লিড ও ক্রেতা', '3. Leads & clients'),
+              L('নতুন লিড, নতুন ও পুরোনো ক্রেতা', 'New leads, new and returning clients')
             )}
             <div className="card-body space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                   <label htmlFor="de-leads" className="label">
-                    নতুন লিড · New leads
+                    {L('নতুন লিড', 'New leads')}
                   </label>
                   <input
                     id="de-leads"
@@ -799,7 +802,7 @@ export default function EmployeeDailyEntryPage() {
 
                 <div>
                   <label htmlFor="de-clients" className="label">
-                    নতুন ক্রেতা · New clients
+                    {L('নতুন ক্রেতা', 'New clients')}
                   </label>
                   <input
                     id="de-clients"
@@ -817,7 +820,7 @@ export default function EmployeeDailyEntryPage() {
 
                 <div>
                   <label htmlFor="de-retention" className="label">
-                    পুরোনো ক্রেতা ধরে রাখা · Retained
+                    {L('পুরোনো ক্রেতা ধরে রাখা', 'Retained')}
                   </label>
                   <input
                     id="de-retention"
@@ -848,12 +851,12 @@ export default function EmployeeDailyEntryPage() {
             <div className="card">
               {sectionHeader(
                 <Megaphone className="h-4 w-4" />,
-                '৪. বিজ্ঞাপন · Advertising',
-                'আজকের বিজ্ঞাপন খরচ · Today\'s ad spend'
+                L('৪. বিজ্ঞাপন', '4. Advertising'),
+                L('আজকের বিজ্ঞাপন খরচ', "Today's ad spend")
               )}
               <div className="card-body">
                 <label htmlFor="de-ad" className="label">
-                  বিজ্ঞাপনের খরচ · Ad spend (৳)
+                  {L('বিজ্ঞাপনের খরচ (৳)', 'Ad spend (৳)')}
                 </label>
                 <div className="relative">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">৳</span>
@@ -876,12 +879,12 @@ export default function EmployeeDailyEntryPage() {
             <div className="card">
               {sectionHeader(
                 <MessageSquare className="h-4 w-4" />,
-                '৫. ফলোআপ · Follow-ups',
-                'আজকের মেসেজ ও কল ফলোআপ · Messages and calls today'
+                L('৫. ফলোআপ', '5. Follow-ups'),
+                L('আজকের মেসেজ ও কল ফলোআপ', 'Messages and calls today')
               )}
               <div className="card-body">
                 <label htmlFor="de-followups" className="label">
-                  ফলোআপ সম্পন্ন · Follow-ups done
+                  {L('ফলোআপ সম্পন্ন', 'Follow-ups done')}
                 </label>
                 <input
                   id="de-followups"
@@ -903,14 +906,14 @@ export default function EmployeeDailyEntryPage() {
           <div className="card">
             {sectionHeader(
               <TrendingUp className="h-4 w-4" />,
-              '৬. B2B · পাইকার / কর্পোরেট / রেস্তোরাঁ',
-              'B2B অর্ডার, অনুসন্ধান ও সম্ভাব্য মূল্য · Orders, inquiries and potential value'
+              L('৬. B2B · পাইকার / কর্পোরেট / রেস্তোরাঁ', '6. B2B · Wholesale / Corporate / Restaurant'),
+              L('B2B অর্ডার, অনুসন্ধান ও সম্ভাব্য মূল্য', 'Orders, inquiries and potential value')
             )}
             <div className="card-body space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                   <label htmlFor="de-b2b-orders" className="label">
-                    B2B অর্ডার · Orders
+                    {L('B2B অর্ডার', 'Orders')}
                   </label>
                   <input
                     id="de-b2b-orders"
@@ -928,7 +931,7 @@ export default function EmployeeDailyEntryPage() {
 
                 <div>
                   <label htmlFor="de-b2b-inq" className="label">
-                    বড় B2B অনুসন্ধান · Inquiries
+                    {L('বড় B2B অনুসন্ধান', 'Inquiries')}
                   </label>
                   <input
                     id="de-b2b-inq"
@@ -946,7 +949,7 @@ export default function EmployeeDailyEntryPage() {
 
                 <div>
                   <label htmlFor="de-b2b-value" className="label">
-                    সম্ভাব্য মূল্য · Potential value (৳)
+                    {L('সম্ভাব্য মূল্য (৳)', 'Potential value (৳)')}
                   </label>
                   <div className="relative">
                     <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">৳</span>
@@ -979,13 +982,13 @@ export default function EmployeeDailyEntryPage() {
           <div className="card">
             {sectionHeader(
               <FileText className="h-4 w-4" />,
-              '৭. দিনের প্রতিফলন · Reflection',
-              'প্রধান সমস্যা ও আগামী দিনের অগ্রাধিকার · Main issue and next priorities'
+              L('৭. দিনের প্রতিফলন', '7. Reflection'),
+              L('প্রধান সমস্যা ও আগামী দিনের অগ্রাধিকার', 'Main issue and next priorities')
             )}
             <div className="card-body space-y-4">
               <div>
                 <label htmlFor="de-issue" className="label">
-                  প্রধান সমস্যা · Main issue
+                  {L('প্রধান সমস্যা', 'Main issue')}
                 </label>
                 <textarea
                   id="de-issue"
@@ -994,7 +997,7 @@ export default function EmployeeDailyEntryPage() {
                   disabled={!canEdit}
                   value={mainIssue}
                   onChange={(e) => setMainIssue(e.target.value)}
-                  placeholder="আজ কী বাধা ছিল? · What got in the way today?"
+                  placeholder={L('আজ কী বাধা ছিল?', 'What got in the way today?')}
                   className="input"
                 />
                 <span className="mt-1 block text-right text-[11px] text-slate-400 tabular-nums">
@@ -1004,7 +1007,7 @@ export default function EmployeeDailyEntryPage() {
 
               <div>
                 <label htmlFor="de-next" className="label">
-                  আগামী দিনের অগ্রাধিকার · Next priorities
+                  {L('আগামী দিনের অগ্রাধিকার', 'Next priorities')}
                 </label>
                 <textarea
                   id="de-next"
@@ -1013,7 +1016,7 @@ export default function EmployeeDailyEntryPage() {
                   disabled={!canEdit}
                   value={nextPriorities}
                   onChange={(e) => setNextPriorities(e.target.value)}
-                  placeholder="আগামীকাল কী আগে করবেন? · What comes first tomorrow?"
+                  placeholder={L('আগামীকাল কী আগে করবেন?', 'What comes first tomorrow?')}
                   className="input"
                 />
                 <span className="mt-1 block text-right text-[11px] text-slate-400 tabular-nums">
@@ -1027,7 +1030,7 @@ export default function EmployeeDailyEntryPage() {
             <div className="flex justify-end">
               <button type="submit" disabled={saving} className="btn btn-primary min-h-11 w-full px-6 sm:w-auto">
                 <Save className="h-4 w-4" />
-                {saving ? 'সংরক্ষণ হচ্ছে... · Saving...' : 'সংরক্ষণ করুন · Save entry'}
+                {saving ? L('সংরক্ষণ হচ্ছে...', 'Saving...') : L('সংরক্ষণ করুন', 'Save entry')}
               </button>
             </div>
           )}
@@ -1037,11 +1040,11 @@ export default function EmployeeDailyEntryPage() {
       {/* Daily report link */}
       <div className="card card-body flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="card-title">দৈনিক রিপোর্ট · Daily report</h3>
-          <p className="mt-0.5 text-sm text-slate-500">আজকের পয়েন্ট, স্কোর ও লক্ষ্য দেখুন · See today&apos;s points, score and targets</p>
+          <h3 className="card-title">{L('দৈনিক রিপোর্ট', 'Daily report')}</h3>
+          <p className="mt-0.5 text-sm text-slate-500">{L('আজকের পয়েন্ট, স্কোর ও লক্ষ্য দেখুন', "See today's points, score and targets")}</p>
         </div>
         <Link href="/employee/performance?period=daily" className="btn btn-secondary shrink-0">
-          <span>রিপোর্ট দেখুন · View report</span>
+          <span>{L('রিপোর্ট দেখুন', 'View report')}</span>
           <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
@@ -1051,16 +1054,16 @@ export default function EmployeeDailyEntryPage() {
         <div className="card-header">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-slate-400" />
-            <h3 className="card-title">গত ৭ দিন · Last 7 days</h3>
+            <h3 className="card-title">{L('গত ৭ দিন', 'Last 7 days')}</h3>
           </div>
           <span className="card-subtitle">
-            রেকর্ড · Days recorded: {historyDates.length}
+            {L('রেকর্ড:', 'Days recorded:')} {historyDates.length}
           </span>
         </div>
 
         {historyDates.length === 0 ? (
           <div className="px-5 py-8 text-center text-sm text-slate-500">
-            গত ৭ দিনের কোনো রেকর্ড নেই · No records in the last 7 days
+            {L('গত ৭ দিনের কোনো রেকর্ড নেই', 'No records in the last 7 days')}
           </div>
         ) : (
           <>
@@ -1078,13 +1081,13 @@ export default function EmployeeDailyEntryPage() {
                     </div>
                     <dl className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
                       {[
-                        ['পোস্ট · Posts', row.POSTS_DONE ?? 0],
-                        ['লাভ · Profit', formatTaka(row.PROFIT_AMOUNT || 0)],
-                        ['অর্ডার · Orders', row.CONFIRMED_ORDERS ?? 0],
-                        ['লিড · Leads', row.NEW_LEADS ?? 0],
-                        ['ক্রেতা · Clients', row.NEW_CLIENTS ?? 0],
-                        ['বিজ্ঞাপন · Ads', formatTaka(row.AD_SPEND || 0)],
-                        ['ফলোআপ · Follow-ups', row.FOLLOWUPS_DONE ?? 0],
+                        [L('পোস্ট', 'Posts'), row.POSTS_DONE ?? 0],
+                        [L('লাভ', 'Profit'), formatTaka(row.PROFIT_AMOUNT || 0)],
+                        [L('অর্ডার', 'Orders'), row.CONFIRMED_ORDERS ?? 0],
+                        [L('লিড', 'Leads'), row.NEW_LEADS ?? 0],
+                        [L('ক্রেতা', 'Clients'), row.NEW_CLIENTS ?? 0],
+                        [L('বিজ্ঞাপন', 'Ads'), formatTaka(row.AD_SPEND || 0)],
+                        [L('ফলোআপ', 'Follow-ups'), row.FOLLOWUPS_DONE ?? 0],
                         ['B2B', row.B2B_ORDERS ?? 0],
                       ].map(([k, v]) => (
                         <div key={String(k)} className="min-w-0">
@@ -1103,7 +1106,7 @@ export default function EmployeeDailyEntryPage() {
               <table className="table-pro">
                 <thead>
                   <tr>
-                    <th>তারিখ · Date</th>
+                    <th>{L('তারিখ', 'Date')}</th>
                     <th>পোস্ট</th>
                     <th>বিক্রি (৳)</th>
                     <th>লাভ (৳)</th>

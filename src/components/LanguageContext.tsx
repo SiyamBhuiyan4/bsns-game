@@ -177,9 +177,12 @@ export function LanguageProvider({
 
   const setLang = useCallback((newLang: Language) => {
     setLangState(newLang);
+    setDigitStyleState(newLang);
     try {
       localStorage.setItem(COOKIE_LANG_KEY, newLang);
+      localStorage.setItem(COOKIE_DIGIT_KEY, newLang);
       setCookie(COOKIE_LANG_KEY, newLang);
+      setCookie(COOKIE_DIGIT_KEY, newLang);
       if (typeof document !== 'undefined') {
         document.documentElement.lang = newLang;
       }

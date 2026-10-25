@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { formatTaka } from '@/lib/date';
 import PageHeader from '@/components/ui/PageHeader';
+import { useLanguage } from '@/components/LanguageContext';
 import { EmployeeScoreResult, SectionScoreDetail, MetricScoreDetail } from '@/lib/scoring';
 import {
   ResponsiveContainer,
@@ -57,6 +58,8 @@ interface PerformanceResponse {
 const PIE_COLORS = ['#059669', '#0284c7', '#d97706', '#8b5cf6', '#ec4899'];
 
 export default function EmployeePerformancePage() {
+  const { lang } = useLanguage();
+  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<PerformanceResponse | null>(null);
@@ -95,7 +98,7 @@ export default function EmployeePerformancePage() {
   if (loading && !data) {
     return (
       <div className="flex h-64 items-center justify-center text-sm text-slate-500">
-        লোড হচ্ছে... · Loading...
+        {L('লোড হচ্ছে...', 'Loading...')}
       </div>
     );
   }
@@ -140,18 +143,18 @@ export default function EmployeePerformancePage() {
     <div className="space-y-6">
       <PageHeader
         icon={<TrendingUp className="h-5 w-5" />}
-        title="পারফরম্যান্স · Performance"
-        subtitle="লক্ষ্য অর্জন, স্কোর ও অগ্রগতি · Targets, score and progress"
+        title={L('পারফরম্যান্স', 'Performance')}
+        subtitle={L('লক্ষ্য অর্জন, স্কোর ও অগ্রগতি', 'Targets, score and progress')}
         actions={
           <div className="segmented">
             <button data-active={period === 'daily'} onClick={() => setPeriod('daily')}>
-              আজ · Day
+              {L('আজ', 'Day')}
             </button>
             <button data-active={period === 'weekly'} onClick={() => setPeriod('weekly')}>
-              সপ্তাহ · Week
+              {L('সপ্তাহ', 'Week')}
             </button>
             <button data-active={period === 'monthly'} onClick={() => setPeriod('monthly')}>
-              মাস · Month
+              {L('মাস', 'Month')}
             </button>
           </div>
         }
@@ -171,7 +174,7 @@ export default function EmployeePerformancePage() {
             <div className="flex items-center justify-between text-xs font-medium text-slate-500">
               <span className="flex items-center gap-1.5">
                 <Award className="h-4 w-4 text-brand-600" />
-                মোট স্কোর · Total score
+                {L('মোট স্কোর', 'Total score')}
               </span>
             </div>
             <div className="mt-3 flex items-baseline gap-1.5">
@@ -184,15 +187,15 @@ export default function EmployeePerformancePage() {
             {isFailing ? (
               <span className="badge badge-red">
                 <AlertCircle className="h-3 w-3" />
-                উন্নতি প্রয়োজন · Below {threshold}%
+                {L('উন্নতি প্রয়োজন', 'Below')} {threshold}%
               </span>
             ) : (
               <span className="badge badge-green">
                 <CheckCircle2 className="h-3 w-3" />
-                সন্তোষজনক · {threshold}%+
+                {L('সন্তোষজনক', `${threshold}%+`)}
               </span>
             )}
-            <p className="text-xs text-slate-500">পাস সীমা · Pass mark: {threshold}%</p>
+            <p className="text-xs text-slate-500">{L('পাস সীমা', 'Pass mark')}: {threshold}%</p>
           </div>
         </div>
 
@@ -235,7 +238,7 @@ export default function EmployeePerformancePage() {
             );
           })}
           <div className="card flex flex-col justify-center gap-1.5 bg-slate-50/70 p-4 text-xs text-slate-600">
-            <span className="font-medium text-slate-700">সময়কাল ও সেকশন · Period</span>
+            <span className="font-medium text-slate-700">{L('সময়কাল ও সেকশন', 'Period')}</span>
             <div className="flex items-center gap-1.5">
               <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-400" />
               <span className="tabular-nums">
@@ -244,7 +247,7 @@ export default function EmployeePerformancePage() {
             </div>
             <div className="flex items-start gap-1.5">
               <Layers className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
-              <span>{data?.assigned_sections?.join(', ') || 'কোনো সেকশন নেই · No sections'}</span>
+              <span>{data?.assigned_sections?.join(', ') || L('কোনো সেকশন নেই', 'No sections')}</span>
             </div>
           </div>
         </div>
@@ -256,13 +259,13 @@ export default function EmployeePerformancePage() {
           <div className="card-header">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-slate-400" />
-              <h2 className="card-title">গত ১৪ দিন · 14-day trend</h2>
+              <h2 className="card-title">{L('গত ১৪ দিন', '14-day trend')}</h2>
             </div>
-            <span className="card-subtitle">স্কোর · Score</span>
+            <span className="card-subtitle">{L('স্কোর', 'Score')}</span>
           </div>
           <div className="card-body">
             {trend.length === 0 ? (
-              <div className="flex h-64 items-center justify-center text-sm text-slate-500">কোনো ডাটা নেই · No data</div>
+              <div className="flex h-64 items-center justify-center text-sm text-slate-500">{L('কোনো ডাটা নেই', 'No data')}</div>
             ) : (
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -296,9 +299,9 @@ export default function EmployeePerformancePage() {
           <div className="card-header">
             <div className="flex items-center gap-2">
               <Target className="h-4 w-4 text-slate-400" />
-              <h2 className="card-title">কম্পোনেন্ট পয়েন্ট · By component</h2>
+              <h2 className="card-title">{L('কম্পোনেন্ট পয়েন্ট', 'By component')}</h2>
             </div>
-            <span className="card-subtitle">ওয়েটেড · Weighted</span>
+            <span className="card-subtitle">{L('ওয়েটেড', 'Weighted')}</span>
           </div>
           <div className="card-body">
             <div className="h-64 w-full">
@@ -323,13 +326,13 @@ export default function EmployeePerformancePage() {
           <div className="card-header">
             <div className="flex items-center gap-2">
               <ShoppingBag className="h-4 w-4 text-slate-400" />
-              <h2 className="card-title">পণ্য বিক্রি · Product sales</h2>
+              <h2 className="card-title">{L('পণ্য বিক্রি', 'Product sales')}</h2>
             </div>
           </div>
           <div className="card-body">
             {pieData.length === 0 ? (
               <div className="flex h-56 items-center justify-center text-sm text-slate-500">
-                কোনো বিক্রি নেই · No sales yet
+                {L('কোনো বিক্রি নেই', 'No sales yet')}
               </div>
             ) : (
               <div className="h-56 w-full">
@@ -351,7 +354,7 @@ export default function EmployeePerformancePage() {
 
         <div className="card overflow-hidden lg:col-span-2">
           <div className="card-header">
-            <h2 className="card-title">টার্গেট বনাম অর্জন · Target vs actual</h2>
+            <h2 className="card-title">{L('টার্গেট বনাম অর্জন', 'Target vs actual')}</h2>
           </div>
 
           {/* Phone: stacked rows */}
@@ -402,10 +405,10 @@ export default function EmployeePerformancePage() {
             <table className="table-pro">
               <thead>
                 <tr>
-                  <th>মেট্রিক · Metric</th>
+                  <th>{L('মেট্রিক', 'Metric')}</th>
                   <th>টার্গেট</th>
                   <th>অর্জিত</th>
-                  <th>হার · Rate</th>
+                  <th>{L('হার', 'Rate')}</th>
                   <th>ওয়েট</th>
                   <th className="text-right">স্কোর</th>
                 </tr>

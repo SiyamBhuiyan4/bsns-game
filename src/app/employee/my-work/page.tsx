@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import PageHeader from '@/components/ui/PageHeader';
+import { useLanguage } from '@/components/LanguageContext';
 import EmptyState from '@/components/ui/EmptyState';
 
 interface TodoLink {
@@ -48,6 +49,8 @@ interface ProgressData {
 }
 
 export default function EmployeeMyWorkPage() {
+  const { lang } = useLanguage();
+  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
   const [todoLinks, setTodoLinks] = useState<TodoLink[]>([]);
   const [completedLinks, setCompletedLinks] = useState<CompletedLink[]>([]);
   const [assignedSections, setAssignedSections] = useState<AssignedSection[]>([]);
@@ -233,19 +236,19 @@ export default function EmployeeMyWorkPage() {
     <div className="space-y-6">
       <PageHeader
         icon={<CheckSquare className="h-5 w-5" />}
-        title="আমার কাজ · My Work"
-        subtitle="গ্রুপে পোস্ট দিন, তারপর Done চাপুন। Post in each group, then tap Done."
+        title={L('আমার কাজ', 'My Work')}
+        subtitle={L('গ্রুপে পোস্ট দিন, তারপর Done চাপুন।', 'Post in each group, then tap Done.')}
       />
 
       {/* Progress */}
       <div className="card card-body">
         <div className="mb-3 flex items-end justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-xs font-medium text-slate-500">আজকের অগ্রগতি · Today&apos;s progress</div>
+            <div className="text-xs font-medium text-slate-500">{L('আজকের অগ্রগতি', "Today's progress")}</div>
             <div className="mt-1 text-sm text-slate-700">
               <span className="text-lg font-semibold text-slate-900 tabular-nums">{progress.completedToday}</span>
               <span className="text-slate-500"> / {progress.totalAssigned} </span>
-              লিংক সম্পন্ন · links done
+              {L('লিংক সম্পন্ন', 'links done')}
             </div>
           </div>
           <span className="text-2xl font-semibold tracking-tight text-brand-700 tabular-nums">
@@ -263,7 +266,7 @@ export default function EmployeeMyWorkPage() {
         {progress.percentage >= 100 && (
           <div className="alert alert-success mt-4">
             <Sparkles className="h-4 w-4 shrink-0" />
-            <span>আজকের সব লিংক সম্পন্ন। All of today&apos;s links are done.</span>
+            <span>{L('আজকের সব লিংক সম্পন্ন।', "All of today's links are done.")}</span>
           </div>
         )}
       </div>
@@ -296,13 +299,13 @@ export default function EmployeeMyWorkPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="relative flex-1 sm:max-w-md">
           <label htmlFor="mw-search" className="sr-only">
-            অনুসন্ধান · Search
+            {L('অনুসন্ধান', 'Search')}
           </label>
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             id="mw-search"
             type="text"
-            placeholder="গ্রুপ বা লিংক খুঁজুন · Search"
+            placeholder={L('গ্রুপ বা লিংক খুঁজুন', 'Search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="input pl-9"
@@ -311,7 +314,7 @@ export default function EmployeeMyWorkPage() {
 
         <div className="sm:w-64">
           <label htmlFor="mw-section" className="sr-only">
-            সেকশন · Section
+            {L('সেকশন', 'Section')}
           </label>
           <select
             id="mw-section"
@@ -319,7 +322,7 @@ export default function EmployeeMyWorkPage() {
             onChange={(e) => setSelectedSection(e.target.value)}
             className="input cursor-pointer"
           >
-            <option value="">সকল সেকশন · All sections ({assignedSections.length})</option>
+            <option value="">{L('সকল সেকশন', 'All sections')} ({assignedSections.length})</option>
             {assignedSections.map((sec) => (
               <option key={sec.id} value={sec.id}>
                 {sec.name}
@@ -333,9 +336,9 @@ export default function EmployeeMyWorkPage() {
       <div className="card overflow-hidden">
         <div className="card-header">
           <div>
-            <h2 className="card-title">বাকি কাজ · To do</h2>
+            <h2 className="card-title">{L('বাকি কাজ', 'To do')}</h2>
             <p className="card-subtitle">
-              {todoLinks.length > 0 ? `${todoLinks.length}টি লিংক বাকি · ${todoLinks.length} left` : 'সব সম্পন্ন · All done'}
+              {todoLinks.length > 0 ? L(`${todoLinks.length}টি লিংক বাকি`, `${todoLinks.length} left`) : L('সব সম্পন্ন', 'All done')}
             </p>
           </div>
           <span className="badge badge-blue tabular-nums">{todoLinks.length}</span>
@@ -344,16 +347,16 @@ export default function EmployeeMyWorkPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 text-slate-500">
             <Loader2 className="mb-2 h-6 w-6 animate-spin text-brand-600" />
-            <p className="text-sm">লোড হচ্ছে... · Loading...</p>
+            <p className="text-sm">{L('লোড হচ্ছে...', 'Loading...')}</p>
           </div>
         ) : todoLinks.length === 0 ? (
           <EmptyState
             icon={<CheckCircle2 className="h-5 w-5" />}
-            title="সব লিংক সম্পন্ন · All links done"
+            title={L('সব লিংক সম্পন্ন', 'All links done')}
             description={
               searchQuery
-                ? 'অনুসন্ধানে কোনো বাকি লিংক মেলেনি · No pending links match your search'
-                : 'আজকের সব কাজ শেষ · Nothing left for today'
+                ? L('অনুসন্ধানে কোনো বাকি লিংক মেলেনি', 'No pending links match your search')
+                : L('আজকের সব কাজ শেষ', 'Nothing left for today')
             }
           />
         ) : (
@@ -380,7 +383,7 @@ export default function EmployeeMyWorkPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn btn-secondary min-h-10"
-                    title="নতুন ট্যাবে গ্রুপ খুলুন · Open group in new tab"
+                    title={L('নতুন ট্যাবে গ্রুপ খুলুন', 'Open group in new tab')}
                   >
                     <ExternalLink className="h-4 w-4" />
                     <span>Open</span>
@@ -406,7 +409,7 @@ export default function EmployeeMyWorkPage() {
         {totalTodoPages > 1 && (
           <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 sm:px-5">
             <div className="text-xs text-slate-500">
-              পাতা · Page {todoPage} / {totalTodoPages}
+              {L('পাতা', 'Page')} {todoPage} / {totalTodoPages}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -414,14 +417,14 @@ export default function EmployeeMyWorkPage() {
                 onClick={() => setTodoPage((p) => Math.max(1, p - 1))}
                 className="btn btn-secondary btn-sm"
               >
-                আগে · Prev
+                {L('আগে', 'Prev')}
               </button>
               <button
                 disabled={todoPage >= totalTodoPages}
                 onClick={() => setTodoPage((p) => Math.min(totalTodoPages, p + 1))}
                 className="btn btn-secondary btn-sm"
               >
-                পরে · Next
+                {L('পরে', 'Next')}
               </button>
             </div>
           </div>
@@ -432,9 +435,9 @@ export default function EmployeeMyWorkPage() {
       <div className="card overflow-hidden">
         <div className="card-header">
           <div>
-            <h2 className="card-title">সম্পন্ন · Completed</h2>
+            <h2 className="card-title">{L('সম্পন্ন', 'Completed')}</h2>
             <p className="card-subtitle">
-              {completedLinks.length}টি লিংক সম্পন্ন · {completedLinks.length} done
+              {L(`${completedLinks.length}টি লিংক সম্পন্ন`, `${completedLinks.length} done`)}
             </p>
           </div>
           <span className="badge badge-green tabular-nums">{completedLinks.length}</span>
@@ -442,7 +445,7 @@ export default function EmployeeMyWorkPage() {
 
         {completedLinks.length === 0 ? (
           <div className="px-5 py-8 text-center text-sm text-slate-500">
-            এখনও কিছু সম্পন্ন হয়নি · Nothing completed yet
+            {L('এখনও কিছু সম্পন্ন হয়নি', 'Nothing completed yet')}
           </div>
         ) : (
           <ul className="max-h-96 divide-y divide-slate-100 overflow-y-auto">
@@ -476,7 +479,7 @@ export default function EmployeeMyWorkPage() {
                     onClick={() => handleUndo(link)}
                     disabled={actionLoadingId === link.id}
                     className="btn btn-secondary min-h-10 shrink-0"
-                    title="আনডু করে বাকি কাজে ফিরিয়ে নিন · Move back to To do"
+                    title={L('আনডু করে বাকি কাজে ফিরিয়ে নিন', 'Move back to To do')}
                   >
                     {actionLoadingId === link.id ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

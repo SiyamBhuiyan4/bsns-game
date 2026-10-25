@@ -1,5 +1,6 @@
 'use client';
 
+import { useLanguage } from '@/components/LanguageContext';
 import { useState, useEffect, useCallback } from 'react';
 import {
   Package,
@@ -24,6 +25,8 @@ interface ProductItem {
 }
 
 export default function AdminProductsPage() {
+  const { lang } = useLanguage();
+  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -190,7 +193,7 @@ export default function AdminProductsPage() {
     <div className="space-y-6">
       <PageHeader
         icon={<Package className="h-5 w-5" />}
-        title="পণ্য ও মূল্য তালিকা · Products"
+        title={L('পণ্য ও মূল্য তালিকা', 'Products')}
         subtitle="Selling price and unit for each product"
         actions={
           <button
@@ -202,7 +205,7 @@ export default function AdminProductsPage() {
             className="btn btn-primary"
           >
             <Plus className="h-4 w-4" />
-            নতুন পণ্য · Add product
+            {L('নতুন পণ্য', 'Add product')}
           </button>
         }
       />
@@ -231,22 +234,22 @@ export default function AdminProductsPage() {
         {loading ? (
           <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
             <Loader2 className="h-4 w-4 animate-spin" />
-            লোড হচ্ছে · Loading…
+            {L('লোড হচ্ছে', 'Loading…')}
           </div>
         ) : products.length === 0 ? (
           <EmptyState
             icon={<Package className="h-5 w-5" />}
-            title="কোনো পণ্য নেই · No products yet"
+            title={L('কোনো পণ্য নেই', 'No products yet')}
             description="Add your first product to start recording sales."
           />
         ) : (
           <table className="table-pro">
             <thead>
               <tr>
-                <th>পণ্য · Product</th>
-                <th>একক · Unit</th>
-                <th className="text-right">মূল্য · Price</th>
-                <th className="text-center">স্ট্যাটাস · Status</th>
+                <th>{L('পণ্য', 'Product')}</th>
+                <th>{L('একক', 'Unit')}</th>
+                <th className="text-right">{L('মূল্য', 'Price')}</th>
+                <th className="text-center">{L('স্ট্যাটাস', 'Status')}</th>
                 <th className="text-right">
                   <span className="sr-only">Actions</span>
                 </th>
@@ -276,9 +279,9 @@ export default function AdminProductsPage() {
                           <Loader2 className="h-3 w-3 animate-spin" /> Updating…
                         </span>
                       ) : p.is_active ? (
-                        <span className="badge badge-green">সক্রিয় · Active</span>
+                        <span className="badge badge-green">{L('সক্রিয়', 'Active')}</span>
                       ) : (
-                        <span className="badge badge-gray">নিষ্ক্রিয় · Inactive</span>
+                        <span className="badge badge-gray">{L('নিষ্ক্রিয়', 'Inactive')}</span>
                       )}
                     </button>
                   </td>
@@ -296,7 +299,7 @@ export default function AdminProductsPage() {
                       }}
                       className="btn-icon"
                       aria-label="Edit product"
-                      title="সম্পাদনা · Edit"
+                      title={L('সম্পাদনা', 'Edit')}
                     >
                       <Edit2 className="h-4 w-4" />
                     </button>
@@ -314,7 +317,7 @@ export default function AdminProductsPage() {
           <div className="modal-panel">
             <div className="card-header">
               <div>
-                <h3 className="card-title">নতুন পণ্য · Add product</h3>
+                <h3 className="card-title">{L('নতুন পণ্য', 'Add product')}</h3>
               </div>
               <button type="button" onClick={() => setIsAddOpen(false)} className="btn-icon" aria-label="Close">
                 <X className="h-4 w-4" />
@@ -331,7 +334,7 @@ export default function AdminProductsPage() {
                 )}
 
                 <div>
-                  <label className="label" htmlFor="add_name_bn">বাংলা নাম · Bangla name *</label>
+                  <label className="label" htmlFor="add_name_bn">{L('বাংলা নাম', 'Bangla name *')}</label>
                   <input
                     id="add_name_bn"
                     type="text"
@@ -344,7 +347,7 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div>
-                  <label className="label" htmlFor="add_name_en">ইংরেজি নাম · English name *</label>
+                  <label className="label" htmlFor="add_name_en">{L('ইংরেজি নাম', 'English name *')}</label>
                   <input
                     id="add_name_en"
                     type="text"
@@ -358,7 +361,7 @@ export default function AdminProductsPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="label" htmlFor="add_unit">একক · Unit *</label>
+                    <label className="label" htmlFor="add_unit">{L('একক', 'Unit *')}</label>
                     <input
                       id="add_unit"
                       type="text"
@@ -370,7 +373,7 @@ export default function AdminProductsPage() {
                     />
                   </div>
                   <div>
-                    <label className="label" htmlFor="add_price">মূল্য · Price (৳) *</label>
+                    <label className="label" htmlFor="add_price">{L('মূল্য', 'Price (৳) *')}</label>
                     <input
                       id="add_price"
                       type="number"
@@ -388,11 +391,11 @@ export default function AdminProductsPage() {
 
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
                 <button type="button" onClick={() => setIsAddOpen(false)} className="btn btn-secondary">
-                  বাতিল · Cancel
+                  {L('বাতিল', 'Cancel')}
                 </button>
                 <button type="submit" disabled={addSubmitting} className="btn btn-primary">
                   {addSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  যুক্ত করুন · Add
+                  {L('যুক্ত করুন', 'Add')}
                 </button>
               </div>
             </form>
@@ -406,7 +409,7 @@ export default function AdminProductsPage() {
           <div className="modal-panel">
             <div className="card-header">
               <div>
-                <h3 className="card-title">পণ্য সম্পাদনা · Edit product</h3>
+                <h3 className="card-title">{L('পণ্য সম্পাদনা', 'Edit product')}</h3>
               </div>
               <button type="button" onClick={() => setEditingProduct(null)} className="btn-icon" aria-label="Close">
                 <X className="h-4 w-4" />
@@ -423,7 +426,7 @@ export default function AdminProductsPage() {
                 )}
 
                 <div>
-                  <label className="label" htmlFor="edit_name_bn">বাংলা নাম · Bangla name *</label>
+                  <label className="label" htmlFor="edit_name_bn">{L('বাংলা নাম', 'Bangla name *')}</label>
                   <input
                     id="edit_name_bn"
                     type="text"
@@ -435,7 +438,7 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div>
-                  <label className="label" htmlFor="edit_name_en">ইংরেজি নাম · English name *</label>
+                  <label className="label" htmlFor="edit_name_en">{L('ইংরেজি নাম', 'English name *')}</label>
                   <input
                     id="edit_name_en"
                     type="text"
@@ -448,7 +451,7 @@ export default function AdminProductsPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="label" htmlFor="edit_unit">একক · Unit *</label>
+                    <label className="label" htmlFor="edit_unit">{L('একক', 'Unit *')}</label>
                     <input
                       id="edit_unit"
                       type="text"
@@ -459,7 +462,7 @@ export default function AdminProductsPage() {
                     />
                   </div>
                   <div>
-                    <label className="label" htmlFor="edit_price">মূল্য · Price (৳) *</label>
+                    <label className="label" htmlFor="edit_price">{L('মূল্য', 'Price (৳) *')}</label>
                     <input
                       id="edit_price"
                       type="number"
@@ -481,17 +484,17 @@ export default function AdminProductsPage() {
                     onChange={(e) => setEditActive(e.target.checked)}
                     className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
                   />
-                  সক্রিয় · Active
+                  {L('সক্রিয়', 'Active')}
                 </label>
               </div>
 
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
                 <button type="button" onClick={() => setEditingProduct(null)} className="btn btn-secondary">
-                  বাতিল · Cancel
+                  {L('বাতিল', 'Cancel')}
                 </button>
                 <button type="submit" disabled={editSubmitting} className="btn btn-primary">
                   {editSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  সংরক্ষণ · Save
+                  {L('সংরক্ষণ', 'Save')}
                 </button>
               </div>
             </form>

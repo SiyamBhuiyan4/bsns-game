@@ -1,5 +1,6 @@
 'use client';
 
+import { useLanguage } from '@/components/LanguageContext';
 import { useState, useEffect, useCallback } from 'react';
 import {
   UserPlus,
@@ -67,6 +68,8 @@ interface MarketerOption {
 }
 
 export default function AdminLeadsPage() {
+  const { lang } = useLanguage();
+  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
   const [leads, setLeads] = useState<LeadItem[]>([]);
   const [products, setProducts] = useState<Array<{ id: string; name_bn: string }>>([]);
   const [campaigns, setCampaigns] = useState<Array<{ id: string; name: string }>>([]);
@@ -376,12 +379,12 @@ export default function AdminLeadsPage() {
 
   const buyerTypeOptions = (
     <>
-      <option value="RETAIL">খুচরা · Retail</option>
-      <option value="FARMER">কৃষক · Farmer</option>
-      <option value="WHOLESALER">পাইকার · Wholesaler</option>
-      <option value="RESTAURANT">রেস্টুরেন্ট · Restaurant</option>
-      <option value="DEALER">ডিলার · Dealer</option>
-      <option value="OTHER">অন্যান্য · Other</option>
+      <option value="RETAIL">{L('খুচরা', 'Retail')}</option>
+      <option value="FARMER">{L('কৃষক', 'Farmer')}</option>
+      <option value="WHOLESALER">{L('পাইকার', 'Wholesaler')}</option>
+      <option value="RESTAURANT">{L('রেস্টুরেন্ট', 'Restaurant')}</option>
+      <option value="DEALER">{L('ডিলার', 'Dealer')}</option>
+      <option value="OTHER">{L('অন্যান্য', 'Other')}</option>
     </>
   );
 
@@ -389,15 +392,15 @@ export default function AdminLeadsPage() {
   const getStatusBadge = (st: LeadStatus | string) => {
     switch (st) {
       case 'NEW':
-        return <span className="badge badge-gray">নতুন · New</span>;
+        return <span className="badge badge-gray">{L('নতুন', 'New')}</span>;
       case 'CONTACTED':
-        return <span className="badge badge-blue">যোগাযোগ · Contacted</span>;
+        return <span className="badge badge-blue">{L('যোগাযোগ', 'Contacted')}</span>;
       case 'QUALIFIED':
-        return <span className="badge badge-violet">যোগ্য · Qualified</span>;
+        return <span className="badge badge-violet">{L('যোগ্য', 'Qualified')}</span>;
       case 'ORDERED':
-        return <span className="badge badge-green">অর্ডার · Ordered</span>;
+        return <span className="badge badge-green">{L('অর্ডার', 'Ordered')}</span>;
       case 'LOST':
-        return <span className="badge badge-red">বাতিল · Lost</span>;
+        return <span className="badge badge-red">{L('বাতিল', 'Lost')}</span>;
       default:
         return <span className="badge badge-gray">{st}</span>;
     }
@@ -407,17 +410,17 @@ export default function AdminLeadsPage() {
   const getBuyerTypeBadge = (type: string) => {
     switch (type) {
       case 'FARMER':
-        return <span className="badge badge-gray">কৃষক · Farmer</span>;
+        return <span className="badge badge-gray">{L('কৃষক', 'Farmer')}</span>;
       case 'WHOLESALER':
-        return <span className="badge badge-gray">পাইকার · Wholesaler</span>;
+        return <span className="badge badge-gray">{L('পাইকার', 'Wholesaler')}</span>;
       case 'RESTAURANT':
-        return <span className="badge badge-gray">রেস্টুরেন্ট · Restaurant</span>;
+        return <span className="badge badge-gray">{L('রেস্টুরেন্ট', 'Restaurant')}</span>;
       case 'DEALER':
-        return <span className="badge badge-gray">ডিলার · Dealer</span>;
+        return <span className="badge badge-gray">{L('ডিলার', 'Dealer')}</span>;
       case 'RETAIL':
-        return <span className="badge badge-gray">খুচরা · Retail</span>;
+        return <span className="badge badge-gray">{L('খুচরা', 'Retail')}</span>;
       default:
-        return <span className="badge badge-gray">অন্যান্য · Other</span>;
+        return <span className="badge badge-gray">{L('অন্যান্য', 'Other')}</span>;
     }
   };
 
@@ -463,7 +466,7 @@ export default function AdminLeadsPage() {
     <div className="space-y-6">
       <PageHeader
         icon={<UserPlus className="h-5 w-5" />}
-        title="লিডস · Leads"
+        title={L('লিডস', 'Leads')}
         subtitle="Team pipeline with full phone numbers"
         actions={
           <button
@@ -475,7 +478,7 @@ export default function AdminLeadsPage() {
             className="btn btn-primary"
           >
             <Plus className="h-4 w-4" />
-            নতুন লিড · Add lead
+            {L('নতুন লিড', 'Add lead')}
           </button>
         }
       />
@@ -506,7 +509,7 @@ export default function AdminLeadsPage() {
             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
             <div>
               <p className="font-medium">
-                {unfinishedCount} লিড ৩+ দিন অপেক্ষমাণ · waiting 3+ days without an order
+                {unfinishedCount} {L('লিড ৩+ দিন অপেক্ষমাণ', 'waiting 3+ days without an order')}
               </p>
               <p className="mt-0.5 text-xs opacity-80">Ask the owners to follow up.</p>
             </div>
@@ -515,7 +518,7 @@ export default function AdminLeadsPage() {
             onClick={() => setShowUnfinishedOnly(!showUnfinishedOnly)}
             className="btn btn-secondary btn-sm"
           >
-            {showUnfinishedOnly ? 'সব লিড · Show all' : 'শুধু অপেক্ষমাণ · Show waiting'}
+            {showUnfinishedOnly ? L('সব লিড', 'Show all') : L('শুধু অপেক্ষমাণ', 'Show waiting')}
           </button>
         </div>
       )}
@@ -525,12 +528,12 @@ export default function AdminLeadsPage() {
           <div className="max-w-full overflow-x-auto no-scrollbar">
             <div className="segmented whitespace-nowrap" role="tablist">
               {[
-                { key: 'ALL', label: 'সব · All' },
-                { key: 'NEW', label: 'নতুন · New' },
-                { key: 'CONTACTED', label: 'যোগাযোগ · Contacted' },
-                { key: 'QUALIFIED', label: 'যোগ্য · Qualified' },
-                { key: 'ORDERED', label: 'অর্ডার · Ordered' },
-                { key: 'LOST', label: 'বাতিল · Lost' },
+                { key: 'ALL', label: L('সব', 'All') },
+                { key: 'NEW', label: L('নতুন', 'New') },
+                { key: 'CONTACTED', label: L('যোগাযোগ', 'Contacted') },
+                { key: 'QUALIFIED', label: L('যোগ্য', 'Qualified') },
+                { key: 'ORDERED', label: L('অর্ডার', 'Ordered') },
+                { key: 'LOST', label: L('বাতিল', 'Lost') },
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -550,7 +553,7 @@ export default function AdminLeadsPage() {
           {hasActiveFilters && (
             <button onClick={resetAllFilters} className="btn btn-ghost btn-sm">
               <RotateCcw className="h-3.5 w-3.5" />
-              রিসেট · Reset
+              {L('রিসেট', 'Reset')}
             </button>
           )}
         </div>
@@ -562,7 +565,7 @@ export default function AdminLeadsPage() {
             <input
               id="lead_search"
               type="text"
-              placeholder="নাম, ফোন বা চ্যানেল · Search name, phone, channel"
+              placeholder={L('নাম, ফোন বা চ্যানেল', 'Search name, phone, channel')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="input pl-9"
@@ -571,14 +574,14 @@ export default function AdminLeadsPage() {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div>
-              <label className="label" htmlFor="f_marketer">মার্কেটার · Marketer</label>
+              <label className="label" htmlFor="f_marketer">{L('মার্কেটার', 'Marketer')}</label>
               <select
                 id="f_marketer"
                 value={selectedMarketer}
                 onChange={(e) => setSelectedMarketer(e.target.value)}
                 className="input"
               >
-                <option value="ALL">সব · All</option>
+                <option value="ALL">{L('সব', 'All')}</option>
                 {marketers.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.name}
@@ -588,39 +591,39 @@ export default function AdminLeadsPage() {
             </div>
 
             <div>
-              <label className="label" htmlFor="f_channel">চ্যানেল · Channel</label>
+              <label className="label" htmlFor="f_channel">{L('চ্যানেল', 'Channel')}</label>
               <select
                 id="f_channel"
                 value={selectedChannel}
                 onChange={(e) => setSelectedChannel(e.target.value)}
                 className="input"
               >
-                <option value="ALL">সব · All</option>
-                <option value="ফেসবুক বিজ্ঞাপন">ফেসবুক বিজ্ঞাপন · FB Ads</option>
-                <option value="ফেসবুক গ্রুপ">ফেসবুক গ্রুপ · FB Group</option>
-                <option value="গুগল বিজ্ঞাপন">গুগল বিজ্ঞাপন · Google Ads</option>
-                <option value="হোয়াটসঅ্যাপ">হোয়াটসঅ্যাপ · WhatsApp</option>
-                <option value="সরাসরি ফোন">সরাসরি ফোন · Phone call</option>
-                <option value="রেফারেল">রেফারেল · Referral</option>
-                <option value="ইউটিউব">ইউটিউব · YouTube</option>
+                <option value="ALL">{L('সব', 'All')}</option>
+                <option value="ফেসবুক বিজ্ঞাপন">{L('ফেসবুক বিজ্ঞাপন', 'FB Ads')}</option>
+                <option value="ফেসবুক গ্রুপ">{L('ফেসবুক গ্রুপ', 'FB Group')}</option>
+                <option value="গুগল বিজ্ঞাপন">{L('গুগল বিজ্ঞাপন', 'Google Ads')}</option>
+                <option value="হোয়াটসঅ্যাপ">{L('হোয়াটসঅ্যাপ', 'WhatsApp')}</option>
+                <option value="সরাসরি ফোন">{L('সরাসরি ফোন', 'Phone call')}</option>
+                <option value="রেফারেল">{L('রেফারেল', 'Referral')}</option>
+                <option value="ইউটিউব">{L('ইউটিউব', 'YouTube')}</option>
               </select>
             </div>
 
             <div>
-              <label className="label" htmlFor="f_buyer">ক্রেতার ধরন · Buyer type</label>
+              <label className="label" htmlFor="f_buyer">{L('ক্রেতার ধরন', 'Buyer type')}</label>
               <select
                 id="f_buyer"
                 value={selectedBuyerType}
                 onChange={(e) => setSelectedBuyerType(e.target.value)}
                 className="input"
               >
-                <option value="ALL">সব · All</option>
+                <option value="ALL">{L('সব', 'All')}</option>
                 {buyerTypeOptions}
               </select>
             </div>
 
             <div>
-              <label className="label" htmlFor="f_start">শুরু · From</label>
+              <label className="label" htmlFor="f_start">{L('শুরু', 'From')}</label>
               <input
                 id="f_start"
                 type="date"
@@ -631,7 +634,7 @@ export default function AdminLeadsPage() {
             </div>
 
             <div>
-              <label className="label" htmlFor="f_end">শেষ · To</label>
+              <label className="label" htmlFor="f_end">{L('শেষ', 'To')}</label>
               <input
                 id="f_end"
                 type="date"
@@ -647,18 +650,18 @@ export default function AdminLeadsPage() {
           {loading ? (
             <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
               <Loader2 className="h-4 w-4 animate-spin" />
-              লোড হচ্ছে · Loading…
+              {L('লোড হচ্ছে', 'Loading…')}
             </div>
           ) : leads.length === 0 ? (
             <EmptyState
               icon={<UserPlus className="h-5 w-5" />}
-              title="কোনো লিড নেই · No leads found"
+              title={L('কোনো লিড নেই', 'No leads found')}
               description={hasActiveFilters ? 'Try clearing the filters.' : 'Add a lead to start the pipeline.'}
               action={
                 hasActiveFilters ? (
                   <button onClick={resetAllFilters} className="btn btn-secondary btn-sm">
                     <RotateCcw className="h-3.5 w-3.5" />
-                    রিসেট · Reset filters
+                    {L('রিসেট', 'Reset filters')}
                   </button>
                 ) : undefined
               }
@@ -667,12 +670,12 @@ export default function AdminLeadsPage() {
             <table className="table-pro">
               <thead>
                 <tr>
-                  <th>ক্রেতা · Customer</th>
-                  <th>মার্কেটার · Owner</th>
-                  <th>ধরন · Type</th>
+                  <th>{L('ক্রেতা', 'Customer')}</th>
+                  <th>{L('মার্কেটার', 'Owner')}</th>
+                  <th>{L('ধরন', 'Type')}</th>
                   <th>পণ্য / চ্যানেল</th>
-                  <th className="text-center">স্টেজ · Stage</th>
-                  <th className="text-right">মূল্য · Value</th>
+                  <th className="text-center">{L('স্টেজ', 'Stage')}</th>
+                  <th className="text-right">{L('মূল্য', 'Value')}</th>
                   <th className="text-right">
                     <span className="sr-only">Actions</span>
                   </th>
@@ -744,7 +747,7 @@ export default function AdminLeadsPage() {
                           }}
                           className="btn btn-secondary btn-sm"
                         >
-                          স্টেজ · Stage
+                          {L('স্টেজ', 'Stage')}
                           <ChevronRight className="h-3 w-3" />
                         </button>
                         <button
@@ -770,7 +773,7 @@ export default function AdminLeadsPage() {
         <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-[2px]">
           <div className="flex h-full w-full max-w-md flex-col bg-white shadow-xl">
             <div className="card-header">
-              <h3 className="card-title">লিড বিবরণ · Lead details</h3>
+              <h3 className="card-title">{L('লিড বিবরণ', 'Lead details')}</h3>
               <button
                 onClick={() => {
                   setSelectedLeadId(null);
@@ -807,22 +810,22 @@ export default function AdminLeadsPage() {
 
                     <dl className="grid grid-cols-2 gap-4 rounded-lg border border-slate-200 p-3 text-xs">
                       <div>
-                        <dt className="text-slate-500">ক্রেতার ধরন · Type</dt>
+                        <dt className="text-slate-500">{L('ক্রেতার ধরন', 'Type')}</dt>
                         <dd className="mt-1">{getBuyerTypeBadge(leadDetail.buyer_type)}</dd>
                       </div>
                       <div>
-                        <dt className="text-slate-500">রেটিং · Rating</dt>
+                        <dt className="text-slate-500">{L('রেটিং', 'Rating')}</dt>
                         <dd className="mt-1">{renderQualityStars(leadDetail.quality_rating)}</dd>
                       </div>
                       <div className="col-span-2">
-                        <dt className="text-slate-500">মার্কেটার · Owner</dt>
+                        <dt className="text-slate-500">{L('মার্কেটার', 'Owner')}</dt>
                         <dd className="mt-0.5 text-slate-900">
                           {leadDetail.owner_name} <span className="text-slate-500">({leadDetail.owner_email})</span>
                         </dd>
                       </div>
                       {leadDetail.address && (
                         <div className="col-span-2">
-                          <dt className="text-slate-500">ঠিকানা · Address</dt>
+                          <dt className="text-slate-500">{L('ঠিকানা', 'Address')}</dt>
                           <dd className="mt-0.5 text-slate-900">{leadDetail.address}</dd>
                         </div>
                       )}
@@ -830,19 +833,19 @@ export default function AdminLeadsPage() {
 
                     {leadDetail.status === 'ORDERED' && leadDetail.order_amount && (
                       <div className="alert alert-success">
-                        অর্ডার মূল্য · Order: ৳ {leadDetail.order_amount.toLocaleString('en-IN')}
+                        {L('অর্ডার মূল্য', 'Order')}: ৳ {leadDetail.order_amount.toLocaleString('en-IN')}
                       </div>
                     )}
 
                     {leadDetail.status === 'LOST' && leadDetail.lost_reason && (
-                      <div className="alert alert-error">বাতিলের কারণ · Reason: {leadDetail.lost_reason}</div>
+                      <div className="alert alert-error">{L('বাতিলের কারণ', 'Reason')}: {leadDetail.lost_reason}</div>
                     )}
                   </div>
 
                   <div>
-                    <h4 className="mb-2 text-[13px] font-semibold text-slate-900">নোট · Notes</h4>
+                    <h4 className="mb-2 text-[13px] font-semibold text-slate-900">{L('নোট', 'Notes')}</h4>
                     {leadDetail.notes.length === 0 ? (
-                      <p className="text-xs text-slate-500">কোনো নোট নেই · No notes yet</p>
+                      <p className="text-xs text-slate-500">{L('কোনো নোট নেই', 'No notes yet')}</p>
                     ) : (
                       <ul className="space-y-2">
                         {leadDetail.notes.map((n) => (
@@ -868,7 +871,7 @@ export default function AdminLeadsPage() {
                   id="admin_note"
                   type="text"
                   required
-                  placeholder="নোট লিখুন · Write a note…"
+                  placeholder={L('নোট লিখুন', 'Write a note…')}
                   value={adminNoteText}
                   onChange={(e) => setAdminNoteText(e.target.value)}
                   className="input flex-1"
@@ -887,7 +890,7 @@ export default function AdminLeadsPage() {
         <div className="modal-backdrop">
           <div className="modal-panel">
             <div className="card-header">
-              <h3 className="card-title">নতুন লিড · Add lead</h3>
+              <h3 className="card-title">{L('নতুন লিড', 'Add lead')}</h3>
               <button type="button" onClick={() => setIsAddOpen(false)} className="btn-icon" aria-label="Close">
                 <X className="h-4 w-4" />
               </button>
@@ -896,7 +899,7 @@ export default function AdminLeadsPage() {
             <form onSubmit={handleAddLead}>
               <div className="card-body space-y-4">
                 <div>
-                  <label className="label" htmlFor="lead_name">ক্রেতার নাম · Name *</label>
+                  <label className="label" htmlFor="lead_name">{L('ক্রেতার নাম', 'Name *')}</label>
                   <input
                     id="lead_name"
                     type="text"
@@ -909,7 +912,7 @@ export default function AdminLeadsPage() {
                 </div>
 
                 <div>
-                  <label className="label" htmlFor="lead_phone">মোবাইল · Phone *</label>
+                  <label className="label" htmlFor="lead_phone">{L('মোবাইল', 'Phone *')}</label>
                   <div className="relative">
                     <input
                       id="lead_phone"
@@ -936,7 +939,7 @@ export default function AdminLeadsPage() {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="label" htmlFor="lead_buyer">ক্রেতার ধরন · Buyer type *</label>
+                    <label className="label" htmlFor="lead_buyer">{L('ক্রেতার ধরন', 'Buyer type *')}</label>
                     <select
                       id="lead_buyer"
                       value={addBuyerType}
@@ -947,21 +950,21 @@ export default function AdminLeadsPage() {
                     </select>
                   </div>
                   <div>
-                    <span className="label">রেটিং · Quality</span>
+                    <span className="label">{L('রেটিং', 'Quality')}</span>
                     {renderStarPicker(addQualityRating, setAddQualityRating)}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="label" htmlFor="lead_product">পণ্য · Product</label>
+                    <label className="label" htmlFor="lead_product">{L('পণ্য', 'Product')}</label>
                     <select
                       id="lead_product"
                       value={addProductId}
                       onChange={(e) => setAddProductId(e.target.value)}
                       className="input"
                     >
-                      <option value="">— নির্বাচন · Select —</option>
+                      <option value="">— {L('নির্বাচন', 'Select')} —</option>
                       {products.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name_bn}
@@ -970,14 +973,14 @@ export default function AdminLeadsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="label" htmlFor="lead_campaign">ক্যাম্পেইন · Campaign</label>
+                    <label className="label" htmlFor="lead_campaign">{L('ক্যাম্পেইন', 'Campaign')}</label>
                     <select
                       id="lead_campaign"
                       value={addCampaignId}
                       onChange={(e) => setAddCampaignId(e.target.value)}
                       className="input"
                     >
-                      <option value="">— নির্বাচন · Select —</option>
+                      <option value="">— {L('নির্বাচন', 'Select')} —</option>
                       {campaigns.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.name}
@@ -989,7 +992,7 @@ export default function AdminLeadsPage() {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="label" htmlFor="lead_source">সোর্স · Source *</label>
+                    <label className="label" htmlFor="lead_source">{L('সোর্স', 'Source *')}</label>
                     <input
                       id="lead_source"
                       type="text"
@@ -1001,7 +1004,7 @@ export default function AdminLeadsPage() {
                     />
                   </div>
                   <div>
-                    <label className="label" htmlFor="lead_expected">সম্ভাব্য মূল্য · Expected (৳)</label>
+                    <label className="label" htmlFor="lead_expected">{L('সম্ভাব্য মূল্য', 'Expected (৳)')}</label>
                     <input
                       id="lead_expected"
                       type="number"
@@ -1016,7 +1019,7 @@ export default function AdminLeadsPage() {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="label" htmlFor="lead_address">ঠিকানা · Address</label>
+                    <label className="label" htmlFor="lead_address">{L('ঠিকানা', 'Address')}</label>
                     <input
                       id="lead_address"
                       type="text"
@@ -1027,7 +1030,7 @@ export default function AdminLeadsPage() {
                     />
                   </div>
                   <div>
-                    <label className="label" htmlFor="lead_followup">পরবর্তী ফলোআপ · Next follow-up</label>
+                    <label className="label" htmlFor="lead_followup">{L('পরবর্তী ফলোআপ', 'Next follow-up')}</label>
                     <input
                       id="lead_followup"
                       type="date"
@@ -1039,7 +1042,7 @@ export default function AdminLeadsPage() {
                 </div>
 
                 <div>
-                  <label className="label" htmlFor="lead_note">নোট · Note</label>
+                  <label className="label" htmlFor="lead_note">{L('নোট', 'Note')}</label>
                   <textarea
                     id="lead_note"
                     rows={2}
@@ -1053,11 +1056,11 @@ export default function AdminLeadsPage() {
 
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
                 <button type="button" onClick={() => setIsAddOpen(false)} className="btn btn-secondary">
-                  বাতিল · Cancel
+                  {L('বাতিল', 'Cancel')}
                 </button>
                 <button type="submit" disabled={addSubmitting} className="btn btn-primary">
                   {addSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  সংরক্ষণ · Save lead
+                  {L('সংরক্ষণ', 'Save lead')}
                 </button>
               </div>
             </form>
@@ -1071,7 +1074,7 @@ export default function AdminLeadsPage() {
           <div className="modal-panel">
             <div className="card-header">
               <div className="min-w-0">
-                <h3 className="card-title">স্টেজ পরিবর্তন · Change stage</h3>
+                <h3 className="card-title">{L('স্টেজ পরিবর্তন', 'Change stage')}</h3>
                 <p className="card-subtitle truncate">
                   {statusLead.name} · {statusLead.phone || statusLead.masked_phone}
                 </p>
@@ -1091,7 +1094,7 @@ export default function AdminLeadsPage() {
                 )}
 
                 <div>
-                  <label className="label" htmlFor="target_status">নতুন স্টেজ · Stage *</label>
+                  <label className="label" htmlFor="target_status">{L('নতুন স্টেজ', 'Stage *')}</label>
                   <select
                     id="target_status"
                     value={targetStatus}
@@ -1101,22 +1104,22 @@ export default function AdminLeadsPage() {
                     }}
                     className="input"
                   >
-                    <option value="NEW">নতুন · New</option>
-                    <option value="CONTACTED">যোগাযোগ · Contacted</option>
-                    <option value="QUALIFIED">যোগ্য · Qualified</option>
-                    <option value="ORDERED">অর্ডার · Ordered</option>
-                    <option value="LOST">বাতিল · Lost</option>
+                    <option value="NEW">{L('নতুন', 'New')}</option>
+                    <option value="CONTACTED">{L('যোগাযোগ', 'Contacted')}</option>
+                    <option value="QUALIFIED">{L('যোগ্য', 'Qualified')}</option>
+                    <option value="ORDERED">{L('অর্ডার', 'Ordered')}</option>
+                    <option value="LOST">{L('বাতিল', 'Lost')}</option>
                   </select>
                 </div>
 
                 <div>
-                  <span className="label">রেটিং · Quality</span>
+                  <span className="label">{L('রেটিং', 'Quality')}</span>
                   {renderStarPicker(statusQualityRating, setStatusQualityRating)}
                 </div>
 
                 {targetStatus === 'ORDERED' && (
                   <div>
-                    <label className="label" htmlFor="order_amount">অর্ডার মূল্য · Order amount (৳) *</label>
+                    <label className="label" htmlFor="order_amount">{L('অর্ডার মূল্য', 'Order amount (৳) *')}</label>
                     <div className="relative">
                       <DollarSign className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       <input
@@ -1137,7 +1140,7 @@ export default function AdminLeadsPage() {
 
                 {targetStatus === 'LOST' && (
                   <div>
-                    <label className="label" htmlFor="lost_reason">বাতিলের কারণ · Lost reason *</label>
+                    <label className="label" htmlFor="lost_reason">{L('বাতিলের কারণ', 'Lost reason *')}</label>
                     <textarea
                       id="lost_reason"
                       rows={2}
@@ -1154,11 +1157,11 @@ export default function AdminLeadsPage() {
 
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
                 <button type="button" onClick={() => setStatusLead(null)} className="btn btn-secondary">
-                  বাতিল · Cancel
+                  {L('বাতিল', 'Cancel')}
                 </button>
                 <button type="submit" disabled={statusSubmitting} className="btn btn-primary">
                   {statusSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  আপডেট · Update
+                  {L('আপডেট', 'Update')}
                 </button>
               </div>
             </form>

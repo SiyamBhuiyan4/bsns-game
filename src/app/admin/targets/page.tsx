@@ -1,5 +1,6 @@
 'use client';
 
+import { useLanguage } from '@/components/LanguageContext';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Target,
@@ -79,6 +80,8 @@ const METRIC_LABELS: Record<string, { bn: string; unit: string; isCurrency: bool
 };
 
 export default function AdminTargetsPage() {
+  const { lang } = useLanguage();
+  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
   const [targets, setTargets] = useState<SectionTarget[]>([]);
   const [sections, setSections] = useState<Section[]>([]);
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -399,7 +402,7 @@ export default function AdminTargetsPage() {
   const modalFooter = (onCancel: () => void, submitLabel: string) => (
     <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
       <button type="button" onClick={onCancel} className="btn btn-secondary">
-        বাতিল · Cancel
+        {L('বাতিল', 'Cancel')}
       </button>
       <button type="submit" className="btn btn-primary">
         {submitLabel}
@@ -411,17 +414,17 @@ export default function AdminTargetsPage() {
     <div className="space-y-6">
       <PageHeader
         icon={<Target className="h-5 w-5" />}
-        title="টার্গেট ও বাজেট · Targets & budgets"
+        title={L('টার্গেট ও বাজেট', 'Targets & budgets')}
         subtitle="Section targets, ad budget tracking and bulk copy"
         actions={
           <>
             <button onClick={() => setShowBudgetModal(true)} className="btn btn-secondary">
               <DollarSign className="h-4 w-4" />
-              বাজেট · Budget
+              {L('বাজেট', 'Budget')}
             </button>
             <button onClick={() => setShowCopyModal(true)} className="btn btn-secondary">
               <Copy className="h-4 w-4" />
-              বাল্ক কপি · Bulk copy
+              {L('বাল্ক কপি', 'Bulk copy')}
             </button>
             <button
               onClick={() => {
@@ -439,7 +442,7 @@ export default function AdminTargetsPage() {
               className="btn btn-primary"
             >
               <Plus className="h-4 w-4" />
-              নতুন টার্গেট · New target
+              {L('নতুন টার্গেট', 'New target')}
             </button>
           </>
         }
@@ -462,7 +465,7 @@ export default function AdminTargetsPage() {
       <div className="card">
         <div className="card-header">
           <div>
-            <h2 className="card-title">মাসিক বিজ্ঞাপন বাজেট · Monthly ad budget</h2>
+            <h2 className="card-title">{L('মাসিক বিজ্ঞাপন বাজেট', 'Monthly ad budget')}</h2>
             <p className="card-subtitle">{new Date().toISOString().slice(0, 7)} · not a scoring metric</p>
           </div>
           <span className={`badge badge-${budgetTone}`}>
@@ -472,14 +475,14 @@ export default function AdminTargetsPage() {
         <div className="card-body space-y-4">
           <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
             <div>
-              <p className="text-xs text-slate-500">বাজেট · Budget</p>
+              <p className="text-xs text-slate-500">{L('বাজেট', 'Budget')}</p>
               <p className="text-2xl font-semibold tracking-tight tabular-nums text-slate-900">
                 {monthlyBudget ? formatTaka(monthlyBudget.amount) : '—'}
               </p>
-              {!monthlyBudget && <p className="hint">সেট করা হয়নি · Not set</p>}
+              {!monthlyBudget && <p className="hint">{L('সেট করা হয়নি', 'Not set')}</p>}
             </div>
             <div className="text-right">
-              <p className="text-xs text-slate-500">খরচ · Spent</p>
+              <p className="text-xs text-slate-500">{L('খরচ', 'Spent')}</p>
               <p className="text-lg font-semibold tabular-nums text-slate-900">{formatTaka(actualSpend)}</p>
             </div>
           </div>
@@ -502,7 +505,7 @@ export default function AdminTargetsPage() {
 
           {campaignBudgets.length > 0 && (
             <div className="border-t border-slate-100 pt-4">
-              <p className="mb-2 text-xs font-medium text-slate-700">ক্যাম্পেইন বাজেট · Campaign budgets</p>
+              <p className="mb-2 text-xs font-medium text-slate-700">{L('ক্যাম্পেইন বাজেট', 'Campaign budgets')}</p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {campaignBudgets.map((cb) => (
                   <div key={cb.id} className="rounded-lg border border-slate-200 p-3 text-xs">
@@ -523,7 +526,7 @@ export default function AdminTargetsPage() {
       <div className="card">
         <div className="card-header">
           <div>
-            <h2 className="card-title">সেকশন টার্গেট · Section targets</h2>
+            <h2 className="card-title">{L('সেকশন টার্গেট', 'Section targets')}</h2>
             <p className="card-subtitle">{filteredTargets.length} shown</p>
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -534,7 +537,7 @@ export default function AdminTargetsPage() {
               onChange={(e) => setFilterSection(e.target.value)}
               className="input w-full py-1.5 text-xs sm:w-auto"
             >
-              <option value="ALL">সব সেকশন · All sections</option>
+              <option value="ALL">{L('সব সেকশন', 'All sections')}</option>
               {sectionOptions}
             </select>
             <label htmlFor="filter_period" className="sr-only">Period</label>
@@ -544,10 +547,10 @@ export default function AdminTargetsPage() {
               onChange={(e) => setFilterPeriod(e.target.value)}
               className="input w-full py-1.5 text-xs sm:w-auto"
             >
-              <option value="ALL">সব মেয়াদ · All periods</option>
-              <option value="MONTHLY">মাসিক · Monthly</option>
-              <option value="DAILY">দৈনিক · Daily</option>
-              <option value="CUSTOM">কাস্টম · Custom</option>
+              <option value="ALL">{L('সব মেয়াদ', 'All periods')}</option>
+              <option value="MONTHLY">{L('মাসিক', 'Monthly')}</option>
+              <option value="DAILY">{L('দৈনিক', 'Daily')}</option>
+              <option value="CUSTOM">{L('কাস্টম', 'Custom')}</option>
             </select>
           </div>
         </div>
@@ -556,24 +559,24 @@ export default function AdminTargetsPage() {
           {loading ? (
             <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
               <Loader2 className="h-4 w-4 animate-spin" />
-              লোড হচ্ছে · Loading…
+              {L('লোড হচ্ছে', 'Loading…')}
             </div>
           ) : filteredTargets.length === 0 ? (
             <EmptyState
               icon={<Target className="h-5 w-5" />}
-              title="কোনো টার্গেট নেই · No targets yet"
+              title={L('কোনো টার্গেট নেই', 'No targets yet')}
               description="Use “New target” to set a goal for a section."
             />
           ) : (
             <table className="table-pro">
               <thead>
                 <tr>
-                  <th>সেকশন · Section</th>
-                  <th>মেট্রিক · Metric</th>
-                  <th className="text-right">লক্ষ্য · Target</th>
-                  <th>মেয়াদ · Period</th>
-                  <th>সময় · Dates</th>
-                  <th>সেট করেছেন · By</th>
+                  <th>{L('সেকশন', 'Section')}</th>
+                  <th>{L('মেট্রিক', 'Metric')}</th>
+                  <th className="text-right">{L('লক্ষ্য', 'Target')}</th>
+                  <th>{L('মেয়াদ', 'Period')}</th>
+                  <th>{L('সময়', 'Dates')}</th>
+                  <th>{L('সেট করেছেন', 'By')}</th>
                   <th className="text-right">
                     <span className="sr-only">Actions</span>
                   </th>
@@ -613,7 +616,7 @@ export default function AdminTargetsPage() {
                         </span>
                       </td>
                       <td className="whitespace-nowrap text-slate-500 tabular-nums">
-                        {t.period_type === 'DAILY' && 'প্রতিদিন · Every day'}
+                        {t.period_type === 'DAILY' && L('প্রতিদিন', 'Every day')}
                         {t.period_type === 'MONTHLY' &&
                           t.period_start &&
                           new Date(t.period_start).toISOString().slice(0, 7)}
@@ -642,7 +645,7 @@ export default function AdminTargetsPage() {
                             }}
                             className="btn-icon"
                             aria-label="Edit target"
-                            title="সম্পাদনা · Edit"
+                            title={L('সম্পাদনা', 'Edit')}
                           >
                             <Edit2 className="h-4 w-4" />
                           </button>
@@ -650,7 +653,7 @@ export default function AdminTargetsPage() {
                             onClick={() => handleDeleteTarget(t.id)}
                             className="btn-icon hover:bg-rose-50 hover:text-rose-600"
                             aria-label="Delete target"
-                            title="মুছুন · Delete"
+                            title={L('মুছুন', 'Delete')}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -671,7 +674,7 @@ export default function AdminTargetsPage() {
           <div className="modal-panel">
             <div className="card-header">
               <h2 className="card-title">
-                {editingTarget ? 'টার্গেট সম্পাদনা · Edit target' : 'নতুন টার্গেট · New target'}
+                {editingTarget ? L('টার্গেট সম্পাদনা', 'Edit target') : L('নতুন টার্গেট', 'New target')}
               </h2>
               <button
                 type="button"
@@ -692,7 +695,7 @@ export default function AdminTargetsPage() {
                   <div className="alert alert-warning">
                     <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                     <div className="text-xs">
-                      <p className="font-medium">ওভারল্যাপ · Overlap</p>
+                      <p className="font-medium">{L('ওভারল্যাপ', 'Overlap')}</p>
                       <p className="mt-0.5">
                         A <span className="font-medium">{overlappingTarget.period_type}</span> target already exists
                         for this section and metric. Priority: CUSTOM &gt; MONTHLY &gt; DAILY.
@@ -702,7 +705,7 @@ export default function AdminTargetsPage() {
                 )}
 
                 <div>
-                  <label className="label" htmlFor="t_section">সেকশন · Section</label>
+                  <label className="label" htmlFor="t_section">{L('সেকশন', 'Section')}</label>
                   <select
                     id="t_section"
                     disabled={!!editingTarget}
@@ -716,7 +719,7 @@ export default function AdminTargetsPage() {
                 </div>
 
                 <div>
-                  <label className="label" htmlFor="t_metric">মেট্রিক · Metric</label>
+                  <label className="label" htmlFor="t_metric">{L('মেট্রিক', 'Metric')}</label>
                   <select
                     id="t_metric"
                     disabled={!!editingTarget}
@@ -726,7 +729,7 @@ export default function AdminTargetsPage() {
                   >
                     {Object.entries(METRIC_LABELS).map(([k, v]) => (
                       <option key={k} value={k}>
-                        {v.bn} · {k}
+                        {L(v.bn, k)}
                       </option>
                     ))}
                   </select>
@@ -734,7 +737,7 @@ export default function AdminTargetsPage() {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="label" htmlFor="t_value">লক্ষ্য · Target value</label>
+                    <label className="label" htmlFor="t_value">{L('লক্ষ্য', 'Target value')}</label>
                     <input
                       id="t_value"
                       type="number"
@@ -747,7 +750,7 @@ export default function AdminTargetsPage() {
                     />
                   </div>
                   <div>
-                    <label className="label" htmlFor="t_period">মেয়াদ · Period</label>
+                    <label className="label" htmlFor="t_period">{L('মেয়াদ', 'Period')}</label>
                     <select
                       id="t_period"
                       disabled={!!editingTarget}
@@ -755,16 +758,16 @@ export default function AdminTargetsPage() {
                       onChange={(e) => setTargetForm({ ...targetForm, period_type: e.target.value })}
                       className="input"
                     >
-                      <option value="MONTHLY">মাসিক · Monthly</option>
-                      <option value="DAILY">দৈনিক · Daily</option>
-                      <option value="CUSTOM">কাস্টম · Custom range</option>
+                      <option value="MONTHLY">{L('মাসিক', 'Monthly')}</option>
+                      <option value="DAILY">{L('দৈনিক', 'Daily')}</option>
+                      <option value="CUSTOM">{L('কাস্টম', 'Custom range')}</option>
                     </select>
                   </div>
                 </div>
 
                 {targetForm.period_type === 'MONTHLY' && (
                   <div>
-                    <label className="label" htmlFor="t_month">মাস · Month</label>
+                    <label className="label" htmlFor="t_month">{L('মাস', 'Month')}</label>
                     <input
                       id="t_month"
                       type="month"
@@ -779,7 +782,7 @@ export default function AdminTargetsPage() {
                 {targetForm.period_type === 'CUSTOM' && (
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="label" htmlFor="t_start">শুরু · Start</label>
+                      <label className="label" htmlFor="t_start">{L('শুরু', 'Start')}</label>
                       <input
                         id="t_start"
                         type="date"
@@ -790,7 +793,7 @@ export default function AdminTargetsPage() {
                       />
                     </div>
                     <div>
-                      <label className="label" htmlFor="t_end">শেষ · End</label>
+                      <label className="label" htmlFor="t_end">{L('শেষ', 'End')}</label>
                       <input
                         id="t_end"
                         type="date"
@@ -807,14 +810,14 @@ export default function AdminTargetsPage() {
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
                     <TrendingUp className="h-3.5 w-3.5" />
-                    প্রিভিউ · Preview
+                    {L('প্রিভিউ', 'Preview')}
                   </div>
                   <div className="mt-1 text-sm font-semibold text-slate-900">
                     {livePreview.previewText}
                     {selectedMetric.isCurrency ? ' ৳' : ` ${selectedMetric.unit}`}
                   </div>
                   <div className="mt-0.5 text-xs text-slate-500">
-                    {livePreview.days} দিন · daily avg {livePreview.dailyRate}
+                    {livePreview.days} {L('দিন', 'days')} · {L('দৈনিক গড়', 'daily avg')} {livePreview.dailyRate}
                     {selectedMetric.isCurrency ? ' ৳' : ` ${selectedMetric.unit}`}
                   </div>
                 </div>
@@ -823,7 +826,7 @@ export default function AdminTargetsPage() {
               {modalFooter(() => {
                 setShowAddModal(false);
                 setEditingTarget(null);
-              }, 'সংরক্ষণ · Save')}
+              }, L('সংরক্ষণ', 'Save'))}
             </form>
           </div>
         </div>
@@ -834,7 +837,7 @@ export default function AdminTargetsPage() {
         <div className="modal-backdrop">
           <div className="modal-panel">
             <div className="card-header">
-              <h2 className="card-title">বাজেট নির্ধারণ · Set budget</h2>
+              <h2 className="card-title">{L('বাজেট নির্ধারণ', 'Set budget')}</h2>
               <button type="button" onClick={() => setShowBudgetModal(false)} className="btn-icon" aria-label="Close">
                 <X className="h-4 w-4" />
               </button>
@@ -843,21 +846,21 @@ export default function AdminTargetsPage() {
             <form onSubmit={handleSaveBudget}>
               <div className="card-body space-y-4">
                 <div>
-                  <label className="label" htmlFor="b_scope">ধরন · Scope</label>
+                  <label className="label" htmlFor="b_scope">{L('ধরন', 'Scope')}</label>
                   <select
                     id="b_scope"
                     value={budgetForm.scope}
                     onChange={(e) => setBudgetForm({ ...budgetForm, scope: e.target.value })}
                     className="input"
                   >
-                    <option value="MONTHLY_TOTAL">মাসিক মোট · Monthly total</option>
-                    <option value="CAMPAIGN">ক্যাম্পেইন · Campaign</option>
+                    <option value="MONTHLY_TOTAL">{L('মাসিক মোট', 'Monthly total')}</option>
+                    <option value="CAMPAIGN">{L('ক্যাম্পেইন', 'Campaign')}</option>
                   </select>
                 </div>
 
                 {budgetForm.scope === 'MONTHLY_TOTAL' ? (
                   <div>
-                    <label className="label" htmlFor="b_month">মাস · Month</label>
+                    <label className="label" htmlFor="b_month">{L('মাস', 'Month')}</label>
                     <input
                       id="b_month"
                       type="month"
@@ -869,7 +872,7 @@ export default function AdminTargetsPage() {
                   </div>
                 ) : (
                   <div>
-                    <label className="label" htmlFor="b_campaign">ক্যাম্পেইন · Campaign</label>
+                    <label className="label" htmlFor="b_campaign">{L('ক্যাম্পেইন', 'Campaign')}</label>
                     <select
                       id="b_campaign"
                       value={budgetForm.campaign_id}
@@ -877,7 +880,7 @@ export default function AdminTargetsPage() {
                       className="input"
                       required
                     >
-                      <option value="">বেছে নিন · Select</option>
+                      <option value="">{L('বেছে নিন', 'Select')}</option>
                       {campaigns.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.name} ({c.channel})
@@ -888,7 +891,7 @@ export default function AdminTargetsPage() {
                 )}
 
                 <div>
-                  <label className="label" htmlFor="b_amount">পরিমাণ · Amount (৳)</label>
+                  <label className="label" htmlFor="b_amount">{L('পরিমাণ', 'Amount (৳)')}</label>
                   <input
                     id="b_amount"
                     type="number"
@@ -906,7 +909,7 @@ export default function AdminTargetsPage() {
                 </div>
               </div>
 
-              {modalFooter(() => setShowBudgetModal(false), 'সংরক্ষণ · Save budget')}
+              {modalFooter(() => setShowBudgetModal(false), L('সংরক্ষণ', 'Save budget'))}
             </form>
           </div>
         </div>
@@ -918,7 +921,7 @@ export default function AdminTargetsPage() {
           <div className="modal-panel">
             <div className="card-header">
               <div>
-                <h2 className="card-title">বাল্ক কপি · Bulk copy</h2>
+                <h2 className="card-title">{L('বাল্ক কপি', 'Bulk copy')}</h2>
                 <p className="card-subtitle">Copy targets to another month or section</p>
               </div>
               <button type="button" onClick={() => setShowCopyModal(false)} className="btn-icon" aria-label="Close">
@@ -929,15 +932,15 @@ export default function AdminTargetsPage() {
             <form onSubmit={handleBulkCopy}>
               <div className="card-body space-y-4">
                 <div>
-                  <label className="label" htmlFor="c_type">কপি ধরন · Copy type</label>
+                  <label className="label" htmlFor="c_type">{L('কপি ধরন', 'Copy type')}</label>
                   <select
                     id="c_type"
                     value={copyForm.copy_type}
                     onChange={(e) => setCopyForm({ ...copyForm, copy_type: e.target.value })}
                     className="input"
                   >
-                    <option value="MONTH_TO_MONTH">মাস → মাস · Month to month</option>
-                    <option value="SECTION_TO_SECTION">সেকশন → সেকশন · Section to section</option>
+                    <option value="MONTH_TO_MONTH">{L('মাস → মাস', 'Month to month')}</option>
+                    <option value="SECTION_TO_SECTION">{L('সেকশন → সেকশন', 'Section to section')}</option>
                   </select>
                 </div>
 
@@ -945,7 +948,7 @@ export default function AdminTargetsPage() {
                   <>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="label" htmlFor="c_from">থেকে · From</label>
+                        <label className="label" htmlFor="c_from">{L('থেকে', 'From')}</label>
                         <input
                           id="c_from"
                           type="month"
@@ -956,7 +959,7 @@ export default function AdminTargetsPage() {
                         />
                       </div>
                       <div>
-                        <label className="label" htmlFor="c_to">পর্যন্ত · To</label>
+                        <label className="label" htmlFor="c_to">{L('পর্যন্ত', 'To')}</label>
                         <input
                           id="c_to"
                           type="month"
@@ -969,14 +972,14 @@ export default function AdminTargetsPage() {
                     </div>
 
                     <div>
-                      <label className="label" htmlFor="c_section">সেকশন · Section</label>
+                      <label className="label" htmlFor="c_section">{L('সেকশন', 'Section')}</label>
                       <select
                         id="c_section"
                         value={copyForm.section_id}
                         onChange={(e) => setCopyForm({ ...copyForm, section_id: e.target.value })}
                         className="input"
                       >
-                        <option value="">সব সেকশন · All sections</option>
+                        <option value="">{L('সব সেকশন', 'All sections')}</option>
                         {sectionOptions}
                       </select>
                     </div>
@@ -989,13 +992,13 @@ export default function AdminTargetsPage() {
                         onChange={(e) => setCopyForm({ ...copyForm, copy_budget: e.target.checked })}
                         className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
                       />
-                      মাসিক বাজেটও কপি · Also copy monthly budget
+                      {L('মাসিক বাজেটও কপি', 'Also copy monthly budget')}
                     </label>
                   </>
                 ) : (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="label" htmlFor="c_from_section">উৎস · From section</label>
+                      <label className="label" htmlFor="c_from_section">{L('উৎস', 'From section')}</label>
                       <select
                         id="c_from_section"
                         value={copyForm.from_section_id}
@@ -1003,12 +1006,12 @@ export default function AdminTargetsPage() {
                         className="input"
                         required
                       >
-                        <option value="">বেছে নিন · Select</option>
+                        <option value="">{L('বেছে নিন', 'Select')}</option>
                         {sectionOptions}
                       </select>
                     </div>
                     <div>
-                      <label className="label" htmlFor="c_to_section">গন্তব্য · To section</label>
+                      <label className="label" htmlFor="c_to_section">{L('গন্তব্য', 'To section')}</label>
                       <select
                         id="c_to_section"
                         value={copyForm.to_section_id}
@@ -1016,7 +1019,7 @@ export default function AdminTargetsPage() {
                         className="input"
                         required
                       >
-                        <option value="">বেছে নিন · Select</option>
+                        <option value="">{L('বেছে নিন', 'Select')}</option>
                         {sectionOptions}
                       </select>
                     </div>
@@ -1024,7 +1027,7 @@ export default function AdminTargetsPage() {
                 )}
               </div>
 
-              {modalFooter(() => setShowCopyModal(false), 'কপি করুন · Copy')}
+              {modalFooter(() => setShowCopyModal(false), L('কপি করুন', 'Copy'))}
             </form>
           </div>
         </div>

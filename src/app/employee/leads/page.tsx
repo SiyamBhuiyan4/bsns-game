@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import PageHeader from '@/components/ui/PageHeader';
+import { useLanguage } from '@/components/LanguageContext';
 import EmptyState from '@/components/ui/EmptyState';
 
 interface ProductRef {
@@ -63,6 +64,8 @@ interface LeadDetailData extends LeadItem {
 }
 
 export default function EmployeeLeadsPage() {
+  const { lang } = useLanguage();
+  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
   const [leads, setLeads] = useState<LeadItem[]>([]);
   const [products, setProducts] = useState<ProductRef[]>([]);
   const [campaigns, setCampaigns] = useState<CampaignRef[]>([]);
@@ -305,26 +308,26 @@ export default function EmployeeLeadsPage() {
   const getStatusBadge = (st: string) => {
     switch (st) {
       case 'NEW':
-        return <span className="badge badge-blue">নতুন · New</span>;
+        return <span className="badge badge-blue">{L('নতুন', 'New')}</span>;
       case 'CONTACTED':
-        return <span className="badge badge-violet">যোগাযোগ · Contacted</span>;
+        return <span className="badge badge-violet">{L('যোগাযোগ', 'Contacted')}</span>;
       case 'QUALIFIED':
-        return <span className="badge badge-amber">যোগ্য · Qualified</span>;
+        return <span className="badge badge-amber">{L('যোগ্য', 'Qualified')}</span>;
       case 'ORDERED':
-        return <span className="badge badge-green">অর্ডার · Ordered</span>;
+        return <span className="badge badge-green">{L('অর্ডার', 'Ordered')}</span>;
       case 'LOST':
-        return <span className="badge badge-red">বাতিল · Lost</span>;
+        return <span className="badge badge-red">{L('বাতিল', 'Lost')}</span>;
     }
   };
 
   const getBuyerTypeLabel = (bt: string) => {
     switch (bt) {
-      case 'FARMER': return 'কৃষক · Farmer';
-      case 'WHOLESALER': return 'পাইকার · Wholesaler';
-      case 'RESTAURANT': return 'রেস্টুরেন্ট · Restaurant';
-      case 'DEALER': return 'ডিলার · Dealer';
-      case 'RETAIL': return 'খুচরা · Retail';
-      default: return 'অন্যান্য · Other';
+      case 'FARMER': return L('কৃষক', 'Farmer');
+      case 'WHOLESALER': return L('পাইকার', 'Wholesaler');
+      case 'RESTAURANT': return L('রেস্টুরেন্ট', 'Restaurant');
+      case 'DEALER': return L('ডিলার', 'Dealer');
+      case 'RETAIL': return L('খুচরা', 'Retail');
+      default: return L('অন্যান্য', 'Other');
     }
   };
 
@@ -341,7 +344,7 @@ export default function EmployeeLeadsPage() {
       <span className="font-medium text-brand-700">৳ {l.order_amount.toLocaleString('en-IN')}</span>
     ) : l.expected_value ? (
       <span className="text-slate-600">
-        ৳ {l.expected_value.toLocaleString('en-IN')} <span className="text-xs text-slate-400">(সম্ভাব্য · est.)</span>
+        ৳ {l.expected_value.toLocaleString('en-IN')} <span className="text-xs text-slate-400">({L('সম্ভাব্য', 'est.')})</span>
       </span>
     ) : (
       <span className="text-slate-400">—</span>
@@ -351,8 +354,8 @@ export default function EmployeeLeadsPage() {
     <div className="space-y-6">
       <PageHeader
         icon={<UserPlus className="h-5 w-5" />}
-        title="আমার লিড · My Leads"
-        subtitle="লিড সংগ্রহ, ফলোআপ ও অর্ডারে রূপান্তর করুন। Capture, follow up and convert leads."
+        title={L('আমার লিড', 'My Leads')}
+        subtitle={L('লিড সংগ্রহ, ফলোআপ ও অর্ডারে রূপান্তর করুন।', 'Capture, follow up and convert leads.')}
         actions={
           <button
             onClick={() => {
@@ -363,7 +366,7 @@ export default function EmployeeLeadsPage() {
             className="btn btn-primary min-h-10 w-full sm:w-auto"
           >
             <Plus className="h-4 w-4" />
-            <span>নতুন লিড · Add lead</span>
+            <span>{L('নতুন লিড', 'Add lead')}</span>
           </button>
         }
       />
@@ -374,10 +377,10 @@ export default function EmployeeLeadsPage() {
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
               <div className="font-medium">
-                ৩+ দিন অর্ডার ছাড়া অপেক্ষমাণ: {unfinishedCount} · Waiting 3+ days
+                {L(`৩+ দিন অর্ডার ছাড়া অপেক্ষমাণ: ${unfinishedCount}`, `Waiting 3+ days: ${unfinishedCount}`)}
               </div>
               <div className="mt-0.5 text-xs">
-                যোগ্য (Qualified) লিড, গত ৩ দিনে অর্ডার হয়নি। এখনই ফলোআপ করুন।
+                {L('যোগ্য লিড, গত ৩ দিনে অর্ডার হয়নি। এখনই ফলোআপ করুন।', 'Qualified leads with no order in the last 3 days. Follow up now.')}
               </div>
             </div>
           </div>
@@ -385,7 +388,7 @@ export default function EmployeeLeadsPage() {
             onClick={() => setShowUnfinishedOnly(!showUnfinishedOnly)}
             className="btn btn-secondary btn-sm self-start sm:self-auto"
           >
-            {showUnfinishedOnly ? 'সকল লিড · Show all' : 'শুধু এগুলো · Show these'}
+            {showUnfinishedOnly ? L('সকল লিড', 'Show all') : L('শুধু এগুলো', 'Show these')}
           </button>
         </div>
       )}
@@ -427,12 +430,12 @@ export default function EmployeeLeadsPage() {
         <div className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <div className="segmented">
             {[
-              { key: 'ALL', label: 'সকল · All' },
-              { key: 'NEW', label: 'নতুন · New' },
-              { key: 'CONTACTED', label: 'যোগাযোগ · Contacted' },
-              { key: 'QUALIFIED', label: 'যোগ্য · Qualified' },
-              { key: 'ORDERED', label: 'অর্ডার · Ordered' },
-              { key: 'LOST', label: 'বাতিল · Lost' },
+              { key: 'ALL', label: L('সকল', 'All') },
+              { key: 'NEW', label: L('নতুন', 'New') },
+              { key: 'CONTACTED', label: L('যোগাযোগ', 'Contacted') },
+              { key: 'QUALIFIED', label: L('যোগ্য', 'Qualified') },
+              { key: 'ORDERED', label: L('অর্ডার', 'Ordered') },
+              { key: 'LOST', label: L('বাতিল', 'Lost') },
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -452,13 +455,13 @@ export default function EmployeeLeadsPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1 sm:max-w-md">
             <label htmlFor="leads-search" className="sr-only">
-              অনুসন্ধান · Search
+              {L('অনুসন্ধান', 'Search')}
             </label>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               id="leads-search"
               type="text"
-              placeholder="নাম, ফোন বা চ্যানেল · Search name, phone, channel"
+              placeholder={L('নাম, ফোন বা চ্যানেল', 'Search name, phone, channel')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="input pl-9"
@@ -467,7 +470,7 @@ export default function EmployeeLeadsPage() {
           {showUnfinishedOnly && (
             <span className="badge badge-amber self-start sm:self-auto">
               <AlertTriangle className="h-3 w-3" />
-              ৩+ দিন অপেক্ষমাণ ফিল্টার · 3+ day filter on
+              {L('৩+ দিন অপেক্ষমাণ ফিল্টার', '3+ day filter on')}
             </span>
           )}
         </div>
@@ -478,10 +481,10 @@ export default function EmployeeLeadsPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12 text-slate-500">
             <Loader2 className="mb-2 h-6 w-6 animate-spin text-brand-600" />
-            <p className="text-sm">লোড হচ্ছে... · Loading...</p>
+            <p className="text-sm">{L('লোড হচ্ছে...', 'Loading...')}</p>
           </div>
         ) : leads.length === 0 ? (
-          <EmptyState icon={<UserPlus className="h-5 w-5" />} title="কোনো লিড পাওয়া যায়নি · No leads found" />
+          <EmptyState icon={<UserPlus className="h-5 w-5" />} title={L('কোনো লিড পাওয়া যায়নি', 'No leads found')} />
         ) : (
           <>
             {/* Phone: stacked rows */}
@@ -507,18 +510,18 @@ export default function EmployeeLeadsPage() {
                     <span>{getBuyerTypeLabel(l.buyer_type)}</span>
                     {l.product && <span>{l.product.name_bn}</span>}
                     {l.is_unfinished && (
-                      <span className="badge badge-amber">{l.days_since_update} দিন অপেক্ষমাণ · days waiting</span>
+                      <span className="badge badge-amber">{l.days_since_update} {L('দিন অপেক্ষমাণ', 'days waiting')}</span>
                     )}
                   </div>
                   <div className="mt-1 text-sm tabular-nums">{renderValue(l)}</div>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <button onClick={() => openStatus(l)} className="btn btn-secondary min-h-10">
-                      <span>স্টেজ · Stage</span>
+                      <span>{L('স্টেজ', 'Stage')}</span>
                       <ChevronRight className="h-4 w-4" />
                     </button>
                     <button onClick={() => openDetail(l.id)} className="btn btn-secondary min-h-10">
                       <MessageSquare className="h-4 w-4" />
-                      <span>নোট · Notes{l.notes_count > 0 ? ` (${l.notes_count})` : ''}</span>
+                      <span>{L('নোট', 'Notes')}{l.notes_count > 0 ? ` (${l.notes_count})` : ''}</span>
                     </button>
                   </div>
                 </li>
@@ -530,11 +533,11 @@ export default function EmployeeLeadsPage() {
               <table className="table-pro">
                 <thead>
                   <tr>
-                    <th>ক্রেতা · Customer</th>
-                    <th>ধরন · Type</th>
-                    <th>পণ্য · Product</th>
-                    <th>স্টেজ · Stage</th>
-                    <th className="text-right">মূল্য · Value</th>
+                    <th>{L('ক্রেতা', 'Customer')}</th>
+                    <th>{L('ধরন', 'Type')}</th>
+                    <th>{L('পণ্য', 'Product')}</th>
+                    <th>{L('স্টেজ', 'Stage')}</th>
+                    <th className="text-right">{L('মূল্য', 'Value')}</th>
                     <th className="text-right">
                       <span className="sr-only">Actions</span>
                     </th>
@@ -552,7 +555,7 @@ export default function EmployeeLeadsPage() {
                             {l.name}
                           </button>
                           {l.is_unfinished && (
-                            <span className="badge badge-amber">{l.days_since_update} দিন অপেক্ষমাণ</span>
+                            <span className="badge badge-amber">{l.days_since_update} {L('দিন অপেক্ষমাণ', 'days waiting')}</span>
                           )}
                         </div>
                         <div className="mt-0.5 flex items-center gap-1.5 font-mono text-xs text-slate-500">
@@ -567,14 +570,14 @@ export default function EmployeeLeadsPage() {
                       <td className="whitespace-nowrap text-right">
                         <div className="inline-flex items-center gap-1.5">
                           <button onClick={() => openStatus(l)} className="btn btn-secondary btn-sm">
-                            <span>স্টেজ · Stage</span>
+                            <span>{L('স্টেজ', 'Stage')}</span>
                             <ChevronRight className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => openDetail(l.id)}
                             className="btn btn-ghost btn-sm"
-                            title="বিস্তারিত ও নোট · Details and notes"
-                            aria-label="বিস্তারিত ও নোট · Details and notes"
+                            title={L('বিস্তারিত ও নোট', 'Details and notes')}
+                            aria-label={L('বিস্তারিত ও নোট', 'Details and notes')}
                           >
                             <MessageSquare className="h-3.5 w-3.5" />
                             {l.notes_count > 0 && <span className="tabular-nums">{l.notes_count}</span>}
@@ -596,15 +599,15 @@ export default function EmployeeLeadsPage() {
           <div className="modal-panel">
             <div className="card-header">
               <div>
-                <h3 className="card-title">নতুন লিড · Add lead</h3>
-                <p className="card-subtitle">সম্ভাব্য ক্রেতার তথ্য দিন · Enter the customer&apos;s details</p>
+                <h3 className="card-title">{L('নতুন লিড', 'Add lead')}</h3>
+                <p className="card-subtitle">{L('সম্ভাব্য ক্রেতার তথ্য দিন', "Enter the customer's details")}</p>
               </div>
             </div>
 
             <form onSubmit={handleAddLead} className="card-body space-y-4">
               <div>
                 <label htmlFor="add-name" className="label">
-                  ক্রেতার নাম · Name *
+                  {L('ক্রেতার নাম *', 'Name *')}
                 </label>
                 <input
                   id="add-name"
@@ -619,7 +622,7 @@ export default function EmployeeLeadsPage() {
 
               <div>
                 <label htmlFor="add-phone" className="label">
-                  মোবাইল (১১ ডিজিট) · Phone *
+                  {L('মোবাইল (১১ ডিজিট) *', 'Phone *')}
                 </label>
                 <div className="relative">
                   <input
@@ -646,7 +649,7 @@ export default function EmployeeLeadsPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label htmlFor="add-type" className="label">
-                    ক্রেতার ধরন · Buyer type *
+                    {L('ক্রেতার ধরন *', 'Buyer type *')}
                   </label>
                   <select
                     id="add-type"
@@ -654,18 +657,18 @@ export default function EmployeeLeadsPage() {
                     onChange={(e) => setAddBuyerType(e.target.value as LeadItem['buyer_type'])}
                     className="input"
                   >
-                    <option value="RETAIL">খুচরা · Retail</option>
-                    <option value="WHOLESALER">পাইকার · Wholesaler</option>
-                    <option value="FARMER">কৃষক · Farmer</option>
-                    <option value="RESTAURANT">রেস্টুরেন্ট · Restaurant</option>
-                    <option value="DEALER">ডিলার · Dealer</option>
-                    <option value="OTHER">অন্যান্য · Other</option>
+                    <option value="RETAIL">{L('খুচরা', 'Retail')}</option>
+                    <option value="WHOLESALER">{L('পাইকার', 'Wholesaler')}</option>
+                    <option value="FARMER">{L('কৃষক', 'Farmer')}</option>
+                    <option value="RESTAURANT">{L('রেস্টুরেন্ট', 'Restaurant')}</option>
+                    <option value="DEALER">{L('ডিলার', 'Dealer')}</option>
+                    <option value="OTHER">{L('অন্যান্য', 'Other')}</option>
                   </select>
                 </div>
 
                 <div>
                   <label htmlFor="add-product" className="label">
-                    আগ্রহী পণ্য · Product
+                    {L('আগ্রহী পণ্য', 'Product')}
                   </label>
                   <select
                     id="add-product"
@@ -673,7 +676,7 @@ export default function EmployeeLeadsPage() {
                     onChange={(e) => setAddProductId(e.target.value)}
                     className="input"
                   >
-                    <option value="">নির্বাচন করুন · Select...</option>
+                    <option value="">{L('নির্বাচন করুন', 'Select...')}</option>
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name_bn}
@@ -684,7 +687,7 @@ export default function EmployeeLeadsPage() {
 
                 <div>
                   <label htmlFor="add-source" className="label">
-                    সোর্স · Source *
+                    {L('সোর্স *', 'Source *')}
                   </label>
                   <input
                     id="add-source"
@@ -699,7 +702,7 @@ export default function EmployeeLeadsPage() {
 
                 <div>
                   <label htmlFor="add-campaign" className="label">
-                    ক্যাম্পেইন · Campaign
+                    {L('ক্যাম্পেইন', 'Campaign')}
                   </label>
                   <select
                     id="add-campaign"
@@ -707,7 +710,7 @@ export default function EmployeeLeadsPage() {
                     onChange={(e) => setAddCampaignId(e.target.value)}
                     className="input"
                   >
-                    <option value="">ক্যাম্পেইন নেই · None</option>
+                    <option value="">{L('ক্যাম্পেইন নেই', 'None')}</option>
                     {campaigns.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -718,7 +721,7 @@ export default function EmployeeLeadsPage() {
 
                 <div>
                   <label htmlFor="add-value" className="label">
-                    সম্ভাব্য মূল্য · Expected (৳)
+                    {L('সম্ভাব্য মূল্য (৳)', 'Expected (৳)')}
                   </label>
                   <input
                     id="add-value"
@@ -733,7 +736,7 @@ export default function EmployeeLeadsPage() {
 
                 <div>
                   <label htmlFor="add-followup" className="label">
-                    পরবর্তী ফলোআপ · Next follow-up
+                    {L('পরবর্তী ফলোআপ', 'Next follow-up')}
                   </label>
                   <input
                     id="add-followup"
@@ -747,7 +750,7 @@ export default function EmployeeLeadsPage() {
 
               <div>
                 <label htmlFor="add-address" className="label">
-                  ঠিকানা · Address
+                  {L('ঠিকানা', 'Address')}
                 </label>
                 <input
                   id="add-address"
@@ -761,7 +764,7 @@ export default function EmployeeLeadsPage() {
 
               <div>
                 <label htmlFor="add-note" className="label">
-                  প্রাথমিক নোট · Initial note
+                  {L('প্রাথমিক নোট', 'Initial note')}
                 </label>
                 <textarea
                   id="add-note"
@@ -775,11 +778,11 @@ export default function EmployeeLeadsPage() {
 
               <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
                 <button type="button" onClick={() => setIsAddOpen(false)} className="btn btn-secondary min-h-10">
-                  বাতিল · Cancel
+                  {L('বাতিল', 'Cancel')}
                 </button>
                 <button type="submit" disabled={addSubmitting} className="btn btn-primary min-h-10">
                   {addSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  সংরক্ষণ · Save
+                  {L('সংরক্ষণ', 'Save')}
                 </button>
               </div>
             </form>
@@ -793,7 +796,7 @@ export default function EmployeeLeadsPage() {
           <div className="modal-panel sm:max-w-md">
             <div className="card-header">
               <div className="min-w-0">
-                <h3 className="card-title">স্টেজ পরিবর্তন · Change stage</h3>
+                <h3 className="card-title">{L('স্টেজ পরিবর্তন', 'Change stage')}</h3>
                 <p className="card-subtitle truncate">
                   {statusLead.name} · <span className="font-mono">{statusLead.masked_phone}</span>
                 </p>
@@ -810,7 +813,7 @@ export default function EmployeeLeadsPage() {
 
               <div>
                 <label htmlFor="status-target" className="label">
-                  নতুন স্টেজ · New stage *
+                  {L('নতুন স্টেজ *', 'New stage *')}
                 </label>
                 <select
                   id="status-target"
@@ -818,11 +821,11 @@ export default function EmployeeLeadsPage() {
                   onChange={(e) => setTargetStatus(e.target.value as LeadItem['status'])}
                   className="input"
                 >
-                  <option value="NEW">নতুন · New</option>
-                  <option value="CONTACTED">যোগাযোগ · Contacted</option>
-                  <option value="QUALIFIED">যোগ্য · Qualified</option>
-                  <option value="ORDERED">অর্ডার · Ordered</option>
-                  <option value="LOST">বাতিল · Lost</option>
+                  <option value="NEW">{L('নতুন', 'New')}</option>
+                  <option value="CONTACTED">{L('যোগাযোগ', 'Contacted')}</option>
+                  <option value="QUALIFIED">{L('যোগ্য', 'Qualified')}</option>
+                  <option value="ORDERED">{L('অর্ডার', 'Ordered')}</option>
+                  <option value="LOST">{L('বাতিল', 'Lost')}</option>
                 </select>
               </div>
 
@@ -830,7 +833,7 @@ export default function EmployeeLeadsPage() {
                 <div>
                   <label htmlFor="status-amount" className="label flex items-center gap-1.5">
                     <DollarSign className="h-3.5 w-3.5 text-slate-400" />
-                    অর্ডারের মূল্য · Order amount (৳) *
+                    {L('অর্ডারের মূল্য (৳) *', 'Order amount (৳) *')}
                   </label>
                   <input
                     id="status-amount"
@@ -843,7 +846,7 @@ export default function EmployeeLeadsPage() {
                     onChange={(e) => setOrderAmount(e.target.value)}
                     className="input tabular-nums"
                   />
-                  <p className="hint">অর্ডার হলে মূল্য দেওয়া আবশ্যক · Required for ordered leads</p>
+                  <p className="hint">{L('অর্ডার হলে মূল্য দেওয়া আবশ্যক', 'Required for ordered leads')}</p>
                 </div>
               )}
 
@@ -851,7 +854,7 @@ export default function EmployeeLeadsPage() {
                 <div>
                   <label htmlFor="status-reason" className="label flex items-center gap-1.5">
                     <XCircle className="h-3.5 w-3.5 text-slate-400" />
-                    বাতিলের কারণ · Lost reason *
+                    {L('বাতিলের কারণ *', 'Lost reason *')}
                   </label>
                   <textarea
                     id="status-reason"
@@ -862,17 +865,17 @@ export default function EmployeeLeadsPage() {
                     onChange={(e) => setLostReason(e.target.value)}
                     className="input"
                   />
-                  <p className="hint">বাতিলের কারণ আবশ্যক · Required for lost leads</p>
+                  <p className="hint">{L('বাতিলের কারণ আবশ্যক', 'Required for lost leads')}</p>
                 </div>
               )}
 
               <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
                 <button type="button" onClick={() => setStatusLead(null)} className="btn btn-secondary min-h-10">
-                  বাতিল · Cancel
+                  {L('বাতিল', 'Cancel')}
                 </button>
                 <button type="submit" disabled={statusSubmitting} className="btn btn-primary min-h-10">
                   {statusSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  আপডেট · Update
+                  {L('আপডেট', 'Update')}
                 </button>
               </div>
             </form>
@@ -885,14 +888,14 @@ export default function EmployeeLeadsPage() {
         <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-[2px]">
           <div className="flex h-full w-full max-w-md flex-col bg-white shadow-xl animate-in slide-in-from-right duration-300">
             <div className="card-header">
-              <h3 className="card-title">লিড বিবরণ · Lead details</h3>
+              <h3 className="card-title">{L('লিড বিবরণ', 'Lead details')}</h3>
               <button
                 onClick={() => {
                   setSelectedLeadId(null);
                   setLeadDetail(null);
                 }}
                 className="btn-icon"
-                aria-label="বন্ধ করুন · Close"
+                aria-label={L('বন্ধ করুন', 'Close')}
               >
                 <XCircle className="h-5 w-5" />
               </button>
@@ -921,24 +924,24 @@ export default function EmployeeLeadsPage() {
 
                     <dl className="grid grid-cols-2 gap-3 text-xs">
                       <div>
-                        <dt className="text-slate-500">ধরন · Type</dt>
+                        <dt className="text-slate-500">{L('ধরন', 'Type')}</dt>
                         <dd className="font-medium text-slate-900">{getBuyerTypeLabel(leadDetail.buyer_type)}</dd>
                       </div>
                       <div>
-                        <dt className="text-slate-500">পণ্য · Product</dt>
+                        <dt className="text-slate-500">{L('পণ্য', 'Product')}</dt>
                         <dd className="font-medium text-slate-900">{leadDetail.product ? leadDetail.product.name_bn : '—'}</dd>
                       </div>
                       <div>
-                        <dt className="text-slate-500">সোর্স · Source</dt>
+                        <dt className="text-slate-500">{L('সোর্স', 'Source')}</dt>
                         <dd className="font-medium text-slate-900">{leadDetail.source_channel}</dd>
                       </div>
                       <div>
-                        <dt className="text-slate-500">ক্যাম্পেইন · Campaign</dt>
+                        <dt className="text-slate-500">{L('ক্যাম্পেইন', 'Campaign')}</dt>
                         <dd className="font-medium text-slate-900">{leadDetail.campaign ? leadDetail.campaign.name : '—'}</dd>
                       </div>
                       {leadDetail.address && (
                         <div className="col-span-2">
-                          <dt className="text-slate-500">ঠিকানা · Address</dt>
+                          <dt className="text-slate-500">{L('ঠিকানা', 'Address')}</dt>
                           <dd className="font-medium text-slate-900">{leadDetail.address}</dd>
                         </div>
                       )}
@@ -946,9 +949,9 @@ export default function EmployeeLeadsPage() {
                   </div>
 
                   <div>
-                    <h4 className="mb-2 text-sm font-semibold text-slate-900">ফলোআপ নোট · Notes</h4>
+                    <h4 className="mb-2 text-sm font-semibold text-slate-900">{L('ফলোআপ নোট', 'Notes')}</h4>
                     {leadDetail.notes.length === 0 ? (
-                      <p className="text-sm text-slate-500">কোনো নোট নেই · No notes yet</p>
+                      <p className="text-sm text-slate-500">{L('কোনো নোট নেই', 'No notes yet')}</p>
                     ) : (
                       <div className="space-y-2">
                         {leadDetail.notes.map((n) => (
@@ -970,13 +973,13 @@ export default function EmployeeLeadsPage() {
             {leadDetail && (
               <form onSubmit={handleAddNote} className="flex gap-2 border-t border-slate-100 p-4">
                 <label htmlFor="new-note" className="sr-only">
-                  নতুন নোট · New note
+                  {L('নতুন নোট', 'New note')}
                 </label>
                 <input
                   id="new-note"
                   type="text"
                   required
-                  placeholder="নতুন ফলোআপ নোট · New note..."
+                  placeholder={L('নতুন ফলোআপ নোট', 'New note...')}
                   value={newNoteText}
                   onChange={(e) => setNewNoteText(e.target.value)}
                   className="input flex-1"
@@ -985,7 +988,7 @@ export default function EmployeeLeadsPage() {
                   type="submit"
                   disabled={noteSubmitting}
                   className="btn btn-primary min-h-10"
-                  aria-label="নোট পাঠান · Send note"
+                  aria-label={L('নোট পাঠান', 'Send note')}
                 >
                   <Send className="h-4 w-4" />
                 </button>

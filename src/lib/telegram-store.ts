@@ -14,6 +14,10 @@ type Cache = { snapshot: Snapshot; messageId: number | null; loadedAt: number };
 
 const globalForStore = globalThis as unknown as { telegramStore?: Cache };
 
+function hasTelegramConfig(): boolean {
+  return Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHANNEL_ID);
+}
+
 function config() {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHANNEL_ID;
@@ -94,6 +98,12 @@ async function writePinned(snapshot: Snapshot, previousMessageId: number | null)
 
 /** Return the current snapshot. Cached for `maxAgeMs` to avoid hitting Telegram on every read. */
 export async function readSnapshot(maxAgeMs = 5_000): Promise<Snapshot> {
+  if (!hasTelegramConfig()) {
+    if (!globalForStore.telegramStore) {
+      globalForStore.telegramStore = { snapshot: emptySnapshot(), messageId: null, loadedAt: Date.now() };
+    }
+    return globalForStore.telegramStore.snapshot;
+  }
   const cache = globalForStore.telegramStore;
   if (cache && Date.now() - cache.loadedAt < maxAgeMs) return cache.snapshot;
   const { snapshot, messageId } = await fetchPinned();
@@ -120,6 +130,36 @@ async function flush() {
     while (pending.length) {
       const batch = pending;
       pending = [];
+
+      if (!hasTelegramConfig()) {
+        if (!globalForStore.telegramStore) {
+          globalForStore.telegramStore = { snapshot: emptySnapshot(), messageId: null, loadedAt: Date.now() };
+        }
+        const snap = globalForStore.telegramStore.snapshot;
+        const outcomes: { job: Job; ok: boolean; value?: unknown; error?: unknown }[] = [];
+        let changed = false;
+        for (const job of batch) {
+          const trial: Snapshot = { ...snap, tables: structuredClone(snap.tables) };
+          try {
+            const value = await job.fn(trial);
+            snap.tables = trial.tables;
+            changed = true;
+            outcomes.push({ job, ok: true, value });
+          } catch (error) {
+            outcomes.push({ job, ok: false, error });
+          }
+        }
+        if (changed) {
+          snap.version += 1;
+          snap.updated_at = new Date().toISOString();
+        }
+        for (const o of outcomes) {
+          if (o.ok) o.job.resolve(o.value);
+          else o.job.reject(o.error);
+        }
+        continue;
+      }
+
       try {
         const fresh = await fetchPinned();
         const snap = fresh.snapshot;

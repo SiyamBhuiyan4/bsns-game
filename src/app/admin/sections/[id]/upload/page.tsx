@@ -91,11 +91,11 @@ export default function SectionCsvUploadPage({
 
   const validateAndSetFile = (selected: File) => {
     if (!selected.name.toLowerCase().endsWith('.csv') && selected.type !== 'text/csv' && selected.type !== 'application/vnd.ms-excel') {
-      setErrorMessage('দয়া করে শুধুমাত্র .csv ফাইল আপলোড করুন (Only .csv files supported)');
+      setErrorMessage(t('up.onlyCsv', 'দয়া করে শুধুমাত্র .csv ফাইল আপলোড করুন', 'Only .csv files supported'));
       return;
     }
     if (selected.size > 5 * 1024 * 1024) {
-      setErrorMessage('ফাইলের আকার সর্বোচ্চ ৫ মেগাবাইট হতে পারবে (Max 5MB file size limit exceeded)');
+      setErrorMessage(t('up.maxSize', 'ফাইলের আকার সর্বোচ্চ ৫ মেগাবাইট হতে পারবে', 'Max 5MB file size limit exceeded'));
       return;
     }
     setFile(selected);
