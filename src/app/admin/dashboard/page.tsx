@@ -4,6 +4,7 @@ import DashboardPeriodSelector from '@/components/dashboard/DashboardPeriodSelec
 import DashboardHeaderStats from '@/components/dashboard/DashboardHeaderStats';
 import SectionOverviewCards from '@/components/dashboard/SectionOverviewCards';
 import EmployeePerformanceOverview from '@/components/dashboard/EmployeePerformanceOverview';
+import PerformancePieCharts from '@/components/dashboard/PerformancePieCharts';
 
 interface PageProps {
   searchParams?: Promise<{
@@ -24,7 +25,7 @@ export default async function AdminDashboardPage(props: PageProps) {
   const to = searchParams.to;
 
   const dashboardData = await getAdminDashboardData({ period, from, to });
-  const { periodInfo, summaryCards, sectionsOverview, groupSectionsOverview, employeeWorkSummary } = dashboardData;
+  const { periodInfo, summaryCards, sectionsOverview, groupSectionsOverview, employeeWorkSummary, charts } = dashboardData;
 
   // Extract core quick stats
   const postsDoneItem = sectionsOverview.find((s) => s.key === 'POSTS_DONE');
@@ -59,7 +60,14 @@ export default async function AdminDashboardPage(props: PageProps) {
         groupSectionsOverview={groupSectionsOverview}
       />
 
-      {/* 2. Employee Work Performance & Full History */}
+      {/* 2. 3D Performance Pie Charts (Overall & for Each Performance / Employee) */}
+      <PerformancePieCharts
+        employees={employeeWorkSummary}
+        teamScoreShare={charts?.teamScoreShare || []}
+        sectionsOverview={sectionsOverview}
+      />
+
+      {/* 3. Employee Work Performance & Full History */}
       <EmployeePerformanceOverview
         employees={employeeWorkSummary}
         periodLabel={periodInfo.label}

@@ -15,11 +15,13 @@ import {
   LayoutGrid,
   List,
   ChevronRight,
+  PieChart as PieChartIcon,
 } from 'lucide-react';
 import { EmployeeWorkSummaryItem } from '@/lib/dashboard';
 import { useLanguage } from '@/components/LanguageContext';
 import EmployeeHistoryModal from './EmployeeHistoryModal';
 import EmptyState from '@/components/ui/EmptyState';
+import PerformancePieCharts from './PerformancePieCharts';
 
 export interface EmployeePerformanceOverviewProps {
   employees: EmployeeWorkSummaryItem[];
@@ -46,7 +48,7 @@ export default function EmployeePerformanceOverview({
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('targetProgressPercent');
   const [sortAsc, setSortAsc] = useState(false);
-  const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'cards' | 'pie'>('table');
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeWorkSummaryItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -197,6 +199,19 @@ export default function EmployeePerformanceOverview({
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">{L('কার্ড', 'Cards')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('pie')}
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  viewMode === 'pie'
+                    ? 'bg-white text-slate-900 shadow-xs'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+                title={L('৩ডি পাই চার্ট', '3D Pie Chart')}
+              >
+                <PieChartIcon className="w-3.5 h-3.5 text-brand-600" />
+                <span className="hidden sm:inline">{L('৩ডি পাই', '3D Pie')}</span>
               </button>
             </div>
           </div>
@@ -553,6 +568,9 @@ export default function EmployeePerformanceOverview({
             </table>
           </div>
         </div>
+      ) : viewMode === 'pie' ? (
+        /* ============ 3D Pie Chart View ============ */
+        <PerformancePieCharts employees={employees} />
       ) : (
         /* ============ Modern Card Grid View ============ */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
