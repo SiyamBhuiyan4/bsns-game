@@ -135,11 +135,12 @@ export async function POST(req: NextRequest) {
       pEnd = endOfMonth(pStart);
     }
 
-    // Check for overlapping targets of same section, metric, and period type
+    // Check for overlapping targets of same section, metric, and period type (scoped to employee if assigned)
     const existingTargets = await prisma.sectionTarget.findMany({
       where: {
         section_id,
         metric_type,
+        ...(employee_id ? { employee_id } : {}),
       },
     });
 
@@ -154,7 +155,7 @@ export async function POST(req: NextRequest) {
       if (existing.period_type === candidate.period_type) {
         if (existing.period_type === PeriodType.DAILY) {
           return NextResponse.json(
-            { error: 'A daily target for this metric and section already exists. Please update it instead.' },
+            { error: 'A daily target for this metric and employee/section already exists. Please update it instead.' },
             { status: 409 }
           );
         }
@@ -183,6 +184,26 @@ export async function POST(req: NextRequest) {
         employee: true,
       },
     });
+
+    // Auto-assign employee to this group section in Assignment so they receive task links!
+    if (employee_id && section_id) {
+      try {
+        const existingAssign = await prisma.assignment.findFirst({
+          where: { employee_id, section_id },
+        });
+        if (!existingAssign) {
+          await prisma.assignment.create({
+            data: {
+              employee_id,
+              section_id,
+              assigned_by: session.id || session.userId,
+            },
+          });
+        }
+      } catch (assignErr) {
+        console.error('Auto-assignment warning:', assignErr);
+      }
+    }
 
     await createAuditLog({
       actorId: session.id,

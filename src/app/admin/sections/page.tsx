@@ -16,6 +16,9 @@ import {
   X,
   History,
   Link as LinkIcon,
+  UserPlus,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
@@ -71,6 +74,13 @@ export default function SectionsPage() {
   const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  // Assign Employees Modal
+  const [assigningSection, setAssigningSection] = useState<Section | null>(null);
+  const [assignEmployeesList, setAssignEmployeesList] = useState<{ id: string; name: string; email: string }[]>([]);
+  const [assignedEmpIds, setAssignedEmpIds] = useState<string[]>([]);
+  const [assignLoading, setAssignLoading] = useState(false);
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
 
   const fetchSections = useCallback(async () => {
     try {
@@ -236,6 +246,55 @@ export default function SectionsPage() {
     }
   };
 
+  const handleOpenAssign = async (sec: Section) => {
+    setAssigningSection(sec);
+    setAssignLoading(true);
+    setErrorMessage(null);
+    try {
+      const res = await fetch(`/api/admin/sections/${sec.id}/assign`);
+      const data = await res.json();
+      if (res.ok) {
+        setAssignEmployeesList(data.employees || []);
+        setAssignedEmpIds(data.assignedEmployeeIds || []);
+      }
+    } catch {
+      setErrorMessage('কর্মী তালিকা লোড করা যায়নি');
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
+  const handleSaveAssign = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assigningSection) return;
+    setAssignSubmitting(true);
+    try {
+      const res = await fetch(`/api/admin/sections/${assigningSection.id}/assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employeeIds: assignedEmpIds }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccessMessage('কর্মী সফলভাবে এসাইন করা হয়েছে (Employees assigned successfully)');
+        setAssigningSection(null);
+        fetchSections();
+      } else {
+        setErrorMessage(data.error || 'অ্যাসাইনমেন্ট ব্যর্থ হয়েছে');
+      }
+    } catch {
+      setErrorMessage('নেটওয়ার্ক ত্রুটি');
+    } finally {
+      setAssignSubmitting(false);
+    }
+  };
+
+  const toggleEmployeeSelection = (empId: string) => {
+    setAssignedEmpIds((prev) =>
+      prev.includes(empId) ? prev.filter((id) => id !== empId) : [...prev, empId]
+    );
+  };
+
   const filteredSections = sections.filter((s) =>
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (s.description && s.description.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -375,10 +434,15 @@ export default function SectionsPage() {
                       <span className="text-slate-400"> / {sec.total_links}</span>
                     </td>
                     <td className="text-right tabular-nums">
-                      <span className="inline-flex items-center gap-1 text-slate-600">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenAssign(sec)}
+                        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors cursor-pointer border border-transparent hover:border-emerald-200"
+                        title={t('sec.assign_employees', 'কর্মী এসাইন করুন', 'Assign employees')}
+                      >
                         <Users className="h-3.5 w-3.5 text-slate-400" />
-                        {sec.assigned_employees}
-                      </span>
+                        <span className="font-bold">{sec.assigned_employees}</span>
+                      </button>
                     </td>
                     <td>
                       <button
@@ -396,6 +460,17 @@ export default function SectionsPage() {
                     </td>
                     <td className="whitespace-nowrap text-right">
                       <div className="inline-flex items-center gap-0.5">
+                        {/* Assign Employees */}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenAssign(sec)}
+                          className="btn-icon text-brand-700 hover:bg-brand-50"
+                          title={t('sec.assign_employees', 'কর্মী এসাইন করুন', 'Assign employees')}
+                          aria-label={t('sec.assign_employees', 'কর্মী এসাইন করুন', 'Assign employees')}
+                        >
+                          <UserPlus className="h-4 w-4" />
+                        </button>
+
                         {/* Upload CSV */}
                         <Link
                           href={`/admin/sections/${sec.id}/upload`}
@@ -635,6 +710,97 @@ export default function SectionsPage() {
                 {deleteSection.total_links > 0 ? t('sec.deactivate', 'নিষ্ক্রিয় করুন', 'Deactivate') : t('common.delete', 'মুছুন', 'Delete')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Employees Modal */}
+      {assigningSection && (
+        <div className="modal-backdrop">
+          <div className="modal-panel max-w-md">
+            <div className="card-header">
+              <div>
+                <h3 className="card-title">
+                  {t('sec.assign_title', 'গ্রুপে কর্মী এসাইন করুন', 'Assign Employees to Group')}
+                </h3>
+                <p className="card-subtitle">{assigningSection.name}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAssigningSection(null)}
+                className="btn-icon"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveAssign} className="p-5 space-y-4">
+              <p className="text-xs text-slate-500">
+                {t(
+                  'sec.assign_desc',
+                  'যে যে কর্মী এই গ্রুপের লিংকে কাজ করবে তাদের সিলেক্ট করুন:',
+                  'Select the employees who should receive and work on links from this group:'
+                )}
+              </p>
+
+              {assignLoading ? (
+                <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-500">
+                  <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+                  <span>লোড হচ্ছে...</span>
+                </div>
+              ) : assignEmployeesList.length === 0 ? (
+                <div className="rounded-lg bg-slate-50 p-4 text-center text-xs text-slate-500">
+                  কোনো সক্রিয় কর্মী পাওয়া যায়নি। প্রথমে কর্মী যোগ করুন।
+                </div>
+              ) : (
+                <div className="max-h-60 space-y-2 overflow-y-auto divide-y divide-slate-100 rounded-lg border border-slate-200 p-2">
+                  {assignEmployeesList.map((emp) => {
+                    const isSelected = assignedEmpIds.includes(emp.id);
+                    return (
+                      <label
+                        key={emp.id}
+                        className="flex items-center justify-between p-2 rounded-md hover:bg-slate-50 cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-brand-700 font-bold text-xs">
+                            {emp.name.slice(0, 1).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="text-sm font-semibold text-slate-800">{emp.name}</div>
+                            <div className="text-xs text-slate-400">{emp.email}</div>
+                          </div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleEmployeeSelection(emp.id)}
+                          className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setAssigningSection(null)}
+                  className="btn btn-secondary"
+                >
+                  {t('common.cancel', 'বাতিল', 'Cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={assignSubmitting || assignLoading}
+                  className="btn btn-primary"
+                >
+                  {assignSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  {t('common.save', 'সংরক্ষণ করুন', 'Save')}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
