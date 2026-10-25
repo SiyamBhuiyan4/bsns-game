@@ -5,6 +5,7 @@
 
 import prisma from '@/lib/prisma';
 import { normalizeText } from './router';
+import { predict } from './classifier';
 import { ACTION_WORDS, FILLER, OFF_TOPIC, PAGES, TOPICS, WEAK, type Action, type Topic } from './knowledge';
 
 export type NavLink = { href: string; labelBn: string; labelEn: string };
@@ -97,7 +98,8 @@ function detectActions(words: string[]): Set<Action> {
 
 function scoreTopic(words: string[], topic: Topic, actions: Set<Action>, lowerMessage: string): number {
   const phraseHitEarly = topic.phrases?.some((p) => lowerMessage.includes(p)) ?? false;
-  if (!phraseHitEarly && topic.requires && !words.some((w) => topic.requires!.some((k) => wordScore(w, k) >= 2))) return 0;
+  const has = (list?: string[]) => !list || words.some((w) => list.some((k) => wordScore(w, k) >= 2));
+  if (!phraseHitEarly && (!has(topic.requires) || !has(topic.alsoRequires))) return 0;
   let subject = 0;
   let strong = 0;
   let weak = 0;
@@ -180,13 +182,35 @@ function formatSteps(lines: string[]): string {
 
 const GREETING = ['hi', 'hello', 'hey', 'salam', 'assalamualaikum', 'হ্যালো', 'হাই', 'সালাম', 'আসসালামু'];
 const THANKS = ['thanks', 'thank', 'thx', 'ok', 'okay', 'great', 'nice', 'ধন্যবাদ', 'আচ্ছা', 'ওকে'];
-const CAPABILITY = ['what can you do', 'who are you', 'তুমি কে', 'কী করতে পারো', 'কি করতে পারো', 'কী কী পারো', 'কি কি পারো'];
+const CAPABILITY = ['what can you do', 'who are you', 'assistant help with', 'can this assistant', 'assistant diye ki', 'অ্যাসিস্ট্যান্ট দিয়ে কী', 'এই অ্যাসিস্ট্যান্ট', 'this assistant do', 'ki ki korte paro', 'ki korte paro', 'tumi ke', 'tumi ki paro', 'তুমি কে', 'কী করতে পারো', 'কি করতে পারো', 'কী কী পারো', 'কি কি পারো'];
 
 const WHO = ['who', 'কে', 'ke', 'kara', 'কারা'];
-const CHANGED = ['changed', 'deleted', 'removed', 'edited', 'updated', 'বদলেছে', 'মুছেছে', 'মুছে', 'ডিলিট', 'পরিবর্তন', 'korse', 'korsilo', 'korechhe', 'koreche'];
+
+/** Whole questions about other things that happen to use panel words. */
+const OFF_TOPIC_PHRASES = ['make a facebook group', 'create a facebook group', 'facebook group kivabe khul', 'ফেসবুক গ্রুপ কিভাবে খুল', 'ফেসবুক গ্রুপ কীভাবে খুল', 'grow oyster', 'mushroom chash', 'মাশরুম চাষ'];
+
+const UPLOAD_WORDS = ['upload', 'uploads', 'uploaded', 'আপলোড', 'import', 'imported', 'imports', 'ইমপোর্ট', 'csv', 'সিএসভি', 'file', 'files', 'ফাইল'];
+/** Signs that the admin is asking about an upload that already happened. */
+const PAST_WORDS = ['uploaded', 'imported', 'did', 'was', 'last', 'yesterday', 'kal', 'গতকাল', 'before', 'আগে', 'porjonto', 'পর্যন্ত', 'far',
+  'hoise', 'হইছে', 'হয়েছে', 'korsilam', 'করছিলাম', 'করেছিলাম', 'disilam', 'দিছিলাম', 'shesh', 'শেষবার', 'শেষ', 'list', 'লিস্ট', 'তালিকা', 'log',
+  'history', 'itihas', 'ইতিহাস', 'through', 'thikmoto', 'ঠিকমতো', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+  'শনিবার', 'রবিবার', 'সোমবার', 'মঙ্গলবারের', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'mongolbar', 'record', 'records', 'রেকর্ড', 'duplicate', 'duplicates', 'ডুপ্লিকেট'];
+
+/** Report period words; with a number-type word they mean "open that report". */
+const DAY = ['today', 'todays', 'aj', 'ajke', 'ajker', 'আজ', 'আজকে', 'আজকের', 'daily', 'দৈনিক', 'yesterday', 'গতকাল', 'protidin', 'প্রতিদিন'];
+const WEEK = ['week', 'weekly', 'shoptahe', 'soptahe', 'saptahik', 'সপ্তাহে', 'সপ্তাহের', 'সাপ্তাহিক', 'সাপ্তাহিক'];
+const MONTH = ['month', 'monthly', 'mashe', 'maser', 'masik', 'মাসে', 'মাসের', 'মাসিক', 'মান্থলি'];
+const METRIC = ['score', 'স্কোর', 'profit', 'লাভ', 'মুনাফা', 'sales', 'sale', 'bikri', 'বিক্রি', 'post', 'posts', 'posted', 'পোস্ট', 'rank', 'ranking',
+  'র‍্যাংকিং', 'summary', 'numbers', 'hishab', 'হিসাব', 'report', 'রিপোর্ট', 'pdf', 'result', 'stats', 'performance', 'happened', 'dise', 'দিছে'];
+/** If one of these is the subject, the period word is not about a report ("monthly target", "this month's budget"). */
+const NOT_REPORT = ['target', 'targets', 'টার্গেট', 'budget', 'বাজেট', 'plan', 'প্ল্যান', 'lead', 'leads', 'লিড', 'upload', 'আপলোড', 'campaign', 'ক্যাম্পেইন',
+  'ad', 'অ্যাড', 'task', 'কাজ', 'set', 'সেট', 'copy', 'কপি'];
+const GIVE = ['দাও', 'দিন', 'dao', 'deo', 'den'];
+const CHANGED = ['changed', 'deleted', 'removed', 'edited', 'updated', 'published', 'messed', 'এডিট', 'বদলাইছে', 'সরাই', 'সরিয়েছে', 'গন্ডগোল', 'soraye', 'মুছছে', 'বদলেছে', 'মুছেছে', 'মুছে', 'ডিলিট', 'পরিবর্তন', 'korse', 'korsilo', 'korechhe', 'koreche'];
 
 function isWhoChanged(words: string[]): boolean {
   if (!words.some((w) => WHO.includes(w))) return false;
+  if (words.some((w) => ['কাজ', 'kaj', 'work', 'worked'].includes(w))) return false;
   return words.some((w) => CHANGED.some((k) => wordScore(w, k) >= 2));
 }
 
@@ -212,15 +236,61 @@ export function classify(message: string): Classification {
   if (words.length && words.every((w) => GREETING.includes(w) || FILLER.has(w))) return { ...base, kind: 'greeting' };
   if (meaningful.length && meaningful.every((w) => THANKS.includes(w))) return { ...base, kind: 'thanks' };
 
-  const ranked = TOPICS.map((t) => ({ t, s: scoreTopic(words, t, actions, lower) }))
+  const firstHit = (t: Topic) => {
+    const i = words.findIndex((w) => !FILLER.has(w) && !ACTION_SET.has(w) && t.keywords.some((k) => wordScore(w, k) >= 2));
+    return i < 0 ? 999 : i;
+  };
+  // Higher score wins; on a tie, the page whose subject word comes first ("filter leads by marketer").
+  const ranked = TOPICS.map((t) => ({ t, s: scoreTopic(words, t, actions, lower), f: firstHit(t) }))
     .filter((r) => r.s >= 3)
-    .sort((a, b) => b.s - a.s);
+    .sort((a, b) => b.s - a.s || a.f - b.f);
+
+  const hasAny = (list: string[]) => words.some((w) => list.some((k) => wordScore(w, k) >= 2));
+  const byId = (id: string) => TOPICS.find((t) => t.id === id)!;
+  const pick = (id: string) => {
+    const t = byId(id);
+    return { kind: 'topic' as const, topic: t, others: ranked.map((r) => r.t).filter((x) => x !== t), actions, name: extractName(message, t) };
+  };
+
+  if (OFF_TOPIC_PHRASES.some((p) => lower.includes(p))) return { ...base, kind: 'none' };
+
+  // "What did I upload last week?", "did tuesday's import go through?"  -> upload history
+  if (hasAny(UPLOAD_WORDS) && hasAny(PAST_WORDS) && !actions.has('how')) return pick('upload_history');
+
+  // "Sumaiya-কে Dhaka Farmers সেকশন দাও", "jamal ke Agro BD assign koro"  -> assign
+  const toPerson = words.some((w) => (w.length > 3 && w.endsWith('কে')) || w === 'ke');
+  if (toPerson && (hasAny(GIVE) || hasAny(['assign'])) && !hasAny(['task', 'টাস্ক', 'লিংক', 'link', 'links'])) return pick('assign_section');
+
+  // Period + number-type word ("আজকের স্কোর", "monthly score", "mon to sun summary")  -> that report
+  const dated = /\d{1,2}\s*(january|february|march|april|may|june|july|august|september|october|november|december|জানুয়ারি|ফেব্রুয়ারি|মার্চ|এপ্রিল|মে|জুন|জুলাই|আগস্ট|সেপ্টেম্বর|অক্টোবর|নভেম্বর|ডিসেম্বর)/.test(lower);
+  if (hasAny(METRIC) && !hasAny(NOT_REPORT) && !isWhoChanged(words)) {
+    if (dated || hasAny(DAY)) return pick('report_daily');
+    if (hasAny(WEEK) || /mon to sun|শনি থেকে শুক্র|shoni theke/.test(lower)) return pick('report_weekly');
+    if (hasAny(MONTH) || /full month|গত মাস|last month/.test(lower)) return pick('report_monthly');
+  }
 
   // "Who changed / deleted X?" is always an audit-log question.
   if (isWhoChanged(words)) {
     const audit = TOPICS.find((t) => t.id === 'audit')!;
     return { kind: 'topic', topic: audit, others: ranked.map((r) => r.t).filter((t) => t !== audit), actions, name: '' };
   }
+  // Statistical classifier (trained on labelled admin messages) picks the page; the rules above
+  // handle the clear-cut cases and pick the exact task on that page.
+  const mode = process.env.AGENT_MODE ?? 'combo';
+  if (mode !== 'rules') {
+    const [top] = predict(message);
+    const minP = Number(process.env.AGENT_MIN_P ?? 0.9);
+    if (top && top.p >= minP) {
+      if (top.label === 'DECLINE') return { ...base, kind: 'none' };
+      const onPage = (t: Topic) => (top.label === 'ANSWER' ? t.href === null : t.href === top.label);
+      const ruled = ranked.find((r) => onPage(r.t));
+      if (ruled) return pick(ruled.t.id);
+      const fallback =
+        TOPICS.find((t) => onPage(t) && t.actions.some((a) => actions.has(a))) ?? TOPICS.find((t) => onPage(t));
+      if (fallback) return pick(fallback.id);
+    }
+  }
+
   if (!ranked.length) return { ...base, kind: 'none' };
   // Clearly outside the panel ("weekly football schedule", "dollar rate") unless the match is very strong.
   if (words.some((w) => OFF_TOPIC.has(w)) && ranked[0].s < 10) return { ...base, kind: 'none' };

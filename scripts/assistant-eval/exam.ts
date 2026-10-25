@@ -1,5 +1,5 @@
 // Score the assistant on exam.json: independently written admin messages with the expected page.
-// Usage: npx tsx scripts/assistant-eval/exam.ts [--fails]
+// Usage: npx tsx scripts/assistant-eval/exam.ts [--file=exam2.json] [--half=tune|test] [--fails]
 // expect is a page path, "ANSWER" (explanation only, no page) or "DECLINE" (not about the panel).
 
 import { readFileSync } from 'fs';
@@ -7,7 +7,9 @@ import { join } from 'path';
 import { classify } from '../../src/lib/agent/navigator';
 
 type Item = { text: string; expect: string; lang: 'en' | 'bn' | 'bl' };
-const all: Item[] = JSON.parse(readFileSync(join(__dirname, 'exam.json'), 'utf8'));
+// --file=exam2.json picks another exam set (default exam.json).
+const file = process.argv.find((a) => a.startsWith('--file='))?.split('=')[1] ?? 'exam.json';
+const all: Item[] = JSON.parse(readFileSync(join(__dirname, file), 'utf8'));
 const showFails = process.argv.includes('--fails');
 // --half=tune uses even items (for fixing), --half=test uses odd items (never looked at while fixing).
 const half = process.argv.find((a) => a.startsWith('--half='))?.split('=')[1];
