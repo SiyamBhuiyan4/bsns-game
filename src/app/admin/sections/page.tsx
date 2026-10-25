@@ -413,7 +413,7 @@ export default function SectionsPage() {
                   <th>{t('sec.col_name', 'সেকশন', 'Section')}</th>
                   <th>{t('sec.col_desc', 'বিবরণ', 'Description')}</th>
                   <th className="text-right">{t('sec.col_links', 'লিংক (সক্রিয়/মোট)', 'Links (active/total)')}</th>
-                  <th className="text-right">{t('sec.col_team', 'কর্মী', 'Team')}</th>
+                  <th className="text-right">{t('sec.col_team', 'কর্মী', 'Employees')}</th>
                   <th>{t('sec.col_status', 'স্ট্যাটাস', 'Status')}</th>
                   <th className="text-right">
                     <span className="sr-only">{t('sec.col_actions', 'কার্যক্রম', 'Actions')}</span>

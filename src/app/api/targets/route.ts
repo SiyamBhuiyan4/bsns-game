@@ -142,52 +142,71 @@ export async function POST(req: NextRequest) {
         pEnd = endOfMonth(pStart);
       }
 
-      const savedTargets: any[] = [];
-
+      // 1. Auto-merge any duplicate jobs in the incoming payload (e.g. 2 + 3 = 5)
+      const mergedMap = new Map<string, { id?: string; section_id?: string | null; metric_type: MetricType; target_value: number }>();
       for (const job of jobs) {
-        const { id: jobId, section_id, metric_type, target_value } = job;
-        let target: any = null;
-
-        if (jobId) {
-          // Explicit update by ID
-          target = await prisma.sectionTarget.update({
-            where: { id: jobId },
-            data: {
-              target_value,
-              section_id: section_id || null,
-              metric_type,
-              period_type,
-              period_start: pStart,
-              period_end: pEnd,
-              set_by: session.id,
-            },
-            include: { section: true, employee: true },
-          });
+        const secKey = job.metric_type === MetricType.POSTS_DONE ? (job.section_id || 'ALL') : 'NONE';
+        const key = `${job.metric_type}__${secKey}`;
+        const existing = mergedMap.get(key);
+        if (existing) {
+          existing.target_value = Number(existing.target_value) + Number(job.target_value);
+          if (!existing.id && job.id) existing.id = job.id;
         } else {
-          // Check for existing target for this employee + metric + section
+          mergedMap.set(key, { ...job, target_value: Number(job.target_value) });
+        }
+      }
+      const uniqueJobs = Array.from(mergedMap.values());
+
+      // Execute all updates inside a single $transaction so all in-memory changes
+      // are committed in exactly ONE atomic, lightning-fast Telegram snapshot write!
+      const savedTargets = await prisma.$transaction(async (tx: any) => {
+        const results: any[] = [];
+
+        for (const job of uniqueJobs) {
+          const { id: jobId, section_id, metric_type, target_value } = job;
+          let target: any = null;
+
           const overlapWhere: any = {
             metric_type,
             ...(employee_id ? { employee_id } : { employee_id: null }),
             ...(section_id ? { section_id } : { section_id: null }),
           };
-          const existingTargets = await prisma.sectionTarget.findMany({
+          const existingTargets = await tx.sectionTarget.findMany({
             where: overlapWhere,
           });
 
-          const existingDaily = existingTargets.find((e) => e.period_type === period_type);
-          if (existingDaily) {
-            target = await prisma.sectionTarget.update({
-              where: { id: existingDaily.id },
+          // Match existing target by explicit jobId, or matching period_type
+          const matched =
+            (jobId ? existingTargets.find((t: any) => t.id === jobId) : null) ||
+            existingTargets.find((t: any) => t.period_type === period_type) ||
+            (jobId ? await tx.sectionTarget.findUnique({ where: { id: jobId } }) : null);
+
+          if (matched) {
+            target = await tx.sectionTarget.update({
+              where: { id: matched.id },
               data: {
                 target_value,
+                section_id: section_id || null,
+                metric_type,
+                period_type,
                 period_start: pStart,
                 period_end: pEnd,
                 set_by: session.id,
               },
               include: { section: true, employee: true },
             });
+
+            // Clean up any duplicate records in DB for this exact same target
+            const otherDuplicates = existingTargets.filter((t: any) => t.id !== matched.id && t.period_type === period_type);
+            for (const dup of otherDuplicates) {
+              try {
+                await tx.sectionTarget.delete({ where: { id: dup.id } });
+              } catch (delErr) {
+                console.error('Error removing duplicate target record:', delErr);
+              }
+            }
           } else {
-            target = await prisma.sectionTarget.create({
+            target = await tx.sectionTarget.create({
               data: {
                 section_id: section_id || null,
                 employee_id: employee_id ?? null,
@@ -201,51 +220,54 @@ export async function POST(req: NextRequest) {
               include: { section: true, employee: true },
             });
           }
-        }
 
-        // Auto-assign employee to this group section in Assignment ONLY if metric is POSTS_DONE and section_id is chosen
-        if (metric_type === MetricType.POSTS_DONE && employee_id && section_id) {
-          try {
-            const existingAssign = await prisma.assignment.findFirst({
-              where: { employee_id, section_id },
-            });
-            const postLimit = target_value ? Math.round(Number(target_value)) : null;
-            if (!existingAssign) {
-              await prisma.assignment.create({
-                data: {
-                  employee_id,
-                  section_id,
-                  post_limit: postLimit,
-                  assigned_by: session.id || session.userId,
-                },
+          // Auto-assign employee to this group section in Assignment ONLY if metric is POSTS_DONE and section_id is chosen
+          if (metric_type === MetricType.POSTS_DONE && employee_id && section_id) {
+            try {
+              const existingAssign = await tx.assignment.findFirst({
+                where: { employee_id, section_id },
               });
-            } else {
-              await prisma.assignment.update({
-                where: { id: existingAssign.id },
-                data: { post_limit: postLimit },
-              });
+              const postLimit = target_value ? Math.round(Number(target_value)) : null;
+              if (!existingAssign) {
+                await tx.assignment.create({
+                  data: {
+                    employee_id,
+                    section_id,
+                    post_limit: postLimit,
+                    assigned_by: session.id || session.userId,
+                  },
+                });
+              } else {
+                await tx.assignment.update({
+                  where: { id: existingAssign.id },
+                  data: { post_limit: postLimit },
+                });
+              }
+            } catch (assignErr) {
+              console.error('Auto-assignment warning:', assignErr);
             }
-          } catch (assignErr) {
-            console.error('Auto-assignment warning:', assignErr);
           }
+
+          results.push(target);
         }
 
+        // Single batch audit log for the entire operation
         await createAuditLog({
+          tx,
           actorId: session.id,
           action: 'TARGET_SET',
           entity: 'SectionTarget',
-          entityId: target.id,
+          entityId: employee_id || null,
           payload: {
-            section_id: section_id || null,
             employee_id: employee_id || null,
-            metric_type,
-            target_value,
             period_type,
+            jobCount: uniqueJobs.length,
+            jobs: uniqueJobs,
           },
         });
 
-        savedTargets.push(target);
-      }
+        return results;
+      });
 
       return NextResponse.json({ success: true, count: savedTargets.length, targets: savedTargets }, { status: 200 });
     }

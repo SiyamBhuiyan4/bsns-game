@@ -231,7 +231,7 @@ export default function DashboardCharts({
         <div className="card flex min-w-0 flex-col">
           <div className="card-header">
             <div className="min-w-0">
-              <h3 className="card-title">টিমের স্কোর ভাগ</h3>
+              <h3 className="card-title">কর্মীদের স্কোর ভাগ</h3>
               <p className="card-subtitle">Score share by employee</p>
             </div>
           </div>
@@ -312,8 +312,8 @@ export default function DashboardCharts({
       <div className="card min-w-0">
         <div className="card-header">
             <div className="min-w-0">
-              <h3 className="card-title">দৈনিক টিম ট্রেন্ড (৩০ দিন)</h3>
-              <p className="card-subtitle">Daily score per employee, team total</p>
+              <h3 className="card-title">কর্মীদের দৈনিক পারফরম্যান্স (৩০ দিন)</h3>
+              <p className="card-subtitle">Daily score per employee, overall total</p>
             </div>
           </div>
 

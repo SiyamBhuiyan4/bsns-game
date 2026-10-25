@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import {
   resolveDashboardPeriod,
   getAdminDashboardData,
+  computeGroupSectionsOverview,
   CHANNEL_BN_MAP,
 } from '../src/lib/dashboard';
 import prisma from '../src/lib/prisma';
@@ -240,6 +241,91 @@ describe('Admin Dashboard & Charts (Section 8.1 & Section 9)', () => {
         expect(data.periodInfo.endDate).toBe('2026-10-12');
         expect(data.charts.sectionTargets.length).toBe(5);
       });
+    });
+  });
+
+  describe('4. Group Sections Overview & Assigned Employees Drilldown', () => {
+    it('should include assigned employees with quota even when completions are 0', () => {
+      const allGroupSections = [{ id: 'sec-mushroom', name: 'Mushroom groups' }];
+      const allGroupLinks = [
+        { id: 'l1', section_id: 'sec-mushroom', url: 'https://fb.com/1', title: 'Post 1' },
+        { id: 'l2', section_id: 'sec-mushroom', url: 'https://fb.com/2', title: 'Post 2' },
+      ];
+      const activeEmployees = [
+        { id: 'emp-siyam', name: 'Siyam Bhuiyan', email: 'siyam@example.com' },
+        { id: 'emp-other', name: 'Other Employee', email: 'other@example.com' },
+      ];
+      const assignments = [
+        { employee_id: 'emp-siyam', section_id: 'sec-mushroom', post_limit: 5 },
+      ];
+      const periodLinkCompletions: any[] = [];
+
+      const overview = computeGroupSectionsOverview({
+        allGroupSections,
+        allGroupLinks,
+        periodLinkCompletions,
+        activeEmployees,
+        assignments,
+      });
+
+      expect(overview).toHaveLength(1);
+      const mushroom = overview[0];
+      expect(mushroom.id).toBe('sec-mushroom');
+      expect(mushroom.totalLinks).toBe(2);
+      expect(mushroom.completedLinksCount).toBe(0);
+      expect(mushroom.assignedEmployeesCount).toBe(1);
+
+      // Verify employee breakdown contains Siyam with target = 5, total = 0, hasTarget = true
+      const siyamBreakdown = mushroom.employeeBreakdown.find((e) => e.employeeId === 'emp-siyam');
+      expect(siyamBreakdown).toBeDefined();
+      expect(siyamBreakdown?.target).toBe(5);
+      expect(siyamBreakdown?.total).toBe(0);
+      expect(siyamBreakdown?.hasTarget).toBe(true);
+      expect(siyamBreakdown?.percentage).toBe(0);
+    });
+
+    it('should compute average percentage across assigned employees correctly', () => {
+      const allGroupSections = [{ id: 'sec-agro', name: 'Agro groups' }];
+      const allGroupLinks = [
+        { id: 'l1', section_id: 'sec-agro', url: 'https://fb.com/1', title: 'Post 1' },
+      ];
+      const activeEmployees = [
+        { id: 'emp-1', name: 'Employee 1', email: 'e1@example.com' },
+        { id: 'emp-2', name: 'Employee 2', email: 'e2@example.com' },
+      ];
+      const assignments = [
+        { employee_id: 'emp-1', section_id: 'sec-agro', post_limit: 10 },
+        { employee_id: 'emp-2', section_id: 'sec-agro', post_limit: 10 },
+      ];
+      // emp-1 has 8 completions (80%), emp-2 has 4 completions (40%) -> average = (80 + 40) / 2 = 60%
+      const periodLinkCompletions = [
+        ...Array.from({ length: 8 }).map((_, i) => ({
+          id: `c1-${i}`,
+          group_link_id: 'l1',
+          employee_id: 'emp-1',
+          completed_at: new Date(),
+        })),
+        ...Array.from({ length: 4 }).map((_, i) => ({
+          id: `c2-${i}`,
+          group_link_id: 'l1',
+          employee_id: 'emp-2',
+          completed_at: new Date(),
+        })),
+      ];
+
+      const overview = computeGroupSectionsOverview({
+        allGroupSections,
+        allGroupLinks,
+        periodLinkCompletions,
+        activeEmployees,
+        assignments,
+      });
+
+      expect(overview).toHaveLength(1);
+      const agro = overview[0];
+      expect(agro.completedLinksCount).toBe(12);
+      expect(agro.assignedEmployeesCount).toBe(2);
+      expect(agro.averagePercentage).toBe(60);
     });
   });
 });

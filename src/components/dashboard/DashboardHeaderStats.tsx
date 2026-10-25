@@ -78,11 +78,11 @@ export default function DashboardHeaderStats({
             <>
               {formatNum(activeEmployeesCount)}{' '}
               <span className="text-sm font-normal text-slate-500">
-                {L('জন', 'team')}
+                {L('জন কর্মী', 'employees')}
               </span>
             </>
           }
-          note={L('দায়িত্বপ্রাপ্ত সক্রিয় কর্মী', 'Assigned active members')}
+          note={L('দায়িত্বপ্রাপ্ত সক্রিয় কর্মী', 'Assigned active employees')}
         />
 
         <StatCard

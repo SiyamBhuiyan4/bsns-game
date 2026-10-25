@@ -72,6 +72,9 @@ export interface GroupSectionOverviewItem {
   name: string;
   totalLinks: number;
   completedLinksCount: number;
+  assignedEmployeesCount: number;
+  averagePercentage: number;
+  employeeBreakdown: EmployeeSectionBreakdown[];
   completionsHistory: GroupLinkCompletionHistoryItem[];
 }
 
@@ -433,7 +436,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
       select: { id: true, section_id: true, url: true, title: true },
     }),
     prisma.assignment.findMany({
-      select: { employee_id: true, section_id: true },
+      select: { employee_id: true, section_id: true, post_limit: true },
     }),
   ]);
 
@@ -900,6 +903,10 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     allGroupLinks,
     periodLinkCompletions,
     activeEmployees,
+    assignments,
+    allTargets,
+    startUtcDate,
+    endUtcDate,
   });
 
   const employeeWorkSummary = computeEmployeeWorkSummary({
@@ -1195,8 +1202,21 @@ export function computeGroupSectionsOverview(params: {
     completed_at: Date;
   }>;
   activeEmployees: Array<{ id: string; name: string; email: string }>;
+  assignments?: Array<{ employee_id: string; section_id: string; post_limit?: number | null }>;
+  allTargets?: any[];
+  startUtcDate?: Date;
+  endUtcDate?: Date;
 }): GroupSectionOverviewItem[] {
-  const { allGroupSections, allGroupLinks, periodLinkCompletions, activeEmployees } = params;
+  const {
+    allGroupSections,
+    allGroupLinks,
+    periodLinkCompletions,
+    activeEmployees,
+    assignments = [],
+    allTargets = [],
+    startUtcDate,
+    endUtcDate,
+  } = params;
 
   const employeeMap = new Map<string, { id: string; name: string; email: string }>();
   for (const emp of activeEmployees) {
@@ -1215,6 +1235,11 @@ export function computeGroupSectionsOverview(params: {
     // Completions belonging to links in this section
     const secCompletions = periodLinkCompletions.filter((c) => secLinkIdSet.has(c.group_link_id));
 
+    const empCompletionCount = new Map<string, number>();
+    for (const c of secCompletions) {
+      empCompletionCount.set(c.employee_id, (empCompletionCount.get(c.employee_id) || 0) + 1);
+    }
+
     const completionsHistory: GroupLinkCompletionHistoryItem[] = secCompletions.map((c) => {
       const link = linkMap.get(c.group_link_id);
       const emp = employeeMap.get(c.employee_id);
@@ -1230,11 +1255,85 @@ export function computeGroupSectionsOverview(params: {
     // Sort completions history by date descending
     completionsHistory.sort((a, b) => b.date.localeCompare(a.date));
 
+    // Build employee breakdown for all active employees
+    const employeeBreakdown: EmployeeSectionBreakdown[] = [];
+
+    for (const emp of activeEmployees) {
+      const empTotal = empCompletionCount.get(emp.id) || 0;
+
+      // Check if employee is assigned to this group section
+      const assignment = assignments.find(
+        (a) => a.employee_id === emp.id && a.section_id === sec.id
+      );
+
+      // Check SectionTarget for this employee & group section
+      let empTarget = 0;
+      if (startUtcDate && endUtcDate && allTargets.length > 0) {
+        const empSecTargets = allTargets.filter(
+          (t) =>
+            (t.employee_id === emp.id || !t.employee_id) &&
+            t.section_id === sec.id
+        );
+        if (empSecTargets.length > 0) {
+          const effective = calculateEffectiveTargetsForRange(empSecTargets, startUtcDate, endUtcDate);
+          empTarget = Math.round(effective.POSTS_DONE || 0);
+        }
+      }
+
+      // If target not set via SectionTarget, fallback to assignment post_limit
+      if (empTarget === 0 && assignment && assignment.post_limit && assignment.post_limit > 0) {
+        empTarget = assignment.post_limit;
+      }
+
+      const isAssigned = Boolean(assignment);
+      const hasTarget = isAssigned || empTarget > 0;
+      const percentage = empTarget > 0
+        ? Math.min(100, Math.round((empTotal / empTarget) * 100))
+        : (empTotal > 0 ? 100 : 0);
+
+      employeeBreakdown.push({
+        employeeId: emp.id,
+        name: emp.name,
+        email: emp.email,
+        total: empTotal,
+        target: empTarget,
+        percentage,
+        hasTarget,
+      });
+    }
+
+    // Sort: assigned employees first, then by total completions desc
+    employeeBreakdown.sort((a, b) => {
+      if (a.hasTarget !== b.hasTarget) {
+        return a.hasTarget ? -1 : 1;
+      }
+      return b.total - a.total;
+    });
+
+    const assignedEmployees = employeeBreakdown.filter(
+      (e) => e.hasTarget || e.target > 0 || e.total > 0
+    );
+    const assignedEmployeesCount = assignedEmployees.length;
+
+    // Average percentage logic:
+    // "suppose 5 ta employee 5 jon 80 tader target puron korse oi tab er % holo 80 mane sob employee der avarage hobe okhane"
+    const averagePercentage =
+      assignedEmployees.length > 0
+        ? Math.round(
+            assignedEmployees.reduce((sum, e) => sum + e.percentage, 0) / assignedEmployees.length
+          )
+        : secLinks.length > 0
+        ? Math.min(100, Math.round((secCompletions.length / secLinks.length) * 100))
+        : 0;
+
     return {
       id: sec.id,
       name: sec.name,
       totalLinks: secLinks.length,
       completedLinksCount: secCompletions.length,
+      assignedEmployeesCount,
+      averagePercentage,
+      employeeBreakdown,
       completionsHistory,
     };
   });

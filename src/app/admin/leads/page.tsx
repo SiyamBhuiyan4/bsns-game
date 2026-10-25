@@ -467,7 +467,7 @@ export default function AdminLeadsPage() {
       <PageHeader
         icon={<UserPlus className="h-5 w-5" />}
         title={L('লিডস', 'Leads')}
-        subtitle="Team pipeline with full phone numbers"
+        subtitle={L('কর্মীদের পাইপলাইন ও সম্পূর্ণ ফোন নম্বর', 'Employee pipeline with full phone numbers')}
         actions={
           <button
             onClick={() => {

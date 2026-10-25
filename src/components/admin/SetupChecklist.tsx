@@ -22,7 +22,7 @@ export default async function SetupChecklist() {
       title: 'কর্মী যুক্ত করুন',
       detail: 'Create a login for each employee at /login',
       href: '/admin/employees',
-      cta: 'Open Team',
+      cta: 'Open Employees',
     },
     {
       done: sections > 0 && links > 0,
@@ -36,7 +36,7 @@ export default async function SetupChecklist() {
       title: 'কর্মীকে সেকশন বরাদ্দ দিন',
       detail: 'Employees see only their assigned sections',
       href: '/admin/employees',
-      cta: 'Assign in Team',
+      cta: 'Assign Employees',
     },
     {
       done: products > 0,

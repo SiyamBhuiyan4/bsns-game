@@ -206,7 +206,7 @@ export default function EmployeePerformanceOverview({
         <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-4 border-t border-slate-100">
           <div className="flex flex-col p-3 rounded-lg bg-slate-50 border border-slate-100">
             <span className="text-[11px] font-medium text-slate-500 flex items-center justify-between">
-              {L('সক্রিয় কর্মী', 'Active Team')}
+              {L('সক্রিয় কর্মী', 'Active Employees')}
               <Users className="w-3.5 h-3.5 text-slate-400" />
             </span>
             <span className="text-xl font-bold text-slate-900 mt-1 tabular-nums">

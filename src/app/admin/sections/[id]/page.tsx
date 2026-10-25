@@ -328,7 +328,7 @@ export default function SectionDetailsPage({
         />
 
         <StatCard
-          label={t('sec.assigned', 'নির্ধারিত কর্মী', 'Assigned team')}
+          label={t('sec.assigned', 'নির্ধারিত কর্মী', 'Assigned employees')}
           value={assignedCount}
           icon={<Users className="h-4 w-4" />}
           tone="blue"
@@ -344,7 +344,7 @@ export default function SectionDetailsPage({
                 <span>
                   {t('sec.no_team', 'কেউ নির্ধারিত নেই।', 'No one assigned.')}{' '}
                   <Link href="/admin/employees" className="font-medium text-brand-700 hover:underline">
-                    {t('sec.assign_team', 'কর্মী যুক্ত করুন', 'Assign team')}
+                    {t('sec.assign_team', 'কর্মী যুক্ত করুন', 'Assign employees')}
                   </Link>
                 </span>
               )}
@@ -679,7 +679,7 @@ export default function SectionDetailsPage({
                     onChange={(e) => setEditActive(e.target.checked)}
                     className="h-4 w-4 rounded border-slate-300 accent-brand-600"
                   />
-                  {t('sec.link_active', 'সক্রিয় (কর্মীদের কিউতে থাকবে)', 'Active (shown in team queue)')}
+                  {t('sec.link_active', 'সক্রিয় (কর্মীদের কিউতে থাকবে)', 'Active (shown in employee queue)')}
                 </label>
               </div>
 

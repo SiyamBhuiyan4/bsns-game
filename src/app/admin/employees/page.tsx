@@ -17,6 +17,12 @@ import {
   Phone,
   Mail,
   X,
+  Eye,
+  ExternalLink,
+  Clock,
+  Target,
+  ArrowUpRight,
+  Briefcase,
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
@@ -89,6 +95,42 @@ export default function EmployeesPage() {
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [resetSubmitting, setResetSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Employee Work Profile Modal
+  const [workModalEmp, setWorkModalEmp] = useState<EmployeeItem | null>(null);
+  const [workData, setWorkData] = useState<any>(null);
+  const [loadingWorkData, setLoadingWorkData] = useState(false);
+  const [workActiveTab, setWorkActiveTab] = useState<'TASKS' | 'POSTS' | 'LEADS'>('TASKS');
+
+  const handleOpenWorkProfile = async (emp: EmployeeItem) => {
+    setWorkModalEmp(emp);
+    setLoadingWorkData(true);
+    setWorkActiveTab('TASKS');
+    try {
+      const res = await fetch(`/api/admin/employees/${emp.id}/work`);
+      if (res.ok) {
+        const d = await res.json();
+        setWorkData(d);
+      }
+    } catch {
+      setErrorMessage('কর্মীর কাজের বিবরণ লোড করতে সমস্যা হয়েছে');
+    } finally {
+      setLoadingWorkData(false);
+    }
+  };
+
+  const openAssignSectionsModal = (emp: EmployeeItem) => {
+    setAssigningEmp(emp);
+    setAssignSelectedSections(emp.sections.map((s) => s.id));
+    const initialLimits: Record<string, number | ''> = {};
+    emp.sections.forEach((s) => {
+      if (s.post_limit && s.post_limit > 0) {
+        initialLimits[s.id] = s.post_limit;
+      }
+    });
+    setAssignSectionLimits(initialLimits);
+    setErrorMessage(null);
+  };
 
   const fetchEmployees = useCallback(async () => {
     try {
@@ -273,7 +315,7 @@ export default function EmployeesPage() {
     <div className="space-y-6">
       <PageHeader
         icon={<Users className="h-5 w-5" />}
-        title={t('emp.title', 'টিম', 'Team')}
+        title={t('emp.title', 'কর্মী', 'Employees')}
         subtitle={t('emp.subtitle', 'কর্মীদের প্রোফাইল, সেকশন ও পাসওয়ার্ড পরিচালনা করুন', 'Manage employee profiles, sections and passwords')}
         actions={
           <button
@@ -364,9 +406,16 @@ export default function EmployeesPage() {
               </thead>
               <tbody>
                 {filteredEmployees.map((emp) => (
-                  <tr key={emp.id}>
-                    <td>
-                      <div className="font-medium text-slate-900">{emp.name}</div>
+                  <tr key={emp.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td
+                      onClick={() => handleOpenWorkProfile(emp)}
+                      className="cursor-pointer group"
+                      title={t('emp.click_view_work', 'কাজের বিবরণ ও ইতিহাস দেখতে ক্লিক করুন', 'Click to view employee work & history')}
+                    >
+                      <div className="font-semibold text-slate-900 group-hover:text-brand-700 flex items-center gap-1.5 transition-colors">
+                        <span>{emp.name}</span>
+                        <Eye className="h-3.5 w-3.5 text-slate-400 group-hover:text-brand-600 transition-colors opacity-70 group-hover:opacity-100" />
+                      </div>
                       <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
                         <Phone className="h-3 w-3" />
                         <span className="tabular-nums">{emp.phone || '—'}</span>
@@ -411,6 +460,15 @@ export default function EmployeesPage() {
 
                     <td className="whitespace-nowrap text-right">
                       <div className="inline-flex items-center gap-0.5">
+                        {/* View Work & Tasks */}
+                        <button
+                          onClick={() => handleOpenWorkProfile(emp)}
+                          className="btn-icon text-brand-700 hover:bg-brand-50"
+                          title={t('emp.view_work', 'কাজের বিবরণ ও হিস্ট্রি দেখুন', 'View work & history')}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+
                         {/* Assign Sections */}
                         <button
                           onClick={() => {
@@ -825,6 +883,326 @@ export default function EmployeesPage() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Employee Work & Tasks Detail Modal */}
+      {workModalEmp && (
+        <div className="modal-backdrop">
+          <div className="modal-panel max-w-3xl max-h-[92vh] flex flex-col p-0">
+            {/* Header */}
+            <div className="card-header p-5 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-brand-600 to-emerald-500 text-white font-bold text-lg shadow-sm">
+                  {workModalEmp.name.slice(0, 1).toUpperCase()}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="card-title text-base sm:text-lg">{workModalEmp.name}</h3>
+                    <span className={`badge ${workModalEmp.is_active ? 'badge-green' : 'badge-gray'}`}>
+                      {workModalEmp.is_active ? t('emp.active', 'সক্রিয়', 'Active') : t('emp.inactive', 'নিষ্ক্রিয়', 'Inactive')}
+                    </span>
+                  </div>
+                  <p className="card-subtitle text-xs flex items-center gap-3 mt-0.5">
+                    <span className="flex items-center gap-1">
+                      <Mail className="h-3 w-3 text-slate-400" /> {workModalEmp.email}
+                    </span>
+                    {workModalEmp.phone && (
+                      <span className="flex items-center gap-1">
+                        <Phone className="h-3 w-3 text-slate-400" /> {workModalEmp.phone}
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setWorkModalEmp(null)}
+                className="btn-icon"
+                aria-label="Close"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+              {loadingWorkData ? (
+                <div className="flex flex-col items-center justify-center py-16 text-slate-500 gap-2">
+                  <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+                  <span className="text-sm">{t('emp.loading_work', 'কাজের বিবরণ লোড হচ্ছে...', 'Loading work profile...')}</span>
+                </div>
+              ) : (
+                <>
+                  {/* Quick Stats Grid */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
+                      <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                        {t('emp.today_posts', 'আজকের সম্পন্ন পোস্ট', 'Today Posts')}
+                      </div>
+                      <div className="text-xl font-bold font-mono text-emerald-700 mt-1">
+                        {workData?.stats?.todayCompletedLinks ?? 0}
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
+                      <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                        {t('emp.total_posts', 'মোট সম্পন্ন পোস্ট', 'Total Posts')}
+                      </div>
+                      <div className="text-xl font-bold font-mono text-blue-700 mt-1">
+                        {workData?.stats?.totalCompletedLinks ?? workModalEmp.total_completed_links}
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
+                      <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                        {t('emp.total_leads', 'মোট লিড সংগ্রহ', 'Total Leads')}
+                      </div>
+                      <div className="text-xl font-bold font-mono text-indigo-700 mt-1">
+                        {workData?.stats?.totalLeads ?? workModalEmp.total_leads}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sub-Group Post Limits Live Status Banner */}
+                  {workData?.assignedSections && workData.assignedSections.length > 0 && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 space-y-2">
+                      <div className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                        <Layers className="h-4 w-4 text-emerald-600" />
+                        <span>{t('emp.subgroup_quotas', 'সাব-গ্রুপভিত্তিক পোস্ট কোটা ও লিমিট স্ট্যাটাস', 'Sub-Group Post Quotas & Live Status')}</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                        {workData.assignedSections.map((sec: any) => (
+                          <div key={sec.section_id} className="bg-white rounded-lg p-2.5 border border-emerald-100 flex items-center justify-between shadow-xs">
+                            <div>
+                              <div className="font-semibold text-xs text-slate-800">{sec.section_name}</div>
+                              <div className="text-[11px] text-slate-500">
+                                {sec.post_limit ? `${t('emp.quota', 'কোটা', 'Quota')}: ${sec.post_limit}টি` : t('emp.no_limit', 'সীমাহীন', 'No Limit')}
+                              </div>
+                            </div>
+                            <div>
+                              {sec.is_limit_reached ? (
+                                <span className="badge badge-red text-[11px]">
+                                  🔒 {t('emp.limit_reached', 'কোটা পূর্ণ', 'Quota Met')} ({sec.today_completed}/{sec.post_limit})
+                                </span>
+                              ) : sec.post_limit ? (
+                                <span className="badge badge-green text-[11px]">
+                                  {sec.today_completed} / {sec.post_limit} ({t('emp.remaining', 'বাকি', 'Left')}: {sec.remaining})
+                                </span>
+                              ) : (
+                                <span className="badge badge-gray text-[11px]">
+                                  {sec.today_completed} {t('emp.done', 'টি সম্পন্ন', 'done')}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Navigation Tabs */}
+                  <div className="flex items-center gap-2 border-b border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setWorkActiveTab('TASKS')}
+                      className={`py-2 px-3 text-xs font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+                        workActiveTab === 'TASKS'
+                          ? 'border-brand-600 text-brand-700'
+                          : 'border-transparent text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      <Target className="h-3.5 w-3.5" />
+                      <span>{t('emp.tab_tasks', 'কাজের তালিকা ও লক্ষ্যমাত্রা', 'Assigned Jobs & Targets')}</span>
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-700">
+                        {workData?.targets?.length ?? 0}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setWorkActiveTab('POSTS')}
+                      className={`py-2 px-3 text-xs font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+                        workActiveTab === 'POSTS'
+                          ? 'border-brand-600 text-brand-700'
+                          : 'border-transparent text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      <Layers className="h-3.5 w-3.5" />
+                      <span>{t('emp.tab_posts', 'পোস্টিং হিস্ট্রি (কাজগুলো)', 'Posting History')}</span>
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-700">
+                        {workData?.recentCompletions?.length ?? 0}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setWorkActiveTab('LEADS')}
+                      className={`py-2 px-3 text-xs font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+                        workActiveTab === 'LEADS'
+                          ? 'border-brand-600 text-brand-700'
+                          : 'border-transparent text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      <Users className="h-3.5 w-3.5" />
+                      <span>{t('emp.tab_leads', 'সংগৃহীত লিডসমূহ', 'Leads')}</span>
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-700">
+                        {workData?.recentLeads?.length ?? 0}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Tab 1: Assigned Targets / Jobs */}
+                  {workActiveTab === 'TASKS' && (
+                    <div className="space-y-3">
+                      {!workData?.targets || workData.targets.length === 0 ? (
+                        <div className="text-center py-8 text-xs text-slate-400">
+                          {t('emp.no_tasks', 'এই কর্মচারীর জন্য কোনো টার্গেট বা কাজ এখনও নির্ধারণ করা হয়নি', 'No targets or jobs assigned yet')}
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {workData.targets.map((tgt: any) => (
+                            <div key={tgt.id} className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2 shadow-xs">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="font-semibold text-xs text-slate-800">{tgt.metric_type}</div>
+                                  {tgt.section_name && (
+                                    <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                                      <Layers className="h-3 w-3 text-slate-400" />
+                                      <span>{tgt.section_name}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                <span className={`badge text-[11px] ${tgt.is_met ? 'badge-green' : 'badge-blue'}`}>
+                                  {tgt.percentage}% {tgt.is_met ? t('emp.met', 'সম্পন্ন', 'Met') : ''}
+                                </span>
+                              </div>
+
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-xs text-slate-600">
+                                  <span>{t('emp.progress', 'অগ্রগতি', 'Progress')}</span>
+                                  <span className="font-mono font-bold">
+                                    {tgt.achieved_value} / {tgt.target_value}
+                                  </span>
+                                </div>
+                                <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all ${tgt.is_met ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                                    style={{ width: `${tgt.percentage}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Tab 2: Recent Link Completions History */}
+                  {workActiveTab === 'POSTS' && (
+                    <div className="space-y-2">
+                      {!workData?.recentCompletions || workData.recentCompletions.length === 0 ? (
+                        <div className="text-center py-8 text-xs text-slate-400">
+                          {t('emp.no_completions', 'এখনও কোনো লিংক পোস্ট সম্পন্ন করা হয়নি', 'No completed link posts yet')}
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-white max-h-72 overflow-y-auto">
+                          {workData.recentCompletions.map((comp: any) => (
+                            <div key={comp.id} className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="badge badge-gray text-[10px] shrink-0 font-medium">
+                                    {comp.section_name}
+                                  </span>
+                                  <span className="font-semibold text-xs text-slate-800 truncate">
+                                    {comp.title}
+                                  </span>
+                                </div>
+                                <a
+                                  href={comp.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[11px] text-brand-600 hover:text-brand-800 hover:underline truncate inline-flex items-center gap-1 mt-0.5"
+                                >
+                                  <span className="truncate">{comp.url}</span>
+                                  <ExternalLink className="h-2.5 w-2.5 shrink-0" />
+                                </a>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <span className="badge badge-green text-[10px] mb-1">
+                                  ✓ {t('emp.done', 'সম্পন্ন', 'Done')}
+                                </span>
+                                <div className="text-[10px] text-slate-400 flex items-center gap-1 justify-end">
+                                  <Clock className="h-2.5 w-2.5" />
+                                  <span>{new Date(comp.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Tab 3: Recent Leads */}
+                  {workActiveTab === 'LEADS' && (
+                    <div className="space-y-2">
+                      {!workData?.recentLeads || workData.recentLeads.length === 0 ? (
+                        <div className="text-center py-8 text-xs text-slate-400">
+                          {t('emp.no_leads', 'এই কর্মচারীর কোনো সংগৃহীত লিড নেই', 'No leads collected yet')}
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-white max-h-72 overflow-y-auto">
+                          {workData.recentLeads.map((lead: any) => (
+                            <div key={lead.id} className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors">
+                              <div>
+                                <div className="font-semibold text-xs text-slate-800">{lead.name}</div>
+                                <div className="text-[11px] text-slate-500">{lead.phone} • {lead.product_name}</div>
+                              </div>
+                              <span className="badge badge-blue text-[11px]">{lead.status}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+              <a
+                href={`/admin/targets`}
+                className="btn btn-secondary text-xs flex items-center gap-1.5"
+              >
+                <Target className="h-3.5 w-3.5 text-brand-600" />
+                <span>{t('emp.assign_target_btn', 'টার্গেট ও কাজ দিন', 'Assign Jobs & Targets')}</span>
+                <ArrowUpRight className="h-3 w-3 text-slate-400" />
+              </a>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const current = workModalEmp;
+                    setWorkModalEmp(null);
+                    if (current) openAssignSectionsModal(current);
+                  }}
+                  className="btn btn-secondary text-xs flex items-center gap-1.5"
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                  <span>{t('emp.change_sections', 'সেকশন পরিবর্তন', 'Change Sections')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWorkModalEmp(null)}
+                  className="btn btn-primary text-xs"
+                >
+                  {t('common.close', 'বন্ধ করুন', 'Close')}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

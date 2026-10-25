@@ -212,16 +212,21 @@ export default function SectionDetailModal({
       total: emp.total,
       target: 0,
       percentage: Math.min(100, Math.round((emp.total / totalLinks) * 100)),
+      hasTarget: false,
       lastDate: emp.lastDate,
     }));
   }, [isStandard, groupSec]);
 
   // Combined employee breakdown
   const rawEmployeeList = useMemo(() => {
-    return isStandard
-      ? standardSec?.employeeBreakdown || []
-      : groupEmployeesBreakdown;
-  }, [isStandard, standardSec, groupEmployeesBreakdown]);
+    if (isStandard) {
+      return standardSec?.employeeBreakdown || [];
+    }
+    if (groupSec?.employeeBreakdown && groupSec.employeeBreakdown.length > 0) {
+      return groupSec.employeeBreakdown;
+    }
+    return groupEmployeesBreakdown;
+  }, [isStandard, standardSec, groupSec, groupEmployeesBreakdown]);
 
   // Filtered and sorted employee list
   const filteredEmployees = useMemo(() => {
@@ -229,9 +234,9 @@ export default function SectionDetailModal({
 
     // If 'assigned' filter is chosen, show only assigned (has target or achieved total)
     // If no one is assigned, fallback to all employees so the view is never empty
-    const hasAssigned = list.some((emp) => emp.target > 0 || emp.total > 0);
+    const hasAssigned = list.some((emp) => emp.hasTarget || emp.target > 0 || emp.total > 0);
     if (employeeFilter === 'assigned' && hasAssigned) {
-      list = list.filter((emp) => emp.target > 0 || emp.total > 0);
+      list = list.filter((emp) => emp.hasTarget || emp.target > 0 || emp.total > 0);
     }
 
     if (searchTerm.trim()) {
@@ -371,17 +376,19 @@ export default function SectionDetailModal({
       : standardSec!.totalTarget > 0
       ? Math.round((standardSec!.totalAchieved / standardSec!.totalTarget) * 100)
       : null
+    : groupSec?.averagePercentage !== undefined
+    ? groupSec.averagePercentage
     : groupSec!.totalLinks > 0
     ? Math.round((groupSec!.completedLinksCount / groupSec!.totalLinks) * 100)
     : null;
 
   const assignedEmployeesCount = isStandard
     ? standardSec!.assignedEmployeesCount || standardSec!.activeEmployeesCount
-    : rawEmployeeList.length;
+    : (groupSec?.assignedEmployeesCount ?? rawEmployeeList.filter((e) => e.hasTarget || e.target > 0 || e.total > 0).length);
 
   const activeEmployeesCount = isStandard
     ? standardSec!.activeEmployeesCount
-    : rawEmployeeList.length;
+    : rawEmployeeList.filter((e) => e.total > 0).length;
 
   const totalLogsCount = isStandard
     ? standardSec!.historyLogs.length
@@ -500,11 +507,11 @@ export default function SectionDetailModal({
           {/* Card 3: Assigned / Active Employees */}
           <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
             <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-              <span>{L('দায়িত্বপ্রাপ্ত কর্মী', 'Assigned Team')}</span>
+              <span>{L('দায়িত্বপ্রাপ্ত কর্মী', 'Assigned Employees')}</span>
               <Users className="h-4 w-4 text-violet-600" />
             </div>
             <div className="text-lg font-bold text-slate-900 tracking-tight">
-              {formatNum(assignedEmployeesCount)} <span className="text-xs font-normal text-slate-500">{L('জন', 'members')}</span>
+              {formatNum(assignedEmployeesCount)} <span className="text-xs font-normal text-slate-500">{L('জন কর্মী', 'employees')}</span>
             </div>
             <div className="text-[11px] text-slate-400 mt-0.5">
               {isStandard
@@ -634,7 +641,7 @@ export default function SectionDetailModal({
                         : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    {L('সকল কর্মী', 'All Team')} ({formatNum(rawEmployeeList.length)})
+                    {L('সকল কর্মী', 'All Employees')} ({formatNum(rawEmployeeList.length)})
                   </button>
                 </div>
                 <p className="text-[11px] text-slate-400 hidden sm:block">

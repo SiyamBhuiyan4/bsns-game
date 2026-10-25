@@ -20,6 +20,11 @@ import {
   Briefcase,
   ListPlus,
   Sparkles,
+  CheckSquare,
+  Square,
+  Filter,
+  ChevronDown,
+  Search,
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
@@ -121,7 +126,19 @@ export default function AdminTargetsPage() {
   // Filters
   const [filterEmployee, setFilterEmployee] = useState('ALL');
   const [filterPeriod, setFilterPeriod] = useState('ALL');
-  const [filterMetric, setFilterMetric] = useState('ALL');
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
+  const [isMetricDropdownOpen, setIsMetricDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const toggleMetricFilter = (metricKey: string) => {
+    if (metricKey === 'ALL') {
+      setSelectedMetrics([]);
+    } else {
+      setSelectedMetrics((prev) =>
+        prev.includes(metricKey) ? prev.filter((k) => k !== metricKey) : [...prev, metricKey]
+      );
+    }
+  };
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -174,9 +191,55 @@ export default function AdminTargetsPage() {
     }
   }, []);
 
+  // Fast background refresher for targets only (avoids re-fetching employees and sections)
+  const fetchTargetsOnly = useCallback(async () => {
+    try {
+      const res = await fetch('/api/targets');
+      if (res.ok) {
+        const d = await res.json();
+        setTargets(d.targets || []);
+      }
+    } catch {}
+  }, []);
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Helper to merge identical jobs (same metric and same section) by summing target quantities (e.g. 2 + 3 = 5)
+  const mergeJobsList = useCallback(
+    (list: JobFormItem[]): { mergedList: JobFormItem[]; mergedAny: boolean; mergedSummary: string } => {
+      const map = new Map<string, JobFormItem>();
+      let mergedAny = false;
+      let mergedSummary = '';
+
+      for (const item of list) {
+        const secKey = item.metric_type === 'POSTS_DONE' ? (item.section_id || '') : '';
+        const key = `${item.metric_type}__${secKey}`;
+
+        if (map.has(key)) {
+          const prev = map.get(key)!;
+          const val1 = Number(prev.target_value) || 0;
+          const val2 = Number(item.target_value) || 0;
+          const sum = val1 + val2;
+          prev.target_value = String(sum);
+          if (!prev.id && item.id) prev.id = item.id;
+          mergedAny = true;
+
+          const cfg = METRIC_CONFIG[item.metric_type];
+          const sec = sections.find((s) => s.id === item.section_id);
+          const taskLabel = cfg ? (lang === 'en' ? cfg.en : cfg.bn) : item.metric_type;
+          const secLabel = sec?.name ? ` [${sec.name}]` : '';
+          mergedSummary = `${taskLabel}${secLabel}: ${val1} + ${val2} = ${sum}`;
+        } else {
+          map.set(key, { ...item });
+        }
+      }
+
+      return { mergedList: Array.from(map.values()), mergedAny, mergedSummary };
+    },
+    [sections, lang]
+  );
 
   // Open Add Modal
   const handleOpenAdd = () => {
@@ -208,48 +271,66 @@ export default function AdminTargetsPage() {
       period_start: t.period_start ? t.period_start.slice(0, 10) : new Date().toISOString().slice(0, 10),
     });
 
-    // Find all targets of this same employee with the same period so admin sees all their jobs
+    // Find all targets of this same employee with the same period
     const empTargets = targets.filter(
       (other) =>
         (other.employee_id || other.employee?.id) === empId &&
         other.period_type === t.period_type
     );
 
-    if (empTargets.length > 0) {
-      setJobs(
-        empTargets.map((item) => ({
-          id: item.id,
-          metric_type: item.metric_type,
-          section_id: item.section_id || '',
-          target_value: String(item.target_value),
-        }))
-      );
-    } else {
-      setJobs([
-        {
-          id: t.id,
-          metric_type: t.metric_type,
-          section_id: t.section_id || '',
-          target_value: String(t.target_value),
-        },
-      ]);
-    }
+    const rawList =
+      empTargets.length > 0
+        ? empTargets.map((item) => ({
+            id: item.id,
+            metric_type: item.metric_type,
+            section_id: item.section_id || '',
+            target_value: String(item.target_value),
+          }))
+        : [
+            {
+              id: t.id,
+              metric_type: t.metric_type,
+              section_id: t.section_id || '',
+              target_value: String(t.target_value),
+            },
+          ];
 
+    // Automatically auto-merge any existing duplicate targets (e.g. 2 + 3 = 5)
+    const { mergedList } = mergeJobsList(rawList);
+    setJobs(mergedList);
     setErrorMsg('');
     setShowModal(true);
   };
 
-  // Add Another Job
+  // Add Another Job (picks next unused metric/section to avoid duplicate by default)
   const handleAddJob = () => {
-    const existingMetrics = jobs.map((j) => j.metric_type);
-    const metricKeys = Object.keys(METRIC_CONFIG);
-    const nextMetric = metricKeys.find((m) => !existingMetrics.includes(m)) || 'CONFIRMED_ORDERS';
+    const usedKeys = new Set(
+      jobs.map((j) => `${j.metric_type}__${j.metric_type === 'POSTS_DONE' ? (j.section_id || '') : ''}`)
+    );
+
+    let candidateMetric = 'CONFIRMED_ORDERS';
+    let candidateSection = '';
+
+    // Check if there is another section for POSTS_DONE not yet used
+    const unusedSection = sections.find((s) => !usedKeys.has(`POSTS_DONE__${s.id}`));
+    if (unusedSection && !usedKeys.has(`POSTS_DONE__${unusedSection.id}`)) {
+      candidateMetric = 'POSTS_DONE';
+      candidateSection = unusedSection.id;
+    } else {
+      for (const m of Object.keys(METRIC_CONFIG)) {
+        if (m !== 'POSTS_DONE' && !usedKeys.has(`${m}__`)) {
+          candidateMetric = m;
+          break;
+        }
+      }
+    }
+
     setJobs((prev) => [
       ...prev,
       {
-        metric_type: nextMetric,
-        section_id: nextMetric === 'POSTS_DONE' ? (sections[0]?.id || '') : '',
-        target_value: nextMetric === 'SALES_AMOUNT' ? '10000' : '5',
+        metric_type: candidateMetric,
+        section_id: candidateSection,
+        target_value: candidateMetric === 'SALES_AMOUNT' ? '10000' : '5',
       },
     ]);
   };
@@ -260,52 +341,80 @@ export default function AdminTargetsPage() {
     setJobs((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  // Update specific field in a job item
+  // Update specific field in a job item (with auto-merge on duplicate metric/section)
   const handleUpdateJob = (index: number, field: keyof JobFormItem, value: string) => {
-    setJobs((prev) =>
-      prev.map((job, idx) => {
-        if (idx !== index) return job;
-        const updated = { ...job, [field]: value };
-        if (field === 'metric_type' && value === 'POSTS_DONE' && !updated.section_id) {
-          updated.section_id = sections[0]?.id || '';
-        }
-        return updated;
-      })
-    );
+    const updatedList = jobs.map((job, idx) => {
+      if (idx !== index) return job;
+      const updated = { ...job, [field]: value };
+      if (field === 'metric_type' && value === 'POSTS_DONE' && !updated.section_id) {
+        updated.section_id = sections[0]?.id || '';
+      }
+      return updated;
+    });
+
+    // If changing metric or section, auto-merge if duplicate occurs (e.g. 2 + 3 = 5)
+    if (field === 'metric_type' || field === 'section_id') {
+      const { mergedList, mergedAny, mergedSummary } = mergeJobsList(updatedList);
+      if (mergedAny) {
+        setJobs(mergedList);
+        setSuccessMsg(
+          L(
+            `একই কাজের ধরন থাকায় কাজ দুটি স্বয়ংক্রিয়ভাবে মার্জ হয়ে গেছে (${mergedSummary})`,
+            `Duplicate jobs were automatically merged into one (${mergedSummary})`
+          )
+        );
+        setTimeout(() => setSuccessMsg(''), 4000);
+        return;
+      }
+    }
+
+    setJobs(updatedList);
   };
 
-  // Load employee's existing jobs
+  // Load employee's existing jobs (with auto-merge)
   const handleLoadEmployeeExistingJobs = (empId: string) => {
     if (!empId) return;
     const empTargets = targets.filter(
       (t) => (t.employee_id || t.employee?.id) === empId && t.period_type === form.period_type
     );
     if (empTargets.length > 0) {
-      setJobs(
-        empTargets.map((item) => ({
-          id: item.id,
-          metric_type: item.metric_type,
-          section_id: item.section_id || '',
-          target_value: String(item.target_value),
-        }))
-      );
+      const rawList = empTargets.map((item) => ({
+        id: item.id,
+        metric_type: item.metric_type,
+        section_id: item.section_id || '',
+        target_value: String(item.target_value),
+      }));
+      const { mergedList, mergedAny, mergedSummary } = mergeJobsList(rawList);
+      setJobs(mergedList);
+      if (mergedAny) {
+        setSuccessMsg(
+          L(
+            `বিদ্যমান ডুপ্লিকেট কাজগুলো মার্জ করা হয়েছে (${mergedSummary})`,
+            `Existing duplicate jobs were merged (${mergedSummary})`
+          )
+        );
+        setTimeout(() => setSuccessMsg(''), 4000);
+      }
     }
   };
 
-  // Save Target (Add or Update Multiple Jobs)
+  // Save Target (Add or Update Multiple Jobs, with auto-merge)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.employee_id) {
       setErrorMsg(L('অনুগ্রহ করে একজন কর্মচারী নির্বাচন করুন', 'Please select an employee'));
       return;
     }
-    if (!jobs || jobs.length === 0) {
+
+    // Run auto-merge before submitting so duplicates are always merged
+    const { mergedList } = mergeJobsList(jobs);
+    if (!mergedList || mergedList.length === 0) {
       setErrorMsg(L('কমপক্ষে একটি কাজ যোগ করুন', 'Please add at least one job'));
       return;
     }
 
-    for (let i = 0; i < jobs.length; i++) {
-      const j = jobs[i];
+    for (let i = 0; i < mergedList.length; i++) {
+      const j = mergedList[i];
       if (!j.target_value || Number(j.target_value) <= 0) {
         setErrorMsg(L(`কাজ #${i + 1}-এর জন্য সঠিক সংখ্যা দিন`, `Please enter a valid target for Job #${i + 1}`));
         return;
@@ -322,7 +431,7 @@ export default function AdminTargetsPage() {
           employee_id: form.employee_id,
           period_type: form.period_type,
           period_start: form.period_start || null,
-          jobs: jobs.map((j) => ({
+          jobs: mergedList.map((j) => ({
             id: j.id,
             metric_type: j.metric_type,
             section_id: j.metric_type === 'POSTS_DONE' ? (j.section_id || null) : null,
@@ -334,15 +443,18 @@ export default function AdminTargetsPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Failed to save targets');
 
+      // Optimistically close modal immediately
+      setShowModal(false);
+      setSubmitting(false);
+
       setSuccessMsg(
         L(
-          `কর্মচারীর ${jobs.length}টি কাজ সফলভাবে সংরক্ষণ করা হয়েছে`,
-          `Successfully saved ${jobs.length} jobs/targets for employee`
+          `কর্মচারীর ${mergedList.length}টি কাজ সফলভাবে সংরক্ষণ করা হয়েছে`,
+          `Successfully saved ${mergedList.length} jobs/targets for employee`
         )
       );
 
-      setShowModal(false);
-      fetchData();
+      fetchTargetsOnly();
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err: any) {
       setErrorMsg(err.message || L('টার্গেট সংরক্ষণ ব্যর্থ হয়েছে', 'Failed to save targets'));
@@ -360,7 +472,7 @@ export default function AdminTargetsPage() {
       const res = await fetch(`/api/targets/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setSuccessMsg(L('টার্গেট মুছে ফেলা হয়েছে', 'Target deleted successfully'));
-        fetchData();
+        fetchTargetsOnly();
         setTimeout(() => setSuccessMsg(''), 4000);
       } else {
         const d = await res.json();
@@ -379,10 +491,27 @@ export default function AdminTargetsPage() {
         if (empId !== filterEmployee) return false;
       }
       if (filterPeriod !== 'ALL' && t.period_type !== filterPeriod) return false;
-      if (filterMetric !== 'ALL' && t.metric_type !== filterMetric) return false;
+      if (selectedMetrics.length > 0 && !selectedMetrics.includes(t.metric_type)) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const empName = t.employee?.name?.toLowerCase() || '';
+        const empEmail = t.employee?.email?.toLowerCase() || '';
+        const secName = t.section?.name?.toLowerCase() || '';
+        const metricBn = METRIC_CONFIG[t.metric_type]?.bn?.toLowerCase() || '';
+        const metricEn = METRIC_CONFIG[t.metric_type]?.en?.toLowerCase() || '';
+        if (
+          !empName.includes(q) &&
+          !empEmail.includes(q) &&
+          !secName.includes(q) &&
+          !metricBn.includes(q) &&
+          !metricEn.includes(q)
+        ) {
+          return false;
+        }
+      }
       return true;
     });
-  }, [targets, filterEmployee, filterPeriod, filterMetric]);
+  }, [targets, filterEmployee, filterPeriod, selectedMetrics, searchQuery]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -464,11 +593,37 @@ export default function AdminTargetsPage() {
         />
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="card p-4">
-        <div className="flex flex-wrap items-center gap-3">
+      {/* Advanced Multi-Option Filter Toolbar */}
+      <div className="card p-4 space-y-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+          {/* Search Box */}
+          <div className="sm:col-span-4">
+            <label className="block text-xs font-semibold text-slate-500 mb-1">
+              {L('খুঁজুন (Search)', 'Search Employee / Section')}
+            </label>
+            <div className="relative">
+              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder={L('কর্মী, গ্রুপ বা কাজের নাম...', 'Employee, group or task name...')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Employee Filter */}
-          <div className="flex-1 min-w-[200px]">
+          <div className="sm:col-span-3">
             <label className="block text-xs font-semibold text-slate-500 mb-1">
               {L('কর্মচারী দিয়ে ফিল্টার', 'Filter by Employee')}
             </label>
@@ -487,7 +642,7 @@ export default function AdminTargetsPage() {
           </div>
 
           {/* Period Filter */}
-          <div className="w-40">
+          <div className="sm:col-span-2">
             <label className="block text-xs font-semibold text-slate-500 mb-1">
               {L('সময়কাল', 'Period')}
             </label>
@@ -503,24 +658,172 @@ export default function AdminTargetsPage() {
             </select>
           </div>
 
-          {/* Metric Filter */}
-          <div className="w-56">
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
-              {L('কাজের ধরন', 'Task / Metric')}
-            </label>
-            <select
-              value={filterMetric}
-              onChange={(e) => setFilterMetric(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-brand-500 focus:outline-none"
+          {/* Advanced Multi-Select Task / Metric Filter */}
+          <div className="sm:col-span-3 relative">
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-slate-500">
+                {L('কাজের ধরন (Multiple Options)', 'Tasks / Metrics (Multi-Select)')}
+              </label>
+              {selectedMetrics.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedMetrics([])}
+                  className="text-[11px] text-brand-600 hover:text-brand-800 font-semibold"
+                >
+                  {L('ক্লিয়ার', 'Reset')}
+                </button>
+              )}
+            </div>
+
+            {/* Dropdown Toggle Button */}
+            <button
+              type="button"
+              onClick={() => setIsMetricDropdownOpen((prev) => !prev)}
+              className={`w-full flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors cursor-pointer ${
+                selectedMetrics.length > 0
+                  ? 'border-emerald-500 bg-emerald-50/50 text-emerald-900 font-medium'
+                  : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50'
+              }`}
             >
-              <option value="ALL">{L('সব কাজ (All Tasks)', 'All Tasks')}</option>
-              {Object.entries(METRIC_CONFIG).map(([key, cfg]) => (
-                <option key={key} value={key}>
-                  {L(cfg.bn, cfg.en)}
-                </option>
-              ))}
-            </select>
+              <span className="truncate">
+                {selectedMetrics.length === 0
+                  ? L('সব কাজ (All Tasks)', 'All Tasks')
+                  : L(`${selectedMetrics.length}টি কাজ নির্বাচিত`, `${selectedMetrics.length} Tasks Selected`)}
+              </span>
+              <div className="flex items-center gap-1 shrink-0 ml-2">
+                {selectedMetrics.length > 0 && (
+                  <span className="inline-flex items-center justify-center h-5 px-1.5 rounded-full text-[11px] font-bold bg-emerald-600 text-white">
+                    {selectedMetrics.length}
+                  </span>
+                )}
+                <ChevronDown
+                  className={`h-4 w-4 text-slate-500 transition-transform duration-200 ${
+                    isMetricDropdownOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </div>
+            </button>
+
+            {/* Multi-Select Dropdown Popover */}
+            {isMetricDropdownOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-20"
+                  onClick={() => setIsMetricDropdownOpen(false)}
+                />
+                <div className="absolute right-0 top-full mt-1.5 w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-xl z-30 space-y-1">
+                  <div className="flex items-center justify-between px-2 py-1.5 border-b border-slate-100 mb-1">
+                    <span className="text-xs font-bold text-slate-700">
+                      {L('এক বা একাধিক কাজ বেছে নিন', 'Select One or Multiple')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => toggleMetricFilter('ALL')}
+                      className="text-[11px] text-slate-500 hover:text-slate-800"
+                    >
+                      {L('সব সিলেক্ট', 'Select All')}
+                    </button>
+                  </div>
+
+                  {/* All Tasks Option */}
+                  <div
+                    onClick={() => toggleMetricFilter('ALL')}
+                    className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
+                      selectedMetrics.length === 0
+                        ? 'bg-emerald-50 text-emerald-800 font-semibold'
+                        : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    {selectedMetrics.length === 0 ? (
+                      <CheckSquare className="h-4 w-4 text-emerald-600 shrink-0" />
+                    ) : (
+                      <Square className="h-4 w-4 text-slate-400 shrink-0" />
+                    )}
+                    <span>{L('সব কাজ (All Tasks)', 'All Tasks')}</span>
+                  </div>
+
+                  {/* Individual Metric Options with Checkboxes */}
+                  {Object.entries(METRIC_CONFIG).map(([key, cfg]) => {
+                    const isChecked = selectedMetrics.includes(key);
+                    const count = targets.filter((t) => t.metric_type === key).length;
+
+                    return (
+                      <div
+                        key={key}
+                        onClick={() => toggleMetricFilter(key)}
+                        className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
+                          isChecked
+                            ? 'bg-emerald-50 text-emerald-900 font-semibold'
+                            : 'text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 truncate">
+                          {isChecked ? (
+                            <CheckSquare className="h-4 w-4 text-emerald-600 shrink-0" />
+                          ) : (
+                            <Square className="h-4 w-4 text-slate-400 shrink-0" />
+                          )}
+                          <span className="truncate">{L(cfg.bn, cfg.en)}</span>
+                        </div>
+                        <span className="text-[11px] text-slate-400 ml-2 font-mono tabular-nums shrink-0">
+                          ({count})
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
+        </div>
+
+        {/* Quick-Filter Pills/Chips (Interactive Multi-Select Row) */}
+        <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 flex-wrap">
+          <span className="text-[11px] font-semibold text-slate-400 mr-1 flex items-center gap-1">
+            <Filter className="h-3 w-3" />
+            {L('দ্রুত বাছাই:', 'Quick Filter:')}
+          </span>
+
+          {/* All Chip */}
+          <button
+            type="button"
+            onClick={() => toggleMetricFilter('ALL')}
+            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
+              selectedMetrics.length === 0
+                ? 'bg-slate-900 text-white shadow-sm'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            {L('সব কাজ', 'All')} ({targets.length})
+          </button>
+
+          {/* Chips for Each Metric */}
+          {Object.entries(METRIC_CONFIG).map(([key, cfg]) => {
+            const isSelected = selectedMetrics.includes(key);
+            const count = targets.filter((t) => t.metric_type === key).length;
+
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => toggleMetricFilter(key)}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                  isSelected
+                    ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600/30'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200/80 border border-transparent'
+                }`}
+              >
+                <span>{L(cfg.bn, cfg.en)}</span>
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full tabular-nums ${
+                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -537,7 +840,7 @@ export default function AdminTargetsPage() {
             title={L('কোনো টার্গেট নির্ধারণ করা হয়নি', 'No targets found')}
             description={L(
               'কর্মচারীদের কাজের টার্গেট দিতে উপরের "নতুন টার্গেট দিন" বাটনে চাপুন।',
-              'Click "Assign Target" above to assign work targets to your team.'
+              'Click "Assign Target" above to assign work targets to your employees.'
             )}
             action={
               <button
@@ -589,7 +892,7 @@ export default function AdminTargetsPage() {
                           </div>
                           <div>
                             <div className="font-semibold text-slate-800 hover:text-brand-700">
-                              {emp?.name || L('সাধারণ / গ্রুপ লক্ষ্য', 'Unassigned / Team')}
+                              {emp?.name || L('সাধারণ / গ্রুপ লক্ষ্য', 'Unassigned / General')}
                             </div>
                             <div className="text-xs text-slate-400">{emp?.email || t.section?.name}</div>
                           </div>
@@ -986,15 +1289,20 @@ export default function AdminTargetsPage() {
                   <span>{L('+ আরও একটি কাজ যোগ করুন', '+ Add Another Job / Task')}</span>
                 </button>
 
-                {/* Multiple Jobs Pro-Tip */}
+                {/* Multiple Jobs & Auto-Merge Pro-Tip */}
                 <div className="rounded-xl bg-emerald-50/70 border border-emerald-100 p-3 text-xs text-emerald-900 flex items-start gap-2.5 mt-2">
                   <Sparkles className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>
-                    {L(
-                      'টিপস: আপনি একই কর্মচারীকে একসাথে একাধিক কাজ দিতে পারেন (যেমন: মাশরুম গ্রুপ ৩টি, এগ্রো গ্রুপ ২টি, কনফার্মড অর্ডার ১০টি এবং লিড ৮টি)। কর্মচারীর অ্যাকাউন্টে সবগুলো কাজ আলাদাভাবে ট্র্যাক হবে।',
-                      'Tip: You can assign multiple jobs to the employee simultaneously (e.g. 3 Mushroom posts, 2 Agro posts, 10 Confirmed Orders, and 8 Leads). All jobs will be tracked individually.'
-                    )}
-                  </span>
+                  <div className="space-y-1">
+                    <div className="font-semibold text-emerald-950">
+                      {L('স্বয়ংক্রিয় মার্জ সক্রিয় (Auto-Merge Active):', 'Automatic Merge Active:')}
+                    </div>
+                    <div>
+                      {L(
+                        'একই কাজের ধরন ও সেকশন বারবার দিলে তা ডুপ্লিকেট হবে না, স্বয়ংক্রিয়ভাবে একটি কাজে মার্জ হয়ে কোটা যোগ হয়ে যাবে (যেমন: মাশরুম গ্রুপ ২ ও ৩ দিলে একসাথে ৫ হয়ে যাবে)।',
+                        'Selecting duplicate job & group section will automatically merge them into one and sum their quotas (e.g. 2 and 3 merge into 5).'
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 

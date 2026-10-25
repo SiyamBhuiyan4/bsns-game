@@ -7,11 +7,13 @@ export interface CreateAuditLogParams {
   entity: string;
   entityId?: string | null;
   payload?: Prisma.InputJsonValue | Record<string, unknown> | null;
+  tx?: any;
 }
 
 export async function createAuditLog(params: CreateAuditLogParams) {
   try {
-    return await prisma.auditLog.create({
+    const db = params.tx || prisma;
+    return await db.auditLog.create({
       data: {
         actor_id: params.actorId || null,
         action: params.action,
