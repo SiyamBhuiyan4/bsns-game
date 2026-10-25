@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import { getDhakaDateString, parseDateOnly } from '@/lib/date';
+import { getDhakaDateString, parseDateOnly, formatDhakaDateTime } from '@/lib/date';
 import { calculateEffectiveTargetsForRange } from '@/lib/targets';
 import { calculateEmployeeScore } from '@/lib/scoring';
 import { MetricType, PlanStatus } from '@prisma/client';
@@ -11,6 +11,89 @@ export interface DashboardFilter {
   period?: DashboardPeriodKey | string;
   from?: string;
   to?: string;
+  employeeId?: string;
+  sectionKey?: string;
+}
+
+export type SectionOverviewKey =
+  | 'POSTS_DONE'
+  | 'ORDERS_CONFIRMED'
+  | 'MESSAGES_REPLIED'
+  | 'LEADS_COLLECTED'
+  | 'SALES_AMOUNT';
+
+export interface EmployeeSectionBreakdown {
+  employeeId: string;
+  name: string;
+  email: string;
+  total: number;
+  target: number;
+  percentage: number;
+}
+
+export interface SectionHistoryLog {
+  date: string; // YYYY-MM-DD
+  employeeId: string;
+  employeeName: string;
+  value: number;
+  note?: string;
+}
+
+export interface SectionOverviewItem {
+  key: SectionOverviewKey;
+  labelBn: string;
+  labelEn: string;
+  unitBn: string;
+  unitEn: string;
+  iconName: string;
+  totalAchieved: number;
+  totalTarget: number;
+  activeEmployeesCount: number;
+  employeeBreakdown: EmployeeSectionBreakdown[];
+  historyLogs: SectionHistoryLog[];
+}
+
+export interface GroupLinkCompletionHistoryItem {
+  date: string;
+  employeeName: string;
+  employeeId: string;
+  linkUrl: string;
+  linkTitle?: string;
+}
+
+export interface GroupSectionOverviewItem {
+  id: string;
+  name: string;
+  totalLinks: number;
+  completedLinksCount: number;
+  completionsHistory: GroupLinkCompletionHistoryItem[];
+}
+
+export interface EmployeeWorkMetrics {
+  posts_done: number;
+  orders_confirmed: number;
+  messages_replied: number;
+  leads_collected: number;
+  sales_amount: number;
+}
+
+export interface EmployeeDailyWorkHistoryItem {
+  date: string;
+  posts_done: number;
+  orders_confirmed: number;
+  messages_replied: number;
+  leads_collected: number;
+  sales_amount: number;
+  note?: string;
+}
+
+export interface EmployeeWorkSummaryItem {
+  id: string;
+  name: string;
+  email: string;
+  metrics: EmployeeWorkMetrics;
+  targetProgressPercent: number;
+  history: EmployeeDailyWorkHistoryItem[];
 }
 
 export interface SectionTargetChartItem {
@@ -114,7 +197,63 @@ export interface AdminDashboardData {
     campaignBudgets: CampaignBudgetItem[];
     leadSources: LeadSourceItem[];
   };
+  sectionsOverview: SectionOverviewItem[];
+  groupSectionsOverview: GroupSectionOverviewItem[];
+  employeeWorkSummary: EmployeeWorkSummaryItem[];
 }
+
+export const SECTION_METRIC_CONFIG: Record<
+  SectionOverviewKey,
+  {
+    metricType: MetricType;
+    labelBn: string;
+    labelEn: string;
+    unitBn: string;
+    unitEn: string;
+    iconName: string;
+  }
+> = {
+  POSTS_DONE: {
+    metricType: MetricType.POSTS_DONE,
+    labelBn: 'গ্রুপ পোস্টিং',
+    labelEn: 'Group Posts',
+    unitBn: 'টি',
+    unitEn: 'posts',
+    iconName: 'Share2',
+  },
+  ORDERS_CONFIRMED: {
+    metricType: MetricType.CONFIRMED_ORDERS,
+    labelBn: 'কনফার্ম অর্ডার',
+    labelEn: 'Orders Confirmed',
+    unitBn: 'টি',
+    unitEn: 'orders',
+    iconName: 'ShoppingBag',
+  },
+  MESSAGES_REPLIED: {
+    metricType: MetricType.FOLLOWUPS_DONE,
+    labelBn: 'মেসেজ রিপ্লাই / ফলো-আপ',
+    labelEn: 'Messages Replied',
+    unitBn: 'টি',
+    unitEn: 'replies',
+    iconName: 'MessageSquare',
+  },
+  LEADS_COLLECTED: {
+    metricType: MetricType.NEW_LEADS,
+    labelBn: 'লিড সংগ্রহ',
+    labelEn: 'Leads Collected',
+    unitBn: 'টি',
+    unitEn: 'leads',
+    iconName: 'UserPlus',
+  },
+  SALES_AMOUNT: {
+    metricType: MetricType.SALES_AMOUNT,
+    labelBn: 'মোট বিক্রয়',
+    labelEn: 'Total Sales',
+    unitBn: '৳',
+    unitEn: 'BDT',
+    iconName: 'DollarSign',
+  },
+};
 
 export const CHANNEL_BN_MAP: Record<string, string> = {
   FACEBOOK_GROUP: 'ফেসবুক গ্রুপ (Organic)',
@@ -226,6 +365,9 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     activeProducts,
     monthlyBudgetRecord,
     plan,
+    allGroupSections,
+    allGroupLinks,
+    assignments,
   ] = await Promise.all([
     prisma.user.findMany({
       where: { role: 'EMPLOYEE', is_active: true },
@@ -251,10 +393,22 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
         },
       },
     }),
+    prisma.groupSection.findMany({
+      where: { is_active: true },
+      select: { id: true, name: true, description: true },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.groupLink.findMany({
+      where: { is_active: true },
+      select: { id: true, section_id: true, url: true, title: true },
+    }),
+    prisma.assignment.findMany({
+      select: { employee_id: true, section_id: true },
+    }),
   ]);
 
   // Batch 2: Period activity & completions
-  const [linksCompletedCount, periodEntries] = await Promise.all([
+  const [linksCompletedCount, periodEntries, periodLinkCompletions, periodDailyTexts] = await Promise.all([
     prisma.linkCompletion.count({
       where: {
         completed_at: { gte: rangeStartDateTime, lte: rangeEndDateTime },
@@ -263,6 +417,23 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     }),
     prisma.dailyEntry.findMany({
       where: { entry_date: { gte: startUtcDate, lte: endUtcDate } },
+    }),
+    prisma.linkCompletion.findMany({
+      where: {
+        completed_at: { gte: rangeStartDateTime, lte: rangeEndDateTime },
+        undone_at: null,
+      },
+      select: {
+        id: true,
+        group_link_id: true,
+        employee_id: true,
+        completed_at: true,
+      },
+      orderBy: { completed_at: 'desc' },
+    }),
+    prisma.dailyText.findMany({
+      where: { entry_date: { gte: startUtcDate, lte: endUtcDate } },
+      select: { employee_id: true, entry_date: true, main_issue: true, next_priorities: true },
     }),
   ]);
 
@@ -679,6 +850,41 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     }))
     .sort((a, b) => b.count - a.count);
 
+  // -------------------------------------------------------------
+  // 8. Work Sections Overview & Employee Drilldown
+  // -------------------------------------------------------------
+  const sectionsOverview = computeSectionsOverview({
+    activeEmployees,
+    allTargets,
+    effectiveTargets,
+    assignments,
+    periodEntries,
+    periodLinkCompletions,
+    startUtcDate,
+    endUtcDate,
+    filterSectionKey: filter.sectionKey,
+  });
+
+  const groupSectionsOverview = computeGroupSectionsOverview({
+    allGroupSections,
+    allGroupLinks,
+    periodLinkCompletions,
+    activeEmployees,
+  });
+
+  const employeeWorkSummary = computeEmployeeWorkSummary({
+    activeEmployees,
+    allTargets,
+    effectiveTargets,
+    assignments,
+    periodEntries,
+    periodLinkCompletions,
+    periodDailyTexts,
+    startUtcDate,
+    endUtcDate,
+    filterEmployeeId: filter.employeeId,
+  });
+
   return {
     periodInfo,
     summaryCards: {
@@ -716,5 +922,435 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
       campaignBudgets: campaignBudgetsChart,
       leadSources: leadSourcesChart,
     },
+    sectionsOverview,
+    groupSectionsOverview,
+    employeeWorkSummary,
   };
+}
+
+/**
+ * Normalizes Date or date string to YYYY-MM-DD in Asia/Dhaka.
+ */
+export function toDhakaDateKey(d: Date | string): string {
+  if (typeof d === 'string') {
+    return d.slice(0, 10);
+  }
+  return getDhakaDateString(d);
+}
+
+/**
+ * Computes sectionsOverview for the 5 primary work sections.
+ */
+export function computeSectionsOverview(params: {
+  activeEmployees: Array<{ id: string; name: string; email: string }>;
+  allTargets: any[];
+  effectiveTargets: Record<MetricType, number>;
+  assignments: Array<{ employee_id: string; section_id: string }>;
+  periodEntries: any[];
+  periodLinkCompletions: any[];
+  startUtcDate: Date;
+  endUtcDate: Date;
+  filterSectionKey?: string;
+}): SectionOverviewItem[] {
+  const {
+    activeEmployees,
+    allTargets,
+    effectiveTargets,
+    assignments,
+    periodEntries,
+    periodLinkCompletions,
+    startUtcDate,
+    endUtcDate,
+    filterSectionKey,
+  } = params;
+
+  const employeeMap = new Map<string, { id: string; name: string; email: string }>();
+  for (const emp of activeEmployees) {
+    employeeMap.set(emp.id, emp);
+  }
+
+  // Pre-index completions by "employeeId_dateStr"
+  const completionsByEmpDate = new Map<string, number>();
+  for (const c of periodLinkCompletions) {
+    const dStr = getDhakaDateString(new Date(c.completed_at));
+    const key = `${c.employee_id}_${dStr}`;
+    completionsByEmpDate.set(key, (completionsByEmpDate.get(key) || 0) + 1);
+  }
+
+  // Pre-index daily entries by "employeeId_dateStr_metricType"
+  const dailyEntriesByEmpDateMetric = new Map<string, { value: number; note?: string }>();
+  for (const e of periodEntries) {
+    const dStr = toDhakaDateKey(e.entry_date);
+    const key = `${e.employee_id}_${dStr}_${e.metric_type}`;
+    dailyEntriesByEmpDateMetric.set(key, {
+      value: Number(e.value),
+      note: e.note || undefined,
+    });
+  }
+
+  const sectionKeys: SectionOverviewKey[] = [
+    'POSTS_DONE',
+    'ORDERS_CONFIRMED',
+    'MESSAGES_REPLIED',
+    'LEADS_COLLECTED',
+    'SALES_AMOUNT',
+  ];
+
+  const result: SectionOverviewItem[] = [];
+
+  for (const secKey of sectionKeys) {
+    if (filterSectionKey && filterSectionKey !== secKey) {
+      continue;
+    }
+
+    const config = SECTION_METRIC_CONFIG[secKey];
+    const metricType = config.metricType;
+
+    const historyLogs: SectionHistoryLog[] = [];
+    const empTotals = new Map<string, number>();
+
+    if (secKey === 'POSTS_DONE') {
+      // POSTS_DONE can come from LinkCompletion or DailyEntry
+      const allPostKeys = new Set<string>();
+      for (const [k] of completionsByEmpDate) {
+        allPostKeys.add(k);
+      }
+      for (const e of periodEntries) {
+        if (e.metric_type === MetricType.POSTS_DONE) {
+          const dStr = toDhakaDateKey(e.entry_date);
+          allPostKeys.add(`${e.employee_id}_${dStr}`);
+        }
+      }
+
+      for (const key of allPostKeys) {
+        const [empId, dateStr] = key.split('_');
+        const compCount = completionsByEmpDate.get(key) || 0;
+        const entryData = dailyEntriesByEmpDateMetric.get(`${empId}_${dateStr}_${MetricType.POSTS_DONE}`);
+        const entryVal = entryData ? entryData.value : 0;
+        const achieved = Math.max(compCount, entryVal);
+
+        if (achieved > 0) {
+          const emp = employeeMap.get(empId);
+          historyLogs.push({
+            date: dateStr,
+            employeeId: empId,
+            employeeName: emp ? emp.name : 'Unknown',
+            value: achieved,
+            note: entryData?.note,
+          });
+          empTotals.set(empId, (empTotals.get(empId) || 0) + achieved);
+        }
+      }
+    } else {
+      // Other 4 metrics: from periodEntries
+      for (const e of periodEntries) {
+        if (e.metric_type === metricType) {
+          const val = Number(e.value);
+          if (val > 0) {
+            const dateStr = toDhakaDateKey(e.entry_date);
+            const emp = employeeMap.get(e.employee_id);
+            historyLogs.push({
+              date: dateStr,
+              employeeId: e.employee_id,
+              employeeName: emp ? emp.name : 'Unknown',
+              value: val,
+              note: e.note || undefined,
+            });
+            empTotals.set(e.employee_id, (empTotals.get(e.employee_id) || 0) + val);
+          }
+        }
+      }
+    }
+
+    // Order logs by date descending
+    historyLogs.sort((a, b) => b.date.localeCompare(a.date));
+
+    // Calculate employee breakdown
+    const employeeBreakdown: EmployeeSectionBreakdown[] = [];
+    const overallMetricTarget = Math.round(effectiveTargets[metricType] || 0);
+
+    for (const emp of activeEmployees) {
+      const empTotal = empTotals.get(emp.id) || 0;
+
+      // Employee section-specific target
+      const empSectionIds = assignments.filter((a) => a.employee_id === emp.id).map((a) => a.section_id);
+      const empTargets = allTargets.filter((t) => empSectionIds.includes(t.section_id));
+      const empEffective = calculateEffectiveTargetsForRange(empTargets, startUtcDate, endUtcDate);
+
+      let empTarget = Math.round(empEffective[metricType] || 0);
+      if (empTarget === 0 && overallMetricTarget > 0 && activeEmployees.length > 0) {
+        empTarget = Math.round(overallMetricTarget / activeEmployees.length);
+      }
+
+      const percentage = empTarget > 0 ? Math.round((empTotal / empTarget) * 100) : (empTotal > 0 ? 100 : 0);
+
+      employeeBreakdown.push({
+        employeeId: emp.id,
+        name: emp.name,
+        email: emp.email,
+        total: empTotal,
+        target: empTarget,
+        percentage,
+      });
+    }
+
+    // Sort employee breakdown by total descending
+    employeeBreakdown.sort((a, b) => b.total - a.total);
+
+    const totalAchieved = employeeBreakdown.reduce((sum, e) => sum + e.total, 0);
+    const sumEmpTargets = employeeBreakdown.reduce((sum, e) => sum + e.target, 0);
+    const totalTarget = Math.max(overallMetricTarget, sumEmpTargets);
+    const activeEmployeesCount = employeeBreakdown.filter((e) => e.total > 0).length;
+
+    result.push({
+      key: secKey,
+      labelBn: config.labelBn,
+      labelEn: config.labelEn,
+      unitBn: config.unitBn,
+      unitEn: config.unitEn,
+      iconName: config.iconName,
+      totalAchieved,
+      totalTarget,
+      activeEmployeesCount,
+      employeeBreakdown,
+      historyLogs,
+    });
+  }
+
+  return result;
+}
+
+/**
+ * Computes groupSectionsOverview for GroupSection models and link completions.
+ */
+export function computeGroupSectionsOverview(params: {
+  allGroupSections: Array<{ id: string; name: string }>;
+  allGroupLinks: Array<{ id: string; section_id: string; url: string; title: string | null }>;
+  periodLinkCompletions: Array<{
+    id: string;
+    group_link_id: string;
+    employee_id: string;
+    completed_at: Date;
+  }>;
+  activeEmployees: Array<{ id: string; name: string; email: string }>;
+}): GroupSectionOverviewItem[] {
+  const { allGroupSections, allGroupLinks, periodLinkCompletions, activeEmployees } = params;
+
+  const employeeMap = new Map<string, { id: string; name: string; email: string }>();
+  for (const emp of activeEmployees) {
+    employeeMap.set(emp.id, emp);
+  }
+
+  const linkMap = new Map<string, { id: string; section_id: string; url: string; title: string | null }>();
+  for (const l of allGroupLinks) {
+    linkMap.set(l.id, l);
+  }
+
+  return allGroupSections.map((sec) => {
+    const secLinks = allGroupLinks.filter((l) => l.section_id === sec.id);
+    const secLinkIdSet = new Set(secLinks.map((l) => l.id));
+
+    // Completions belonging to links in this section
+    const secCompletions = periodLinkCompletions.filter((c) => secLinkIdSet.has(c.group_link_id));
+
+    const completionsHistory: GroupLinkCompletionHistoryItem[] = secCompletions.map((c) => {
+      const link = linkMap.get(c.group_link_id);
+      const emp = employeeMap.get(c.employee_id);
+      return {
+        date: formatDhakaDateTime(c.completed_at),
+        employeeName: emp ? emp.name : 'Unknown',
+        employeeId: c.employee_id,
+        linkUrl: link ? link.url : '',
+        linkTitle: link?.title || undefined,
+      };
+    });
+
+    // Sort completions history by date descending
+    completionsHistory.sort((a, b) => b.date.localeCompare(a.date));
+
+    return {
+      id: sec.id,
+      name: sec.name,
+      totalLinks: secLinks.length,
+      completedLinksCount: secCompletions.length,
+      completionsHistory,
+    };
+  });
+}
+
+/**
+ * Computes employeeWorkSummary for all active employees.
+ */
+export function computeEmployeeWorkSummary(params: {
+  activeEmployees: Array<{ id: string; name: string; email: string }>;
+  allTargets: any[];
+  effectiveTargets: Record<MetricType, number>;
+  assignments: Array<{ employee_id: string; section_id: string }>;
+  periodEntries: any[];
+  periodLinkCompletions: any[];
+  periodDailyTexts: any[];
+  startUtcDate: Date;
+  endUtcDate: Date;
+  filterEmployeeId?: string;
+}): EmployeeWorkSummaryItem[] {
+  const {
+    activeEmployees,
+    allTargets,
+    effectiveTargets,
+    assignments,
+    periodEntries,
+    periodLinkCompletions,
+    periodDailyTexts,
+    startUtcDate,
+    endUtcDate,
+    filterEmployeeId,
+  } = params;
+
+  const result: EmployeeWorkSummaryItem[] = [];
+
+  for (const emp of activeEmployees) {
+    if (filterEmployeeId && filterEmployeeId !== emp.id) {
+      continue;
+    }
+
+    const empDailyEntries = periodEntries.filter((e) => e.employee_id === emp.id);
+    const empCompletions = periodLinkCompletions.filter((c) => c.employee_id === emp.id);
+    const empDailyTexts = periodDailyTexts.filter((t) => t.employee_id === emp.id);
+
+    // Collect all unique dates (YYYY-MM-DD)
+    const empDates = new Set<string>();
+    for (const e of empDailyEntries) empDates.add(toDhakaDateKey(e.entry_date));
+    for (const c of empCompletions) empDates.add(getDhakaDateString(new Date(c.completed_at)));
+    for (const t of empDailyTexts) empDates.add(toDhakaDateKey(t.entry_date));
+
+    // Link completions by date
+    const empCompsByDate = new Map<string, number>();
+    for (const c of empCompletions) {
+      const dStr = getDhakaDateString(new Date(c.completed_at));
+      empCompsByDate.set(dStr, (empCompsByDate.get(dStr) || 0) + 1);
+    }
+
+    // Daily texts by date
+    const empTextsByDate = new Map<string, { main_issue?: string | null; next_priorities?: string | null }>();
+    for (const t of empDailyTexts) {
+      empTextsByDate.set(toDhakaDateKey(t.entry_date), t);
+    }
+
+    const history: EmployeeDailyWorkHistoryItem[] = [];
+
+    for (const dateStr of empDates) {
+      const dayEntries = empDailyEntries.filter((e) => toDhakaDateKey(e.entry_date) === dateStr);
+      const dayCompCount = empCompsByDate.get(dateStr) || 0;
+      const dayText = empTextsByDate.get(dateStr);
+
+      const getVal = (type: MetricType) => {
+        const entry = dayEntries.find((e) => e.metric_type === type);
+        return entry ? Number(entry.value) : 0;
+      };
+
+      const dayPostVal = getVal(MetricType.POSTS_DONE);
+      const posts_done = Math.max(dayCompCount, dayPostVal);
+      const orders_confirmed = getVal(MetricType.CONFIRMED_ORDERS);
+      const messages_replied = getVal(MetricType.FOLLOWUPS_DONE);
+      const leads_collected = getVal(MetricType.NEW_LEADS);
+      const sales_amount = getVal(MetricType.SALES_AMOUNT);
+
+      // Notes on this date
+      const entryNotes = dayEntries
+        .map((e) => e.note)
+        .filter((n): n is string => !!n && n.trim().length > 0);
+      const noteParts: string[] = [];
+      if (dayText?.main_issue) noteParts.push(dayText.main_issue);
+      if (dayText?.next_priorities) noteParts.push(dayText.next_priorities);
+      noteParts.push(...entryNotes);
+
+      const note = noteParts.length > 0 ? noteParts.join(' | ') : undefined;
+
+      if (posts_done > 0 || orders_confirmed > 0 || messages_replied > 0 || leads_collected > 0 || sales_amount > 0 || note) {
+        history.push({
+          date: dateStr,
+          posts_done,
+          orders_confirmed,
+          messages_replied,
+          leads_collected,
+          sales_amount,
+          note,
+        });
+      }
+    }
+
+    // Sort history by date descending
+    history.sort((a, b) => b.date.localeCompare(a.date));
+
+    // Sum overall metrics for the period
+    const metrics: EmployeeWorkMetrics = {
+      posts_done: history.reduce((sum, h) => sum + h.posts_done, 0),
+      orders_confirmed: history.reduce((sum, h) => sum + h.orders_confirmed, 0),
+      messages_replied: history.reduce((sum, h) => sum + h.messages_replied, 0),
+      leads_collected: history.reduce((sum, h) => sum + h.leads_collected, 0),
+      sales_amount: history.reduce((sum, h) => sum + h.sales_amount, 0),
+    };
+
+    // Calculate target progress percentage
+    const empSectionIds = assignments.filter((a) => a.employee_id === emp.id).map((a) => a.section_id);
+    const empTargets = allTargets.filter((t) => empSectionIds.includes(t.section_id));
+    const empEffective = calculateEffectiveTargetsForRange(empTargets, startUtcDate, endUtcDate);
+
+    const targetsToCheck = [
+      { target: empEffective.POSTS_DONE, achieved: metrics.posts_done },
+      { target: empEffective.CONFIRMED_ORDERS, achieved: metrics.orders_confirmed },
+      { target: empEffective.FOLLOWUPS_DONE, achieved: metrics.messages_replied },
+      { target: empEffective.NEW_LEADS, achieved: metrics.leads_collected },
+      { target: empEffective.SALES_AMOUNT, achieved: metrics.sales_amount },
+    ];
+
+    let targetProgressPercent = 0;
+    const validTargets = targetsToCheck.filter((t) => t.target && t.target > 0);
+    if (validTargets.length > 0) {
+      const totalPct = validTargets.reduce((sum, item) => {
+        const pct = Math.min(100, Math.round((item.achieved / (item.target || 1)) * 100));
+        return sum + pct;
+      }, 0);
+      targetProgressPercent = Math.round(totalPct / validTargets.length);
+    } else {
+      const numEmps = Math.max(1, activeEmployees.length);
+      const overallTargetsToCheck = [
+        { target: (effectiveTargets.POSTS_DONE || 0) / numEmps, achieved: metrics.posts_done },
+        { target: (effectiveTargets.CONFIRMED_ORDERS || 0) / numEmps, achieved: metrics.orders_confirmed },
+        { target: (effectiveTargets.FOLLOWUPS_DONE || 0) / numEmps, achieved: metrics.messages_replied },
+        { target: (effectiveTargets.NEW_LEADS || 0) / numEmps, achieved: metrics.leads_collected },
+        { target: (effectiveTargets.SALES_AMOUNT || 0) / numEmps, achieved: metrics.sales_amount },
+      ];
+      const validOverall = overallTargetsToCheck.filter((t) => t.target > 0);
+      if (validOverall.length > 0) {
+        const totalPct = validOverall.reduce((sum, item) => {
+          const pct = Math.min(100, Math.round((item.achieved / item.target) * 100));
+          return sum + pct;
+        }, 0);
+        targetProgressPercent = Math.round(totalPct / validOverall.length);
+      } else {
+        const hasWork = metrics.posts_done > 0 || metrics.orders_confirmed > 0 || metrics.messages_replied > 0 || metrics.leads_collected > 0 || metrics.sales_amount > 0;
+        targetProgressPercent = hasWork ? 100 : 0;
+      }
+    }
+
+    result.push({
+      id: emp.id,
+      name: emp.name,
+      email: emp.email,
+      metrics,
+      targetProgressPercent,
+      history,
+    });
+  }
+
+  // Sort employees: highest sales / orders / posts first
+  result.sort(
+    (a, b) =>
+      b.metrics.sales_amount - a.metrics.sales_amount ||
+      b.metrics.orders_confirmed - a.metrics.orders_confirmed ||
+      b.metrics.posts_done - a.metrics.posts_done
+  );
+
+  return result;
 }

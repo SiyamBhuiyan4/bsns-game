@@ -11,8 +11,10 @@ export async function GET(request: NextRequest) {
     const period = (rawPeriod as DashboardPeriodKey) || 'thisMonth';
     const from = searchParams.get('from') || undefined;
     const to = searchParams.get('to') || undefined;
+    const employeeId = searchParams.get('employeeId') || undefined;
+    const sectionKey = searchParams.get('sectionKey') || undefined;
 
-    const data = await getAdminDashboardData({ period, from, to });
+    const data = await getAdminDashboardData({ period, from, to, employeeId, sectionKey });
     return NextResponse.json(data);
   } catch (error: unknown) {
     console.error('Error fetching admin dashboard data:', error);

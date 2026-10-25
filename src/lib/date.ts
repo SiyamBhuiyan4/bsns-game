@@ -17,6 +17,24 @@ export function getDhakaDateString(date: Date = new Date()): string {
 }
 
 /**
+ * Returns formatted date and time in Asia/Dhaka timezone as "YYYY-MM-DD HH:mm".
+ */
+export function formatDhakaDateTime(date: Date | string = new Date()): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return '';
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: DHAKA_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  return formatter.format(d).replace(',', '');
+}
+
+/**
  * Returns a Date object anchored at 00:00:00 UTC for a given YYYY-MM-DD string.
  */
 export function parseDateOnly(dateStr: string): Date {
