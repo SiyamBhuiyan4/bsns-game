@@ -13,6 +13,7 @@ import {
   AlertCircle,
   Loader2,
   Check,
+  Target,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import PageHeader from '@/components/ui/PageHeader';
@@ -25,6 +26,9 @@ interface TodoLink {
   title: string | null;
   section_id: string;
   section_name: string;
+  section_post_limit?: number | null;
+  section_completed_today?: number;
+  is_limit_reached?: boolean;
 }
 
 interface CompletedLink {
@@ -40,6 +44,10 @@ interface CompletedLink {
 interface AssignedSection {
   id: string;
   name: string;
+  postLimit?: number | null;
+  completedToday?: number;
+  isLimitReached?: boolean;
+  remaining?: number | null;
 }
 
 interface ProgressData {
@@ -111,6 +119,18 @@ export default function EmployeeMyWorkPage() {
   // Handle Mark Done (Optimistic Update)
   const handleMarkDone = async (link: TodoLink) => {
     if (actionLoadingId === link.id) return;
+
+    // Check if sub-group quota is already reached
+    if (link.is_limit_reached) {
+      setErrorMessage(
+        L(
+          `"${link.section_name}" এ আজকের নির্ধারিত পোস্ট সীমা (${link.section_post_limit}টি) পূরণ হয়ে গেছে। অতিরিক্ত পোস্ট রেকর্ড করা যাবে না।`,
+          `Daily post quota (${link.section_post_limit}) reached for "${link.section_name}". No more posts allowed.`
+        )
+      );
+      return;
+    }
+
     setActionLoadingId(link.id);
     setErrorMessage(null);
 
@@ -152,7 +172,7 @@ export default function EmployeeMyWorkPage() {
         setProgress(previousProgress);
         setErrorMessage(data.error || 'লিংক সম্পন্ন সংরক্ষণ ব্যর্থ হয়েছে');
       } else {
-        // Update temp completion id with real one
+        // Update temp completion id with real one and refresh work queue
         setCompletedLinks((prev) =>
           prev.map((item) =>
             item.id === link.id
@@ -160,6 +180,7 @@ export default function EmployeeMyWorkPage() {
               : item
           )
         );
+        fetchWorkQueue();
       }
     } catch {
       // Rollback on network failure
@@ -271,6 +292,82 @@ export default function EmployeeMyWorkPage() {
         )}
       </div>
 
+      {/* Sub-Group Mandatory Post Quotas Banner */}
+      {assignedSections.some((s) => s.postLimit && s.postLimit > 0) && (
+        <div className="card p-4 bg-linear-to-r from-brand-50/50 via-white to-slate-50 border-brand-200/80">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <Target className="h-4 w-4 text-brand-600" />
+                <span>{L('সাব-গ্রুপভিত্তিক পোস্ট কোটা ও লিমিট', 'Sub-Group Post Quotas & Limits')}</span>
+              </h3>
+              <p className="text-xs text-slate-500">
+                {L(
+                  'এডমিন কর্তৃক আপনার জন্য নির্ধারিত প্রতিটি সাব-গ্রুপের বাধ্যতামূলক পোস্ট লক্ষ্যমাত্রা',
+                  'Admin-assigned mandatory post limits for each specific sub-group'
+                )}
+              </p>
+            </div>
+            <div className="text-xs font-semibold text-brand-800">
+              {L('আজকের মোট কোটা:', 'Today Total:')}{' '}
+              <span className="font-mono tabular-nums text-sm">
+                {assignedSections.reduce((s, a) => s + (a.completedToday || 0), 0)} /{' '}
+                {assignedSections.reduce((s, a) => s + (a.postLimit || 0), 0)}
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+            {assignedSections
+              .filter((s) => s.postLimit && s.postLimit > 0)
+              .map((sec) => {
+                const comp = sec.completedToday || 0;
+                const limit = sec.postLimit || 1;
+                const isMet = sec.isLimitReached;
+                const pct = Math.min(100, Math.round((comp / limit) * 100));
+
+                return (
+                  <div
+                    key={sec.id}
+                    className={`rounded-xl border p-3 transition-colors ${
+                      isMet
+                        ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
+                        : 'bg-white border-slate-200 text-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-xs mb-1.5">
+                      <span className="font-semibold truncate">{sec.name}</span>
+                      <span
+                        className={`badge text-[10px] font-semibold tabular-nums ${
+                          isMet ? 'badge-green' : 'badge-blue'
+                        }`}
+                      >
+                        {isMet ? L('কোটা পূর্ণ', 'Limit Met') : `${pct}%`}
+                      </span>
+                    </div>
+
+                    <div className="flex items-baseline justify-between text-xs mb-1.5">
+                      <span className="text-slate-500 text-[11px]">{L('সম্পন্ন:', 'Done:')}</span>
+                      <span className="font-mono font-bold">
+                        {comp} / {limit} {L('টি পোস্ট', 'posts')}
+                      </span>
+                    </div>
+
+                    <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          isMet ? 'bg-emerald-500' : 'bg-brand-600'
+                        }`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
+
       {/* Notifications */}
       {errorMessage && (
         <div className="alert alert-error items-center justify-between">
@@ -361,48 +458,78 @@ export default function EmployeeMyWorkPage() {
           />
         ) : (
           <ul className="divide-y divide-slate-100">
-            {paginatedTodo.map((link) => (
-              <li
-                key={link.id}
-                className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:gap-4 sm:px-5"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-slate-900">{link.title || link.url}</div>
-                  <div className="mt-1 flex min-w-0 items-center gap-2">
-                    <span className="badge badge-gray shrink-0">
-                      <Layers className="h-3 w-3" />
-                      {link.section_name}
-                    </span>
-                    <span className="truncate font-mono text-xs text-slate-400">{link.url}</span>
-                  </div>
-                </div>
+            {paginatedTodo.map((link) => {
+              const isLimitMet = Boolean(link.is_limit_reached);
 
-                <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn btn-secondary min-h-10"
-                    title={L('নতুন ট্যাবে গ্রুপ খুলুন', 'Open group in new tab')}
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    <span>Open</span>
-                  </a>
-                  <button
-                    onClick={() => handleMarkDone(link)}
-                    disabled={actionLoadingId === link.id}
-                    className="btn btn-primary min-h-10"
-                  >
-                    {actionLoadingId === link.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Check className="h-4 w-4" />
-                    )}
-                    <span>Done</span>
-                  </button>
-                </div>
-              </li>
-            ))}
+              return (
+                <li
+                  key={link.id}
+                  className={`flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:gap-4 sm:px-5 transition-colors ${
+                    isLimitMet ? 'bg-slate-50/70 opacity-80' : ''
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <div className="truncate text-sm font-medium text-slate-900">{link.title || link.url}</div>
+                      {isLimitMet && (
+                        <span className="badge badge-amber text-[10px] font-semibold shrink-0">
+                          {L('কোটা পূর্ণ', 'Quota Reached')}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1 flex min-w-0 items-center gap-2 flex-wrap">
+                      <span className="badge badge-gray shrink-0">
+                        <Layers className="h-3 w-3" />
+                        {link.section_name}
+                      </span>
+                      {link.section_post_limit && link.section_post_limit > 0 && (
+                        <span className={`text-[11px] font-mono font-semibold ${isLimitMet ? 'text-amber-700' : 'text-brand-700'}`}>
+                          {link.section_completed_today ?? 0} / {link.section_post_limit} {L('পোস্ট', 'posts')}
+                        </span>
+                      )}
+                      <span className="truncate font-mono text-xs text-slate-400">{link.url}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-secondary min-h-10"
+                      title={L('নতুন ট্যাবে গ্রুপ খুলুন', 'Open group in new tab')}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      <span>Open</span>
+                    </a>
+                    <button
+                      onClick={() => handleMarkDone(link)}
+                      disabled={actionLoadingId === link.id || isLimitMet}
+                      className={`btn min-h-10 ${
+                        isLimitMet
+                          ? 'btn-secondary cursor-not-allowed text-slate-400 bg-slate-100 border-slate-200 hover:bg-slate-100'
+                          : 'btn-primary'
+                      }`}
+                      title={
+                        isLimitMet
+                          ? L(
+                              `এই গ্রুপের কোটা (${link.section_post_limit}টি) পূর্ণ হয়ে গেছে। আর পোস্ট করা যাবে না।`,
+                              `Quota (${link.section_post_limit}) reached for this group. No more posts allowed.`
+                            )
+                          : L('সম্পন্ন হিসেবে মার্ক করুন', 'Mark Done')
+                      }
+                    >
+                      {actionLoadingId === link.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4" />
+                      )}
+                      <span>Done</span>
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
 

@@ -23,15 +23,21 @@ export async function GET(
       }),
       prisma.assignment.findMany({
         where: { section_id: sectionId },
-        select: { employee_id: true },
+        select: { employee_id: true, post_limit: true },
       }),
     ]);
 
     const assignedEmployeeIds = assignments.map((a) => a.employee_id);
+    const limits: Record<string, number | null> = {};
+    assignments.forEach((a) => {
+      limits[a.employee_id] = a.post_limit;
+    });
 
     return NextResponse.json({
       employees,
       assignedEmployeeIds,
+      assignments,
+      limits,
     });
   } catch (error) {
     console.error('Error fetching section assignees:', error);
@@ -51,8 +57,21 @@ export async function POST(
   const { id: sectionId } = await params;
 
   try {
-    const { employeeIds } = await request.json();
-    if (!Array.isArray(employeeIds)) {
+    const body = await request.json();
+    let employeeIds: string[] = [];
+    let limits: Record<string, number | null> = {};
+
+    if (Array.isArray(body.employeeIds)) {
+      employeeIds = body.employeeIds;
+      if (body.limits && typeof body.limits === 'object') {
+        limits = body.limits;
+      }
+    } else if (Array.isArray(body.assignments)) {
+      employeeIds = body.assignments.map((a: any) => a.employee_id);
+      body.assignments.forEach((a: any) => {
+        limits[a.employee_id] = a.post_limit ? Number(a.post_limit) : null;
+      });
+    } else {
       return NextResponse.json({ error: 'অবৈধ তথ্য' }, { status: 400 });
     }
 
@@ -65,10 +84,12 @@ export async function POST(
 
     // Create new assignments
     for (const empId of uniqueIds) {
+      const limitVal = limits[empId] && Number(limits[empId]) > 0 ? Number(limits[empId]) : null;
       await prisma.assignment.create({
         data: {
           section_id: sectionId,
           employee_id: empId,
+          post_limit: limitVal,
           assigned_by: session.id || session.userId,
         },
       }).catch(() => {});
@@ -79,13 +100,14 @@ export async function POST(
       action: 'ASSIGN',
       entity: 'Assignment',
       entityId: sectionId,
-      payload: { sectionId, employeeIds: uniqueIds },
+      payload: { sectionId, employeeIds: uniqueIds, limits },
     });
 
     return NextResponse.json({
       success: true,
-      message: 'সেকশন অ্যাসাইনমেন্ট সংরক্ষিত হয়েছে',
+      message: 'সেকশন অ্যাসাইনমেন্ট ও পোস্ট লিমিট সংরক্ষিত হয়েছে',
       assignedCount: uniqueIds.length,
+      limits,
     });
   } catch (error) {
     console.error('Error updating section assignees:', error);

@@ -100,6 +100,17 @@ vi.mock('@/lib/prisma', () => ({
       }),
     },
     linkCompletion: {
+      count: vi.fn(async ({ where }: any) => {
+        return mockCompletions.filter((c) => {
+          if (where.employee_id && c.employee_id !== where.employee_id) return false;
+          if (where.undone_at === null && c.undone_at !== null) return false;
+          if (where.group_link?.section_id && c.group_link?.section_id !== where.group_link.section_id) {
+            const link = mockLinks.find((l) => l.id === c.group_link_id);
+            if (link?.section_id !== where.group_link.section_id) return false;
+          }
+          return true;
+        }).length;
+      }),
       findMany: vi.fn(async ({ where }: any) => {
         return mockCompletions.filter((c) => {
           if (where.employee_id && c.employee_id !== where.employee_id) return false;
@@ -337,6 +348,57 @@ describe('Employee Task Queue & One-Click Complete / Undo Engine', () => {
       expect(res.status).toBe(200);
       expect(data.assignedSections).toBeDefined();
       expect(data.todoLinks).toBeDefined();
+    });
+  });
+
+  describe('5. Mandatory Sub-group Quotas & Over-Posting Lock', () => {
+    it('enforces post limit and blocks completion once limit is reached', async () => {
+      // Set post_limit = 1 on Agro assignment
+      mockLinks[0].section.assignments = [{ id: 'assign-1', employee_id: 'emp-123', post_limit: 1 }];
+      mockAssignments[0].post_limit = 1;
+
+      // First post should succeed
+      const req1 = new NextRequest('http://localhost:3000/api/employee/work/link-1/done', { method: 'POST' });
+      const res1 = await markLinkDone(req1, { params: Promise.resolve({ linkId: 'link-1' }) });
+      expect(res1.status).toBe(200);
+
+      // Add a second link in the same section
+      const extraLink = {
+        id: 'link-agro-2',
+        section_id: 'sec-agro',
+        url: 'https://facebook.com/groups/agro2',
+        title: 'Agro Group 2',
+        is_active: true,
+        section: {
+          id: 'sec-agro',
+          name: 'Agro Groups',
+          is_active: true,
+          assignments: [{ id: 'assign-1', employee_id: 'emp-123', post_limit: 1 }],
+        },
+      };
+      mockLinks.push(extraLink);
+
+      // Attempting to complete the second link should be blocked because limit (1) is reached
+      const req2 = new NextRequest('http://localhost:3000/api/employee/work/link-agro-2/done', { method: 'POST' });
+      const res2 = await markLinkDone(req2, { params: Promise.resolve({ linkId: 'link-agro-2' }) });
+      const data2 = await res2.json();
+
+      expect(res2.status).toBe(400);
+      expect(data2.limitReached).toBe(true);
+      expect(data2.error).toContain('সীমা (1টি) পূরণ হয়ে গেছে');
+
+      // GET work queue should report is_limit_reached = true
+      const getReq = new NextRequest('http://localhost:3000/api/employee/work');
+      const getRes = await getWorkQueue(getReq);
+      const getData = await getRes.json();
+
+      const agroSection = getData.assignedSections.find((s: any) => s.id === 'sec-agro');
+      expect(agroSection.postLimit).toBe(1);
+      expect(agroSection.isLimitReached).toBe(true);
+      expect(agroSection.remaining).toBe(0);
+
+      const agroLink2 = getData.todoLinks.find((l: any) => l.id === 'link-agro-2');
+      expect(agroLink2.is_limit_reached).toBe(true);
     });
   });
 });

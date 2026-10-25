@@ -33,6 +33,7 @@ export async function GET() {
         created_at: true,
         assignments_as_employee: {
           select: {
+            post_limit: true,
             section: {
               select: { id: true, name: true },
             },
@@ -57,7 +58,11 @@ export async function GET() {
       masked_phone: emp.phone ? maskPhone(emp.phone) : null,
       is_active: emp.is_active,
       created_at: emp.created_at,
-      sections: emp.assignments_as_employee.map((a: any) => a.section),
+      sections: emp.assignments_as_employee.map((a: any) => ({
+        id: a.section.id,
+        name: a.section.name,
+        post_limit: a.post_limit ?? null,
+      })),
       total_completed_links: emp._count.link_completions,
       total_leads: emp._count.leads,
     }));

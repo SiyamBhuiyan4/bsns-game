@@ -26,6 +26,7 @@ import { useLanguage } from '@/components/LanguageContext';
 interface SectionRef {
   id: string;
   name: string;
+  post_limit?: number | null;
 }
 
 interface EmployeeItem {
@@ -80,6 +81,7 @@ export default function EmployeesPage() {
   // Assign Sections Modal
   const [assigningEmp, setAssigningEmp] = useState<EmployeeItem | null>(null);
   const [assignSelectedSections, setAssignSelectedSections] = useState<string[]>([]);
+  const [assignSectionLimits, setAssignSectionLimits] = useState<Record<string, number | ''>>({});
   const [assignSubmitting, setAssignSubmitting] = useState(false);
 
   // Reset Password Modal
@@ -199,15 +201,24 @@ export default function EmployeesPage() {
     setErrorMessage(null);
 
     try {
+      const cleanLimits: Record<string, number | null> = {};
+      assignSelectedSections.forEach((secId) => {
+        const val = assignSectionLimits[secId];
+        cleanLimits[secId] = typeof val === 'number' && val > 0 ? val : null;
+      });
+
       const res = await fetch(`/api/admin/employees/${assigningEmp.id}/assign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sectionIds: assignSelectedSections }),
+        body: JSON.stringify({
+          sectionIds: assignSelectedSections,
+          limits: cleanLimits,
+        }),
       });
 
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage('সেকশন অ্যাসাইনমেন্ট সংরক্ষিত হয়েছে');
+        setSuccessMessage('সেকশন অ্যাসাইনমেন্ট ও পোস্ট লিমিট সংরক্ষিত হয়েছে');
         setAssigningEmp(null);
         fetchEmployees();
       } else {
@@ -375,8 +386,13 @@ export default function EmployeesPage() {
                           <span className="text-xs text-slate-400">{t('emp.no_sections', 'নেই', 'None')}</span>
                         ) : (
                           emp.sections.map((sec) => (
-                            <span key={sec.id} className="badge badge-gray">
-                              {sec.name}
+                            <span key={sec.id} className="badge badge-gray inline-flex items-center gap-1">
+                              <span>{sec.name}</span>
+                              {sec.post_limit && sec.post_limit > 0 && (
+                                <span className="font-bold text-brand-700">
+                                  ({sec.post_limit}টি)
+                                </span>
+                              )}
                             </span>
                           ))
                         )}
@@ -400,6 +416,13 @@ export default function EmployeesPage() {
                           onClick={() => {
                             setAssigningEmp(emp);
                             setAssignSelectedSections(emp.sections.map((s) => s.id));
+                            const initialLimits: Record<string, number | ''> = {};
+                            emp.sections.forEach((s) => {
+                              if (s.post_limit && s.post_limit > 0) {
+                                initialLimits[s.id] = s.post_limit;
+                              }
+                            });
+                            setAssignSectionLimits(initialLimits);
                             setErrorMessage(null);
                           }}
                           className="btn-icon"
@@ -638,28 +661,89 @@ export default function EmployeesPage() {
 
             <form onSubmit={handleSaveAssignments}>
               <div className="card-body">
-                <div className="max-h-72 space-y-1 overflow-y-auto">
-                  {sections.map((sec) => (
-                    <label
-                      key={sec.id}
-                      className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-slate-50"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={assignSelectedSections.includes(sec.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setAssignSelectedSections([...assignSelectedSections, sec.id]);
-                          } else {
-                            setAssignSelectedSections(assignSelectedSections.filter((id) => id !== sec.id));
-                          }
-                        }}
-                        className="h-4 w-4 rounded border-slate-300 accent-brand-600"
-                      />
-                      <span>{sec.name}</span>
-                    </label>
-                  ))}
+                <div className="mb-3 text-xs text-slate-500">
+                  {t(
+                    'emp.assign_info',
+                    'যে যে সাব-গ্রুপে পোস্ট দিতে পারবে সেগুলো নির্বাচন করুন এবং প্রতিটি সাব-গ্রুপের জন্য বাধ্যতামূলক পোস্ট লিমিট / কোটা লিখে দিন।',
+                    'Check sub-groups and set mandatory post limits/quotas per group.'
+                  )}
                 </div>
+
+                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+                  {sections.map((sec) => {
+                    const isChecked = assignSelectedSections.includes(sec.id);
+                    return (
+                      <div
+                        key={sec.id}
+                        className={`rounded-lg border p-3 transition-colors ${
+                          isChecked ? 'border-brand-300 bg-brand-50/40' : 'border-slate-200 hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium text-slate-800 flex-1 min-w-0">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setAssignSelectedSections([...assignSelectedSections, sec.id]);
+                                } else {
+                                  setAssignSelectedSections(assignSelectedSections.filter((id) => id !== sec.id));
+                                  const updatedLimits = { ...assignSectionLimits };
+                                  delete updatedLimits[sec.id];
+                                  setAssignSectionLimits(updatedLimits);
+                                }
+                              }}
+                              className="h-4 w-4 rounded border-slate-300 accent-brand-600"
+                            />
+                            <span className="truncate">{sec.name}</span>
+                          </label>
+
+                          {isChecked && (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="text-xs text-slate-500 font-medium">
+                                {t('emp.post_limit', 'পোস্ট কোটা:', 'Quota:')}
+                              </span>
+                              <input
+                                type="number"
+                                min="1"
+                                placeholder={t('emp.unlimited', 'যেমন: ৩', 'e.g. 3')}
+                                value={assignSectionLimits[sec.id] ?? ''}
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? '' : parseInt(e.target.value, 10);
+                                  setAssignSectionLimits((prev) => ({
+                                    ...prev,
+                                    [sec.id]: val,
+                                  }));
+                                }}
+                                className="input py-1 px-2 text-xs w-24 text-center font-bold text-slate-800"
+                              />
+                              <span className="text-xs text-slate-500">
+                                {t('common.posts_unit', 'টি', 'posts')}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Quota Summary Calculation */}
+                {assignSelectedSections.length > 0 && (
+                  <div className="mt-3 p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+                    <span className="text-slate-600 font-medium">
+                      {t('emp.total_quota', 'মোট নির্ধারিত পোস্ট কোটা:', 'Total Assigned Quota:')}
+                    </span>
+                    <span className="font-bold text-brand-700">
+                      {assignSelectedSections.reduce((sum, id) => {
+                        const val = assignSectionLimits[id];
+                        return sum + (typeof val === 'number' && val > 0 ? val : 0);
+                      }, 0)}{' '}
+                      {t('common.posts_unit', 'টি পোস্ট', 'posts')}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">

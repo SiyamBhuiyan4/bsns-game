@@ -78,7 +78,7 @@ const MODELS: Record<ModelName, ModelDef> = {
     },
   },
   assignment: {
-    table: 'Assignment', dates: ['created_at'], defaults: { created_at: NOW }, unique: [['employee_id', 'section_id']],
+    table: 'Assignment', dates: ['created_at'], defaults: { post_limit: null, created_at: NOW }, unique: [['employee_id', 'section_id']],
     relations: {
       employee: { to: 'user', fk: 'employee_id' },
       section: { to: 'groupSection', fk: 'section_id' },

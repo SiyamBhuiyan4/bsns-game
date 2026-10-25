@@ -202,6 +202,7 @@ model Assignment {
   employee_id String
   section_id  String
   assigned_by String
+  post_limit  Int?
   created_at  DateTime     @default(now())
 
   employee    User         @relation("EmployeeAssignments", fields: [employee_id], references: [id], onDelete: Cascade)

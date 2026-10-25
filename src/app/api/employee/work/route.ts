@@ -23,6 +23,29 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Query SectionTargets for POSTS_DONE for this employee as fallback
+    const targets = prisma.sectionTarget
+      ? await prisma.sectionTarget.findMany({
+          where: {
+            employee_id: session.userId,
+            metric_type: 'POSTS_DONE',
+          },
+          select: { section_id: true, target_value: true },
+        })
+      : [];
+    const targetMap = new Map<string, number>();
+    for (const t of targets) {
+      if (t.section_id) {
+        targetMap.set(t.section_id, Number(t.target_value));
+      }
+    }
+
+    const sectionLimitsMap = new Map<string, number | null>();
+    assignments.forEach((a) => {
+      const limitVal = a.post_limit ?? targetMap.get(a.section_id) ?? null;
+      sectionLimitsMap.set(a.section_id, limitVal && Number(limitVal) > 0 ? Number(limitVal) : null);
+    });
+
     // Filter to active sections only
     const activeAssignedSections = assignments
       .map((a) => a.section)
@@ -145,6 +168,47 @@ export async function GET(request: NextRequest) {
       (c) => new Date(c.completed_at).getTime() >= startOfDhakaDay.getTime()
     ).length;
 
+    // Count today's completions per section
+    const completedTodayPerSection = new Map<string, number>();
+    completedLinks.forEach((c) => {
+      if (new Date(c.completed_at).getTime() >= startOfDhakaDay.getTime()) {
+        completedTodayPerSection.set(
+          c.section_id,
+          (completedTodayPerSection.get(c.section_id) || 0) + 1
+        );
+      }
+    });
+
+    // Enrich activeAssignedSections with limits
+    const enrichedSections = activeAssignedSections.map((s) => {
+      const limit = sectionLimitsMap.get(s.id) ?? null;
+      const completedToday = completedTodayPerSection.get(s.id) || 0;
+      const isLimitReached = limit !== null && limit > 0 && completedToday >= limit;
+      const remaining = limit !== null && limit > 0 ? Math.max(0, limit - completedToday) : null;
+      return {
+        id: s.id,
+        name: s.name,
+        is_active: s.is_active,
+        postLimit: limit,
+        completedToday,
+        isLimitReached,
+        remaining,
+      };
+    });
+
+    // Enrich todoLinks with limit-reached status
+    const enrichedTodoLinks = todoLinks.map((link) => {
+      const limit = sectionLimitsMap.get(link.section_id) ?? null;
+      const completedToday = completedTodayPerSection.get(link.section_id) || 0;
+      const isLimitReached = limit !== null && limit > 0 && completedToday >= limit;
+      return {
+        ...link,
+        section_post_limit: limit,
+        section_completed_today: completedToday,
+        is_limit_reached: isLimitReached,
+      };
+    });
+
     const totalAssignedCount = allLinks.length;
     const progressPercent = totalAssignedCount > 0
       ? Math.round((completedTodayCount / totalAssignedCount) * 100)
@@ -155,8 +219,8 @@ export async function GET(request: NextRequest) {
     const undoEnabled = settings ? settings.undo_enabled : true;
 
     return NextResponse.json({
-      assignedSections: activeAssignedSections,
-      todoLinks,
+      assignedSections: enrichedSections,
+      todoLinks: enrichedTodoLinks,
       completedLinks,
       progress: {
         completedToday: completedTodayCount,

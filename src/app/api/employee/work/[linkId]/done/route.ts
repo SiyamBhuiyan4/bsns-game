@@ -60,6 +60,54 @@ export async function POST(
       });
     }
 
+    // 2.5. Check section post limit for this employee
+    const assignment = link.section?.assignments?.[0];
+    let postLimit = assignment?.post_limit ?? null;
+
+    if (!postLimit && prisma.sectionTarget) {
+      const target = await prisma.sectionTarget.findFirst({
+        where: {
+          employee_id: session.userId,
+          section_id: link.section_id,
+          metric_type: 'POSTS_DONE',
+        },
+      });
+      if (target) {
+        postLimit = Number(target.target_value);
+      }
+    }
+
+    if (postLimit && postLimit > 0) {
+      const now = new Date();
+      const dhakaOffsetMs = 6 * 60 * 60 * 1000;
+      const dhakaNow = new Date(now.getTime() + dhakaOffsetMs);
+      const startOfDhakaDay = new Date(
+        Date.UTC(dhakaNow.getUTCFullYear(), dhakaNow.getUTCMonth(), dhakaNow.getUTCDate()) -
+          dhakaOffsetMs
+      );
+
+      const sectionCompletions = await prisma.linkCompletion.count({
+        where: {
+          employee_id: session.userId,
+          undone_at: null,
+          completed_at: { gte: startOfDhakaDay },
+          group_link: { section_id: link.section_id },
+        },
+      });
+
+      if (sectionCompletions >= postLimit) {
+        return NextResponse.json(
+          {
+            error: `"${link.section.name}" এ আপনার আজকের পোস্ট সীমা (${postLimit}টি) পূরণ হয়ে গেছে। আর পোস্ট করা যাবে না।`,
+            limitReached: true,
+            postLimit,
+            completedToday: sectionCompletions,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     // 3. Create or re-activate completion
     const completion = await prisma.linkCompletion.create({
       data: {

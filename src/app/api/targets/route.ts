@@ -192,13 +192,20 @@ export async function POST(req: NextRequest) {
         const existingAssign = await prisma.assignment.findFirst({
           where: { employee_id, section_id },
         });
+        const postLimit = target_value ? Math.round(Number(target_value)) : null;
         if (!existingAssign) {
           await prisma.assignment.create({
             data: {
               employee_id,
               section_id,
+              post_limit: postLimit,
               assigned_by: session.id || session.userId,
             },
+          });
+        } else {
+          await prisma.assignment.update({
+            where: { id: existingAssign.id },
+            data: { post_limit: postLimit },
           });
         }
       } catch (assignErr) {
