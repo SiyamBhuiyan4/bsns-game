@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   X,
   Search,
@@ -23,6 +24,10 @@ import {
   TrendingUp,
   ArrowLeft,
   ArrowRight,
+  MapPin,
+  Phone,
+  AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import {
@@ -80,23 +85,43 @@ export default function SectionDetailModal({
   onSelectStandardSection,
   standardGroupSection,
 }: SectionDetailModalProps) {
+  const router = useRouter();
   const { lang, digitStyle, formatNum, formatMoney } = useLanguage();
   const [activeTab, setActiveTab] = useState<'employees' | 'subgroups' | 'history'>('employees');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [employeeFilter, setEmployeeFilter] = useState<'assigned' | 'all'>('assigned');
 
+  // Customer Profile creation state (for NEW_CLIENTS section)
+  const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
+  const [custName, setCustName] = useState('');
+  const [custPhone, setCustPhone] = useState('');
+  const [custAddress, setCustAddress] = useState('');
+  const [custBuyerType, setCustBuyerType] = useState('RETAIL');
+  const [custOwnerId, setCustOwnerId] = useState('');
+  const [custNote, setCustNote] = useState('');
+  const [custSubmitting, setCustSubmitting] = useState(false);
+  const [custError, setCustError] = useState<string | null>(null);
+  const [custSuccess, setCustSuccess] = useState<string | null>(null);
+  const [phoneWarning, setPhoneWarning] = useState<string | null>(null);
+  const [checkingPhone, setCheckingPhone] = useState(false);
+  const [addedLogs, setAddedLogs] = useState<SectionOverviewItem['historyLogs']>([]);
+
   // Close on Escape key press
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        if (isAddCustomerOpen) {
+          setIsAddCustomerOpen(false);
+        } else {
+          onClose();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, isAddCustomerOpen, onClose]);
 
   // Lock body scroll when modal is open
   useEffect(() => {
@@ -116,6 +141,10 @@ export default function SectionDetailModal({
     setActiveTab('employees');
     setSortOrder('desc');
     setEmployeeFilter('assigned');
+    setAddedLogs([]);
+    setCustSuccess(null);
+    setCustError(null);
+    setIsAddCustomerOpen(false);
   }, [selected]);
 
   const L = (bn: string, en: string) => (lang === 'bn' ? bn : en);
@@ -256,6 +285,119 @@ export default function SectionDetailModal({
     return list;
   }, [rawEmployeeList, employeeFilter, searchTerm, sortOrder]);
 
+  // Handle phone input change with duplicate check
+  const handlePhoneChange = async (val: string) => {
+    setCustPhone(val);
+    const cleaned = val.replace(/[\s-]/g, '');
+    if (cleaned.length >= 11) {
+      setCheckingPhone(true);
+      try {
+        const res = await fetch(`/api/leads/check-phone?phone=${encodeURIComponent(cleaned)}`);
+        const data = await res.json();
+        if (data.exists) {
+          if (data.ownerName) {
+            setPhoneWarning(
+              L(
+                `সতর্কতা: এই নম্বরটি ইতোমধ্যে "${data.leadName}" নামে রয়েছে (যুক্ত করেছেন: ${data.ownerName})।`,
+                `Warning: Phone already exists for "${data.leadName}" (Added by: ${data.ownerName}).`
+              )
+            );
+          } else {
+            setPhoneWarning(
+              L(
+                `সতর্কতা: এই নম্বরটি ইতোমধ্যে অন্য একটি কাস্টমার প্রোফাইলে বিদ্যমান।`,
+                `Warning: Phone already exists in the system.`
+              )
+            );
+          }
+        } else {
+          setPhoneWarning(null);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setCheckingPhone(false);
+      }
+    } else {
+      setPhoneWarning(null);
+    }
+  };
+
+  // Create new customer profile and attribute to creator employee
+  const handleCreateCustomer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!custName.trim() || !custPhone.trim()) {
+      setCustError(L('কাস্টমারের নাম এবং মোবাইল নম্বর পূরণ করা আবশ্যক', 'Name and phone are required'));
+      return;
+    }
+    setCustSubmitting(true);
+    setCustError(null);
+
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: custName.trim(),
+          phone: custPhone.trim(),
+          address: custAddress.trim() || null,
+          buyer_type: custBuyerType,
+          source_channel: 'ড্যাশবোর্ড - নতুন ক্লায়েন্ট',
+          owner_id: custOwnerId || null,
+          initial_note: custNote.trim() || null,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setCustError(data.error || L('কাস্টমার প্রোফাইল তৈরি ব্যর্থ হয়েছে', 'Failed to create customer'));
+        return;
+      }
+
+      const chosenEmp = rawEmployeeList.find((emp) => emp.employeeId === custOwnerId);
+      const chosenName = chosenEmp?.name || L('বর্তমান কর্মী', 'Current Employee');
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      const buyerTypeLabel =
+        custBuyerType === 'WHOLESALER' ? 'পাইকারি' :
+        custBuyerType === 'DEALER' ? 'ডিলার' :
+        custBuyerType === 'RESTAURANT' ? 'রেস্টুরেন্ট' :
+        custBuyerType === 'FARMER' ? 'খামারি' :
+        custBuyerType === 'RETAIL' ? 'খুচরা' : 'অন্যান্য';
+
+      const newLog = {
+        date: todayStr,
+        employeeId: custOwnerId || 'new',
+        employeeName: chosenName,
+        value: 1,
+        note: `${custName.trim()} (${custPhone.trim()})${custAddress.trim() ? ` • ${custAddress.trim()}` : ''} • ধরন: ${buyerTypeLabel} • তৈরি করেছেন: ${chosenName}`,
+      };
+
+      setAddedLogs((prev) => [newLog, ...prev]);
+      setCustSuccess(
+        L(
+          `কাস্টমার "${custName.trim()}" এর প্রোফাইল যুক্ত হয়েছে এবং ${chosenName} এর নতুন ক্লায়েন্ট সংখ্যায় +১ বৃদ্ধি পেয়েছে!`,
+          `Customer "${custName.trim()}" created and +1 added to ${chosenName}'s new clients count!`
+        )
+      );
+
+      setCustName('');
+      setCustPhone('');
+      setCustAddress('');
+      setCustBuyerType('RETAIL');
+      setCustNote('');
+      setPhoneWarning(null);
+      setIsAddCustomerOpen(false);
+
+      setActiveTab('history');
+      router.refresh();
+    } catch {
+      setCustError(L('একটি সমস্যা হয়েছে। পুনরায় চেষ্টা করুন।', 'An error occurred. Please try again.'));
+    } finally {
+      setCustSubmitting(false);
+    }
+  };
+
   // Filtered sub-groups list for POSTS_DONE modal
   const filteredSubgroups = useMemo(() => {
     if (!groupSectionsOverview) return [];
@@ -267,7 +409,7 @@ export default function SectionDetailModal({
   // Standard History Logs
   const filteredHistoryLogs = useMemo(() => {
     if (!isStandard || !standardSec) return [];
-    let list = [...(standardSec.historyLogs || [])];
+    let list = [...addedLogs, ...(standardSec.historyLogs || [])];
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase();
       list = list.filter(
@@ -284,7 +426,7 @@ export default function SectionDetailModal({
       return b.date.localeCompare(a.date);
     });
     return list;
-  }, [isStandard, standardSec, searchTerm, sortOrder]);
+  }, [isStandard, standardSec, addedLogs, searchTerm, sortOrder]);
 
   // Group Completions History Logs
   const filteredGroupCompletions = useMemo(() => {
@@ -367,14 +509,14 @@ export default function SectionDetailModal({
 
   // Summary Metrics calculations
   const totalAchievedDisplay = isStandard
-    ? formatSectionValue(standardSec!.totalAchieved)
+    ? formatSectionValue(standardSec!.totalAchieved + addedLogs.length)
     : `${formatNum(groupSec!.completedLinksCount)} / ${formatNum(groupSec!.totalLinks)} ${L('টি', 'links')}`;
 
   const targetPercentage = isStandard
     ? standardSec!.averagePercentage !== undefined
       ? standardSec!.averagePercentage
       : standardSec!.totalTarget > 0
-      ? Math.round((standardSec!.totalAchieved / standardSec!.totalTarget) * 100)
+      ? Math.round(((standardSec!.totalAchieved + addedLogs.length) / standardSec!.totalTarget) * 100)
       : null
     : groupSec?.averagePercentage !== undefined
     ? groupSec.averagePercentage
@@ -391,7 +533,7 @@ export default function SectionDetailModal({
     : rawEmployeeList.filter((e) => e.total > 0).length;
 
   const totalLogsCount = isStandard
-    ? standardSec!.historyLogs.length
+    ? standardSec!.historyLogs.length + addedLogs.length
     : groupSec!.completionsHistory.length;
 
   return (
@@ -437,6 +579,19 @@ export default function SectionDetailModal({
           </div>
 
           <div className="flex items-center gap-2">
+            {isStandard && standardSec?.key === 'NEW_CLIENTS' && (
+              <button
+                onClick={() => {
+                  setIsAddCustomerOpen(true);
+                  setCustError(null);
+                  setPhoneWarning(null);
+                }}
+                className="btn btn-primary btn-sm inline-flex items-center gap-1.5 text-xs bg-brand-600 hover:bg-brand-700 text-white font-medium shadow-sm"
+              >
+                <UserPlus className="h-3.5 w-3.5" />
+                <span>{L('নতুন কাস্টমার প্রোফাইল', 'Add Customer Profile')}</span>
+              </button>
+            )}
             {!isStandard && standardGroupSection && onSelectStandardSection && (
               <button
                 onClick={() => onSelectStandardSection(standardGroupSection)}
@@ -467,6 +622,22 @@ export default function SectionDetailModal({
             </button>
           </div>
         </div>
+
+        {/* Success Alert Banner (for Customer Creation) */}
+        {custSuccess && (
+          <div className="mx-6 mt-4 flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-xs text-emerald-800 animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+              <span>{custSuccess}</span>
+            </div>
+            <button
+              onClick={() => setCustSuccess(null)}
+              className="text-emerald-600 hover:text-emerald-900 font-bold ml-2 text-sm leading-none"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {/* Quick Highlights Summary Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-5 bg-white border-b border-slate-100">
@@ -747,14 +918,25 @@ export default function SectionDetailModal({
                               <span className="font-semibold text-slate-900 tabular-nums">
                                 {formatSectionValue(emp.total)}
                               </span>
+                              {isStandard && standardSec?.key === 'NEW_CLIENTS' && (emp as any).bankedSurplus && (emp as any).bankedSurplus > 0 ? (
+                                <div className="text-[10px] text-emerald-600 font-medium">
+                                  +{formatNum((emp as any).bankedSurplus)} {L('জন জমা (রোলওভার)', 'banked surplus')}
+                                </div>
+                              ) : null}
                             </td>
 
                             {/* Target column (Standard only) */}
                             {isStandard && (
                               <td className="text-right text-slate-600 tabular-nums">
-                                {emp.target > 0
-                                  ? formatSectionValue(emp.target)
-                                  : '—'}
+                                {emp.target > 0 ? (
+                                  formatSectionValue(emp.target)
+                                ) : (
+                                  <span className="text-xs text-slate-400 italic">
+                                    {standardSec?.key === 'NEW_CLIENTS' && emp.total > 0
+                                      ? L('টার্গেট নেই (জমা আছে)', 'Unassigned (Banked)')
+                                      : '—'}
+                                  </span>
+                                )}
                               </td>
                             )}
 
@@ -933,9 +1115,21 @@ export default function SectionDetailModal({
                       <thead>
                         <tr>
                           <th className="w-36">{L('তারিখ', 'Date')}</th>
-                          <th>{L('কর্মী', 'Employee')}</th>
-                          <th className="text-right">{L('সম্পন্ন পরিমাণ', 'Quantity / Value')}</th>
-                          <th>{L('নোট / মন্তব্য', 'Notes / Remarks')}</th>
+                          <th>
+                            {standardSec?.key === 'NEW_CLIENTS'
+                              ? L('যুক্ত করেছেন (কর্মী)', 'Added by (Employee)')
+                              : L('কর্মী', 'Employee')}
+                          </th>
+                          <th className="text-right">
+                            {standardSec?.key === 'NEW_CLIENTS'
+                              ? L('কাউন্ট', 'Count')
+                              : L('সম্পন্ন পরিমাণ', 'Quantity / Value')}
+                          </th>
+                          <th>
+                            {standardSec?.key === 'NEW_CLIENTS'
+                              ? L('কাস্টমার প্রোফাইল ও বিবরণ', 'Customer Profile & Details')
+                              : L('নোট / মন্তব্য', 'Notes / Remarks')}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -956,9 +1150,16 @@ export default function SectionDetailModal({
                                 >
                                   {getInitials(log.employeeName)}
                                 </div>
-                                <span className="font-medium text-slate-900 truncate">
-                                  {log.employeeName}
-                                </span>
+                                <div>
+                                  <span className="font-semibold text-slate-900 truncate block">
+                                    {log.employeeName}
+                                  </span>
+                                  {standardSec?.key === 'NEW_CLIENTS' && (
+                                    <span className="badge badge-blue text-[9px] py-0 px-1 font-medium">
+                                      {L('যুক্ত করেছেন', 'Added by')}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </td>
                             <td className="text-right">
@@ -968,10 +1169,21 @@ export default function SectionDetailModal({
                             </td>
                             <td>
                               {log.note ? (
-                                <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-50 px-2.5 py-1 text-xs text-slate-700 border border-slate-200/70 max-w-md truncate">
-                                  <FileText className="h-3 w-3 text-slate-400 shrink-0" />
-                                  <span className="truncate">{log.note}</span>
-                                </span>
+                                standardSec?.key === 'NEW_CLIENTS' ? (
+                                  <div className="flex items-center gap-2 max-w-lg">
+                                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                                      <UserPlus className="h-3 w-3" />
+                                    </div>
+                                    <span className="text-xs text-slate-800 font-medium leading-relaxed">
+                                      {log.note}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-50 px-2.5 py-1 text-xs text-slate-700 border border-slate-200/70 max-w-md truncate">
+                                    <FileText className="h-3 w-3 text-slate-400 shrink-0" />
+                                    <span className="truncate">{log.note}</span>
+                                  </span>
+                                )
                               ) : (
                                 <span className="text-xs text-slate-400 italic">
                                   {L('কোনো নোট নেই', 'No notes')}
@@ -1094,6 +1306,180 @@ export default function SectionDetailModal({
           </button>
         </div>
       </div>
+
+      {/* Add Customer Profile Modal */}
+      {isAddCustomerOpen && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4">
+          <div
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity animate-in fade-in"
+            onClick={() => setIsAddCustomerOpen(false)}
+            aria-hidden="true"
+          />
+          <div className="relative z-10 w-full max-w-md rounded-2xl bg-white shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-5 py-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 text-brand-700 border border-brand-200">
+                  <UserPlus className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    {L('নতুন কাস্টমার প্রোফাইল তৈরি', 'Create Customer Profile')}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    {L('কাস্টমার তথ্য ও সংশ্লিষ্ট কর্মীর নাম যুক্ত করুন', 'Add customer details and creator employee')}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsAddCustomerOpen(false)}
+                className="btn-icon text-slate-400 hover:text-slate-700"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateCustomer} className="p-5 space-y-3.5">
+              {custError && (
+                <div className="rounded-lg bg-rose-50 border border-rose-200 p-2.5 text-xs text-rose-700 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  <span>{custError}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="label text-xs font-semibold text-slate-700">
+                  {L('কাস্টমারের নাম *', 'Customer Name *')}
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder={L('যেমন: মো: আরিফুল ইসলাম', 'e.g. John Doe')}
+                  value={custName}
+                  onChange={(e) => setCustName(e.target.value)}
+                  className="input text-xs py-1.5"
+                />
+              </div>
+
+              <div>
+                <label className="label text-xs font-semibold text-slate-700">
+                  {L('মোবাইল নম্বর (১১ ডিজিট) *', 'Phone Number (11 Digits) *')}
+                </label>
+                <div className="relative">
+                  <input
+                    type="tel"
+                    required
+                    placeholder="01XXXXXXXXX"
+                    value={custPhone}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
+                    className="input text-xs py-1.5 tabular-nums pr-8"
+                  />
+                  {checkingPhone && (
+                    <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-slate-400" />
+                  )}
+                </div>
+                {phoneWarning && (
+                  <div className="mt-1 text-[11px] text-amber-700 bg-amber-50 rounded p-1.5 border border-amber-200 flex items-start gap-1.5">
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-600" />
+                    <span>{phoneWarning}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label text-xs font-semibold text-slate-700">
+                    {L('ক্রেতার ধরন', 'Buyer Type')}
+                  </label>
+                  <select
+                    value={custBuyerType}
+                    onChange={(e) => setCustBuyerType(e.target.value)}
+                    className="input text-xs py-1.5"
+                  >
+                    <option value="RETAIL">{L('খুচরা (Retail)', 'Retail')}</option>
+                    <option value="WHOLESALER">{L('পাইকারি (Wholesale)', 'Wholesale')}</option>
+                    <option value="DEALER">{L('ডিলার (Dealer)', 'Dealer')}</option>
+                    <option value="RESTAURANT">{L('রেস্টুরেন্ট (Restaurant)', 'Restaurant')}</option>
+                    <option value="FARMER">{L('খামারি / কৃষক (Farmer)', 'Farmer')}</option>
+                    <option value="OTHER">{L('অন্যান্য (Other)', 'Other')}</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="label text-xs font-semibold text-slate-700">
+                    {L('তৈরি করেছেন (কর্মী)', 'Created by (Employee)')}
+                  </label>
+                  <select
+                    value={custOwnerId}
+                    onChange={(e) => setCustOwnerId(e.target.value)}
+                    className="input text-xs py-1.5"
+                  >
+                    <option value="">{L('বর্তমান ইউজার', 'Current User')}</option>
+                    {rawEmployeeList.map((emp) => (
+                      <option key={emp.employeeId} value={emp.employeeId}>
+                        {emp.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="label text-xs font-semibold text-slate-700">
+                  {L('ঠিকানা / এলাকা', 'Address / Area')}
+                </label>
+                <input
+                  type="text"
+                  placeholder={L('যেমন: মিরপুর ১০, ঢাকা', 'e.g. Mirpur 10, Dhaka')}
+                  value={custAddress}
+                  onChange={(e) => setCustAddress(e.target.value)}
+                  className="input text-xs py-1.5"
+                />
+              </div>
+
+              <div>
+                <label className="label text-xs font-semibold text-slate-700">
+                  {L('মন্তব্য বা প্রাথমিক নোট', 'Initial Notes')}
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder={L('পণ্য আগ্রহ বা অতিরিক্ত তথ্য...', 'Notes or product interest...')}
+                  value={custNote}
+                  onChange={(e) => setCustNote(e.target.value)}
+                  className="input text-xs py-1.5"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddCustomerOpen(false)}
+                  className="btn btn-secondary btn-sm text-xs"
+                >
+                  {L('বাতিল', 'Cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={custSubmitting}
+                  className="btn btn-primary btn-sm text-xs bg-brand-600 hover:bg-brand-700 text-white flex items-center gap-1.5"
+                >
+                  {custSubmitting ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>{L('সংরক্ষণ হচ্ছে...', 'Saving...')}</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      <span>{L('সংরক্ষণ করুন', 'Save Profile')}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -40,6 +40,7 @@ interface LeadItem {
   product: ProductRef | null;
   campaign: CampaignRef | null;
   source_channel: string;
+  owner_name?: string;
   status: 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'ORDERED' | 'LOST';
   quality_rating: number | null;
   expected_value: number | null;
@@ -945,6 +946,13 @@ export default function EmployeeLeadsPage() {
                           <dd className="font-medium text-slate-900">{leadDetail.address}</dd>
                         </div>
                       )}
+                      <div className="col-span-2">
+                        <dt className="text-slate-500">{L('যুক্ত করেছেন (কর্মী)', 'Added by (Employee)')}</dt>
+                        <dd className="font-semibold text-slate-900 flex items-center gap-1.5 mt-0.5">
+                          <span className="badge badge-blue text-[10px] font-normal">{L('কর্মী', 'Employee')}</span>
+                          <span>{leadDetail.owner_name}</span>
+                        </dd>
+                      </div>
                     </dl>
                   </div>
 

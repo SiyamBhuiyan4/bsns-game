@@ -152,8 +152,68 @@ export async function GET(req: NextRequest) {
     const totalEmployees = employees.length;
     const teamAvgScore = totalEmployees > 0 ? Number((totalScoreSum / totalEmployees).toFixed(2)) : 0;
 
+    // Executive Daily Report Sample Metrics (as requested by user)
+    const newLeadsCount = await prisma.lead.count({
+      where: {
+        created_at: { gte: dayStartUtc, lte: dayEndUtc },
+      },
+    });
+
+    const confirmedOrdersCount = await prisma.lead.count({
+      where: {
+        status: 'ORDERED',
+        updated_at: { gte: dayStartUtc, lte: dayEndUtc },
+      },
+    });
+
+    const b2bLeads = await prisma.lead.findMany({
+      where: {
+        created_at: { gte: dayStartUtc, lte: dayEndUtc },
+        OR: [
+          { buyer_type: { in: ['WHOLESALER', 'DEALER', 'RESTAURANT'] } },
+          { expected_value: { gte: 10000 } },
+        ],
+      },
+      select: {
+        expected_value: true,
+        order_amount: true,
+      },
+    });
+    const b2bInquiriesCount = b2bLeads.length;
+    const b2bInquiriesValue = b2bLeads.reduce(
+      (acc, l) => acc + Number(l.order_amount || l.expected_value || 0),
+      0
+    );
+
+    const activeCampaigns = await prisma.campaign.findMany({
+      where: { status: 'ACTIVE' },
+      select: { budget_amount: true },
+    });
+    const dailyAdSpend = Math.round(
+      activeCampaigns.reduce((acc, c) => acc + Number(c.budget_amount) / 30, 0)
+    );
+
+    const mainIssues = employeeReports
+      .map((e: any) => e.daily_text?.main_issue)
+      .filter((txt: any): txt is string => Boolean(txt && txt.trim().length > 0));
+
+    const nextPriorities = employeeReports
+      .map((e: any) => e.daily_text?.next_priorities)
+      .filter((txt: any): txt is string => Boolean(txt && txt.trim().length > 0));
+
     return NextResponse.json({
       date: dateStr,
+      executive_table: {
+        new_leads: newLeadsCount,
+        confirmed_orders: confirmedOrdersCount,
+        total_sales: teamSales,
+        ad_spend: dailyAdSpend,
+        followups_done: teamFollowups,
+        b2b_inquiries_count: b2bInquiriesCount,
+        b2b_inquiries_value: b2bInquiriesValue,
+        main_issues: mainIssues,
+        next_priorities: nextPriorities,
+      },
       summary: {
         total_employees: totalEmployees,
         team_sales: teamSales,

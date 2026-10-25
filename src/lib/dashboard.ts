@@ -32,6 +32,8 @@ export interface EmployeeSectionBreakdown {
   target: number;
   percentage: number;
   hasTarget: boolean;
+  bankedSurplus?: number;
+  consumed?: number;
 }
 
 export interface SectionHistoryLog {
@@ -506,7 +508,17 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
       where: {
         created_at: { gte: rangeStartDateTime, lte: rangeEndDateTime },
       },
-      select: { id: true, source_channel: true, buyer_type: true, status: true },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        address: true,
+        source_channel: true,
+        buyer_type: true,
+        status: true,
+        owner_id: true,
+        created_at: true,
+      },
     }),
     prisma.dailyEntry.findMany({
       where: {
@@ -893,6 +905,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     assignments,
     periodEntries,
     periodLinkCompletions,
+    periodLeads: allLeads,
     startUtcDate,
     endUtcDate,
     filterSectionKey: filter.sectionKey,
@@ -985,6 +998,7 @@ export function computeSectionsOverview(params: {
   assignments: Array<{ employee_id: string; section_id: string }>;
   periodEntries: any[];
   periodLinkCompletions: any[];
+  periodLeads?: any[];
   startUtcDate: Date;
   endUtcDate: Date;
   filterSectionKey?: string;
@@ -996,6 +1010,7 @@ export function computeSectionsOverview(params: {
     assignments,
     periodEntries,
     periodLinkCompletions,
+    periodLeads = [],
     startUtcDate,
     endUtcDate,
     filterSectionKey,
@@ -1080,6 +1095,38 @@ export function computeSectionsOverview(params: {
           empTotals.set(empId, (empTotals.get(empId) || 0) + achieved);
         }
       }
+    } else if (secKey === 'NEW_CLIENTS') {
+      // NEW_CLIENTS from customer / client profiles created + DailyEntry
+      const leadsCountByEmp = new Map<string, number>();
+      for (const lead of periodLeads) {
+        if (!lead.owner_id) continue;
+        const dateStr = getDhakaDateString(new Date(lead.created_at));
+        const emp = employeeMap.get(lead.owner_id);
+        const buyerTypeLabel = lead.buyer_type === 'B2B' ? 'পাইকারি (B2B)' : lead.buyer_type === 'DEALER' ? 'ডিলার' : 'খুচরা ক্রেতা';
+        historyLogs.push({
+          date: dateStr,
+          employeeId: lead.owner_id,
+          employeeName: emp ? emp.name : 'Unknown',
+          value: 1,
+          note: `কাস্টমার প্রোফাইল: ${lead.name} (${lead.phone})${lead.address ? ` • ${lead.address}` : ''} • ধরন: ${buyerTypeLabel} • তৈরি করেছেন: ${emp ? emp.name : 'Unknown'}`,
+        });
+        leadsCountByEmp.set(lead.owner_id, (leadsCountByEmp.get(lead.owner_id) || 0) + 1);
+      }
+
+      // Check daily entries as well and take whichever is higher or combined
+      for (const emp of activeEmployees) {
+        let entryTotal = 0;
+        for (const e of periodEntries) {
+          if (e.employee_id === emp.id && e.metric_type === MetricType.NEW_CLIENTS) {
+            entryTotal += Number(e.value);
+          }
+        }
+        const createdCount = leadsCountByEmp.get(emp.id) || 0;
+        const total = Math.max(createdCount, entryTotal);
+        if (total > 0) {
+          empTotals.set(emp.id, total);
+        }
+      }
     } else {
       // Other metrics: from periodEntries
       for (const e of periodEntries) {
@@ -1133,9 +1180,21 @@ export function computeSectionsOverview(params: {
         empTarget = Math.round(overallMetricTarget / activeEmployees.length);
       }
 
+      let bankedSurplus = 0;
+      let consumed = empTotal;
+      if (secKey === 'NEW_CLIENTS') {
+        if (empTarget > 0) {
+          consumed = Math.min(empTotal, empTarget);
+          bankedSurplus = Math.max(0, empTotal - empTarget);
+        } else {
+          consumed = 0;
+          bankedSurplus = empTotal;
+        }
+      }
+
       const hasTarget = empTarget > 0;
       const percentage = empTarget > 0
-        ? Math.min(100, Math.round((empTotal / empTarget) * 100))
+        ? Math.min(100, Math.round(((secKey === 'NEW_CLIENTS' ? consumed : empTotal) / empTarget) * 100))
         : (empTotal > 0 ? 100 : 0);
 
       employeeBreakdown.push({
@@ -1146,6 +1205,8 @@ export function computeSectionsOverview(params: {
         target: empTarget,
         percentage,
         hasTarget,
+        bankedSurplus: secKey === 'NEW_CLIENTS' ? bankedSurplus : undefined,
+        consumed: secKey === 'NEW_CLIENTS' ? consumed : undefined,
       });
     }
 

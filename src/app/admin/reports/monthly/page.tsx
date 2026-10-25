@@ -626,7 +626,7 @@ export default function MonthlyReportPage() {
                     <FileText className="h-4 w-4 text-slate-400" />
                     মাসিক সারসংক্ষেপ
                   </h2>
-                  <p className="card-subtitle">টিম পারফরম্যান্সের মূল্যায়ন</p>
+                  <p className="card-subtitle">কর্মীদের পারফরম্যান্সের মূল্যায়ন</p>
                 </div>
               </div>
               <div className="card-body">

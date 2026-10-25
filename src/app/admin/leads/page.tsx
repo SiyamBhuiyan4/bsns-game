@@ -97,6 +97,7 @@ export default function AdminLeadsPage() {
   const [addBuyerType, setAddBuyerType] = useState('RETAIL');
   const [addProductId, setAddProductId] = useState('');
   const [addCampaignId, setAddCampaignId] = useState('');
+  const [addOwnerId, setAddOwnerId] = useState('');
   const [addSource, setAddSource] = useState('ফেসবুক বিজ্ঞাপন (FB Ads)');
   const [addQualityRating, setAddQualityRating] = useState<number | ''>('');
   const [addExpectedValue, setAddExpectedValue] = useState('');
@@ -246,6 +247,7 @@ export default function AdminLeadsPage() {
           product_id: addProductId || null,
           campaign_id: addCampaignId || null,
           source_channel: addSource,
+          owner_id: addOwnerId || null,
           quality_rating: addQualityRating ? Number(addQualityRating) : null,
           expected_value: addExpectedValue ? parseFloat(addExpectedValue) : null,
           next_followup_date: addNextFollowup || null,
@@ -260,6 +262,7 @@ export default function AdminLeadsPage() {
         setAddName('');
         setAddPhone('');
         setAddAddress('');
+        setAddOwnerId('');
         setAddExpectedValue('');
         setAddQualityRating('');
         setAddNote('');
@@ -705,8 +708,13 @@ export default function AdminLeadsPage() {
                     </td>
 
                     <td className="whitespace-nowrap">
-                      <div className="text-slate-900">{l.owner_name}</div>
-                      <div className="text-xs text-slate-500">{l.owner_email}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="badge badge-blue text-[10px] font-semibold py-0.5">
+                          {L('যুক্ত করেছেন', 'Added by')}
+                        </span>
+                        <span className="font-semibold text-slate-900">{l.owner_name}</span>
+                      </div>
+                      <div className="text-xs text-slate-500 mt-0.5">{l.owner_email}</div>
                     </td>
 
                     <td className="whitespace-nowrap">
@@ -818,9 +826,11 @@ export default function AdminLeadsPage() {
                         <dd className="mt-1">{renderQualityStars(leadDetail.quality_rating)}</dd>
                       </div>
                       <div className="col-span-2">
-                        <dt className="text-slate-500">{L('মার্কেটার', 'Owner')}</dt>
-                        <dd className="mt-0.5 text-slate-900">
-                          {leadDetail.owner_name} <span className="text-slate-500">({leadDetail.owner_email})</span>
+                        <dt className="text-slate-500">{L('যুক্ত করেছেন (কর্মী)', 'Added by (Employee)')}</dt>
+                        <dd className="mt-0.5 text-slate-900 flex items-center gap-2">
+                          <span className="badge badge-blue text-[10px] font-medium">{L('কর্মী', 'Employee')}</span>
+                          <span className="font-semibold">{leadDetail.owner_name}</span>
+                          <span className="text-slate-500 text-xs">({leadDetail.owner_email})</span>
                         </dd>
                       </div>
                       {leadDetail.address && (
@@ -1039,6 +1049,26 @@ export default function AdminLeadsPage() {
                       className="input"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="label" htmlFor="lead_owner">{L('যুক্ত করেছেন / দায়িত্বপ্রাপ্ত কর্মী', 'Created by / Assigned Employee')}</label>
+                  <select
+                    id="lead_owner"
+                    value={addOwnerId}
+                    onChange={(e) => setAddOwnerId(e.target.value)}
+                    className="input"
+                  >
+                    <option value="">{L('— অ্যাডমিন নিজে / বর্তমান ইউজার —', '— Admin (Current User) —')}</option>
+                    {marketers.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} ({m.email})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="hint text-[11px] text-slate-500 mt-1">
+                    {L('যে কর্মীকে নির্বাচন করবেন, তার নতুন ক্লায়েন্ট (NEW_CLIENTS) সংখ্যায় স্বয়ংক্রিয়ভাবে +১ যোগ হবে।', 'The selected employee will automatically receive +1 in their NEW_CLIENTS count.')}
+                  </p>
                 </div>
 
                 <div>

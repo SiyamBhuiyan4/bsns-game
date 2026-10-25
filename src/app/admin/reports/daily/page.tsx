@@ -44,6 +44,17 @@ interface DailyEmployeeReport {
 
 interface DailyReportResponse {
   date: string;
+  executive_table?: {
+    new_leads: number;
+    confirmed_orders: number;
+    total_sales: number;
+    ad_spend: number;
+    followups_done: number;
+    b2b_inquiries_count: number;
+    b2b_inquiries_value: number;
+    main_issues: string[];
+    next_priorities: string[];
+  };
   summary: {
     total_employees: number;
     team_sales: number;
@@ -153,7 +164,7 @@ export default function AdminDailyReportPage() {
             tone="brand"
           />
           <StatCard
-            label="দলের গড় স্কোর"
+            label="কর্মীদের গড় স্কোর"
             value={
               <span className="flex items-baseline gap-2">
                 {summary.team_avg_score}
@@ -183,6 +194,101 @@ export default function AdminDailyReportPage() {
           />
         </div>
       )}
+
+      {/* Executive Daily Summary Table (দৈনিক রিপোর্টের নমুনা) */}
+      <div className="card overflow-hidden">
+        <div className="card-header bg-slate-50/70 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h2 className="card-title text-base font-bold text-slate-900 flex items-center gap-2">
+              <FileSpreadsheet className="h-4 w-4 text-brand-600" />
+              দৈনিক রিপোর্ট (সারসংক্ষেপ)
+            </h2>
+            <p className="card-subtitle text-xs text-slate-500">
+              তারিখ: {selectedDate} · মূল ব্যবসায়িক সূচক ও অগ্রাধিকার
+            </p>
+          </div>
+          <span className="badge badge-green text-xs font-semibold">আজকের তথ্য</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="table-pro">
+            <thead>
+              <tr className="bg-slate-50">
+                <th className="w-1/3 text-slate-700 font-semibold">বিষয়</th>
+                <th className="text-slate-700 font-semibold">আজকের তথ্য</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-sm">
+              <tr>
+                <td className="font-medium text-slate-800">নতুন লিড</td>
+                <td className="font-semibold text-slate-900 tabular-nums">
+                  {reportData?.executive_table?.new_leads ?? summary?.team_new_clients ?? 0} টি
+                </td>
+              </tr>
+              <tr>
+                <td className="font-medium text-slate-800">নিশ্চিত অর্ডার</td>
+                <td className="font-semibold text-brand-700 tabular-nums">
+                  {reportData?.executive_table?.confirmed_orders ?? summary?.team_b2b ?? 0} টি
+                </td>
+              </tr>
+              <tr>
+                <td className="font-medium text-slate-800">মোট বিক্রি</td>
+                <td className="font-bold text-brand-700 tabular-nums">
+                  {formatTaka(reportData?.executive_table?.total_sales ?? summary?.team_sales ?? 0)}
+                </td>
+              </tr>
+              <tr>
+                <td className="font-medium text-slate-800">বিজ্ঞাপনের খরচ</td>
+                <td className="font-semibold text-rose-600 tabular-nums">
+                  {formatTaka(reportData?.executive_table?.ad_spend ?? 0)}
+                </td>
+              </tr>
+              <tr>
+                <td className="font-medium text-slate-800">ফলোআপ সম্পন্ন</td>
+                <td className="font-semibold text-slate-900 tabular-nums">
+                  {reportData?.executive_table?.followups_done ?? summary?.team_followups ?? 0} টি
+                </td>
+              </tr>
+              <tr>
+                <td className="font-medium text-slate-800">বড় B2B অনুসন্ধান</td>
+                <td className="font-semibold text-slate-900 tabular-nums">
+                  {reportData?.executive_table?.b2b_inquiries_count ?? summary?.team_b2b ?? 0} টি{' '}
+                  <span className="text-xs text-slate-500 font-normal">
+                    (সম্ভাব্য মূল্য: {formatTaka(reportData?.executive_table?.b2b_inquiries_value ?? 0)})
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td className="font-medium text-slate-800 align-top">প্রধান সমস্যা</td>
+                <td className="text-slate-700 text-xs">
+                  {reportData?.executive_table?.main_issues && reportData.executive_table.main_issues.length > 0 ? (
+                    <ul className="list-disc list-inside space-y-1">
+                      {reportData.executive_table.main_issues.map((issue, idx) => (
+                        <li key={idx} className="leading-relaxed">{issue}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="text-slate-400 italic">কোনো প্রধান সমস্যা উল্লেখিত হয়নি</span>
+                  )}
+                </td>
+              </tr>
+              <tr>
+                <td className="font-medium text-slate-800 align-top">আগামী দিনের অগ্রাধিকার</td>
+                <td className="text-slate-700 text-xs">
+                  {reportData?.executive_table?.next_priorities && reportData.executive_table.next_priorities.length > 0 ? (
+                    <ul className="list-disc list-inside space-y-1">
+                      {reportData.executive_table.next_priorities.map((prio, idx) => (
+                        <li key={idx} className="leading-relaxed font-medium text-slate-800">{prio}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="text-slate-400 italic">কোনো অগ্রাধিকার তালিকাভুক্ত হয়নি</span>
+                  )}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       <div className="card">
         <div className="card-header">

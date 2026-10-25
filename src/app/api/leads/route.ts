@@ -3,7 +3,9 @@ import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { createAuditLog } from '@/lib/audit';
 import { normalizePhone, isValidBdPhone, maskPhone } from '@/lib/phone';
-import { BuyerType, LeadStatus, Prisma } from '@prisma/client';
+import { BuyerType, LeadStatus, MetricType, Prisma } from '@prisma/client';
+import { getDhakaDateString } from '@/lib/date';
+import { parseISO } from 'date-fns';
 import { z } from 'zod';
 
 const createLeadSchema = z.object({
@@ -14,6 +16,7 @@ const createLeadSchema = z.object({
   product_id: z.string().optional().nullable(),
   campaign_id: z.string().optional().nullable(),
   source_channel: z.string().min(1, 'সোর্স চ্যানেল উল্লেখ করুন (যেমন: ফেসবুক গ্রুপ, বিজ্ঞাপন)'),
+  owner_id: z.string().optional().nullable(),
   status: z.nativeEnum(LeadStatus).optional().default('NEW'),
   quality_rating: z.number().int().min(1).max(5).optional().nullable(),
   expected_value: z.number().min(0).optional().nullable(),
@@ -197,7 +200,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create lead with notes in transaction
+    const targetOwnerId =
+      session.role === 'ADMIN' && data.owner_id && data.owner_id.trim().length > 0
+        ? data.owner_id
+        : session.userId;
+
+    // Create lead with notes and increment creator's NEW_CLIENTS count in transaction
     const lead = await prisma.$transaction(async (tx) => {
       const newLead = await tx.lead.create({
         data: {
@@ -208,7 +216,7 @@ export async function POST(request: NextRequest) {
           product_id: data.product_id || null,
           campaign_id: data.campaign_id || null,
           source_channel: data.source_channel.trim(),
-          owner_id: session.userId,
+          owner_id: targetOwnerId,
           status: data.status,
           quality_rating: data.quality_rating || null,
           expected_value: data.expected_value || null,
@@ -228,15 +236,60 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      return newLead;
-    });
+      // Auto-increment NEW_CLIENTS count for creator employee:
+      // "je banabe tar new client count plus hobe"
+      try {
+        const todayDhakaStr = getDhakaDateString();
+        const todayDate = parseISO(todayDhakaStr);
 
-    await createAuditLog({
-      actorId: session.userId,
-      action: 'LEAD_UPDATE',
-      entity: 'Lead',
-      entityId: lead.id,
-      payload: { action: 'CREATE_LEAD', name: lead.name, status: lead.status },
+        const existingClientEntry = await tx.dailyEntry.findUnique({
+          where: {
+            employee_id_entry_date_metric_type: {
+              employee_id: targetOwnerId,
+              entry_date: todayDate,
+              metric_type: MetricType.NEW_CLIENTS,
+            },
+          },
+        });
+
+        if (existingClientEntry) {
+          await tx.dailyEntry.update({
+            where: { id: existingClientEntry.id },
+            data: {
+              value: Number(existingClientEntry.value) + 1,
+            },
+          });
+        } else {
+          await tx.dailyEntry.create({
+            data: {
+              employee_id: targetOwnerId,
+              entry_date: todayDate,
+              metric_type: MetricType.NEW_CLIENTS,
+              value: 1,
+              note: `নতুন কাস্টমার: ${newLead.name}`,
+            },
+          });
+        }
+      } catch (err) {
+        console.warn('Could not auto-increment dailyEntry NEW_CLIENTS:', err);
+      }
+
+      await createAuditLog({
+        actorId: session.userId,
+        action: 'LEAD_UPDATE',
+        entity: 'Lead',
+        entityId: newLead.id,
+        payload: {
+          action: 'CREATE_LEAD',
+          name: newLead.name,
+          phone: normalizedPhone,
+          status: newLead.status,
+          owner_id: targetOwnerId,
+        },
+        tx,
+      });
+
+      return newLead;
     });
 
     return NextResponse.json({ success: true, lead }, { status: 201 });
