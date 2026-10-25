@@ -148,7 +148,7 @@ function extractName(message: string, topic: Topic): string {
     while (head.length && (FILLER.has(head[0].toLowerCase()) || ACTION_SET.has(head[0].toLowerCase()))) head.shift();
     if (head.length) return head.join(' ');
   }
-  return message
+  const leftover = message
     .split(/\s+/)
     .map(clean)
     .filter((raw) => {
@@ -161,6 +161,9 @@ function extractName(message: string, topic: Topic): string {
     })
     .join(' ')
     .trim();
+  // Without an explicit "called"/"নামে" marker, only a short leftover is treated as a name;
+  // longer leftovers are just the rest of the sentence ("ছেলে জয়েন করছে ওর").
+  return leftover && leftover.split(' ').length <= 2 ? leftover : '';
 }
 
 async function findEntity(kind: 'employee' | 'section', name: string) {
