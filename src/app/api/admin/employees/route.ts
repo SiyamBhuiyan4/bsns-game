@@ -57,7 +57,7 @@ export async function GET() {
       masked_phone: emp.phone ? maskPhone(emp.phone) : null,
       is_active: emp.is_active,
       created_at: emp.created_at,
-      sections: emp.assignments_as_employee.map((a) => a.section),
+      sections: emp.assignments_as_employee.map((a: any) => a.section),
       total_completed_links: emp._count.link_completions,
       total_leads: emp._count.leads,
     }));

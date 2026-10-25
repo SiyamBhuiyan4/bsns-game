@@ -474,7 +474,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
   const campaignBudgetsChart: CampaignBudgetItem[] = campaigns.map((c) => {
     const budget = Number(c.budget_amount);
     // Find campaign-specific budget limit if any
-    const limitRecord = c.budgets.find((b) => b.scope === 'CAMPAIGN');
+    const limitRecord = c.budgets.find((b: any) => b.scope === 'CAMPAIGN');
 
     // Campaign spend: if campaign has leads or ad spend, calculate proportion or simulate spend
     // For realism: if status is RUNNING, spend is tracked or proportional
@@ -525,16 +525,16 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     const dayDiff = differenceInCalendarDays(parseISO(todayStr), parseISO(startDateStr));
     currentDay = Math.max(1, dayDiff + 1);
 
-    const allTasks = plan.phases.flatMap((p) => p.tasks);
+    const allTasks = plan.phases.flatMap((p: any) => p.tasks);
     totalTasksCount = allTasks.length;
-    completedTasksCount = allTasks.filter((t) => t.status === 'DONE').length;
+    completedTasksCount = allTasks.filter((t: any) => t.status === 'DONE').length;
 
     if (totalTasksCount > 0) {
-      const sumProg = allTasks.reduce((s, t) => s + (t.progress_percent || 0), 0);
+      const sumProg = allTasks.reduce((s: any, t: any) => s + (t.progress_percent || 0), 0);
       overallProgress = Math.round(sumProg / totalTasksCount);
     }
 
-    overdueTasksCount = allTasks.filter((t) => {
+    overdueTasksCount = allTasks.filter((t: any) => {
       if (t.status === 'DONE') return false;
       if (!t.due_date) return false;
       return format(new Date(t.due_date), 'yyyy-MM-dd') < todayStr;

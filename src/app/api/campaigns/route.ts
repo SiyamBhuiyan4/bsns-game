@@ -72,11 +72,11 @@ export async function GET() {
       // Leads & converted orders revenue
       const leadsCount = c._count.leads;
       const orderedLeads = c.leads.filter(
-        (l) => l.status === 'ORDERED' || (Number(l.order_amount) || 0) > 0
+        (l: any) => l.status === 'ORDERED' || (Number(l.order_amount) || 0) > 0
       );
       const ordersCount = orderedLeads.length;
       const revenue = orderedLeads.reduce(
-        (sum, l) => sum + (Number(l.order_amount) || 0),
+        (sum: any, l: any) => sum + (Number(l.order_amount) || 0),
         0
       );
 

@@ -53,8 +53,8 @@ export async function GET(req: NextRequest) {
     let failingCount = 0;
 
     for (const emp of employees) {
-      const assignedSectionIds = emp.assignments_as_employee.map((a) => a.section_id);
-      const sectionNames = emp.assignments_as_employee.map((a) => a.section.name);
+      const assignedSectionIds = emp.assignments_as_employee.map((a: any) => a.section_id);
+      const sectionNames = emp.assignments_as_employee.map((a: any) => a.section.name);
 
       // Filter targets for assigned sections
       const empTargets = allTargets.filter((t) => assignedSectionIds.includes(t.section_id));

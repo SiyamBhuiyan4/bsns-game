@@ -216,7 +216,7 @@ export async function computeWeeklyAutoData(
   let totalScoreSum = 0;
 
   for (const emp of employees) {
-    const assignedSectionIds = emp.assignments_as_employee.map((a) => a.section_id);
+    const assignedSectionIds = emp.assignments_as_employee.map((a: any) => a.section_id);
     const empTargets = allTargets.filter((t) => assignedSectionIds.includes(t.section_id));
     const effectiveTargets = calculateEffectiveTargetsForRange(empTargets, weekStart, weekEnd);
 
@@ -325,9 +325,9 @@ export async function computeWeeklyAutoData(
 
   const campaignPerformance = campaigns.map((c) => {
     const leadsCount = c.leads.length;
-    const orders = c.leads.filter((l) => l.status === 'ORDERED');
+    const orders = c.leads.filter((l: any) => l.status === 'ORDERED');
     const ordersCount = orders.length;
-    const ordersAmount = orders.reduce((sum, l) => sum + (Number(l.order_amount) || 0), 0);
+    const ordersAmount = orders.reduce((sum: any, l: any) => sum + (Number(l.order_amount) || 0), 0);
     const conversionRate = leadsCount > 0 ? Number(((ordersCount / leadsCount) * 100).toFixed(1)) : 0;
 
     return {
@@ -495,7 +495,7 @@ export async function computeMonthlyAutoData(monthStr: string): Promise<MonthlyA
   const employeeSectionCountMap = new Map<string, number>();
 
   for (const emp of employees) {
-    const assignedSectionIds = emp.assignments_as_employee.map((a) => a.section_id);
+    const assignedSectionIds = emp.assignments_as_employee.map((a: any) => a.section_id);
     employeeSectionCountMap.set(emp.id, Math.max(1, assignedSectionIds.length));
 
     const empTargets = allTargets.filter((t) => assignedSectionIds.includes(t.section_id));

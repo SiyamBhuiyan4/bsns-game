@@ -88,10 +88,10 @@ export async function GET(req: NextRequest) {
       const camp = cb.campaign;
       const leads = camp?.leads || [];
       const orderedLeads = leads.filter(
-        (l) => l.status === 'ORDERED' || (Number(l.order_amount) || 0) > 0
+        (l: any) => l.status === 'ORDERED' || (Number(l.order_amount) || 0) > 0
       );
       const revenue = orderedLeads.reduce(
-        (acc, l) => acc + (Number(l.order_amount) || 0),
+        (acc: any, l: any) => acc + (Number(l.order_amount) || 0),
         0
       );
 

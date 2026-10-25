@@ -392,10 +392,10 @@ export async function getActivePlan(currentDate: Date = new Date()) {
   }
 
   // Calculate effective due dates for tasks without explicit due_date
-  const phaseMap = new Map(plan.phases.map((p) => [p.id, p]));
+  const phaseMap = new Map<string, any>(plan.phases.map((p: any) => [p.id, p] as [string, any]));
 
-  const enrichedPhases = plan.phases.map((phase) => {
-    const tasksWithDueDates = phase.tasks.map((task) => {
+  const enrichedPhases = plan.phases.map((phase: any) => {
+    const tasksWithDueDates = phase.tasks.map((task: any) => {
       const calculatedDueDate =
         task.due_date || calculateTaskDueDate(plan.start_date, phase.day_end);
       return {
@@ -411,7 +411,7 @@ export async function getActivePlan(currentDate: Date = new Date()) {
     };
   });
 
-  const enrichedTasks = plan.tasks.map((task) => {
+  const enrichedTasks = plan.tasks.map((task: any) => {
     const phase = phaseMap.get(task.phase_id);
     const calculatedDueDate =
       task.due_date ||

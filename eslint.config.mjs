@@ -11,6 +11,10 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    // The Telegram-backed Prisma shim returns loosely typed rows (see src/lib/prisma.ts).
+    rules: { "@typescript-eslint/no-explicit-any": "warn" },
+  },
 ];
 
 export default eslintConfig;

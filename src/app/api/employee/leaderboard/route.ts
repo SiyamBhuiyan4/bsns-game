@@ -136,7 +136,7 @@ export async function GET(req: NextRequest) {
 
     // 7. Compute scores for each active employee
     const items: LeaderboardItem[] = employees.map((emp) => {
-      const assignedSectionIds = emp.assignments_as_employee.map((a) => a.section_id);
+      const assignedSectionIds = emp.assignments_as_employee.map((a: any) => a.section_id);
       const empTargets = allTargets.filter((t) => assignedSectionIds.includes(t.section_id));
       const effectiveTargets = calculateEffectiveTargetsForRange(empTargets, startDate, endDate);
 
