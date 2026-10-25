@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 const updateTargetSchema = z.object({
   target_value: z.number().positive().optional(),
+  employee_id: z.string().uuid().nullable().optional(),
   period_start: z.string().nullable().optional(),
   period_end: z.string().nullable().optional(),
 });
@@ -95,6 +96,7 @@ export async function PUT(
       where: { id },
       data: {
         ...(parsed.data.target_value !== undefined && { target_value: parsed.data.target_value }),
+        ...(parsed.data.employee_id !== undefined && { employee_id: parsed.data.employee_id }),
         ...(parsed.data.period_start !== undefined && { period_start: pStart }),
         ...(parsed.data.period_end !== undefined || (existing.period_type === PeriodType.MONTHLY && parsed.data.period_start !== undefined)
           ? { period_end: pEnd }

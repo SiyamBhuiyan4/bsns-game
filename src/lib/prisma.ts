@@ -152,10 +152,11 @@ const MODELS: Record<ModelName, ModelDef> = {
   },
   sectionTarget: {
     table: 'SectionTarget', dates: ['period_start', 'period_end', 'created_at', 'updated_at'], hasUpdatedAt: true,
-    defaults: { period_type: 'MONTHLY', period_start: null, period_end: null, created_at: NOW }, unique: [],
+    defaults: { period_type: 'MONTHLY', period_start: null, period_end: null, employee_id: null, created_at: NOW }, unique: [],
     relations: {
       section: { to: 'groupSection', fk: 'section_id' },
       creator: { to: 'user', fk: 'set_by' },
+      employee: { to: 'user', fk: 'employee_id' },
     },
   },
   budgetLimit: {

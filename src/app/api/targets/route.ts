@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 const targetSchema = z.object({
   section_id: z.string().uuid(),
+  employee_id: z.string().uuid().nullable().optional(),
   metric_type: z.nativeEnum(MetricType),
   target_value: z.number().positive(),
   period_type: z.nativeEnum(PeriodType).default(PeriodType.MONTHLY),
@@ -25,10 +26,12 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const sectionId = searchParams.get('section_id');
+    const employeeId = searchParams.get('employee_id');
     const periodType = searchParams.get('period_type') as PeriodType | null;
 
-    const where: Prisma.SectionTargetWhereInput = {};
+    const where: any = {};
     if (sectionId) where.section_id = sectionId;
+    if (employeeId) where.employee_id = employeeId;
     if (periodType) where.period_type = periodType;
 
     const targets = await prisma.sectionTarget.findMany({
@@ -36,11 +39,65 @@ export async function GET(req: NextRequest) {
       include: {
         section: { select: { id: true, name: true } },
         creator: { select: { id: true, name: true, email: true } },
+        employee: { select: { id: true, name: true, email: true } },
       },
       orderBy: [{ period_start: 'desc' }, { created_at: 'desc' }],
     });
 
-    return NextResponse.json({ targets });
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const targetsWithProgress = await Promise.all(
+      targets.map(async (t) => {
+        let achieved_value = 0;
+        try {
+          const pStart =
+            t.period_type === PeriodType.DAILY
+              ? todayStart
+              : t.period_start
+              ? new Date(t.period_start)
+              : monthStart;
+          const pEnd =
+            t.period_type === PeriodType.DAILY
+              ? todayEnd
+              : t.period_end
+              ? new Date(t.period_end)
+              : monthEnd;
+
+          if (t.metric_type === MetricType.POSTS_DONE) {
+            const completionWhere: any = {
+              undone_at: null,
+              completed_at: { gte: pStart, lte: pEnd },
+            };
+            if (t.employee_id) completionWhere.employee_id = t.employee_id;
+            achieved_value = await prisma.linkCompletion.count({ where: completionWhere });
+          } else {
+            const entryWhere: any = {
+              date: { gte: pStart, lte: pEnd },
+            };
+            if (t.employee_id) entryWhere.employee_id = t.employee_id;
+            const entries = await prisma.dailyEntry.findMany({ where: entryWhere });
+            const key = t.metric_type.toLowerCase();
+            achieved_value = entries.reduce(
+              (acc, e: any) => acc + (Number(e[key]) || 0),
+              0
+            );
+          }
+        } catch {
+          achieved_value = 0;
+        }
+
+        return {
+          ...t,
+          achieved_value,
+        };
+      })
+    );
+
+    return NextResponse.json({ targets: targetsWithProgress });
   } catch (error) {
     console.error('Error fetching targets:', error);
     return NextResponse.json({ error: 'Failed to fetch targets' }, { status: 500 });
@@ -60,7 +117,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Validation error', details: parsed.error.format() }, { status: 400 });
     }
 
-    const { section_id, metric_type, target_value, period_type, period_start, period_end } = parsed.data;
+    const { section_id, employee_id, metric_type, target_value, period_type, period_start, period_end } = parsed.data;
 
     const pStart = period_start ? new Date(period_start) : null;
     let pEnd = period_end ? new Date(period_end) : null;
@@ -113,6 +170,7 @@ export async function POST(req: NextRequest) {
     const target = await prisma.sectionTarget.create({
       data: {
         section_id,
+        employee_id: employee_id ?? null,
         metric_type,
         target_value,
         period_type,
@@ -122,6 +180,7 @@ export async function POST(req: NextRequest) {
       },
       include: {
         section: true,
+        employee: true,
       },
     });
 
