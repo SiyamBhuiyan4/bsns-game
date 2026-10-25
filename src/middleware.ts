@@ -81,10 +81,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Admin passcode page access
+  if (pathname === '/admin-login') {
+    if (user?.role === 'ADMIN') {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    }
+    return NextResponse.next();
+  }
+
   // Protect Admin routes
   if (pathname.startsWith('/admin')) {
     if (!user) {
-      const loginUrl = new URL('/login', request.url);
+      const loginUrl = new URL('/admin-login', request.url);
       loginUrl.searchParams.set('callbackUrl', pathname);
       return NextResponse.redirect(loginUrl);
     }
@@ -116,6 +124,7 @@ export const config = {
   matcher: [
     '/',
     '/login',
+    '/admin-login',
     '/admin/:path*',
     '/employee/:path*',
     '/api/admin/:path*',

@@ -111,7 +111,7 @@ export default function AdminHeader({ session }: AdminHeaderProps) {
           <span className="rounded-full bg-emerald-100 px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold text-emerald-800 shrink-0">
             ADMIN
           </span>
-          <LogoutButton />
+          <LogoutButton redirectTo="/admin-login" />
         </div>
       </div>
 

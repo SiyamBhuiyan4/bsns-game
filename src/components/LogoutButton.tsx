@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { LogOut, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 
-export default function LogoutButton() {
+export default function LogoutButton({ redirectTo = '/login' }: { redirectTo?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const { t } = useLanguage();
@@ -14,7 +14,7 @@ export default function LogoutButton() {
     setLoading(true);
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
-      router.push('/login');
+      router.push(redirectTo);
       router.refresh();
     } catch (error) {
       console.error('Logout error:', error);

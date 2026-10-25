@@ -55,7 +55,8 @@ export async function POST(request: NextRequest) {
       where: { email: email.toLowerCase().trim() },
     });
 
-    if (!user) {
+    // Admins sign in through the separate passcode page (/admin-login)
+    if (!user || user.role === 'ADMIN') {
       return NextResponse.json(
         { error: 'ইমেইল বা পাসওয়ার্ড সঠিক নয় / Invalid email or password' },
         { status: 401 }
@@ -101,7 +102,7 @@ export async function POST(request: NextRequest) {
       payload: { email: user.email, role: user.role, ip },
     });
 
-    const redirectUrl = user.role === 'ADMIN' ? '/admin/dashboard' : '/employee/my-work';
+    const redirectUrl = '/employee/my-work';
 
     return NextResponse.json({
       success: true,
