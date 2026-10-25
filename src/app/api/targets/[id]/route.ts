@@ -2,14 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { createAuditLog } from '@/lib/audit';
-import { checkTargetOverlap } from '@/lib/targets';
 import { endOfMonth } from 'date-fns';
-import { PeriodType } from '@prisma/client';
+import { MetricType, PeriodType } from '@prisma/client';
 import { z } from 'zod';
 
 const updateTargetSchema = z.object({
   target_value: z.number().positive().optional(),
   employee_id: z.string().uuid().nullable().optional(),
+  section_id: z.string().uuid().nullable().optional(),
+  metric_type: z.nativeEnum(MetricType).optional(),
+  period_type: z.nativeEnum(PeriodType).optional(),
   period_start: z.string().nullable().optional(),
   period_end: z.string().nullable().optional(),
 });
@@ -58,45 +60,14 @@ export async function PUT(
       return NextResponse.json({ error: 'Start date must be before or equal to end date' }, { status: 400 });
     }
 
-    // Overlap validation preventing duplicate overlapping targets when dates are updated
-    if (parsed.data.period_start !== undefined || parsed.data.period_end !== undefined) {
-      const otherTargets = await prisma.sectionTarget.findMany({
-        where: {
-          section_id: existing.section_id,
-          metric_type: existing.metric_type,
-          id: { not: id },
-        },
-      });
-
-      const candidate = {
-        period_type: existing.period_type,
-        period_start: pStart,
-        period_end: pEnd,
-      };
-
-      for (const other of otherTargets) {
-        if (other.period_type === candidate.period_type) {
-          if (other.period_type === PeriodType.DAILY) {
-            return NextResponse.json(
-              { error: 'A daily target for this metric and section already exists. Please update it instead.' },
-              { status: 409 }
-            );
-          }
-          if (checkTargetOverlap(other, candidate)) {
-            return NextResponse.json(
-              { error: 'Target period overlaps with an existing target for this metric.' },
-              { status: 409 }
-            );
-          }
-        }
-      }
-    }
-
     const updated = await prisma.sectionTarget.update({
       where: { id },
       data: {
         ...(parsed.data.target_value !== undefined && { target_value: parsed.data.target_value }),
         ...(parsed.data.employee_id !== undefined && { employee_id: parsed.data.employee_id }),
+        ...(parsed.data.section_id !== undefined && { section_id: parsed.data.section_id }),
+        ...(parsed.data.metric_type !== undefined && { metric_type: parsed.data.metric_type }),
+        ...(parsed.data.period_type !== undefined && { period_type: parsed.data.period_type }),
         ...(parsed.data.period_start !== undefined && { period_start: pStart }),
         ...(parsed.data.period_end !== undefined || (existing.period_type === PeriodType.MONTHLY && parsed.data.period_start !== undefined)
           ? { period_end: pEnd }

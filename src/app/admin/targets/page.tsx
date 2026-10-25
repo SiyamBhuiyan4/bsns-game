@@ -222,6 +222,8 @@ export default function AdminTargetsPage() {
             target_value: Number(form.target_value),
             employee_id: form.employee_id || null,
             section_id: chosenSectionId,
+            metric_type: form.metric_type,
+            period_type: form.period_type,
             period_start: form.period_start || null,
           }),
         });
@@ -486,15 +488,15 @@ export default function AdminTargetsPage() {
                   const isMet = achievedNum >= targetNum && targetNum > 0;
 
                   return (
-                    <tr key={t.id}>
+                    <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
                       {/* Employee Column */}
-                      <td>
+                      <td onClick={() => handleOpenEdit(t)} className="cursor-pointer" title={L('টার্গেট পরিবর্তন করতে ক্লিক করুন', 'Click to edit target')}>
                         <div className="flex items-center gap-2.5">
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-brand-700 font-bold text-xs">
                             {emp?.name ? emp.name.slice(0, 1).toUpperCase() : 'E'}
                           </div>
                           <div>
-                            <div className="font-semibold text-slate-800">
+                            <div className="font-semibold text-slate-800 hover:text-brand-700">
                               {emp?.name || L('সাধারণ / গ্রুপ লক্ষ্য', 'Unassigned / Team')}
                             </div>
                             <div className="text-xs text-slate-400">{emp?.email || t.section?.name}</div>
@@ -503,7 +505,7 @@ export default function AdminTargetsPage() {
                       </td>
 
                       {/* Task & Group Section */}
-                      <td>
+                      <td onClick={() => handleOpenEdit(t)} className="cursor-pointer" title={L('টার্গেট পরিবর্তন করতে ক্লিক করুন', 'Click to edit target')}>
                         <div className="font-medium text-slate-800">{L(cfg.bn, cfg.en)}</div>
                         {t.metric_type === 'POSTS_DONE' ? (
                           <div className="flex items-center gap-1 text-xs text-slate-500">
@@ -518,7 +520,7 @@ export default function AdminTargetsPage() {
                       </td>
 
                       {/* Period Badge */}
-                      <td>
+                      <td onClick={() => handleOpenEdit(t)} className="cursor-pointer">
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
                           <Calendar className="h-3 w-3 text-slate-500" />
                           {t.period_type === 'DAILY'
@@ -529,11 +531,21 @@ export default function AdminTargetsPage() {
                         </span>
                       </td>
 
-                      {/* Target Value */}
+                      {/* Target Value (Click to edit) */}
                       <td className="text-right font-mono font-bold text-slate-900">
-                        {cfg.isCurrency
-                          ? formatMoney(targetNum)
-                          : `${formatNum(targetNum)} ${L(cfg.unitBn, cfg.unitEn)}`}
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(t)}
+                          className="cursor-pointer font-bold px-2 py-1 rounded hover:bg-slate-200/60 transition-colors inline-flex items-center gap-1"
+                          title={L('টার্গেট পরিবর্তন করতে ক্লিক করুন', 'Click to edit target')}
+                        >
+                          <span>
+                            {cfg.isCurrency
+                              ? formatMoney(targetNum)
+                              : `${formatNum(targetNum)} ${L(cfg.unitBn, cfg.unitEn)}`}
+                          </span>
+                          <Edit2 className="h-3 w-3 text-slate-400" />
+                        </button>
                       </td>
 
                       {/* Progress Bar & Counter */}
