@@ -13,6 +13,7 @@ import {
   Search,
   BarChart3,
   TrendingUp,
+  ChevronDown,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import {
@@ -117,6 +118,11 @@ export default function SectionOverviewCards({
   const [selectedSection, setSelectedSection] = useState<DetailSectionData | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'core' | 'groups'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSubgroupsExpanded, setIsSubgroupsExpanded] = useState(false);
+
+  const postsDoneSection = useMemo(() => {
+    return sectionsOverview.find((s) => s.key === 'POSTS_DONE');
+  }, [sectionsOverview]);
 
   const L = (bn: string, en: string) => (lang === 'bn' ? bn : en);
 
@@ -183,7 +189,10 @@ export default function SectionOverviewCards({
     );
   }, [groupSectionsOverview, filterType, searchQuery]);
 
-  const totalVisibleCount = filteredCoreSections.length + filteredGroupSections.length;
+  const totalVisibleCount =
+    filterType === 'groups'
+      ? filteredGroupSections.length
+      : filteredCoreSections.length;
 
   return (
     <section className="space-y-4">
@@ -196,8 +205,9 @@ export default function SectionOverviewCards({
               {L('সেকশন ওভারভিউ ও অগ্রগতি', 'Section Overview & Progress')}
             </h2>
             <span className="badge badge-green font-mono text-[11px]">
-              {formatNum(sectionsOverview.length + groupSectionsOverview.length)}{' '}
-              {L('টি সেকশন', 'sections')}
+              {formatNum(sectionsOverview.length)} {L('টি কোর সেকশন', 'core metrics')}
+              {groupSectionsOverview.length > 0 &&
+                ` • ${formatNum(groupSectionsOverview.length)} ${L('টি সাব-গ্রুপ', 'sub-groups')}`}
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
@@ -216,19 +226,19 @@ export default function SectionOverviewCards({
               onClick={() => setFilterType('all')}
               data-active={filterType === 'all'}
             >
-              {L('সকল সেকশন', 'All')} ({formatNum(sectionsOverview.length + groupSectionsOverview.length)})
+              {L('সকল মূল মেট্রিক্স', 'All')} ({formatNum(sectionsOverview.length)})
             </button>
             <button
               onClick={() => setFilterType('core')}
               data-active={filterType === 'core'}
             >
-              {L('মূল মেট্রিক্স', 'Core')} ({formatNum(sectionsOverview.length)})
+              {L('কোর সেকশন', 'Core')} ({formatNum(sectionsOverview.length)})
             </button>
             <button
               onClick={() => setFilterType('groups')}
               data-active={filterType === 'groups'}
             >
-              {L('গ্রুপ লিঙ্ক', 'Groups')} ({formatNum(groupSectionsOverview.length)})
+              {L('সাব-গ্রুপসমূহ', 'Sub-Groups')} ({formatNum(groupSectionsOverview.length)})
             </button>
           </div>
 
@@ -237,7 +247,11 @@ export default function SectionOverviewCards({
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <input
               type="text"
-              placeholder={L('সেকশন খুঁজুন...', 'Search section...')}
+              placeholder={
+                filterType === 'groups'
+                  ? L('সাব-গ্রুপ খুঁজুন...', 'Search sub-group...')
+                  : L('সেকশন খুঁজুন...', 'Search section...')
+              }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="input pl-8 py-1 text-xs"
@@ -360,6 +374,45 @@ export default function SectionOverviewCards({
                       </div>
                     )}
                   </div>
+
+                  {/* Embedded Sub-Groups in POSTS_DONE card */}
+                  {sec.key === 'POSTS_DONE' && groupSectionsOverview.length > 0 && (
+                    <div className="mt-3 pt-2.5 border-t border-slate-100 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-600 font-medium flex items-center gap-1.5">
+                          <Layers className="h-3.5 w-3.5 text-indigo-600" />
+                          <span>{L('অন্তর্ভুক্ত সাব-গ্রুপসমূহ:', 'Included Sub-Groups:')}</span>
+                        </span>
+                        <span className="badge badge-violet text-[10px] font-semibold">
+                          {formatNum(groupSectionsOverview.length)} {L('টি সাব-গ্রুপ', 'sub-groups')}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5 pt-0.5">
+                        {groupSectionsOverview.slice(0, 3).map((g) => (
+                          <button
+                            key={g.id}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedSection({ type: 'group', section: g });
+                            }}
+                            className="inline-flex items-center gap-1 rounded-md bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 px-2 py-0.5 text-[11px] font-medium transition-colors border border-indigo-200/60"
+                            title={L('ক্লিক করে এই সাব-গ্রুপের লিঙ্ক ও কাজ দেখুন', 'Click to view links and activity in this sub-group')}
+                          >
+                            <span className="truncate max-w-[85px]">{g.name}</span>
+                            <span className="text-[10px] text-indigo-500 font-semibold tabular-nums">
+                              ({formatNum(g.completedLinksCount)}/{formatNum(g.totalLinks)})
+                            </span>
+                          </button>
+                        ))}
+                        {groupSectionsOverview.length > 3 && (
+                          <span className="text-[11px] text-slate-400 self-center pl-0.5 font-medium">
+                            +{formatNum(groupSectionsOverview.length - 3)} {L('আরও', 'more')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Footer Action Strip */}
@@ -383,107 +436,233 @@ export default function SectionOverviewCards({
             );
           })}
 
-          {/* 2. Group Link Sections */}
-          {filteredGroupSections.map((groupSec) => {
-            const styles = SECTION_STYLES.GROUP_DEFAULT;
-            const total = groupSec.totalLinks || 1;
-            const completed = groupSec.completedLinksCount || 0;
-            const percentage = Math.min(100, Math.round((completed / total) * 100));
+          {/* 2. Group Link Sections (Only shown in main grid when Groups filter is chosen) */}
+          {filterType === 'groups' &&
+            filteredGroupSections.map((groupSec) => {
+              const styles = SECTION_STYLES.GROUP_DEFAULT;
+              const total = groupSec.totalLinks || 1;
+              const completed = groupSec.completedLinksCount || 0;
+              const percentage = Math.min(100, Math.round((completed / total) * 100));
 
-            // Unique employees who completed links in this group
-            const uniqueContributors = new Set(
-              groupSec.completionsHistory.map((c) => c.employeeId)
-            ).size;
+              // Unique employees who completed links in this group
+              const uniqueContributors = new Set(
+                groupSec.completionsHistory.map((c) => c.employeeId)
+              ).size;
 
-            return (
-              <div
-                key={groupSec.id}
-                onClick={() =>
-                  setSelectedSection({ type: 'group', section: groupSec })
-                }
-                className="card group relative flex flex-col justify-between p-4.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300/90"
-              >
-                <div>
-                  {/* Top Header Row */}
-                  <div className="flex items-start justify-between gap-2.5">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${styles.bgLight} ${styles.textColor} ${styles.borderColor} shadow-xs transition-transform group-hover:scale-105`}
-                      >
-                        <Layers className="h-5 w-5" />
+              return (
+                <div
+                  key={groupSec.id}
+                  onClick={() =>
+                    setSelectedSection({ type: 'group', section: groupSec })
+                  }
+                  className="card group relative flex flex-col justify-between p-4.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300/90"
+                >
+                  <div>
+                    {/* Top Header Row */}
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${styles.bgLight} ${styles.textColor} ${styles.borderColor} shadow-xs transition-transform group-hover:scale-105`}
+                        >
+                          <Layers className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-slate-900 truncate group-hover:text-indigo-700 transition-colors">
+                            {groupSec.name}
+                          </h3>
+                          <p className="text-[11px] text-slate-400">
+                            {L('গ্রুপ লিঙ্ক পোস্টিং', 'Group Link Posting')}
+                          </p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <h3 className="font-semibold text-slate-900 truncate group-hover:text-indigo-700 transition-colors">
-                          {groupSec.name}
-                        </h3>
-                        <p className="text-[11px] text-slate-400">
-                          {L('গ্রুপ লিঙ্ক পোস্টিং', 'Group Link Posting')}
-                        </p>
+
+                      <span className="badge badge-violet shrink-0 text-[10px]">
+                        {L('গ্রুপ', 'Group')}
+                      </span>
+                    </div>
+
+                    {/* Stat Number */}
+                    <div className="mt-4">
+                      <div className="text-2xl font-bold tracking-tight text-slate-900 tabular-nums">
+                        {formatNum(completed)}{' '}
+                        <span className="text-xs font-normal text-slate-500">
+                          / {formatNum(groupSec.totalLinks)} {L('টি লিঙ্ক', 'links')}
+                        </span>
                       </div>
                     </div>
 
-                    <span className="badge badge-violet shrink-0 text-[10px]">
-                      {L('গ্রুপ', 'Group')}
+                    {/* Progress bar */}
+                    <div className="mt-3 pt-3 border-t border-slate-100/90 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500 font-medium">
+                          {L('সম্পন্নের হার:', 'Completed:')}
+                        </span>
+                        <span
+                          className={`badge ${
+                            percentage >= 100
+                              ? 'badge-green'
+                              : percentage >= 50
+                              ? 'badge-blue'
+                              : 'badge-amber'
+                          } font-semibold tabular-nums`}
+                        >
+                          {formatDigits(percentage)}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${styles.progressBarColor}`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer Action Strip */}
+                  <div className="mt-4 flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
+                    <div className="flex items-center gap-1.5 text-slate-500">
+                      <Users className="h-3.5 w-3.5 text-slate-400" />
+                      <span>
+                        <strong className="text-slate-800 font-semibold tabular-nums">
+                          {formatNum(uniqueContributors)}
+                        </strong>{' '}
+                        {L('কর্মী কাজ করেছেন', 'active')}
+                      </span>
+                    </div>
+
+                    <span className="inline-flex items-center gap-1 font-medium text-indigo-600 group-hover:text-indigo-800 transition-colors">
+                      {L('বিস্তারিত দেখুন', 'View Details')}
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                     </span>
                   </div>
-
-                  {/* Stat Number */}
-                  <div className="mt-4">
-                    <div className="text-2xl font-bold tracking-tight text-slate-900 tabular-nums">
-                      {formatNum(completed)}{' '}
-                      <span className="text-xs font-normal text-slate-500">
-                        / {formatNum(groupSec.totalLinks)} {L('টি লিঙ্ক', 'links')}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Progress bar */}
-                  <div className="mt-3 pt-3 border-t border-slate-100/90 space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500 font-medium">
-                        {L('সম্পন্নের হার:', 'Completed:')}
-                      </span>
-                      <span
-                        className={`badge ${
-                          percentage >= 100
-                            ? 'badge-green'
-                            : percentage >= 50
-                            ? 'badge-blue'
-                            : 'badge-amber'
-                        } font-semibold tabular-nums`}
-                      >
-                        {formatDigits(percentage)}%
-                      </span>
-                    </div>
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
-                      <div
-                        className={`h-full rounded-full transition-all duration-500 ${styles.progressBarColor}`}
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                  </div>
                 </div>
+              );
+            })}
+        </div>
+      )}
 
-                {/* Footer Action Strip */}
-                <div className="mt-4 flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
-                  <div className="flex items-center gap-1.5 text-slate-500">
-                    <Users className="h-3.5 w-3.5 text-slate-400" />
-                    <span>
-                      <strong className="text-slate-800 font-semibold tabular-nums">
-                        {formatNum(uniqueContributors)}
-                      </strong>{' '}
-                      {L('কর্মী কাজ করেছেন', 'active')}
-                    </span>
-                  </div>
-
-                  <span className="inline-flex items-center gap-1 font-medium text-indigo-600 group-hover:text-indigo-800 transition-colors">
-                    {L('বিস্তারিত দেখুন', 'View Details')}
-                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                  </span>
-                </div>
+      {/* Collapsible Sub-Groups Tray in All View */}
+      {filterType === 'all' && groupSectionsOverview.length > 0 && (
+        <div className="rounded-2xl border border-indigo-100 bg-linear-to-r from-indigo-50/40 via-sky-50/20 to-white p-4 transition-all">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+                <Layers className="h-4.5 w-4.5" />
               </div>
-            );
-          })}
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <span>{L('গ্রুপ লিঙ্ক পোস্টিং এর সাব-গ্রুপসমূহ', 'Group Link Posting - Sub-Groups')}</span>
+                  <span className="badge badge-violet text-[10px]">
+                    {formatNum(groupSectionsOverview.length)} {L('টি সাব-গ্রুপ', 'sub-groups')}
+                  </span>
+                </h4>
+                <p className="text-xs text-slate-500">
+                  {L(
+                    'সকল নির্দিষ্ট সাব-গ্রুপের লিঙ্ক সম্পন্ন করার হার ও হিস্ট্রি',
+                    'Link completion rates and employee history per sub-group'
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsSubgroupsExpanded(!isSubgroupsExpanded)}
+              className="btn btn-secondary btn-sm text-xs inline-flex items-center gap-1.5 font-medium text-indigo-700 hover:text-indigo-800"
+            >
+              <span>
+                {isSubgroupsExpanded
+                  ? L('সাব-গ্রুপ লুকিয়ে রাখুন', 'Hide Sub-Groups')
+                  : L('সকল সাব-গ্রুপ দেখুন', 'View All Sub-Groups')}
+              </span>
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                  isSubgroupsExpanded ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+          </div>
+
+          {isSubgroupsExpanded && (
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-3.5 border-t border-indigo-100/70 animate-in fade-in duration-200">
+              {groupSectionsOverview.map((groupSec) => {
+                const styles = SECTION_STYLES.GROUP_DEFAULT;
+                const total = groupSec.totalLinks || 1;
+                const completed = groupSec.completedLinksCount || 0;
+                const percentage = Math.min(100, Math.round((completed / total) * 100));
+                const uniqueContributors = new Set(
+                  groupSec.completionsHistory.map((c) => c.employeeId)
+                ).size;
+
+                return (
+                  <div
+                    key={groupSec.id}
+                    onClick={() =>
+                      setSelectedSection({ type: 'group', section: groupSec })
+                    }
+                    className="card group relative flex flex-col justify-between p-4 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-indigo-300 bg-white"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div
+                            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${styles.bgLight} ${styles.textColor} ${styles.borderColor} shadow-xs group-hover:scale-105 transition-transform`}
+                          >
+                            <Layers className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <h5 className="font-semibold text-slate-900 truncate text-xs group-hover:text-indigo-700 transition-colors">
+                              {groupSec.name}
+                            </h5>
+                            <p className="text-[10px] text-slate-400">
+                              {L('সাব-গ্রুপ লিঙ্ক', 'Sub-Group Link')}
+                            </p>
+                          </div>
+                        </div>
+                        <span
+                          className={`badge ${
+                            percentage >= 100
+                              ? 'badge-green'
+                              : percentage >= 50
+                              ? 'badge-blue'
+                              : 'badge-amber'
+                          } font-semibold tabular-nums text-[10px]`}
+                        >
+                          {formatDigits(percentage)}%
+                        </span>
+                      </div>
+
+                      <div className="mt-3">
+                        <div className="text-lg font-bold text-slate-900 tabular-nums">
+                          {formatNum(completed)}{' '}
+                          <span className="text-xs font-normal text-slate-500">
+                            / {formatNum(groupSec.totalLinks)} {L('টি লিঙ্ক', 'links')}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className="h-full rounded-full bg-indigo-600 transition-all duration-300"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-3 pt-2.5 border-t border-slate-100 text-[11px] flex items-center justify-between text-slate-500">
+                      <span>
+                        <strong>{formatNum(uniqueContributors)}</strong> {L('কর্মী', 'active')}
+                      </span>
+                      <span className="font-medium text-indigo-600 group-hover:text-indigo-800 inline-flex items-center gap-0.5">
+                        {L('বিস্তারিত', 'Details')}
+                        <ArrowRight className="h-3 w-3" />
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -492,6 +671,14 @@ export default function SectionOverviewCards({
         isOpen={Boolean(selectedSection)}
         onClose={() => setSelectedSection(null)}
         selected={selectedSection}
+        groupSectionsOverview={groupSectionsOverview}
+        onSelectGroupSection={(groupSec) =>
+          setSelectedSection({ type: 'group', section: groupSec })
+        }
+        onSelectStandardSection={(sec) =>
+          setSelectedSection({ type: 'standard', section: sec })
+        }
+        standardGroupSection={postsDoneSection}
       />
     </section>
   );

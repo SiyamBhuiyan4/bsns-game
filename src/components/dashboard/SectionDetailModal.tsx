@@ -21,6 +21,8 @@ import {
   ArrowUpDown,
   Download,
   TrendingUp,
+  ArrowLeft,
+  ArrowRight,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import {
@@ -37,6 +39,10 @@ interface SectionDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   selected: DetailSectionData | null;
+  groupSectionsOverview?: GroupSectionOverviewItem[];
+  onSelectGroupSection?: (groupSec: GroupSectionOverviewItem) => void;
+  onSelectStandardSection?: (standardSec: SectionOverviewItem) => void;
+  standardGroupSection?: SectionOverviewItem;
 }
 
 const AVATAR_COLORS = [
@@ -69,9 +75,13 @@ export default function SectionDetailModal({
   isOpen,
   onClose,
   selected,
+  groupSectionsOverview = [],
+  onSelectGroupSection,
+  onSelectStandardSection,
+  standardGroupSection,
 }: SectionDetailModalProps) {
   const { lang, digitStyle, formatNum, formatMoney } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'employees' | 'history'>('employees');
+  const [activeTab, setActiveTab] = useState<'employees' | 'subgroups' | 'history'>('employees');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [employeeFilter, setEmployeeFilter] = useState<'assigned' | 'all'>('assigned');
@@ -240,6 +250,14 @@ export default function SectionDetailModal({
     });
     return list;
   }, [rawEmployeeList, employeeFilter, searchTerm, sortOrder]);
+
+  // Filtered sub-groups list for POSTS_DONE modal
+  const filteredSubgroups = useMemo(() => {
+    if (!groupSectionsOverview) return [];
+    if (!searchTerm.trim()) return groupSectionsOverview;
+    const q = searchTerm.toLowerCase();
+    return groupSectionsOverview.filter((g) => g.name.toLowerCase().includes(q));
+  }, [groupSectionsOverview, searchTerm]);
 
   // Standard History Logs
   const filteredHistoryLogs = useMemo(() => {
@@ -412,6 +430,17 @@ export default function SectionDetailModal({
           </div>
 
           <div className="flex items-center gap-2">
+            {!isStandard && standardGroupSection && onSelectStandardSection && (
+              <button
+                onClick={() => onSelectStandardSection(standardGroupSection)}
+                className="btn btn-secondary btn-sm inline-flex items-center gap-1 text-xs text-indigo-700 hover:text-indigo-800 border-indigo-200"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">
+                  {L('গ্রুপ ওভারভিউতে ফিরুন', 'Back to Group')}
+                </span>
+              </button>
+            )}
             <button
               onClick={handleExportCSV}
               title={L('সিএসভি ডাউনলোড করুন', 'Export CSV')}
@@ -514,6 +543,19 @@ export default function SectionDetailModal({
                 {formatNum(rawEmployeeList.length)}
               </span>
             </button>
+            {isStandard && standardSec?.key === 'POSTS_DONE' && (
+              <button
+                onClick={() => setActiveTab('subgroups')}
+                data-active={activeTab === 'subgroups'}
+                className="flex items-center gap-1.5"
+              >
+                <Layers className="h-3.5 w-3.5" />
+                <span>{L('সাব-গ্রুপসমূহ', 'Sub-Groups')}</span>
+                <span className="ml-1 rounded-full bg-indigo-100 px-1.5 py-0.2 text-[10px] font-semibold text-indigo-700">
+                  {formatNum(groupSectionsOverview?.length || 0)}
+                </span>
+              </button>
+            )}
             <button
               onClick={() => setActiveTab('history')}
               data-active={activeTab === 'history'}
@@ -746,8 +788,117 @@ export default function SectionDetailModal({
                 </div>
               )}
             </div>
+          ) : activeTab === 'subgroups' ? (
+            /* TAB 2: SUB-GROUPS BREAKDOWN */
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-indigo-600" />
+                    {L('গ্রুপ লিঙ্ক পোস্টিং - অন্তর্ভুক্ত সাব-গ্রুপসমূহ', 'Group Link Posting - Sub-Groups')}
+                  </h4>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {L(
+                      'প্রতিটি নির্দিষ্ট গ্রুপে লিঙ্ক পোস্টিং কাজের অগ্রগতি ও সক্রিয় কর্মীর সংখ্যা',
+                      'Progress and active contributors for each specific posting sub-group'
+                    )}
+                  </p>
+                </div>
+                <span className="badge badge-violet text-xs font-semibold">
+                  {formatNum(filteredSubgroups.length)} {L('টি সাব-গ্রুপ', 'sub-groups')}
+                </span>
+              </div>
+
+              {filteredSubgroups.length === 0 ? (
+                <div className="flex flex-col items-center justify-center p-10 text-center bg-white rounded-xl border border-dashed border-slate-200">
+                  <Layers className="h-10 w-10 text-slate-300 mb-2" />
+                  <p className="text-sm font-medium text-slate-700">
+                    {L('কোনো সাব-গ্রুপ পাওয়া যায়নি', 'No sub-groups found')}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {L('অনুসন্ধান শব্দ পরিবর্তন করে পুনরায় চেষ্টা করুন।', 'Try adjusting your search criteria.')}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {filteredSubgroups.map((g) => {
+                    const total = g.totalLinks || 1;
+                    const comp = g.completedLinksCount || 0;
+                    const pct = Math.min(100, Math.round((comp / total) * 100));
+                    const uniqueUsers = new Set(g.completionsHistory.map((c) => c.employeeId)).size;
+
+                    return (
+                      <div
+                        key={g.id}
+                        onClick={() => {
+                          if (onSelectGroupSection) {
+                            onSelectGroupSection(g);
+                          }
+                        }}
+                        className="card p-4.5 cursor-pointer hover:shadow-md hover:border-indigo-300 transition-all duration-200 group flex flex-col justify-between bg-white border border-slate-200/90"
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-2.5">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200/60 shadow-xs group-hover:scale-105 transition-transform">
+                                <Layers className="h-5 w-5" />
+                              </div>
+                              <div className="min-w-0">
+                                <h4 className="font-semibold text-slate-900 group-hover:text-indigo-700 transition-colors truncate">
+                                  {g.name}
+                                </h4>
+                                <p className="text-[11px] text-slate-400">
+                                  {L('সাব-গ্রুপ লিঙ্ক পোস্টিং', 'Sub-Group Posting')}
+                                </p>
+                              </div>
+                            </div>
+                            <span
+                              className={`badge ${
+                                pct >= 100 ? 'badge-green' : pct >= 50 ? 'badge-blue' : 'badge-amber'
+                              } font-semibold tabular-nums text-[11px]`}
+                            >
+                              {formatDigits(pct)}%
+                            </span>
+                          </div>
+
+                          <div className="mt-3.5">
+                            <div className="text-xl font-bold text-slate-900 tabular-nums">
+                              {formatNum(comp)}{' '}
+                              <span className="text-xs font-normal text-slate-500">
+                                / {formatNum(g.totalLinks)} {L('টি লিঙ্ক সম্পন্ন', 'links')}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                            <div
+                              className="h-full rounded-full bg-indigo-600 transition-all duration-300"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                          <span className="flex items-center gap-1.5">
+                            <Users className="h-3.5 w-3.5 text-slate-400" />
+                            <span>
+                              <strong className="text-slate-800 font-semibold">{formatNum(uniqueUsers)}</strong>{' '}
+                              {L('কর্মী সক্রিয়', 'active')}
+                            </span>
+                          </span>
+                          <span className="inline-flex items-center gap-1 font-medium text-indigo-600 group-hover:text-indigo-800 transition-colors">
+                            {L('লিঙ্ক ও বিস্তারিত দেখুন', 'View Details')}
+                            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           ) : (
-            /* TAB 2: FULL HISTORY LOG */
+            /* TAB 3: FULL HISTORY LOG */
             <div>
               {isStandard ? (
                 /* Standard Section History Logs */
