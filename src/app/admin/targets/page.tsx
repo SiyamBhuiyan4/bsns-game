@@ -108,7 +108,7 @@ const METRIC_CONFIG: Record<
 
 export default function AdminTargetsPage() {
   const { lang, formatNum, formatMoney } = useLanguage();
-  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
+  const L = useCallback((bn: string, en: string) => (lang === 'en' ? en : bn), [lang]);
 
   const [targets, setTargets] = useState<SectionTarget[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -132,7 +132,7 @@ export default function AdminTargetsPage() {
     employee_id: '',
     section_id: '',
     metric_type: 'POSTS_DONE',
-    target_value: '',
+    target_value: '50',
     period_type: 'DAILY',
     period_start: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
   });
@@ -153,23 +153,17 @@ export default function AdminTargetsPage() {
       if (eRes.ok) {
         const d = await eRes.json();
         setEmployees(d.employees || []);
-        if (d.employees?.length > 0 && !form.employee_id) {
-          setForm((prev) => ({ ...prev, employee_id: d.employees[0].id }));
-        }
       }
       if (sRes.ok) {
         const d = await sRes.json();
         setSections(d.sections || []);
-        if (d.sections?.length > 0 && !form.section_id) {
-          setForm((prev) => ({ ...prev, section_id: d.sections[0].id }));
-        }
       }
     } catch {
-      setErrorMsg(L('ডাটা লোড করতে সমস্যা হয়েছে', 'Failed to load data'));
+      setErrorMsg('ডাটা লোড করতে সমস্যা হয়েছে');
     } finally {
       setLoading(false);
     }
-  }, [L, form.employee_id, form.section_id]);
+  }, []);
 
   useEffect(() => {
     fetchData();
