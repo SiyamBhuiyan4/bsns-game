@@ -17,6 +17,21 @@ const targetSchema = z.object({
   period_end: z.string().nullable().optional(),
 });
 
+const bulkJobsSchema = z.object({
+  employee_id: z.string().uuid().nullable().optional(),
+  period_type: z.nativeEnum(PeriodType).default(PeriodType.DAILY),
+  period_start: z.string().nullable().optional(),
+  period_end: z.string().nullable().optional(),
+  jobs: z.array(
+    z.object({
+      id: z.string().optional(),
+      section_id: z.string().uuid().nullable().optional(),
+      metric_type: z.nativeEnum(MetricType),
+      target_value: z.number().positive(),
+    })
+  ).min(1),
+});
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getSession();
@@ -112,6 +127,130 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+
+    // Check if bulk jobs payload is provided
+    if (Array.isArray(body.jobs) && body.jobs.length > 0) {
+      const parsedBulk = bulkJobsSchema.safeParse(body);
+      if (!parsedBulk.success) {
+        return NextResponse.json({ error: 'Validation error', details: parsedBulk.error.format() }, { status: 400 });
+      }
+
+      const { employee_id, period_type, period_start, period_end, jobs } = parsedBulk.data;
+      const pStart = period_start ? new Date(period_start) : null;
+      let pEnd = period_end ? new Date(period_end) : null;
+      if (period_type === PeriodType.MONTHLY && pStart && !pEnd) {
+        pEnd = endOfMonth(pStart);
+      }
+
+      const savedTargets: any[] = [];
+
+      for (const job of jobs) {
+        const { id: jobId, section_id, metric_type, target_value } = job;
+        let target: any = null;
+
+        if (jobId) {
+          // Explicit update by ID
+          target = await prisma.sectionTarget.update({
+            where: { id: jobId },
+            data: {
+              target_value,
+              section_id: section_id || null,
+              metric_type,
+              period_type,
+              period_start: pStart,
+              period_end: pEnd,
+              set_by: session.id,
+            },
+            include: { section: true, employee: true },
+          });
+        } else {
+          // Check for existing target for this employee + metric + section
+          const overlapWhere: any = {
+            metric_type,
+            ...(employee_id ? { employee_id } : { employee_id: null }),
+            ...(section_id ? { section_id } : { section_id: null }),
+          };
+          const existingTargets = await prisma.sectionTarget.findMany({
+            where: overlapWhere,
+          });
+
+          const existingDaily = existingTargets.find((e) => e.period_type === period_type);
+          if (existingDaily) {
+            target = await prisma.sectionTarget.update({
+              where: { id: existingDaily.id },
+              data: {
+                target_value,
+                period_start: pStart,
+                period_end: pEnd,
+                set_by: session.id,
+              },
+              include: { section: true, employee: true },
+            });
+          } else {
+            target = await prisma.sectionTarget.create({
+              data: {
+                section_id: section_id || null,
+                employee_id: employee_id ?? null,
+                metric_type,
+                target_value,
+                period_type,
+                period_start: pStart,
+                period_end: pEnd,
+                set_by: session.id,
+              },
+              include: { section: true, employee: true },
+            });
+          }
+        }
+
+        // Auto-assign employee to this group section in Assignment ONLY if metric is POSTS_DONE and section_id is chosen
+        if (metric_type === MetricType.POSTS_DONE && employee_id && section_id) {
+          try {
+            const existingAssign = await prisma.assignment.findFirst({
+              where: { employee_id, section_id },
+            });
+            const postLimit = target_value ? Math.round(Number(target_value)) : null;
+            if (!existingAssign) {
+              await prisma.assignment.create({
+                data: {
+                  employee_id,
+                  section_id,
+                  post_limit: postLimit,
+                  assigned_by: session.id || session.userId,
+                },
+              });
+            } else {
+              await prisma.assignment.update({
+                where: { id: existingAssign.id },
+                data: { post_limit: postLimit },
+              });
+            }
+          } catch (assignErr) {
+            console.error('Auto-assignment warning:', assignErr);
+          }
+        }
+
+        await createAuditLog({
+          actorId: session.id,
+          action: 'TARGET_SET',
+          entity: 'SectionTarget',
+          entityId: target.id,
+          payload: {
+            section_id: section_id || null,
+            employee_id: employee_id || null,
+            metric_type,
+            target_value,
+            period_type,
+          },
+        });
+
+        savedTargets.push(target);
+      }
+
+      return NextResponse.json({ success: true, count: savedTargets.length, targets: savedTargets }, { status: 200 });
+    }
+
+    // Single target creation / upsert
     const parsed = targetSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: 'Validation error', details: parsed.error.format() }, { status: 400 });
@@ -135,11 +274,11 @@ export async function POST(req: NextRequest) {
       pEnd = endOfMonth(pStart);
     }
 
-    // Check for overlapping targets of same section, metric, and period type (scoped to employee and section)
+    // Check for existing targets of same section, metric, and period type
     const overlapWhere: any = {
       metric_type,
-      ...(employee_id ? { employee_id } : {}),
-      ...(section_id ? { section_id } : {}),
+      ...(employee_id ? { employee_id } : { employee_id: null }),
+      ...(section_id ? { section_id } : { section_id: null }),
     };
     const existingTargets = await prisma.sectionTarget.findMany({
       where: overlapWhere,
@@ -151,14 +290,57 @@ export async function POST(req: NextRequest) {
       period_end: pEnd,
     };
 
-    // If there is an exact same period or overlapping CUSTOM range with another CUSTOM target
+    // If there is an existing target
     for (const existing of existingTargets) {
       if (existing.period_type === candidate.period_type) {
         if (existing.period_type === PeriodType.DAILY) {
-          return NextResponse.json(
-            { error: 'A daily target for this metric and employee already exists. Please update it instead.' },
-            { status: 409 }
-          );
+          // Gracefully update the daily target instead of throwing 409
+          const updated = await prisma.sectionTarget.update({
+            where: { id: existing.id },
+            data: {
+              target_value,
+              period_start: pStart,
+              period_end: pEnd,
+              set_by: session.id,
+            },
+            include: { section: true, employee: true },
+          });
+
+          if (metric_type === MetricType.POSTS_DONE && employee_id && section_id) {
+            try {
+              const existingAssign = await prisma.assignment.findFirst({
+                where: { employee_id, section_id },
+              });
+              const postLimit = target_value ? Math.round(Number(target_value)) : null;
+              if (existingAssign) {
+                await prisma.assignment.update({
+                  where: { id: existingAssign.id },
+                  data: { post_limit: postLimit },
+                });
+              } else {
+                await prisma.assignment.create({
+                  data: {
+                    employee_id,
+                    section_id,
+                    post_limit: postLimit,
+                    assigned_by: session.id || session.userId,
+                  },
+                });
+              }
+            } catch (assignErr) {
+              console.error('Auto-assignment warning:', assignErr);
+            }
+          }
+
+          await createAuditLog({
+            actorId: session.id,
+            action: 'TARGET_SET',
+            entity: 'SectionTarget',
+            entityId: updated.id,
+            payload: { section_id: section_id || null, employee_id: employee_id || null, metric_type, target_value, period_type },
+          });
+
+          return NextResponse.json({ target: updated }, { status: 200 });
         }
         if (checkTargetOverlap(existing, candidate)) {
           return NextResponse.json(

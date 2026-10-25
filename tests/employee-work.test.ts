@@ -23,16 +23,17 @@ vi.mock('@/lib/audit', () => ({
 }));
 
 // Mock Prisma
-const mockAssignments = [
+const mockAssignments: any[] = [
   {
     id: 'assign-1',
     employee_id: 'emp-123',
     section_id: 'sec-agro',
+    post_limit: null as number | null,
     section: { id: 'sec-agro', name: 'Agro Groups', is_active: true },
   },
 ];
 
-const mockLinks = [
+const mockLinks: any[] = [
   {
     id: 'link-1',
     section_id: 'sec-agro',
@@ -43,7 +44,7 @@ const mockLinks = [
       id: 'sec-agro',
       name: 'Agro Groups',
       is_active: true,
-      assignments: [{ id: 'assign-1', employee_id: 'emp-123' }],
+      assignments: [{ id: 'assign-1', employee_id: 'emp-123', post_limit: null as number | null }],
     },
   },
   {

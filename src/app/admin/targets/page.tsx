@@ -17,6 +17,9 @@ import {
   Calendar,
   Check,
   Award,
+  Briefcase,
+  ListPlus,
+  Sparkles,
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
@@ -128,14 +131,20 @@ export default function AdminTargetsPage() {
   const [successMsg, setSuccessMsg] = useState('');
 
   // Form State
+  interface JobFormItem {
+    id?: string;
+    metric_type: string;
+    section_id: string;
+    target_value: string;
+  }
+
   const [form, setForm] = useState({
     employee_id: '',
-    section_id: '',
-    metric_type: 'POSTS_DONE',
-    target_value: '50',
     period_type: 'DAILY',
     period_start: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
   });
+
+  const [jobs, setJobs] = useState<JobFormItem[]>([]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -172,14 +181,19 @@ export default function AdminTargetsPage() {
   // Open Add Modal
   const handleOpenAdd = () => {
     setEditingTarget(null);
+    const initialEmpId = employees[0]?.id || '';
     setForm({
-      employee_id: employees[0]?.id || '',
-      section_id: sections[0]?.id || '',
-      metric_type: 'POSTS_DONE',
-      target_value: '50',
+      employee_id: initialEmpId,
       period_type: 'DAILY',
       period_start: new Date().toISOString().slice(0, 10),
     });
+    setJobs([
+      {
+        metric_type: 'POSTS_DONE',
+        section_id: sections[0]?.id || '',
+        target_value: '5',
+      },
+    ]);
     setErrorMsg('');
     setShowModal(true);
   };
@@ -187,73 +201,151 @@ export default function AdminTargetsPage() {
   // Open Edit Modal
   const handleOpenEdit = (t: SectionTarget) => {
     setEditingTarget(t);
+    const empId = t.employee_id || t.employee?.id || '';
     setForm({
-      employee_id: t.employee_id || t.employee?.id || '',
-      section_id: t.section_id || sections[0]?.id || '',
-      metric_type: t.metric_type,
-      target_value: String(t.target_value),
+      employee_id: empId,
       period_type: t.period_type,
       period_start: t.period_start ? t.period_start.slice(0, 10) : new Date().toISOString().slice(0, 10),
     });
+
+    // Find all targets of this same employee with the same period so admin sees all their jobs
+    const empTargets = targets.filter(
+      (other) =>
+        (other.employee_id || other.employee?.id) === empId &&
+        other.period_type === t.period_type
+    );
+
+    if (empTargets.length > 0) {
+      setJobs(
+        empTargets.map((item) => ({
+          id: item.id,
+          metric_type: item.metric_type,
+          section_id: item.section_id || '',
+          target_value: String(item.target_value),
+        }))
+      );
+    } else {
+      setJobs([
+        {
+          id: t.id,
+          metric_type: t.metric_type,
+          section_id: t.section_id || '',
+          target_value: String(t.target_value),
+        },
+      ]);
+    }
+
     setErrorMsg('');
     setShowModal(true);
   };
 
-  // Save Target (Add or Update)
+  // Add Another Job
+  const handleAddJob = () => {
+    const existingMetrics = jobs.map((j) => j.metric_type);
+    const metricKeys = Object.keys(METRIC_CONFIG);
+    const nextMetric = metricKeys.find((m) => !existingMetrics.includes(m)) || 'CONFIRMED_ORDERS';
+    setJobs((prev) => [
+      ...prev,
+      {
+        metric_type: nextMetric,
+        section_id: nextMetric === 'POSTS_DONE' ? (sections[0]?.id || '') : '',
+        target_value: nextMetric === 'SALES_AMOUNT' ? '10000' : '5',
+      },
+    ]);
+  };
+
+  // Remove Job
+  const handleRemoveJob = (index: number) => {
+    if (jobs.length <= 1) return;
+    setJobs((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
+  // Update specific field in a job item
+  const handleUpdateJob = (index: number, field: keyof JobFormItem, value: string) => {
+    setJobs((prev) =>
+      prev.map((job, idx) => {
+        if (idx !== index) return job;
+        const updated = { ...job, [field]: value };
+        if (field === 'metric_type' && value === 'POSTS_DONE' && !updated.section_id) {
+          updated.section_id = sections[0]?.id || '';
+        }
+        return updated;
+      })
+    );
+  };
+
+  // Load employee's existing jobs
+  const handleLoadEmployeeExistingJobs = (empId: string) => {
+    if (!empId) return;
+    const empTargets = targets.filter(
+      (t) => (t.employee_id || t.employee?.id) === empId && t.period_type === form.period_type
+    );
+    if (empTargets.length > 0) {
+      setJobs(
+        empTargets.map((item) => ({
+          id: item.id,
+          metric_type: item.metric_type,
+          section_id: item.section_id || '',
+          target_value: String(item.target_value),
+        }))
+      );
+    }
+  };
+
+  // Save Target (Add or Update Multiple Jobs)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.target_value || Number(form.target_value) <= 0) {
-      setErrorMsg(L('সঠিক টার্গেট সংখ্যা দিন', 'Enter a valid target quantity'));
+    if (!form.employee_id) {
+      setErrorMsg(L('অনুগ্রহ করে একজন কর্মচারী নির্বাচন করুন', 'Please select an employee'));
+      return;
+    }
+    if (!jobs || jobs.length === 0) {
+      setErrorMsg(L('কমপক্ষে একটি কাজ যোগ করুন', 'Please add at least one job'));
       return;
     }
 
-    const isPosts = form.metric_type === 'POSTS_DONE';
-    const chosenSectionId = isPosts ? (form.section_id || null) : null;
+    for (let i = 0; i < jobs.length; i++) {
+      const j = jobs[i];
+      if (!j.target_value || Number(j.target_value) <= 0) {
+        setErrorMsg(L(`কাজ #${i + 1}-এর জন্য সঠিক সংখ্যা দিন`, `Please enter a valid target for Job #${i + 1}`));
+        return;
+      }
+    }
 
     setSubmitting(true);
     setErrorMsg('');
     try {
-      if (editingTarget) {
-        // Update
-        const res = await fetch(`/api/targets/${editingTarget.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            target_value: Number(form.target_value),
-            employee_id: form.employee_id || null,
-            section_id: chosenSectionId,
-            metric_type: form.metric_type,
-            period_type: form.period_type,
-            period_start: form.period_start || null,
-          }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || 'Failed to update target');
-        setSuccessMsg(L('টার্গেট সফলভাবে আপডেট করা হয়েছে', 'Target updated successfully'));
-      } else {
-        // Create
-        const res = await fetch('/api/targets', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            section_id: chosenSectionId,
-            employee_id: form.employee_id || null,
-            metric_type: form.metric_type,
-            target_value: Number(form.target_value),
-            period_type: form.period_type,
-            period_start: form.period_start || null,
-          }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || 'Failed to assign target');
-        setSuccessMsg(L('কর্মচারীর টার্গেট সফলভাবে নির্ধারণ করা হয়েছে', 'Target assigned successfully'));
-      }
+      const res = await fetch('/api/targets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employee_id: form.employee_id,
+          period_type: form.period_type,
+          period_start: form.period_start || null,
+          jobs: jobs.map((j) => ({
+            id: j.id,
+            metric_type: j.metric_type,
+            section_id: j.metric_type === 'POSTS_DONE' ? (j.section_id || null) : null,
+            target_value: Number(j.target_value),
+          })),
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Failed to save targets');
+
+      setSuccessMsg(
+        L(
+          `কর্মচারীর ${jobs.length}টি কাজ সফলভাবে সংরক্ষণ করা হয়েছে`,
+          `Successfully saved ${jobs.length} jobs/targets for employee`
+        )
+      );
 
       setShowModal(false);
       fetchData();
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err: any) {
-      setErrorMsg(err.message || L('টার্গেট সংরক্ষণ ব্যর্থ হয়েছে', 'Failed to save target'));
+      setErrorMsg(err.message || L('টার্গেট সংরক্ষণ ব্যর্থ হয়েছে', 'Failed to save targets'));
     } finally {
       setSubmitting(false);
     }
@@ -635,20 +727,25 @@ export default function AdminTargetsPage() {
       {/* Assign / Edit Target Modal */}
       {showModal && (
         <div className="modal-backdrop">
-          <div className="modal-panel max-w-lg">
-            <div className="card-header">
-              <div>
-                <h3 className="card-title">
-                  {editingTarget
-                    ? L('টার্গেট সম্পাদনা করুন', 'Edit Employee Target')
-                    : L('কর্মচারীকে নতুন টার্গেট নির্ধারণ করুন', 'Assign Target to Employee')}
-                </h3>
-                <p className="card-subtitle">
-                  {L(
-                    'কর্মচারী নির্বাচন করে কাজের সংখ্যা ও সময়কাল নির্ধারণ করুন',
-                    'Select employee, choose task metric and set target quota'
-                  )}
-                </p>
+          <div className="modal-panel max-w-2xl max-h-[92vh] flex flex-col p-0">
+            <div className="card-header p-5 border-b border-slate-100 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 shrink-0">
+                  <Briefcase className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="card-title text-base sm:text-lg">
+                    {editingTarget
+                      ? L('কর্মচারীর কাজ ও টার্গেট সম্পাদনা করুন', 'Edit Employee Jobs & Targets')
+                      : L('কর্মচারীকে এক বা একাধিক কাজ নির্ধারণ করুন', 'Assign Jobs & Targets to Employee')}
+                  </h3>
+                  <p className="card-subtitle text-xs">
+                    {L(
+                      'কর্মচারী নির্বাচন করে একসাথে এক বা একাধিক কাজের ধরন ও লক্ষ্যমাত্রা নির্ধারণ করুন',
+                      'Select employee and assign multiple jobs & target quotas together'
+                    )}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -660,7 +757,7 @@ export default function AdminTargetsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-5 space-y-4">
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-5">
               {errorMsg && (
                 <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 flex items-center gap-2">
                   <AlertCircle className="h-4 w-4 shrink-0" />
@@ -670,12 +767,15 @@ export default function AdminTargetsPage() {
 
               {/* 1. Select Existing Employee */}
               <div>
-                <label className="label">
+                <label className="label font-semibold">
                   {L('কর্মচারী নির্বাচন করুন (Employee) *', 'Select Employee *')}
                 </label>
                 <select
                   value={form.employee_id}
-                  onChange={(e) => setForm({ ...form, employee_id: e.target.value })}
+                  onChange={(e) => {
+                    const nextEmpId = e.target.value;
+                    setForm({ ...form, employee_id: nextEmpId });
+                  }}
                   className="input"
                   required
                 >
@@ -686,122 +786,242 @@ export default function AdminTargetsPage() {
                     </option>
                   ))}
                 </select>
-                <span className="text-[11px] text-slate-400 mt-1 block">
-                  {L('যেকোনো বিদ্যমান কর্মচারীকে নির্বাচন করুন', 'Target will be assigned specifically to this employee')}
-                </span>
+
+                {form.employee_id && (
+                  <div className="flex items-center justify-between mt-1.5 px-0.5 text-xs text-slate-500">
+                    <span>
+                      {L(
+                        `এই কর্মচারীর বর্তমানে ${
+                          targets.filter(
+                            (t) => (t.employee_id || t.employee?.id) === form.employee_id && t.period_type === form.period_type
+                          ).length
+                        }টি কাজ নির্ধারিত আছে`,
+                        `Currently has ${
+                          targets.filter(
+                            (t) => (t.employee_id || t.employee?.id) === form.employee_id && t.period_type === form.period_type
+                          ).length
+                        } assigned jobs`
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleLoadEmployeeExistingJobs(form.employee_id)}
+                      className="text-emerald-700 hover:text-emerald-800 font-semibold underline cursor-pointer"
+                    >
+                      {L('বিদ্যমান কাজগুলো লোড করুন', 'Load Existing Jobs')}
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {/* 2. Select Task / Metric Type */}
-              <div>
-                <label className="label">
-                  {L('কাজের ধরন (Task / Metric) *', 'Task / Metric *')}
-                </label>
-                <select
-                  value={form.metric_type}
-                  onChange={(e) => setForm({ ...form, metric_type: e.target.value })}
-                  className="input"
-                  required
-                >
-                  {Object.entries(METRIC_CONFIG).map(([key, cfg]) => (
-                    <option key={key} value={key}>
-                      {L(cfg.bn, cfg.en)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 3. Group Section Selection (Only for Group Posts/Links Task) */}
-              {form.metric_type === 'POSTS_DONE' && (
+              {/* 2. Target Period & Date in 2 columns */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
                 <div>
-                  <label className="label">
-                    {L('গ্রুপ বা সেকশন (Group Section)', 'Group Section')}
-                  </label>
-                  <select
-                    value={form.section_id}
-                    onChange={(e) => setForm({ ...form, section_id: e.target.value })}
-                    className="input"
-                  >
-                    <option value="">{L('-- সব গ্রুপ (All Groups) --', '-- All Groups --')}</option>
-                    {sections.map((sec) => (
-                      <option key={sec.id} value={sec.id}>
-                        {sec.name}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-[11px] text-slate-400 mt-1 block">
-                    {L(
-                      'নির্দিষ্ট কোনো গ্রুপের লিংকে কাজের জন্য গ্রুপ সিলেক্ট করুন (বা সব গ্রুপের জন্য ফাঁকা রাখুন)',
-                      'Select a specific group for link posting, or leave as All Groups'
-                    )}
-                  </span>
-                </div>
-              )}
-
-              {/* 4. Target Value & Period in 2 columns */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="label">
-                    {L('টার্গেট সংখ্যা (Quota) *', 'Target Quantity *')}
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={form.target_value}
-                    onChange={(e) => setForm({ ...form, target_value: e.target.value })}
-                    className="input font-mono"
-                    placeholder="e.g. 50"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="label">
+                  <label className="label font-semibold">
                     {L('সময়কাল (Period) *', 'Period *')}
                   </label>
                   <select
                     value={form.period_type}
                     onChange={(e) => setForm({ ...form, period_type: e.target.value })}
-                    className="input"
+                    className="input bg-white"
                   >
                     <option value="DAILY">{L('প্রতিদিন (Daily)', 'Daily')}</option>
                     <option value="WEEKLY">{L('সাপ্তাহিক (Weekly)', 'Weekly')}</option>
                     <option value="MONTHLY">{L('মাসিক (Monthly)', 'Monthly')}</option>
                   </select>
                 </div>
+
+                <div>
+                  <label className="label font-semibold">
+                    {form.period_type === 'DAILY'
+                      ? L('কার্যকর তারিখ (Date)', 'Effective Date')
+                      : L('শুরুর তারিখ / মাস (Start Date / Month)', 'Start Date / Month')}
+                  </label>
+                  <input
+                    type="date"
+                    value={form.period_start}
+                    onChange={(e) => setForm({ ...form, period_start: e.target.value })}
+                    className="input bg-white"
+                  />
+                </div>
               </div>
 
-              {/* Date / Month Picker */}
-              <div>
-                <label className="label">
-                  {form.period_type === 'DAILY'
-                    ? L('কার্যকর তারিখ (Date)', 'Effective Date')
-                    : L('শুরুর তারিখ / মাস (Start Date / Month)', 'Start Date / Month')}
-                </label>
-                <input
-                  type="date"
-                  value={form.period_start}
-                  onChange={(e) => setForm({ ...form, period_start: e.target.value })}
-                  className="input"
-                />
+              {/* 3. Assigned Jobs List (Multiple Jobs) */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                  <div className="flex items-center gap-2">
+                    <ListPlus className="h-4 w-4 text-emerald-600" />
+                    <span className="font-bold text-slate-800 text-sm">
+                      {L('কাজের তালিকা ও লক্ষ্যমাত্রা (Jobs & Quotas)', 'Jobs & Quotas')}
+                    </span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                      {jobs.length} {L('টি কাজ', 'Jobs')}
+                    </span>
+                  </div>
+                  <span className="text-xs text-slate-400">
+                    {L('একত্রে একাধিক কাজ যোগ করতে পারেন', 'Add multiple jobs for this employee')}
+                  </span>
+                </div>
+
+                {/* Job Cards */}
+                <div className="space-y-3">
+                  {jobs.map((job, idx) => {
+                    const cfg = METRIC_CONFIG[job.metric_type] || {
+                      bn: job.metric_type,
+                      en: job.metric_type,
+                      unitBn: 'টি',
+                      unitEn: 'units',
+                      isCurrency: false,
+                    };
+
+                    return (
+                      <div
+                        key={idx}
+                        className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3 relative hover:border-slate-300 transition-colors shadow-sm"
+                      >
+                        {/* Job Item Header */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-slate-200 text-slate-700 font-bold text-xs">
+                              {idx + 1}
+                            </span>
+                            <span className="font-semibold text-slate-800 text-xs sm:text-sm">
+                              {L(`কাজ #${idx + 1}`, `Job #${idx + 1}`)}: {L(cfg.bn, cfg.en)}
+                            </span>
+                            {job.id && (
+                              <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">
+                                {L('বিদ্যমান', 'Existing')}
+                              </span>
+                            )}
+                          </div>
+
+                          {jobs.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveJob(idx)}
+                              className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+                              title={L('এই কাজটি মুছুন', 'Remove this job')}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Job Item Inputs */}
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                          {/* Task / Metric Dropdown */}
+                          <div className={job.metric_type === 'POSTS_DONE' ? 'sm:col-span-5' : 'sm:col-span-8'}>
+                            <label className="text-[11px] font-medium text-slate-600 block mb-1">
+                              {L('কাজের ধরন (Task / Metric) *', 'Task / Metric *')}
+                            </label>
+                            <select
+                              value={job.metric_type}
+                              onChange={(e) => handleUpdateJob(idx, 'metric_type', e.target.value)}
+                              className="input bg-white text-xs sm:text-sm"
+                              required
+                            >
+                              {Object.entries(METRIC_CONFIG).map(([key, mcfg]) => (
+                                <option key={key} value={key}>
+                                  {L(mcfg.bn, mcfg.en)}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Group Section (if POSTS_DONE) */}
+                          {job.metric_type === 'POSTS_DONE' && (
+                            <div className="sm:col-span-4">
+                              <label className="text-[11px] font-medium text-slate-600 block mb-1">
+                                {L('গ্রুপ / সাব-গ্রুপ (Section)', 'Group Section')}
+                              </label>
+                              <select
+                                value={job.section_id}
+                                onChange={(e) => handleUpdateJob(idx, 'section_id', e.target.value)}
+                                className="input bg-white text-xs sm:text-sm"
+                              >
+                                <option value="">{L('-- সব গ্রুপ (All) --', '-- All Groups --')}</option>
+                                {sections.map((sec) => (
+                                  <option key={sec.id} value={sec.id}>
+                                    {sec.name}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+
+                          {/* Target Value Input */}
+                          <div className={job.metric_type === 'POSTS_DONE' ? 'sm:col-span-3' : 'sm:col-span-4'}>
+                            <label className="text-[11px] font-medium text-slate-600 block mb-1">
+                              {L('টার্গেট সংখ্যা (Quota) *', 'Target Quota *')}
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                min="1"
+                                step="1"
+                                value={job.target_value}
+                                onChange={(e) => handleUpdateJob(idx, 'target_value', e.target.value)}
+                                className="input bg-white font-mono text-xs sm:text-sm pr-10"
+                                placeholder="5"
+                                required
+                              />
+                              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 pointer-events-none">
+                                {L(cfg.unitBn, cfg.unitEn)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Add Another Job Button */}
+                <button
+                  type="button"
+                  onClick={handleAddJob}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border-2 border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/40 hover:bg-emerald-50 text-emerald-700 font-semibold text-xs sm:text-sm transition-all shadow-sm cursor-pointer mt-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>{L('+ আরও একটি কাজ যোগ করুন', '+ Add Another Job / Task')}</span>
+                </button>
+
+                {/* Multiple Jobs Pro-Tip */}
+                <div className="rounded-xl bg-emerald-50/70 border border-emerald-100 p-3 text-xs text-emerald-900 flex items-start gap-2.5 mt-2">
+                  <Sparkles className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <span>
+                    {L(
+                      'টিপস: আপনি একই কর্মচারীকে একসাথে একাধিক কাজ দিতে পারেন (যেমন: মাশরুম গ্রুপ ৩টি, এগ্রো গ্রুপ ২টি, কনফার্মড অর্ডার ১০টি এবং লিড ৮টি)। কর্মচারীর অ্যাকাউন্টে সবগুলো কাজ আলাদাভাবে ট্র্যাক হবে।',
+                      'Tip: You can assign multiple jobs to the employee simultaneously (e.g. 3 Mushroom posts, 2 Agro posts, 10 Confirmed Orders, and 8 Leads). All jobs will be tracked individually.'
+                    )}
+                  </span>
+                </div>
               </div>
 
+              {/* Modal Footer */}
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4 mt-6">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="btn btn-secondary"
+                  className="btn btn-secondary cursor-pointer"
                 >
                   {L('বাতিল', 'Cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="btn btn-primary"
+                  className="btn btn-primary cursor-pointer flex items-center gap-1.5"
                 >
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {editingTarget
-                    ? L('আপডেট সংরক্ষণ করুন', 'Save Changes')
-                    : L('টার্গেট নিশ্চিত করুন', 'Assign Target')}
+                  {submitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4" />
+                  )}
+                  <span>
+                    {editingTarget
+                      ? L(`আপডেট সংরক্ষণ করুন (${jobs.length}টি কাজ)`, `Save Changes (${jobs.length} Jobs)`)
+                      : L(`সবগুলো কাজ নিশ্চিত করুন (${jobs.length}টি কাজ)`, `Assign All Jobs (${jobs.length} Jobs)`)}
+                  </span>
                 </button>
               </div>
             </form>
