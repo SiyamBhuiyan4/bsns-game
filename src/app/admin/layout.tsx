@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/session';
 import AdminHeader from '@/components/AdminHeader';
+import AgentChat from '@/components/admin/AgentChat';
 
 export default async function AdminLayout({
   children,
@@ -26,6 +27,8 @@ export default async function AdminLayout({
       <main className="mx-auto w-full max-w-7xl flex-1 px-3 sm:px-6 py-4 sm:py-6 overflow-x-hidden">
         {children}
       </main>
+
+      <AgentChat />
     </div>
   );
 }

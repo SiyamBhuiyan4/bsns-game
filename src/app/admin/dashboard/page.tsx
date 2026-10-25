@@ -67,13 +67,13 @@ export default async function AdminDashboardPage(props: PageProps) {
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
               <ShieldCheck className="h-3.5 w-3.5" />
-              হেড অব মার্কেটিং ড্যাশবোর্ড (Head of Marketing Control Center)
+              হেড অব মার্কেটিং
             </div>
             <h1 className="mt-2 text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
               স্বাগতম, {admin.name}!
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 mt-1">
-              ডিজিটাল মার্কেটিং পারফরম্যান্স, বাজেট ও বিক্রয় মনিটরিং কনসোল
+              মার্কেটিং পারফরম্যান্স ও বাজেট
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
@@ -92,7 +92,7 @@ export default async function AdminDashboardPage(props: PageProps) {
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">
                 <CalendarCheck className="h-3.5 w-3.5" />
-                ৯০ দিনের কর্মপরিকল্পনা উইজেট
+                ৯০ দিনের পরিকল্পনা
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-800">
                 <Clock className="h-3.5 w-3.5" />
@@ -101,7 +101,7 @@ export default async function AdminDashboardPage(props: PageProps) {
               {planWidget.overdueTasksCount > 0 ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-800">
                   <AlertTriangle className="h-3.5 w-3.5 text-rose-600" />
-                  {toBengaliDigits(planWidget.overdueTasksCount)}টি টাস্ক বিলম্বিত (Overdue)
+                  {toBengaliDigits(planWidget.overdueTasksCount)}টি টাস্ক বিলম্বিত
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
@@ -116,7 +116,7 @@ export default async function AdminDashboardPage(props: PageProps) {
                 {planWidget.name}
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                বর্তমান পর্যায়: <strong className="text-slate-800">{planWidget.currentPhaseName}</strong> | মোট টাস্ক: {toBengaliDigits(planWidget.totalTasksCount)}টি (সম্পন্ন: {toBengaliDigits(planWidget.completedTasksCount)}টি)
+                পর্যায়: <strong className="text-slate-800">{planWidget.currentPhaseName}</strong> · সম্পন্ন {toBengaliDigits(planWidget.completedTasksCount)} / {toBengaliDigits(planWidget.totalTasksCount)} টাস্ক
               </p>
             </div>
           </div>
@@ -142,7 +142,7 @@ export default async function AdminDashboardPage(props: PageProps) {
               href="/admin/plan"
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-colors"
             >
-              <span>৯০ দিনের প্ল্যান বিস্তারিত ও ব্যবস্থাপনা</span>
+              <span>৯০ দিনের প্ল্যান দেখুন</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -170,7 +170,6 @@ export default async function AdminDashboardPage(props: PageProps) {
             <div className="text-2xl font-black text-slate-900">
               {toBengaliDigits(summaryCards.activeEmployeesCount)} <span className="text-sm font-normal text-slate-500">জন</span>
             </div>
-            <p className="mt-1 text-[11px] text-slate-500">ডিজিটাল মার্কেটিং টিম</p>
           </div>
         </div>
 
@@ -186,7 +185,6 @@ export default async function AdminDashboardPage(props: PageProps) {
             <div className="text-2xl font-black text-slate-900">
               {toBengaliDigits(summaryCards.activeSectionsCount)} <span className="text-sm font-normal text-slate-500">টি</span>
             </div>
-            <p className="mt-1 text-[11px] text-slate-500">কাজের গ্রুপ বিভাজন</p>
           </div>
         </div>
 
@@ -223,7 +221,7 @@ export default async function AdminDashboardPage(props: PageProps) {
             <p className="mt-1 text-[11px] text-emerald-700 font-semibold">
               {summaryCards.topPerformer
                 ? `স্কোর: ${toBengaliDigits(summaryCards.topPerformer.score)}%`
-                : 'এই সময়ে ডাটা নেই'}
+                : 'ডাটা নেই'}
             </p>
           </div>
         </div>
@@ -231,7 +229,7 @@ export default async function AdminDashboardPage(props: PageProps) {
         {/* Card 5: Employees Below 80% */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">ফেইলিং কর্মী</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">কম স্কোরের কর্মী</span>
             <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${summaryCards.failingEmployeesCount > 0 ? 'bg-rose-50 text-rose-600' : 'bg-slate-100 text-slate-400'}`}>
               <AlertOctagon className="h-4 w-4" />
             </div>
@@ -274,7 +272,7 @@ export default async function AdminDashboardPage(props: PageProps) {
         <div className="flex items-center gap-2 mb-3">
           <AlertTriangle className="h-5 w-5 text-amber-600" />
           <h2 className="text-sm font-bold text-slate-900">
-            জরুরি সতর্কতা ও মনিটরিং নোটিশ (Alerts & Action Items)
+            জরুরি সতর্কতা
           </h2>
         </div>
 
@@ -285,10 +283,10 @@ export default async function AdminDashboardPage(props: PageProps) {
               <div className="flex items-center justify-between gap-2 mb-1.5">
                 <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                   <Package className="h-3.5 w-3.5 text-amber-600" />
-                  এই সপ্তাহে কোন পণ্য কম বিক্রি
+                  এই সপ্তাহে কম বিক্রি পণ্য
                 </span>
                 <span className="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">
-                  বটম ভলিউম
+                  কম বিক্রি
                 </span>
               </div>
               {alerts.bottomProducts.length === 0 ? (
@@ -310,7 +308,7 @@ export default async function AdminDashboardPage(props: PageProps) {
               href="/admin/products"
               className="mt-3 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 inline-flex items-center gap-1"
             >
-              <span>পণ্য ও স্টক পরিচালনা করুন</span>
+              <span>পণ্য দেখুন</span>
               <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
@@ -321,7 +319,7 @@ export default async function AdminDashboardPage(props: PageProps) {
               <div className="flex items-center justify-between gap-2 mb-1.5">
                 <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
                   <UserCheck className="h-3.5 w-3.5 text-indigo-600" />
-                  ৩+ দিন ধরে অর্ডার হয়নি এমন ক্রেতা
+                  ৩ দিন ধরে অর্ডার নেই
                 </span>
                 <span className="text-[10px] bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-bold">
                   কোয়ালিফাইড
@@ -332,9 +330,7 @@ export default async function AdminDashboardPage(props: PageProps) {
                   {toBengaliDigits(alerts.staleQualifiedLeadsCount)} <span className="text-xs font-normal text-slate-500">জন</span>
                 </div>
                 <p className="text-xs text-slate-600 mt-1">
-                  {alerts.staleQualifiedLeadsCount > 0
-                    ? 'কোয়ালিফাইড স্ট্যাটাসে ৩ বা ততোধিক দিন ধরে কোনো অর্ডার কনফার্ম হয়নি।'
-                    : 'বর্তমানে সব কোয়ালিফাইড লিডের ফলো-আপ সময়মতো চলছে।'}
+                  {alerts.staleQualifiedLeadsCount > 0 ? 'ফলো-আপ দরকার' : 'সব ঠিক আছে'}
                 </p>
               </div>
             </div>
@@ -342,7 +338,7 @@ export default async function AdminDashboardPage(props: PageProps) {
               href="/admin/leads?status=QUALIFIED"
               className="mt-3 text-[11px] font-bold text-indigo-700 hover:text-indigo-800 inline-flex items-center gap-1"
             >
-              <span>লিডস পাইপলাইনে ফলো-আপ করুন</span>
+              <span>লিড দেখুন</span>
               <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
@@ -356,18 +352,15 @@ export default async function AdminDashboardPage(props: PageProps) {
                   বাজেট ১০০%-এর বেশি ক্যাম্পেইন
                 </span>
                 <span className="text-[10px] bg-rose-100 text-rose-800 px-2 py-0.5 rounded-full font-bold">
-                  ওভার-বাজেট
+                  বাজেট বেশি
                 </span>
               </div>
               {alerts.overBudgetCampaigns.length === 0 ? (
                 <div className="mt-2">
                   <div className="flex items-center gap-1.5 text-xs text-emerald-700 font-semibold">
                     <CheckCircle2 className="h-4 w-4" />
-                    <span>কোনো ক্যাম্পেইন ওভার-বাজেট নেই</span>
+                    <span>সব ক্যাম্পেইন বাজেটের মধ্যে</span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    সব চলমান ক্যাম্পেইনের খরচ নির্ধারিত সীমার ভেতরে রয়েছে।
-                  </p>
                 </div>
               ) : (
                 <ul className="space-y-1 mt-2 text-xs text-slate-700">
@@ -386,7 +379,7 @@ export default async function AdminDashboardPage(props: PageProps) {
               href="/admin/campaigns"
               className="mt-3 text-[11px] font-bold text-rose-700 hover:text-rose-800 inline-flex items-center gap-1"
             >
-              <span>ক্যাম্পেইন বাজেট সমন্বয় করুন</span>
+              <span>ক্যাম্পেইন দেখুন</span>
               <ArrowRight className="h-3 w-3" />
             </Link>
           </div>

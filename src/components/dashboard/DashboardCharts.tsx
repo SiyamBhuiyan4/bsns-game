@@ -60,14 +60,13 @@ const LINE_COLORS = [
   '#14B8A6',
 ];
 
-function EmptyChartState({ message = 'এই সময়ের কোনো তথ্য নেই (No data)' }: { message?: string }) {
+function EmptyChartState({ message = 'এই সময়ে কোনো তথ্য নেই' }: { message?: string }) {
   return (
     <div className="flex h-72 sm:h-80 w-full flex-col items-center justify-center rounded-xl bg-slate-50/80 border border-dashed border-slate-200 text-center p-6">
       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 mb-2">
         <BarChart3 className="h-6 w-6" />
       </div>
       <p className="text-sm font-semibold text-slate-600">{message}</p>
-      <p className="text-xs text-slate-400 mt-1">নির্বাচিত সময়সীমার জন্য ডাটাবেসে কোনো রেকর্ড নেই</p>
     </div>
   );
 }
@@ -154,16 +153,13 @@ export default function DashboardCharts({
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
-                  ১. সেকশন ভিত্তিক লক্ষ্য বনাম অর্জন (Achieved vs Target)
+                  সেকশন অনুযায়ী লক্ষ্য ও অর্জন
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  টার্গেট (ধূসর) বনাম অর্জিত অগ্রগতি (সবুজ)
+                  Target vs achieved, by section
                 </p>
               </div>
             </div>
-            <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
-              বার চার্ট
-            </span>
           </div>
 
           <div className="w-full min-w-0 h-72 sm:h-80 overflow-hidden">
@@ -203,7 +199,7 @@ export default function DashboardCharts({
                             <div className="flex items-center justify-between gap-4 text-slate-600">
                               <span className="flex items-center gap-1.5">
                                 <span className="h-2.5 w-2.5 rounded-full bg-slate-400"></span>
-                                লক্ষ্য (Target):
+                                লক্ষ্য:
                               </span>
                               <span className="font-semibold text-slate-800">
                                 {item.unit === '৳' ? formatTaka(item.target) : `${item.target.toLocaleString()} ${item.unit}`}
@@ -212,7 +208,7 @@ export default function DashboardCharts({
                             <div className="flex items-center justify-between gap-4 text-slate-600">
                               <span className="flex items-center gap-1.5">
                                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
-                                অর্জিত (Achieved):
+                                অর্জন:
                               </span>
                               <span className="font-semibold text-emerald-700">
                                 {item.unit === '৳' ? formatTaka(item.achieved) : `${item.achieved.toLocaleString()} ${item.unit}`}
@@ -237,14 +233,14 @@ export default function DashboardCharts({
                   />
                   <Bar
                     dataKey="target"
-                    name="টার্গেট (Target)"
+                    name="লক্ষ্য"
                     fill="#94A3B8"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={32}
                   />
                   <Bar
                     dataKey="achieved"
-                    name="অর্জিত (Achieved)"
+                    name="অর্জন"
                     fill="#10B981"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={32}
@@ -266,16 +262,13 @@ export default function DashboardCharts({
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
-                  ২. টিমের স্কোর অনুপাত (Team Score Share)
+                  টিমের স্কোর ভাগ
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  কর্মীভিত্তিক পারফরম্যান্স অবদান ও শতকরা ভাগ
+                  Score share by employee
                 </p>
               </div>
             </div>
-            <span className="text-xs font-semibold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full">
-              পাই চার্ট
-            </span>
           </div>
 
           <div className="w-full min-w-0 h-72 sm:h-80 overflow-hidden">
@@ -359,16 +352,13 @@ export default function DashboardCharts({
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900">
-                ৩. দৈনিক টিম অগ্রগতি ট্রেন্ড (Daily Team Trend — Last 30 Days)
+                দৈনিক টিম ট্রেন্ড (৩০ দিন)
               </h3>
               <p className="text-[11px] text-slate-500">
-                প্রতি কর্মীর দৈনিক পারফরম্যান্স ও টিম মোট সেলস লাইন
+                Daily score per employee, team total
               </p>
             </div>
           </div>
-          <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full self-start sm:self-auto">
-            লাইন চার্ট (৩০ দিন)
-          </span>
         </div>
 
         <div className="w-full min-w-0 h-72 sm:h-80 overflow-hidden">
@@ -437,7 +427,7 @@ export default function DashboardCharts({
                 <Line
                   type="monotone"
                   dataKey="total"
-                  name="টিম মোট (Team Total)"
+                  name="টিম মোট"
                   stroke="#0F172A"
                   strokeWidth={2.5}
                   strokeDasharray="4 4"
@@ -475,16 +465,13 @@ export default function DashboardCharts({
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
-                  ৪. ক্যাম্পেইন বাজেট বনাম খরচ (Ad Spend vs Budget)
+                  ক্যাম্পেইন বাজেট বনাম খরচ
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  নির্ধারিত বাজেট (নীল) বনাম খরচকৃত বিজ্ঞাপন ব্যয় (লাল/গোলাপী)
+                  Budget vs ad spend, per campaign
                 </p>
               </div>
             </div>
-            <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full">
-              ক্যাম্পেইন বার
-            </span>
           </div>
 
           <div className="w-full min-w-0 h-72 sm:h-80 overflow-hidden">
@@ -561,14 +548,14 @@ export default function DashboardCharts({
                   />
                   <Bar
                     dataKey="budget"
-                    name="বাজেট (Budget)"
+                    name="বাজেট"
                     fill="#6366F1"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={32}
                   />
                   <Bar
                     dataKey="spend"
-                    name="বিজ্ঞাপন খরচ (Spend)"
+                    name="খরচ"
                     fill="#F43F5E"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={32}
@@ -590,16 +577,13 @@ export default function DashboardCharts({
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900">
-                  ৫. লিড উৎস বণ্টন (Lead Sources Distribution)
+                  লিড উৎস
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  বিভিন্ন ডিজিটাল মার্কেটিং চ্যানেল থেকে সংগৃহীত ক্রেতার উৎস
+                  Where leads came from
                 </p>
               </div>
             </div>
-            <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">
-              উৎস চার্ট
-            </span>
           </div>
 
           <div className="w-full min-w-0 h-72 sm:h-80 overflow-hidden">

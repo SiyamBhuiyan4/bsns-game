@@ -27,14 +27,14 @@ export default function AdminLoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setErrorMessage(data.error || 'লগইন ব্যর্থ হয়েছে। দয়া করে পুনরায় চেষ্টা করুন। (Login failed)');
+        setErrorMessage(data.error || 'লগইন ব্যর্থ। আবার চেষ্টা করুন।');
         return;
       }
 
       router.push(data.redirectUrl || '/admin/dashboard');
       router.refresh();
     } catch {
-      setErrorMessage('নেটওয়ার্ক সমস্যা। দয়া করে আপনার ইন্টারনেট চেক করুন। (Network error)');
+      setErrorMessage('নেটওয়ার্ক সমস্যা। ইন্টারনেট চেক করুন।');
     } finally {
       setLoading(false);
     }
@@ -57,7 +57,7 @@ export default function AdminLoginPage() {
 
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 sm:p-8 shadow-xl shadow-slate-200/50">
           <div className="mb-6 border-b border-slate-100 pb-4">
-            <h2 className="text-lg font-semibold text-slate-800">পাসকোড দিয়ে প্রবেশ করুন</h2>
+            <h2 className="text-lg font-semibold text-slate-800">পাসকোড দিন</h2>
             <p className="text-xs text-slate-500">Enter the admin passcode</p>
           </div>
 
@@ -71,7 +71,7 @@ export default function AdminLoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs sm:text-sm font-semibold text-slate-700 mb-1.5">
-                পাসকোড <span className="text-slate-400 font-normal">/ Passcode</span>
+                পাসকোড
               </label>
               <div className="relative">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
@@ -107,10 +107,10 @@ export default function AdminLoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  যাচাই করা হচ্ছে... (Checking...)
+                  যাচাই করা হচ্ছে...
                 </>
               ) : (
-                'প্রবেশ করুন (Enter)'
+                'প্রবেশ করুন'
               )}
             </button>
           </form>

@@ -19,36 +19,36 @@ export default async function SetupChecklist() {
   const steps = [
     {
       done: employees > 0,
-      title: 'Add your team members',
-      detail: 'Create a login for each employee. They sign in at /login.',
+      title: 'কর্মী যুক্ত করুন',
+      detail: 'Create a login for each employee at /login',
       href: '/admin/employees',
       cta: 'Open Team',
     },
     {
       done: sections > 0 && links > 0,
-      title: 'Create a group section and add its links',
-      detail: 'A section is a group of Facebook groups or links. Upload a CSV or add them by hand.',
+      title: 'সেকশন ও লিংক যুক্ত করুন',
+      detail: 'A section is a group of links. Upload a CSV or add by hand',
       href: '/admin/sections',
-      cta: 'Open Group Sections',
+      cta: 'Open Sections',
     },
     {
       done: assignments > 0,
-      title: 'Assign each employee to a section',
-      detail: 'Employees only see the links of the sections they are assigned to.',
+      title: 'কর্মীকে সেকশন বরাদ্দ দিন',
+      detail: 'Employees see only their assigned sections',
       href: '/admin/employees',
       cta: 'Assign in Team',
     },
     {
       done: products > 0,
-      title: 'Add your products (optional)',
-      detail: 'Needed for daily sales entries and product reports.',
+      title: 'পণ্য যুক্ত করুন (ঐচ্ছিক)',
+      detail: 'Needed for daily sales and product reports',
       href: '/admin/products',
       cta: 'Open Products',
     },
     {
       done: targets > 0,
-      title: 'Set monthly targets (optional)',
-      detail: 'Targets are used to calculate each employee’s score.',
+      title: 'মাসিক টার্গেট সেট করুন (ঐচ্ছিক)',
+      detail: 'Used to calculate each employee’s score',
       href: '/admin/targets',
       cta: 'Open Targets',
     },
@@ -62,10 +62,8 @@ export default async function SetupChecklist() {
     <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 sm:p-6 shadow-xs">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-slate-900">শুরু করার ধাপসমূহ · Getting started</h2>
-          <p className="text-xs text-slate-600">
-            Follow these steps in order. {completed} of {steps.length} done.
-          </p>
+          <h2 className="text-base sm:text-lg font-bold text-slate-900">শুরুর ধাপ</h2>
+          <p className="text-xs text-slate-600">{completed} of {steps.length} done</p>
         </div>
       </div>
 

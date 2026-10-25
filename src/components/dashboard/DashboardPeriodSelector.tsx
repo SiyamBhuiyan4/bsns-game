@@ -16,7 +16,7 @@ const PERIOD_OPTIONS: { key: DashboardPeriodKey; label: string }[] = [
   { key: 'yesterday', label: 'গতকাল' },
   { key: 'last7days', label: 'গত ৭ দিন' },
   { key: 'thisMonth', label: 'এই মাস' },
-  { key: 'custom', label: 'কাস্টম রেঞ্জ' },
+  { key: 'custom', label: 'কাস্টম' },
 ];
 
 export default function DashboardPeriodSelector({
@@ -84,8 +84,7 @@ export default function DashboardPeriodSelector({
           <Calendar className="h-4 w-4" />
         </div>
         <div>
-          <div className="text-xs font-bold text-slate-900">সময়কাল ফিল্টার (Period Selector)</div>
-          <div className="text-[11px] text-slate-500">পারফরম্যান্স ও চার্ট ডাটা সময়সীমা অনুযায়ী প্রদর্শন</div>
+          <div className="text-xs font-bold text-slate-900">সময়কাল</div>
         </div>
       </div>
 
@@ -121,7 +120,7 @@ export default function DashboardPeriodSelector({
               className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
               required
             />
-            <span className="text-xs text-slate-400">হতে</span>
+            <span className="text-xs text-slate-400">থেকে</span>
             <input
               type="date"
               value={toDate}
@@ -134,7 +133,7 @@ export default function DashboardPeriodSelector({
               type="submit"
               className="rounded-lg bg-emerald-600 px-3 py-1 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-colors cursor-pointer"
             >
-              প্রয়োগ করুন
+              দেখুন
             </button>
           </form>
         )}
