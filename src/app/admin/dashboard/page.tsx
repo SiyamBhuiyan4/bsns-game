@@ -2,6 +2,7 @@ import { requireAdmin } from '@/lib/session';
 import { getAdminDashboardData, DashboardPeriodKey } from '@/lib/dashboard';
 import DashboardPeriodSelector from '@/components/dashboard/DashboardPeriodSelector';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
+import SetupChecklist from '@/components/admin/SetupChecklist';
 import {
   Users,
   Layers,
@@ -57,6 +58,9 @@ export default async function AdminDashboardPage(props: PageProps) {
 
   return (
     <div className="space-y-6 pb-12">
+      {/* Step-by-step guide for new admins */}
+      <SetupChecklist />
+
       {/* Welcome & Timezone Header Banner */}
       <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent p-5 sm:p-6 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
