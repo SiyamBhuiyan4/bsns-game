@@ -20,6 +20,7 @@ import {
   UserPlus,
   Target,
   BookOpen,
+  GraduationCap,
   ShieldAlert,
   Menu,
   X,
@@ -95,6 +96,7 @@ const navGroups = [
     labelEn: 'System',
     items: [
       { href: '/admin/manual', key: 'admin_nav.manual', labelBn: 'নির্দেশিকা', labelEn: 'Manual', icon: BookOpen },
+      { href: '/admin/assistant', key: 'admin_nav.assistant', labelBn: 'সহকারী শেখান', labelEn: 'Teach Assistant', icon: GraduationCap },
       { href: '/admin/settings', key: 'admin_nav.settings', labelBn: 'সেটিংস', labelEn: 'Settings', icon: Settings },
       { href: '/admin/audit', key: 'admin_nav.audit', labelBn: 'অডিট লগ', labelEn: 'Audit Log', icon: ShieldAlert },
     ],

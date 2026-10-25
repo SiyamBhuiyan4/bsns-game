@@ -10,7 +10,7 @@ type ModelName =
   | 'user' | 'groupSection' | 'groupLink' | 'csvUploadBatch' | 'assignment' | 'linkCompletion'
   | 'product' | 'dailyProductSale' | 'campaign' | 'dailyEntry' | 'dailyText' | 'lead' | 'leadNote'
   | 'sectionTarget' | 'budgetLimit' | 'scoringSettings' | 'weeklyReport' | 'weeklyReportAnswer'
-  | 'monthlyReport' | 'plan' | 'planPhase' | 'planTask' | 'planMilestone' | 'auditLog';
+  | 'monthlyReport' | 'plan' | 'planPhase' | 'planTask' | 'planMilestone' | 'auditLog' | 'agentPhrase';
 
 type ModelDef = {
   table: string; // Pascal name used in relations
@@ -231,6 +231,11 @@ const MODELS: Record<ModelName, ModelDef> = {
       plan: { to: 'plan', fk: 'plan_id' },
       phase: { to: 'planPhase', fk: 'phase_id' },
     },
+  },
+  // Phrases the admin has taught the assistant (not in schema.prisma; Telegram store only).
+  agentPhrase: {
+    table: 'AgentPhrase', dates: ['created_at'], defaults: { created_at: NOW }, unique: [['phrase']],
+    relations: {},
   },
   auditLog: {
     table: 'AuditLog', dates: ['created_at'], defaults: { actor_id: null, entity_id: null, payload: null, created_at: NOW }, unique: [],

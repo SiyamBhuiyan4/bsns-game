@@ -5,7 +5,7 @@ import { EncryptJWT, jwtDecrypt } from 'jose';
 import { requireAdmin } from '@/lib/session';
 import { parseMessage } from '@/lib/agent/router';
 import { executeCommand, type AgentResult } from '@/lib/agent/commands';
-import { handlePlainMessage } from '@/lib/agent/llm';
+import { navigate, type NavLink } from '@/lib/agent/navigator';
 
 export const runtime = 'nodejs';
 
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
   const { message, confirm, pending } = parse.data;
   const ctx = { actorId: session.userId, confirm: confirm === true };
 
-  let result: AgentResult;
+  let result: AgentResult & { link?: NavLink; suggestions?: NavLink[] };
   if (confirm === true && pending) {
     // Run exactly what was previewed.
     const opened = await openPending(pending.token);
@@ -85,14 +85,18 @@ export async function POST(request: NextRequest) {
     if (parsed.command !== null) {
       result = await executeCommand(parsed.command, parsed.args, ctx);
     } else {
-      // Plain text never executes directly; the AI path always previews writes.
-      result = await handlePlainMessage(message, { actorId: session.userId, confirm: false });
+      // Plain text never executes anything: it only points the admin to the right page.
+      result = await navigate(message);
     }
   }
 
-  const response: { reply: string; needsConfirmation?: boolean; pending?: { command: string; token: string } } = {
-    reply: result.reply,
-  };
+  const response: {
+    reply: string;
+    needsConfirmation?: boolean;
+    pending?: { command: string; token: string };
+    link?: NavLink;
+    suggestions?: NavLink[];
+  } = { reply: result.reply, link: result.link, suggestions: result.suggestions };
   if (result.needsConfirmation && result.pending) {
     response.needsConfirmation = true;
     response.pending = {

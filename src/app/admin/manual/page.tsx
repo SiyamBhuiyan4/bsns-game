@@ -235,7 +235,9 @@ const SECTIONS: ManualSection[] = [
       { bn: 'ভুল লিংক আপলোড হলে আনডু করুন। আনডু বন্ধ থাকলে সেটিংস থেকে চালু করুন।', en: 'If a wrong link was uploaded, use undo. If undo is off, turn it on in Settings.' },
       { bn: 'রিপোর্টে "ইতিমধ্যে প্রকাশিত" দেখালে রিপোর্টটি আগেই চূড়ান্ত হয়ে গেছে। বদলাতে হলে অডিট লগ দেখুন।', en: 'If a report says "already published", it is final. To check what changed, look at the audit log.' },
       { bn: 'সেটিংস বদলেও কাজ না হলে আবার "Save" চাপুন।', en: 'If a settings change does not work, press "Save" again.' },
-      { bn: 'AI সহকারী (নিচের ডানে বাটন) #commands বোঝে, যেমন #groups। তালিকা দেখতে #help লিখুন।', en: 'The AI assistant (bottom-right button) understands hashtag commands such as #groups; type #help for the list.' },
+      { bn: 'সহকারী (নিচের ডানে বাটন): কী করতে চান লিখুন, যেমন "নতুন কর্মী যোগ" বা "লিড দেখাও"। সে সঠিক পেজ খুলে দেবে, কিছু নিজে সেভ করবে না।', en: 'Assistant (bottom-right button): type what you want, such as "add employee" or "show leads". It opens the right page; it never saves anything by itself.' },
+      { bn: 'সহকারী না বুঝলে "সহকারী শেখান" পেজে বাক্যটি ও পেজটি যোগ করুন। পরের বার সে বুঝবে।', en: 'If it does not understand, add the phrase and the page on "Teach Assistant". Next time it will know.' },
+      { bn: 'দ্রুত কাজের জন্য #commands আছে (#status, #groups ইত্যাদি)। তালিকা দেখতে #help লিখুন।', en: 'Quick #commands also exist (#status, #groups and more); type #help for the list.' },
     ],
   },
   {

@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Bot, Loader2, Send, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowRight, Bot, Loader2, Send, X } from 'lucide-react';
 
 type Role = 'user' | 'assistant' | 'system';
 
@@ -14,19 +15,32 @@ interface ChatMessage {
   needsConfirmation?: boolean;
   /** Set once the admin answers the confirmation, so the buttons hide. */
   confirmAnswered?: boolean;
+  /** Sealed token for the previewed action; sent back on "yes". */
+  pending?: { token: string };
+  link?: NavLink;
+  suggestions?: NavLink[];
+}
+
+interface NavLink {
+  href: string;
+  labelBn: string;
+  labelEn: string;
 }
 
 interface AgentResponse {
   reply: string;
   needsConfirmation?: boolean;
-  pending?: unknown;
+  pending?: { command: string; token: string };
+  link?: NavLink;
+  suggestions?: NavLink[];
 }
 
-const HINTS = ['#help', '#groups', '#links', '#team', '#assign', '#status'];
+const HINTS = ['নতুন কর্মী যোগ', 'গ্রুপ দেখাও', 'আজকের রিপোর্ট', 'add group', '#status', '#help'];
 const NETWORK_ERROR =
   'Network problem. Please check your connection and try again. / নেটওয়ার্ক সমস্যা। ইন্টারনেট চেক করে আবার চেষ্টা করুন।';
 
 export default function AgentChat() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,7 +48,9 @@ export default function AgentChat() {
     {
       id: 0,
       role: 'assistant',
-      text: 'Hi! Type #help to see what I can do. / হ্যালো! কী করতে পারি দেখতে #help লিখুন।',
+      text:
+        'হ্যালো! কী করতে চান লিখুন, আমি সঠিক পেজে নিয়ে যাব। যেমন: "নতুন কর্মী যোগ", "রহিমের অবস্থা দেখাও"।\n' +
+        'Hi! Tell me what you want to do and I will open the right page. Example: "add employee", "show Rahim".',
     },
   ]);
 
@@ -75,7 +91,7 @@ export default function AgentChat() {
     return id;
   };
 
-  const callAgent = async (body: { message: string; confirm?: boolean }) => {
+  const callAgent = async (body: { message: string; confirm?: boolean; pending?: { token: string } }) => {
     setLoading(true);
     try {
       const res = await fetch('/api/admin/agent', {
@@ -97,7 +113,12 @@ export default function AgentChat() {
         text: data.reply,
         needsConfirmation: Boolean(data.needsConfirmation),
         originalMessage: body.message,
+        pending: data.pending ? { token: data.pending.token } : undefined,
+        link: data.link,
+        suggestions: data.suggestions,
       });
+      // Take the admin straight to the page; the chat stays open (it lives in the admin layout).
+      if (data.link) router.push(data.link.href);
     } catch {
       addMessage({ role: 'assistant', text: NETWORK_ERROR });
     } finally {
@@ -113,13 +134,13 @@ export default function AgentChat() {
     void callAgent({ message: text });
   };
 
-  const answerConfirmation = (msgId: number, original: string, yes: boolean) => {
+  const answerConfirmation = (msgId: number, original: string, yes: boolean, pending?: { token: string }) => {
     setMessages((prev) =>
       prev.map((m) => (m.id === msgId ? { ...m, confirmAnswered: true } : m)),
     );
     if (yes) {
       addMessage({ role: 'user', text: 'Yes, do it / হ্যাঁ, করুন' });
-      void callAgent({ message: original, confirm: true });
+      void callAgent({ message: original, confirm: true, pending });
     } else {
       addMessage({ role: 'user', text: 'No / না' });
       addMessage({
@@ -204,7 +225,7 @@ export default function AgentChat() {
                       <button
                         type="button"
                         disabled={loading}
-                        onClick={() => answerConfirmation(m.id, m.originalMessage!, true)}
+                        onClick={() => answerConfirmation(m.id, m.originalMessage!, true, m.pending)}
                         className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
                       >
                         Yes, do it / হ্যাঁ, করুন
@@ -217,6 +238,25 @@ export default function AgentChat() {
                       >
                         No / না
                       </button>
+                    </div>
+                  )}
+                  {(m.link || (m.suggestions && m.suggestions.length > 0)) && (
+                    <div className="flex flex-wrap gap-2">
+                      {[...(m.link ? [m.link] : []), ...(m.suggestions ?? [])].map((l, i) => (
+                        <button
+                          key={`${l.href}-${i}`}
+                          type="button"
+                          onClick={() => router.push(l.href)}
+                          className={
+                            i === 0 && m.link
+                              ? 'inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700'
+                              : 'inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50'
+                          }
+                        >
+                          {l.labelBn}
+                          <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>

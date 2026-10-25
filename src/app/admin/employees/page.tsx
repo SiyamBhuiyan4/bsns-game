@@ -49,6 +49,17 @@ export default function EmployeesPage() {
   const [addEmail, setAddEmail] = useState('');
   const [addPhone, setAddPhone] = useState('');
   const [addPassword, setAddPassword] = useState('');
+
+  // Deep links from the assistant: ?q=<search>, ?add=1, ?name=<prefill>
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q');
+    if (q) setSearchQuery(q);
+    if (params.get('add') === '1') {
+      setAddName(params.get('name') ?? '');
+      setIsAddOpen(true);
+    }
+  }, []);
   const [addSelectedSections, setAddSelectedSections] = useState<string[]>([]);
   const [addSubmitting, setAddSubmitting] = useState(false);
 

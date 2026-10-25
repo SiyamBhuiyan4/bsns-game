@@ -42,6 +42,17 @@ export default function SectionsPage() {
   const [createActive, setCreateActive] = useState(true);
   const [createSubmitting, setCreateSubmitting] = useState(false);
 
+  // Deep links from the assistant: ?q=<search>, ?add=1, ?name=<prefill>
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q');
+    if (q) setSearchQuery(q);
+    if (params.get('add') === '1') {
+      setCreateName(params.get('name') ?? '');
+      setIsCreateOpen(true);
+    }
+  }, []);
+
   // Edit Modal
   const [editingSection, setEditingSection] = useState<Section | null>(null);
   const [editName, setEditName] = useState('');
