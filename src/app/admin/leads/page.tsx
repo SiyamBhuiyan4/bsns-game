@@ -103,6 +103,11 @@ export default function AdminLeadsPage() {
   const [addNote, setAddNote] = useState('');
   const [addSubmitting, setAddSubmitting] = useState(false);
 
+  // Deep link from the assistant: ?add=1 opens the add form.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('add') === '1') setIsAddOpen(true);
+  }, []);
+
   // Phone Duplicate Check Warning State (Admin reveals existing owner name)
   const [phoneWarning, setPhoneWarning] = useState<string | null>(null);
   const [checkingPhone, setCheckingPhone] = useState(false);

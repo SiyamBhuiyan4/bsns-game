@@ -36,6 +36,11 @@ export default function AdminProductsPage() {
   const [unit, setUnit] = useState('kg');
   const [price, setPrice] = useState('');
   const [addSubmitting, setAddSubmitting] = useState(false);
+
+  // Deep link from the assistant: ?add=1 opens the add form.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('add') === '1') setIsAddOpen(true);
+  }, []);
   const [addError, setAddError] = useState<string | null>(null);
 
   // Edit Modal

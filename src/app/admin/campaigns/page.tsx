@@ -78,6 +78,11 @@ export default function AdminCampaignsPage() {
   const [status, setStatus] = useState<CampaignItem['status']>('RUNNING');
   const [addSubmitting, setAddSubmitting] = useState(false);
 
+  // Deep link from the assistant: ?add=1 opens the add form.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('add') === '1') setIsAddOpen(true);
+  }, []);
+
   // Edit / Quick Update Modal
   const [editingCampaign, setEditingCampaign] = useState<CampaignItem | null>(null);
   const [editName, setEditName] = useState('');
