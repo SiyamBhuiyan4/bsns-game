@@ -1,0 +1,515 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+}
+
+enum MetricType {
+  POSTS_DONE
+  SALES_AMOUNT
+  PROFIT_AMOUNT
+  NEW_CLIENTS
+  B2B_ORDERS
+  RETENTION_COUNT
+  FOLLOWUPS_DONE
+  CONFIRMED_ORDERS
+  NEW_LEADS
+  AD_SPEND
+  B2B_INQUIRIES
+  B2B_INQUIRY_VALUE
+}
+
+enum PeriodType {
+  DAILY
+  MONTHLY
+  CUSTOM
+}
+
+enum BuyerType {
+  FARMER
+  WHOLESALER
+  RESTAURANT
+  DEALER
+  RETAIL
+  OTHER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  ORDERED
+  LOST
+}
+
+enum CampaignChannel {
+  FACEBOOK_GROUP
+  FACEBOOK_AD
+  GOOGLE_AD
+  YOUTUBE
+  OTHER
+}
+
+enum CampaignStatus {
+  PLANNED
+  RUNNING
+  PAUSED
+  ENDED
+}
+
+enum BudgetScope {
+  MONTHLY_TOTAL
+  CAMPAIGN
+}
+
+enum ReportStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum MonthlyReportStatus {
+  DRAFT
+  FINAL
+}
+
+enum PlanStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  DONE
+  BLOCKED
+}
+
+enum MilestoneStatus {
+  PENDING
+  MET
+  PARTIAL
+  MISSED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  UPLOAD
+  ASSIGN
+  TARGET_SET
+  BUDGET_SET
+  ENTRY_SAVE
+  LEAD_UPDATE
+  UNDO
+  REPORT_PUBLISH
+  REPORT_FINALIZE
+  PLAN_UPDATE
+  EXPORT
+}
+
+model User {
+  id            String       @id @default(uuid())
+  name          String
+  email         String       @unique
+  password_hash String
+  role          UserRole     @default(EMPLOYEE)
+  phone         String?
+  is_active     Boolean      @default(true)
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
+
+  assignments_as_employee Assignment[]     @relation("EmployeeAssignments")
+  assignments_as_admin    Assignment[]     @relation("AdminAssignments")
+  link_completions        LinkCompletion[]
+  daily_entries           DailyEntry[]
+  daily_texts             DailyText[]
+  product_sales           DailyProductSale[]
+  leads                   Lead[]           @relation("EmployeeLeads")
+  lead_notes              LeadNote[]
+  targets_set             SectionTarget[]
+  budgets_set             BudgetLimit[]
+  campaigns               Campaign[]
+  plans                   Plan[]
+  assigned_tasks          PlanTask[]
+  audit_logs              AuditLog[]
+  csv_batches             CsvUploadBatch[]
+  weekly_reports          WeeklyReport[]
+  weekly_report_answers   WeeklyReportAnswer[]
+  monthly_reports         MonthlyReport[]
+}
+
+model GroupSection {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  description String?
+  is_active   Boolean      @default(true)
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+
+  group_links     GroupLink[]
+  assignments     Assignment[]
+  section_targets SectionTarget[]
+  csv_batches     CsvUploadBatch[]
+}
+
+model GroupLink {
+  id                String          @id @default(uuid())
+  section_id        String
+  url               String
+  title             String?
+  uploaded_batch_id String?
+  is_active         Boolean         @default(true)
+  created_at        DateTime        @default(now())
+
+  section           GroupSection    @relation(fields: [section_id], references: [id], onDelete: Cascade)
+  uploaded_batch    CsvUploadBatch? @relation(fields: [uploaded_batch_id], references: [id], onDelete: SetNull)
+  completions       LinkCompletion[]
+
+  @@unique([section_id, url])
+}
+
+model CsvUploadBatch {
+  id          String       @id @default(uuid())
+  section_id  String
+  uploaded_by String
+  file_name   String
+  total_rows  Int
+  inserted    Int
+  duplicates  Int
+  invalid     Int
+  created_at  DateTime     @default(now())
+
+  section     GroupSection @relation(fields: [section_id], references: [id], onDelete: Cascade)
+  uploader    User         @relation(fields: [uploaded_by], references: [id])
+  links       GroupLink[]
+}
+
+model Assignment {
+  id          String       @id @default(uuid())
+  employee_id String
+  section_id  String
+  assigned_by String
+  created_at  DateTime     @default(now())
+
+  employee    User         @relation("EmployeeAssignments", fields: [employee_id], references: [id], onDelete: Cascade)
+  section     GroupSection @relation(fields: [section_id], references: [id], onDelete: Cascade)
+  admin       User         @relation("AdminAssignments", fields: [assigned_by], references: [id])
+
+  @@unique([employee_id, section_id])
+}
+
+model LinkCompletion {
+  id            String       @id @default(uuid())
+  group_link_id String
+  employee_id   String
+  completed_at  DateTime     @default(now())
+  undone_at     DateTime?
+
+  group_link    GroupLink    @relation(fields: [group_link_id], references: [id], onDelete: Cascade)
+  employee      User         @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@index([employee_id, undone_at])
+  @@index([group_link_id, employee_id])
+}
+
+model Product {
+  id            String       @id @default(uuid())
+  name_bn       String
+  name_en       String
+  unit          String
+  selling_price Decimal      @db.Decimal(12, 2)
+  is_active     Boolean      @default(true)
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
+
+  sales         DailyProductSale[]
+  campaigns     Campaign[]
+  leads         Lead[]
+}
+
+model DailyProductSale {
+  id          String       @id @default(uuid())
+  employee_id String
+  entry_date  DateTime     @db.Date
+  product_id  String
+  quantity    Decimal      @db.Decimal(10, 2)
+  amount      Decimal      @db.Decimal(12, 2)
+  created_at  DateTime     @default(now())
+  updated_at  DateTime     @updatedAt
+
+  employee    User         @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  product     Product      @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([employee_id, entry_date, product_id])
+}
+
+model Campaign {
+  id            String          @id @default(uuid())
+  name          String
+  channel       CampaignChannel
+  product_id    String?
+  owner_id      String
+  start_date    DateTime
+  end_date      DateTime?
+  budget_amount Decimal         @db.Decimal(12, 2)
+  status        CampaignStatus  @default(PLANNED)
+  created_at    DateTime        @default(now())
+
+  product       Product?        @relation(fields: [product_id], references: [id], onDelete: SetNull)
+  owner         User            @relation(fields: [owner_id], references: [id])
+  leads         Lead[]
+  budgets       BudgetLimit[]
+}
+
+model DailyEntry {
+  id          String      @id @default(uuid())
+  employee_id String
+  entry_date  DateTime    @db.Date
+  metric_type MetricType
+  value       Decimal     @db.Decimal(12, 2)
+  note        String?     @db.VarChar(300)
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
+
+  employee    User        @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@unique([employee_id, entry_date, metric_type])
+  @@index([entry_date, employee_id])
+}
+
+model DailyText {
+  id              String   @id @default(uuid())
+  employee_id     String
+  entry_date      DateTime @db.Date
+  main_issue      String?  @db.VarChar(500)
+  next_priorities String?  @db.VarChar(500)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  employee        User     @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@unique([employee_id, entry_date])
+}
+
+model Lead {
+  id                 String       @id @default(uuid())
+  name               String
+  phone              String
+  address            String?
+  buyer_type         BuyerType    @default(RETAIL)
+  product_id         String?
+  campaign_id        String?
+  source_channel     String
+  owner_id           String
+  status             LeadStatus   @default(NEW)
+  quality_rating     Int?
+  expected_value     Decimal?     @db.Decimal(12, 2)
+  order_amount       Decimal?     @db.Decimal(12, 2)
+  lost_reason        String?
+  next_followup_date DateTime?
+  created_at         DateTime     @default(now())
+  updated_at         DateTime     @updatedAt
+
+  owner              User         @relation("EmployeeLeads", fields: [owner_id], references: [id], onDelete: Cascade)
+  product            Product?     @relation(fields: [product_id], references: [id], onDelete: SetNull)
+  campaign           Campaign?    @relation(fields: [campaign_id], references: [id], onDelete: SetNull)
+  notes              LeadNote[]
+
+  @@index([phone])
+  @@index([owner_id, status])
+}
+
+model LeadNote {
+  id         String   @id @default(uuid())
+  lead_id    String
+  author_id  String
+  note       String
+  created_at DateTime @default(now())
+
+  lead       Lead     @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+  author     User     @relation(fields: [author_id], references: [id])
+}
+
+model SectionTarget {
+  id           String     @id @default(uuid())
+  section_id   String
+  metric_type  MetricType
+  target_value Decimal    @db.Decimal(12, 2)
+  period_type  PeriodType @default(MONTHLY)
+  period_start DateTime?  @db.Date
+  period_end   DateTime?  @db.Date
+  set_by       String
+  created_at   DateTime   @default(now())
+  updated_at   DateTime   @updatedAt
+
+  section      GroupSection @relation(fields: [section_id], references: [id], onDelete: Cascade)
+  creator      User         @relation(fields: [set_by], references: [id])
+
+  @@index([section_id, metric_type])
+}
+
+model BudgetLimit {
+  id          String      @id @default(uuid())
+  scope       BudgetScope @default(MONTHLY_TOTAL)
+  campaign_id String?
+  month       String?     @db.VarChar(7) // YYYY-MM
+  amount      Decimal     @db.Decimal(12, 2)
+  set_by      String
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
+
+  campaign    Campaign?   @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
+  setter      User        @relation(fields: [set_by], references: [id])
+}
+
+model ScoringSettings {
+  id                        String   @id @default("default")
+  section_weights           Json
+  achievement_cap           Decimal  @default(1.0) @db.Decimal(6, 2)
+  failing_threshold         Decimal  @default(0.8) @db.Decimal(4, 2)
+  undo_enabled              Boolean  @default(true)
+  employee_edit_window_days Int      @default(1)
+  weekly_report_day         String   @default("SUNDAY")
+  weekly_report_time        String   @default("09:00")
+  language_default          String   @default("bn")
+  digit_style               String   @default("bn")
+  updated_at                DateTime @updatedAt
+}
+
+model WeeklyReport {
+  id           String               @id @default(uuid())
+  week_start   DateTime             @unique @db.Date
+  week_end     DateTime             @db.Date
+  status       ReportStatus         @default(DRAFT)
+  auto_data    Json
+  created_by   String
+  published_at DateTime?
+  created_at   DateTime             @default(now())
+  updated_at   DateTime             @updatedAt
+
+  creator      User                 @relation(fields: [created_by], references: [id])
+  answers      WeeklyReportAnswer[]
+}
+
+model WeeklyReportAnswer {
+  id               String       @id @default(uuid())
+  weekly_report_id String
+  question_no      Int
+  question_text    String
+  answer_text      String
+  updated_by       String
+  updated_at       DateTime     @updatedAt
+
+  report           WeeklyReport @relation(fields: [weekly_report_id], references: [id], onDelete: Cascade)
+  updater          User         @relation(fields: [updated_by], references: [id])
+
+  @@unique([weekly_report_id, question_no])
+}
+
+model MonthlyReport {
+  id                 String              @id @default(uuid())
+  month              String              @unique @db.VarChar(7) // YYYY-MM
+  status             MonthlyReportStatus @default(DRAFT)
+  auto_data          Json
+  summary_text       String?
+  next_month_goal    String?
+  next_month_budget  Decimal?            @db.Decimal(12, 2)
+  created_by         String
+  finalized_at       DateTime?
+  created_at         DateTime            @default(now())
+  updated_at         DateTime            @updatedAt
+
+  creator            User                @relation(fields: [created_by], references: [id])
+}
+
+model Plan {
+  id         String     @id @default(uuid())
+  name       String
+  start_date DateTime   @db.Date
+  status     PlanStatus @default(ACTIVE)
+  created_by String
+  created_at DateTime   @default(now())
+
+  creator    User            @relation(fields: [created_by], references: [id])
+  phases     PlanPhase[]
+  tasks      PlanTask[]
+  milestones PlanMilestone[]
+}
+
+model PlanPhase {
+  id         String          @id @default(uuid())
+  plan_id    String
+  name_bn    String
+  name_en    String
+  day_start  Int
+  day_end    Int
+  order_no   Int
+  created_at DateTime        @default(now())
+
+  plan       Plan            @relation(fields: [plan_id], references: [id], onDelete: Cascade)
+  tasks      PlanTask[]
+  milestones PlanMilestone[]
+}
+
+model PlanTask {
+  id               String     @id @default(uuid())
+  plan_id          String
+  phase_id         String
+  title_bn         String
+  title_en         String
+  description      String?
+  owner_id         String?
+  due_date         DateTime?  @db.Date
+  status           TaskStatus @default(NOT_STARTED)
+  progress_percent Int        @default(0)
+  outcome_note     String?
+  created_at       DateTime   @default(now())
+  updated_at       DateTime   @updatedAt
+
+  plan             Plan       @relation(fields: [plan_id], references: [id], onDelete: Cascade)
+  phase            PlanPhase  @relation(fields: [phase_id], references: [id], onDelete: Cascade)
+  owner            User?      @relation(fields: [owner_id], references: [id], onDelete: SetNull)
+}
+
+model PlanMilestone {
+  id              String          @id @default(uuid())
+  plan_id         String
+  phase_id        String
+  title_bn        String
+  expected_result String
+  achieved_result String?
+  status          MilestoneStatus @default(PENDING)
+  reviewed_at     DateTime?
+
+  plan            Plan            @relation(fields: [plan_id], references: [id], onDelete: Cascade)
+  phase           PlanPhase       @relation(fields: [phase_id], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         String      @id @default(uuid())
+  actor_id   String?
+  action     AuditAction
+  entity     String
+  entity_id  String?
+  payload    Json?
+  created_at DateTime    @default(now())
+
+  actor      User?       @relation(fields: [actor_id], references: [id], onDelete: SetNull)
+
+  @@index([actor_id])
+  @@index([action])
+  @@index([created_at])
+}
