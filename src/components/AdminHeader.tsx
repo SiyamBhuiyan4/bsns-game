@@ -13,6 +13,7 @@ import {
   Layers,
   Settings,
   FileText,
+  FileSpreadsheet,
   CalendarCheck,
   History,
   Package,
@@ -79,6 +80,7 @@ const navGroups = [
     labelEn: 'Reports',
     items: [
       { href: '/admin/reports/daily', key: 'admin_nav.report_daily', labelBn: 'দৈনিক', labelEn: 'Daily', icon: FileText },
+      { href: '/admin/reports/weekly', key: 'admin_nav.report_weekly', labelBn: 'সাপ্তাহিক', labelEn: 'Weekly', icon: FileSpreadsheet },
       { href: '/admin/reports/monthly', key: 'admin_nav.report_monthly', labelBn: 'মাসিক', labelEn: 'Monthly', icon: BarChart3 },
     ],
   },
