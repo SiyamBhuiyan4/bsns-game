@@ -1,0 +1,3002 @@
+[
+ {
+  "text": "biriyani ranna kivabe",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "লিংকের নাম ভুল হয়েছে, ঠিক করব কোথায়",
+  "expect": "/admin/sections",
+  "lang": "bn"
+ },
+ {
+  "text": "সুমাইয়ার মোবাইল নম্বর বদলাতে হবে",
+  "expect": "/admin/employees",
+  "lang": "bn"
+ },
+ {
+  "text": "যে লিডগুলো হারিয়ে গেছে সেগুলো দেখাও",
+  "expect": "/admin/leads",
+  "lang": "bn"
+ },
+ {
+  "text": "নতুন বিজ্ঞাপন ক্যাম্পেইন তৈরি করুন",
+  "expect": "/admin/campaigns",
+  "lang": "bn"
+ },
+ {
+  "text": "step by step guide den",
+  "expect": "/admin/manual",
+  "lang": "bl"
+ },
+ {
+  "text": "সামগ্রিক অবস্থা কেমন, ওভারভিউ দেখান",
+  "expect": "/admin/dashboard",
+  "lang": "bn"
+ },
+ {
+  "text": "open the pipeline",
+  "expect": "/admin/leads",
+  "lang": "en"
+ },
+ {
+  "text": "achievement cap 100% korbo",
+  "expect": "/admin/settings",
+  "lang": "bl"
+ },
+ {
+  "text": "plan er kaj koto dur aglo",
+  "expect": "/admin/plan",
+  "lang": "bl"
+ },
+ {
+  "text": "আজকের টিমের কাজের রিপোর্ট",
+  "expect": "/admin/reports/daily",
+  "lang": "bn"
+ },
+ {
+  "text": "করিম দোকান থেকে একজন নতুন পাইকার এনেছে",
+  "expect": "/admin/leads",
+  "lang": "bn"
+ },
+ {
+  "text": "পুরো প্যানেল কীভাবে চালাতে হয় পড়তে চাই",
+  "expect": "/admin/manual",
+  "lang": "bn"
+ },
+ {
+  "text": "ম্যানুয়াল কোথায়",
+  "expect": "/admin/manual",
+  "lang": "bn"
+ },
+ {
+  "text": "Nusrat's monthly score",
+  "expect": "/admin/reports/monthly",
+  "lang": "en"
+ },
+ {
+  "text": "আমার ফোনের স্ক্রিন ভেঙে গেছে",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "bulk copy target",
+  "expect": "/admin/targets",
+  "lang": "bl"
+ },
+ {
+  "text": "ঢাকা ফার্মার্সের জন্য মাসিক টার্গেট দিতে চাই",
+  "expect": "/admin/targets",
+  "lang": "bn"
+ },
+ {
+  "text": "ke settings change korse kal",
+  "expect": "/admin/audit",
+  "lang": "bl"
+ },
+ {
+  "text": "আমাদের সব আইটেমের দাম এক জায়গায় দেখাও",
+  "expect": "/admin/products",
+  "lang": "bn"
+ },
+ {
+  "text": "monthly report",
+  "expect": "/admin/reports/monthly",
+  "lang": "en"
+ },
+ {
+  "text": "বুস্টিংয়ে টাকা বেশি চলে যাচ্ছে, ক্যাম্পেইন বাজেট দেখব",
+  "expect": "/admin/campaigns",
+  "lang": "bn"
+ },
+ {
+  "text": "হোম পেজ খুলুন",
+  "expect": "/admin/dashboard",
+  "lang": "bn"
+ },
+ {
+  "text": "october er rank list",
+  "expect": "/admin/reports/monthly",
+  "lang": "bl"
+ },
+ {
+  "text": "সাপ্তাহিক প্রতিবেদন",
+  "expect": "/admin/reports/weekly",
+  "lang": "bn"
+ },
+ {
+  "text": "সহকারীর জন্য শব্দ ও পেজ যুক্ত করব",
+  "expect": "/admin/assistant",
+  "lang": "bn"
+ },
+ {
+  "text": "ke product delete korse",
+  "expect": "/admin/audit",
+  "lang": "bl"
+ },
+ {
+  "text": "default language english korbo",
+  "expect": "/admin/settings",
+  "lang": "bl"
+ },
+ {
+  "text": "dainik report khulo",
+  "expect": "/admin/reports/daily",
+  "lang": "bl"
+ },
+ {
+  "text": "একটা গান শোনাও",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "কর্মীরা কত দিন পর্যন্ত ডাটা এডিট করতে পারবে সেটা ঠিক করব",
+  "expect": "/admin/settings",
+  "lang": "bn"
+ },
+ {
+  "text": "campain list",
+  "expect": "/admin/campaigns",
+  "lang": "en"
+ },
+ {
+  "text": "section weight change",
+  "expect": "/admin/settings",
+  "lang": "bl"
+ },
+ {
+  "text": "improve the assistant's understanding",
+  "expect": "/admin/assistant",
+  "lang": "en"
+ },
+ {
+  "text": "সপ্তাহের মূল্যায়ন লিখব কোথায়",
+  "expect": "/admin/reports/weekly",
+  "lang": "bn"
+ },
+ {
+  "text": "সেটিংস খোলো",
+  "expect": "/admin/settings",
+  "lang": "bn"
+ },
+ {
+  "text": "রহিমকে প্ল্যানে একটা টাস্ক দিতে চাই",
+  "expect": "/admin/plan",
+  "lang": "bn"
+ },
+ {
+  "text": "who published the weekly report",
+  "expect": "/admin/audit",
+  "lang": "en"
+ },
+ {
+  "text": "target set korbo",
+  "expect": "/admin/targets",
+  "lang": "bl"
+ },
+ {
+  "text": "ekjon buyer call dise, tar number save korbo",
+  "expect": "/admin/leads",
+  "lang": "bl"
+ },
+ {
+  "text": "নুসরাতের আনা লিডগুলো দেখতে চাই",
+  "expect": "/admin/leads",
+  "lang": "bn"
+ },
+ {
+  "text": "সব ফিচারের বর্ণনা কোথায়",
+  "expect": "/admin/manual",
+  "lang": "bn"
+ },
+ {
+  "text": "ফেসবুক অ্যাডে কত খরচ হয়েছে",
+  "expect": "/admin/campaigns",
+  "lang": "bn"
+ },
+ {
+  "text": "how many rows were duplicates in last week's upload",
+  "expect": "/admin/csv/history",
+  "lang": "en"
+ },
+ {
+  "text": "২০ অক্টোবরের রিপোর্ট দেখতে চাই",
+  "expect": "/admin/reports/daily",
+  "lang": "bn"
+ },
+ {
+  "text": "ভুল লিংক আপলোড হয়েছে কিন্তু আনডু বন্ধ, চালু করব কোথায়",
+  "expect": "/admin/settings",
+  "lang": "bn"
+ },
+ {
+  "text": "ei soptaher report",
+  "expect": "/admin/reports/weekly",
+  "lang": "bl"
+ },
+ {
+  "text": "save the weekly report as draft",
+  "expect": "/admin/reports/weekly",
+  "lang": "en"
+ },
+ {
+  "text": "copy targets from Agro BD to Mushroom Lovers",
+  "expect": "/admin/targets",
+  "lang": "en"
+ },
+ {
+  "text": "ইউটিউব খুলে দাও",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "inactive link gula filter kore dekhbo",
+  "expect": "/admin/sections",
+  "lang": "bl"
+ },
+ {
+  "text": "বিক্রয় মূল্য আপডেট করব",
+  "expect": "/admin/products",
+  "lang": "bn"
+ },
+ {
+  "text": "translate 'good morning' to French",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "order korse emon customer kara",
+  "expect": "/admin/leads",
+  "lang": "bl"
+ },
+ {
+  "text": "home page pls",
+  "expect": "/admin/dashboard",
+  "lang": "en"
+ },
+ {
+  "text": "create a new facebook ad campaign",
+  "expect": "/admin/campaigns",
+  "lang": "en"
+ },
+ {
+  "text": "assistant bujhe nai, phrase add korbo",
+  "expect": "/admin/assistant",
+  "lang": "bl"
+ },
+ {
+  "text": "ajker report dekhao",
+  "expect": "/admin/reports/daily",
+  "lang": "bl"
+ },
+ {
+  "text": "mark a product inactive",
+  "expect": "/admin/products",
+  "lang": "en"
+ },
+ {
+  "text": "the Agro BD groups are all dead now, kill them",
+  "expect": "/admin/sections",
+  "lang": "en"
+ },
+ {
+  "text": "cricket score koto",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "protidiner kajer hisab",
+  "expect": "/admin/reports/daily",
+  "lang": "bl"
+ },
+ {
+  "text": "masik report dekhao",
+  "expect": "/admin/reports/monthly",
+  "lang": "bl"
+ },
+ {
+  "text": "how do I create a daily target of 100 links?",
+  "expect": "/admin/targets",
+  "lang": "en"
+ },
+ {
+  "text": "copy last month's targets to this month",
+  "expect": "/admin/targets",
+  "lang": "en"
+ },
+ {
+  "text": "ad e koto khoroch hoise",
+  "expect": "/admin/campaigns",
+  "lang": "bl"
+ },
+ {
+  "text": "mon kharap, ki kori",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "ড্যাশবোড দেখাও",
+  "expect": "/admin/dashboard",
+  "lang": "bn"
+ },
+ {
+  "text": "maser sales profit koto",
+  "expect": "/admin/reports/monthly",
+  "lang": "bl"
+ },
+ {
+  "text": "python e code likhe dao",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "aj koto jon active ase ek jaygay dekhbo",
+  "expect": "/admin/dashboard",
+  "lang": "bl"
+ },
+ {
+  "text": "what's the price of gold today",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "change the plan start date",
+  "expect": "/admin/plan",
+  "lang": "en"
+ },
+ {
+  "text": "set achievement cap to 120%",
+  "expect": "/admin/settings",
+  "lang": "en"
+ },
+ {
+  "text": "weekly football schedule",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "product er unit change korbo",
+  "expect": "/admin/products",
+  "lang": "bl"
+ },
+ {
+  "text": "কাল রাতে কে লিড মুছে দিল",
+  "expect": "/admin/audit",
+  "lang": "bn"
+ },
+ {
+  "text": "karim ke mushroom lovers section assign koro",
+  "expect": "/admin/employees",
+  "lang": "bl"
+ },
+ {
+  "text": "ফেইলিং থ্রেশহোল্ড বদলাতে চাই",
+  "expect": "/admin/settings",
+  "lang": "bn"
+ },
+ {
+  "text": "jamal er id te dhukte parche na",
+  "expect": "/admin/employees",
+  "lang": "bl"
+ },
+ {
+  "text": "দৈনিক রিপোর্ট কোথায়",
+  "expect": "/admin/reports/daily",
+  "lang": "bn"
+ },
+ {
+  "text": "wanna lower the failing line, it's too strict",
+  "expect": "/admin/settings",
+  "lang": "en"
+ },
+ {
+  "text": "month end score of everyone",
+  "expect": "/admin/reports/monthly",
+  "lang": "en"
+ },
+ {
+  "text": "change section weights",
+  "expect": "/admin/settings",
+  "lang": "en"
+ },
+ {
+  "text": "tumi bujho na, train korbo kivabe",
+  "expect": "/admin/assistant",
+  "lang": "bl"
+ },
+ {
+  "text": "সাপ্তাহিক ফুটবল খেলার সূচি",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "write me a poem about rain",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "change the price of mushroom powder",
+  "expect": "/admin/products",
+  "lang": "en"
+ },
+ {
+  "text": "সব ক্যাম্পেইন দেখতে চাই",
+  "expect": "/admin/campaigns",
+  "lang": "bn"
+ },
+ {
+  "text": "my employee can't log in",
+  "expect": "/admin/employees",
+  "lang": "en"
+ },
+ {
+  "text": "panel kivabe chalabo puro guide",
+  "expect": "/admin/manual",
+  "lang": "bl"
+ },
+ {
+  "text": "মাসিক রিপোর্ট দেখাও",
+  "expect": "/admin/reports/monthly",
+  "lang": "bn"
+ },
+ {
+  "text": "open the 90 day plan",
+  "expect": "/admin/plan",
+  "lang": "en"
+ },
+ {
+  "text": "লক্ষ্যমাত্রা সেট করব কিভাবে",
+  "expect": "/admin/targets",
+  "lang": "bn"
+ },
+ {
+  "text": "reset settings to default",
+  "expect": "/admin/settings",
+  "lang": "en"
+ },
+ {
+  "text": "ফেসবুক থেকে নতুন একজন ক্রেতা পেয়েছি",
+  "expect": "/admin/leads",
+  "lang": "bn"
+ },
+ {
+  "text": "পরিকল্পনার শুরুর তারিখ বদলাতে চাই",
+  "expect": "/admin/plan",
+  "lang": "bn"
+ },
+ {
+  "text": "Jamal's account needs a new password",
+  "expect": "/admin/employees",
+  "lang": "en"
+ },
+ {
+  "text": "failing er limit ta komabo",
+  "expect": "/admin/settings",
+  "lang": "bl"
+ },
+ {
+  "text": "সহকারীকে নতুন শব্দ শেখাতে চাই",
+  "expect": "/admin/assistant",
+  "lang": "bn"
+ },
+ {
+  "text": "ক্যাম্পেইনের বাজেট সীমা বাড়াব",
+  "expect": "/admin/campaigns",
+  "lang": "bn"
+ },
+ {
+  "text": "I want to map 'malik list' to the leads page",
+  "expect": "/admin/assistant",
+  "lang": "en"
+ },
+ {
+  "text": "lost lead gula dekhao",
+  "expect": "/admin/leads",
+  "lang": "bl"
+ },
+ {
+  "text": "ধুর, কিছুই খুঁজে পাচ্ছি না, লিড কোথায়",
+  "expect": "/admin/leads",
+  "lang": "bn"
+ },
+ {
+  "text": "check Rahim's work report for today",
+  "expect": "/admin/reports/daily",
+  "lang": "en"
+ },
+ {
+  "text": "give me advice on my relationship",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "অ্যাসিস্ট্যান্ট শেখানোর পেজ",
+  "expect": "/admin/assistant",
+  "lang": "bn"
+ },
+ {
+  "text": "how do I set the unit to packet?",
+  "expect": "/admin/products",
+  "lang": "en"
+ },
+ {
+  "text": "আমার প্যানেলের মেইন স্ক্রিন কোথায়",
+  "expect": "/admin/dashboard",
+  "lang": "bn"
+ },
+ {
+  "text": "মার্কেটিং বাজেট নির্ধারণ করব কোথায়",
+  "expect": "/admin/targets",
+  "lang": "bn"
+ },
+ {
+  "text": "who is the richest person in the world",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "টিচ অ্যাসিস্ট্যান্ট খুলুন",
+  "expect": "/admin/assistant",
+  "lang": "bn"
+ },
+ {
+  "text": "change the weekly report schedule",
+  "expect": "/admin/settings",
+  "lang": "en"
+ },
+ {
+  "text": "how many links are done overall, just a quick snapshot",
+  "expect": "/admin/dashboard",
+  "lang": "en"
+ },
+ {
+  "text": "set campaign status to ended",
+  "expect": "/admin/campaigns",
+  "lang": "en"
+ },
+ {
+  "text": "weekly pdf download korbo",
+  "expect": "/admin/reports/weekly",
+  "lang": "bl"
+ },
+ {
+  "text": "step by step guide for a new admin",
+  "expect": "/admin/manual",
+  "lang": "en"
+ },
+ {
+  "text": "what can you do?",
+  "expect": "ANSWER",
+  "lang": "en"
+ },
+ {
+  "text": "read the guide on common problems and fixes",
+  "expect": "/admin/manual",
+  "lang": "en"
+ },
+ {
+  "text": "আজকের দৈনিক রিপোর্ট দেখাও",
+  "expect": "/admin/reports/daily",
+  "lang": "bn"
+ },
+ {
+  "text": "karim ki ki change korse dekhbo",
+  "expect": "/admin/audit",
+  "lang": "bl"
+ },
+ {
+  "text": "show me the overview of everything",
+  "expect": "/admin/dashboard",
+  "lang": "en"
+ },
+ {
+  "text": "এ মাসের বিজ্ঞাপন বাজেট কত দিলাম",
+  "expect": "/admin/targets",
+  "lang": "bn"
+ },
+ {
+  "text": "মূল পাতায় ফিরে যাব কিভাবে",
+  "expect": "/admin/dashboard",
+  "lang": "bn"
+ },
+ {
+  "text": "week er evaluation likhbo kothay",
+  "expect": "/admin/reports/weekly",
+  "lang": "bl"
+ },
+ {
+  "text": "daily report of the stock market",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "quick view of failing people and over-budget campaigns on the front page",
+  "expect": "/admin/dashboard",
+  "lang": "en"
+ },
+ {
+  "text": "search a customer by phone number",
+  "expect": "/admin/leads",
+  "lang": "en"
+ },
+ {
+  "text": "pause the running campaign",
+  "expect": "/admin/campaigns",
+  "lang": "en"
+ },
+ {
+  "text": "price update korte chai",
+  "expect": "/admin/products",
+  "lang": "bl"
+ },
+ {
+  "text": "একটা পণ্য বন্ধ রাখতে চাই",
+  "expect": "/admin/products",
+  "lang": "bn"
+ },
+ {
+  "text": "ক্রেতার জন্য ফলোআপ নোট লিখতে চাই",
+  "expect": "/admin/leads",
+  "lang": "bn"
+ },
+ {
+  "text": "show inactive links in a section",
+  "expect": "/admin/sections",
+  "lang": "en"
+ },
+ {
+  "text": "monthly ranking of employees",
+  "expect": "/admin/reports/monthly",
+  "lang": "en"
+ },
+ {
+  "text": "spawn packet add korte hobe product e",
+  "expect": "/admin/products",
+  "lang": "bl"
+ },
+ {
+  "text": "সাপ্তাহিক রিপোর্ট ড্রাফট সংরক্ষণ করব",
+  "expect": "/admin/reports/weekly",
+  "lang": "bn"
+ },
+ {
+  "text": "someone edited a lead's phone, who was it",
+  "expect": "/admin/audit",
+  "lang": "en"
+ },
+ {
+  "text": "teach the assistant a new phrase",
+  "expect": "/admin/assistant",
+  "lang": "en"
+ },
+ {
+  "text": "dashboard e jao",
+  "expect": "/admin/dashboard",
+  "lang": "bl"
+ },
+ {
+  "text": "ঈদের ছুটি কবে",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "what's the dollar rate today",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "I'm boosting a post on facebook, where do I record it",
+  "expect": "/admin/campaigns",
+  "lang": "en"
+ },
+ {
+  "text": "পণ্যের ইউনিট কেজি থেকে প্যাকেট করব",
+  "expect": "/admin/products",
+  "lang": "bn"
+ },
+ {
+  "text": "প্ল্যানের কাজগুলোর অগ্রগতি কেমন",
+  "expect": "/admin/plan",
+  "lang": "bn"
+ },
+ {
+  "text": "টার্গেট এডিট করব",
+  "expect": "/admin/targets",
+  "lang": "bn"
+ },
+ {
+  "text": "where do I set goals for sections",
+  "expect": "/admin/targets",
+  "lang": "en"
+ },
+ {
+  "text": "সাপ্তাহিক রিপোর্ট দেখাও",
+  "expect": "/admin/reports/weekly",
+  "lang": "bn"
+ },
+ {
+  "text": "how do I give Sumaiya the Dhaka Farmers section?",
+  "expect": "/admin/employees",
+  "lang": "en"
+ },
+ {
+  "text": "how much have we spent on ads this month?",
+  "expect": "/admin/campaigns",
+  "lang": "en"
+ },
+ {
+  "text": "change the scoring rules",
+  "expect": "/admin/settings",
+  "lang": "en"
+ },
+ {
+  "text": "ajke weather kemon",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "make a new section for agro groups with a description",
+  "expect": "/admin/sections",
+  "lang": "en"
+ },
+ {
+  "text": "শুকনো মাশরুমের দাম কমাতে হবে",
+  "expect": "/admin/products",
+  "lang": "bn"
+ },
+ {
+  "text": "শুরুর ৫টা ধাপের কোনগুলো বাকি আছে দেখতে চাই",
+  "expect": "/admin/dashboard",
+  "lang": "bn"
+ },
+ {
+  "text": "lead ke edit korlo",
+  "expect": "/admin/audit",
+  "lang": "bl"
+ },
+ {
+  "text": "nusrat er number change korbo",
+  "expect": "/admin/employees",
+  "lang": "bl"
+ },
+ {
+  "text": "shurur checklist ta kothay gelo",
+  "expect": "/admin/dashboard",
+  "lang": "bl"
+ },
+ {
+  "text": "dhaka farmers er target koto",
+  "expect": "/admin/targets",
+  "lang": "bl"
+ },
+ {
+  "text": "monthly ad budget, where do I put 20000 taka",
+  "expect": "/admin/targets",
+  "lang": "en"
+ },
+ {
+  "text": "ei app e kisui pai na, leads dekhao",
+  "expect": "/admin/leads",
+  "lang": "bl"
+ },
+ {
+  "text": "who deleted the product?",
+  "expect": "/admin/audit",
+  "lang": "en"
+ },
+ {
+  "text": "আনডু চালু করুন",
+  "expect": "/admin/settings",
+  "lang": "bn"
+ },
+ {
+  "text": "links er csv upload korte chai",
+  "expect": "/admin/sections",
+  "lang": "bl"
+ },
+ {
+  "text": "csv upload records",
+  "expect": "/admin/csv/history",
+  "lang": "en"
+ },
+ {
+  "text": "add shortcut words for the helper",
+  "expect": "/admin/assistant",
+  "lang": "en"
+ },
+ {
+  "text": "mark the plan task as done",
+  "expect": "/admin/plan",
+  "lang": "en"
+ },
+ {
+  "text": "previous upload list ta khulo",
+  "expect": "/admin/csv/history",
+  "lang": "bl"
+ },
+ {
+  "text": "মাশরুম পাউডারের নাম ইংরেজিতে ঠিক করব",
+  "expect": "/admin/products",
+  "lang": "bn"
+ },
+ {
+  "text": "সুমাইয়ার মাসিক র‍্যাংক কত",
+  "expect": "/admin/reports/monthly",
+  "lang": "bn"
+ },
+ {
+  "text": "open the main summary screen with active members count",
+  "expect": "/admin/dashboard",
+  "lang": "en"
+ },
+ {
+  "text": "লিডের স্টেজ পরিবর্তন করব কিভাবে",
+  "expect": "/admin/leads",
+  "lang": "bn"
+ },
+ {
+  "text": "home page ta khulo to",
+  "expect": "/admin/dashboard",
+  "lang": "bl"
+ },
+ {
+  "text": "oyster er dam 20 taka barao",
+  "expect": "/admin/products",
+  "lang": "bl"
+ },
+ {
+  "text": "কে কোন সময় কী বদলেছে দেখতে চাই",
+  "expect": "/admin/audit",
+  "lang": "bn"
+ },
+ {
+  "text": "is the eid campaign still running or paused?",
+  "expect": "/admin/campaigns",
+  "lang": "en"
+ },
+ {
+  "text": "শেষ আপলোডে কয়টা ডুপ্লিকেট ছিল দেখব কোথায়",
+  "expect": "/admin/csv/history",
+  "lang": "bn"
+ },
+ {
+  "text": "girlfriend rag korse ki korbo",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "গতকাল যে ফাইল আপলোড করেছিলাম তার রেকর্ড দেখতে চাই",
+  "expect": "/admin/csv/history",
+  "lang": "bn"
+ },
+ {
+  "text": "what is 245 times 17",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "সিএসভি আপলোডের রেকর্ড",
+  "expect": "/admin/csv/history",
+  "lang": "bn"
+ },
+ {
+  "text": "we got a new buyer from facebook",
+  "expect": "/admin/leads",
+  "lang": "en"
+ },
+ {
+  "text": "is my data backed up automatically?",
+  "expect": "ANSWER",
+  "lang": "en"
+ },
+ {
+  "text": "sumaiya login korte parche na",
+  "expect": "/admin/employees",
+  "lang": "bl"
+ },
+ {
+  "text": "ei mashe ke first",
+  "expect": "/admin/reports/monthly",
+  "lang": "bl"
+ },
+ {
+  "text": "milestone rating for phase 1",
+  "expect": "/admin/plan",
+  "lang": "en"
+ },
+ {
+  "text": "list all our items with prices",
+  "expect": "/admin/products",
+  "lang": "en"
+ },
+ {
+  "text": "আগের সিএসভি আপলোডগুলো দেখাও",
+  "expect": "/admin/csv/history",
+  "lang": "bn"
+ },
+ {
+  "text": "sob kichur summary dekhao",
+  "expect": "/admin/dashboard",
+  "lang": "bl"
+ },
+ {
+  "text": "open the user guide",
+  "expect": "/admin/manual",
+  "lang": "en"
+ },
+ {
+  "text": "is it safe to share screenshots that show buyer phone numbers",
+  "expect": "ANSWER",
+  "lang": "en"
+ },
+ {
+  "text": "do I need to do anything extra to back up the data",
+  "expect": "ANSWER",
+  "lang": "en"
+ },
+ {
+  "text": "notun admin, sob porte chai kivabe chole",
+  "expect": "/admin/manual",
+  "lang": "bl"
+ },
+ {
+  "text": "করিম কী কী পরিবর্তন করেছে",
+  "expect": "/admin/audit",
+  "lang": "bn"
+ },
+ {
+  "text": "nobboi diner porikolpona",
+  "expect": "/admin/plan",
+  "lang": "bl"
+ },
+ {
+  "text": "ক্যাম্পেইন শেষ হয়ে গেছে, স্ট্যাটাস বদলাও",
+  "expect": "/admin/campaigns",
+  "lang": "bn"
+ },
+ {
+  "text": "চলমান ক্যাম্পেইনটা থামাতে চাই",
+  "expect": "/admin/campaigns",
+  "lang": "bn"
+ },
+ {
+  "text": "teach assistant page khulo",
+  "expect": "/admin/assistant",
+  "lang": "bl"
+ },
+ {
+  "text": "how is Rahim performing? how many links has he finished",
+  "expect": "/admin/employees",
+  "lang": "en"
+ },
+ {
+  "text": "ডাটার ব্যাকআপ কি নিজে থেকে হয়",
+  "expect": "ANSWER",
+  "lang": "bn"
+ },
+ {
+  "text": "20 tarikher report dekhbo",
+  "expect": "/admin/reports/daily",
+  "lang": "bl"
+ },
+ {
+  "text": "সাধারণ সমস্যা ও সমাধান কোথায় লেখা আছে",
+  "expect": "/admin/manual",
+  "lang": "bn"
+ },
+ {
+  "text": "notun staff jog korte chai",
+  "expect": "/admin/employees",
+  "lang": "bl"
+ },
+ {
+  "text": "জামালের সাপ্তাহিক রিপোর্ট",
+  "expect": "/admin/reports/weekly",
+  "lang": "bn"
+ },
+ {
+  "text": "পূর্বের ইমপোর্টগুলো কোথায় পাব",
+  "expect": "/admin/csv/history",
+  "lang": "bn"
+ },
+ {
+  "text": "ডেইলি রিপোর্ট খোলো",
+  "expect": "/admin/reports/daily",
+  "lang": "bn"
+ },
+ {
+  "text": "ক্যাম্পেন পেজ খোলো",
+  "expect": "/admin/campaigns",
+  "lang": "bn"
+ },
+ {
+  "text": "প্রথম পেজটা আবার খুলে দাও",
+  "expect": "/admin/dashboard",
+  "lang": "bn"
+ },
+ {
+  "text": "নিষ্ক্রিয় লিংকগুলো ফিল্টার করে দেখতে চাই",
+  "expect": "/admin/sections",
+  "lang": "bn"
+ },
+ {
+  "text": "train the chatbot",
+  "expect": "/admin/assistant",
+  "lang": "en"
+ },
+ {
+  "text": "sobar monthly score",
+  "expect": "/admin/reports/monthly",
+  "lang": "bl"
+ },
+ {
+  "text": "blocked task gula",
+  "expect": "/admin/plan",
+  "lang": "bl"
+ },
+ {
+  "text": "hey, could you kindly show me how much budget is left for ads this month",
+  "expect": "/admin/targets",
+  "lang": "en"
+ },
+ {
+  "text": "where can I see the team list",
+  "expect": "/admin/employees",
+  "lang": "en"
+ },
+ {
+  "text": "ক্রেতার ফোন নম্বর শেয়ার করা কি নিরাপদ",
+  "expect": "ANSWER",
+  "lang": "bn"
+ },
+ {
+  "text": "where are milestones",
+  "expect": "/admin/plan",
+  "lang": "en"
+ },
+ {
+  "text": "where are the settings",
+  "expect": "/admin/settings",
+  "lang": "en"
+ },
+ {
+  "text": "ke target change korse",
+  "expect": "/admin/audit",
+  "lang": "bl"
+ },
+ {
+  "text": "change default language to english",
+  "expect": "/admin/settings",
+  "lang": "en"
+ },
+ {
+  "text": "user guide kothay",
+  "expect": "/admin/manual",
+  "lang": "bl"
+ },
+ {
+  "text": "তুমি আমার কথা বোঝো না, তোমাকে শেখাব কিভাবে",
+  "expect": "/admin/assistant",
+  "lang": "bn"
+ },
+ {
+  "text": "কাস্টম তারিখ দিয়ে টার্গেট বানাতে চাই",
+  "expect": "/admin/targets",
+  "lang": "bn"
+ },
+ {
+  "text": "football er weekly khela kobe",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "follow up note likhbo kothay",
+  "expect": "/admin/leads",
+  "lang": "bl"
+ },
+ {
+  "text": "Sumaiya joined today as a marketer, set her up",
+  "expect": "/admin/employees",
+  "lang": "en"
+ },
+ {
+  "text": "what are we selling? show the catalog",
+  "expect": "/admin/products",
+  "lang": "en"
+ },
+ {
+  "text": "৯০ দিনের পরিকল্পনা দেখাও",
+  "expect": "/admin/plan",
+  "lang": "bn"
+ },
+ {
+  "text": "passcode karo sathe share kora jabe?",
+  "expect": "ANSWER",
+  "lang": "bl"
+ },
+ {
+  "text": "a link disappeared, who removed it?",
+  "expect": "/admin/audit",
+  "lang": "en"
+ },
+ {
+  "text": "অডিট পেজ খোলো",
+  "expect": "/admin/audit",
+  "lang": "bn"
+ },
+ {
+  "text": "নতুন পণ্য যোগ করুন",
+  "expect": "/admin/products",
+  "lang": "bn"
+ },
+ {
+  "text": "gold er dam koto",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "নির্দিষ্ট তারিখের কর্মীদের রিপোর্ট",
+  "expect": "/admin/reports/daily",
+  "lang": "bn"
+ },
+ {
+  "text": "show all ad campaigns",
+  "expect": "/admin/campaigns",
+  "lang": "en"
+ },
+ {
+  "text": "is there a manual?",
+  "expect": "/admin/manual",
+  "lang": "en"
+ },
+ {
+  "text": "upload history kothay",
+  "expect": "/admin/csv/history",
+  "lang": "bl"
+ },
+ {
+  "text": "আজকে কতজন কর্মী সক্রিয় আছে এক নজরে দেখাও",
+  "expect": "/admin/dashboard",
+  "lang": "bn"
+ },
+ {
+  "text": "what's the capital of Australia",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "assign a task to Karim due next friday",
+  "expect": "/admin/plan",
+  "lang": "en"
+ },
+ {
+  "text": "assistant ke shekhabo",
+  "expect": "/admin/assistant",
+  "lang": "bl"
+ },
+ {
+  "text": "weekly report publish koro",
+  "expect": "/admin/reports/weekly",
+  "lang": "bl"
+ },
+ {
+  "text": "daily work report per person",
+  "expect": "/admin/reports/daily",
+  "lang": "en"
+ },
+ {
+  "text": "csv itihas dekhbo",
+  "expect": "/admin/csv/history",
+  "lang": "bl"
+ },
+ {
+  "text": "কে পণ্যটা মুছে ফেলেছে",
+  "expect": "/admin/audit",
+  "lang": "bn"
+ },
+ {
+  "text": "overview dekhte chai ek nojore",
+  "expect": "/admin/dashboard",
+  "lang": "bl"
+ },
+ {
+  "text": "অর্ডার করেছে এমন ক্রেতা কারা",
+  "expect": "/admin/leads",
+  "lang": "bn"
+ },
+ {
+  "text": "saptahik report dekhao",
+  "expect": "/admin/reports/weekly",
+  "lang": "bl"
+ },
+ {
+  "text": "how to set a target for weight loss",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "টিম পেজ কোথায়?",
+  "expect": "/admin/employees",
+  "lang": "bn"
+ },
+ {
+  "text": "Jamal says the page won't let him in",
+  "expect": "/admin/employees",
+  "lang": "en"
+ },
+ {
+  "text": "উইকলি রিপোর্টের পিডিএফ চাই",
+  "expect": "/admin/reports/weekly",
+  "lang": "bn"
+ },
+ {
+  "text": "পরিকল্পনায় নতুন কাজ যোগ করব",
+  "expect": "/admin/plan",
+  "lang": "bn"
+ },
+ {
+  "text": "raise the oyster price by 20 taka",
+  "expect": "/admin/products",
+  "lang": "en"
+ },
+ {
+  "text": "টিউটোরিয়াল দেখতে চাই",
+  "expect": "/admin/manual",
+  "lang": "bn"
+ },
+ {
+  "text": "ডলারের রেট কত",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "whats the weather tomorrow for cricket",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "বাংলাদেশের রাষ্ট্রপতি কে",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "week 42 report",
+  "expect": "/admin/reports/weekly",
+  "lang": "en"
+ },
+ {
+  "text": "last week's report for Sumaiya",
+  "expect": "/admin/reports/weekly",
+  "lang": "en"
+ },
+ {
+  "text": "মাস শেষের রিপোর্ট",
+  "expect": "/admin/reports/monthly",
+  "lang": "bn"
+ },
+ {
+  "text": "soptaho report",
+  "expect": "/admin/reports/weekly",
+  "lang": "bl"
+ },
+ {
+  "text": "ঢাকা ফার্মার্স সেকশনে লিংক যোগ করব",
+  "expect": "/admin/sections",
+  "lang": "bn"
+ },
+ {
+  "text": "জামালের মাসের পারফরম্যান্স রিপোর্ট আর র‍্যাংক",
+  "expect": "/admin/reports/monthly",
+  "lang": "bn"
+ },
+ {
+  "text": "গতকাল কে টার্গেট পরিবর্তন করেছে",
+  "expect": "/admin/audit",
+  "lang": "bn"
+ },
+ {
+  "text": "আমার মন খারাপ, কী করব",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "kal brishti hobe?",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "help documentation",
+  "expect": "/admin/manual",
+  "lang": "en"
+ },
+ {
+  "text": "can you open the home screen",
+  "expect": "/admin/dashboard",
+  "lang": "en"
+ },
+ {
+  "text": "দিনের রিপোর্ট দেখান",
+  "expect": "/admin/reports/daily",
+  "lang": "bn"
+ },
+ {
+  "text": "show september's report",
+  "expect": "/admin/reports/monthly",
+  "lang": "en"
+ },
+ {
+  "text": "how to lose belly fat",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "nijer word diye page khulbe emon set korbo",
+  "expect": "/admin/assistant",
+  "lang": "bl"
+ },
+ {
+  "text": "delete a wrong target",
+  "expect": "/admin/targets",
+  "lang": "en"
+ },
+ {
+  "text": "settings e jao",
+  "expect": "/admin/settings",
+  "lang": "bl"
+ },
+ {
+  "text": "marketing budget dibo kothay",
+  "expect": "/admin/targets",
+  "lang": "bl"
+ },
+ {
+  "text": "১২৫ কে ৮ দিয়ে গুণ করলে কত",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "tutorial for this panel",
+  "expect": "/admin/manual",
+  "lang": "en"
+ },
+ {
+  "text": "valo movie bolo",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "you never understand 'kormi', let me teach you",
+  "expect": "/admin/assistant",
+  "lang": "en"
+ },
+ {
+  "text": "record the result of a plan task",
+  "expect": "/admin/plan",
+  "lang": "en"
+ },
+ {
+  "text": "কোন ক্যাম্পেইন লাল হয়ে আছে",
+  "expect": "/admin/campaigns",
+  "lang": "bn"
+ },
+ {
+  "text": "update selling price to 350 per kg",
+  "expect": "/admin/products",
+  "lang": "en"
+ },
+ {
+  "text": "প্রতিদিনের কাজের হিসাব",
+  "expect": "/admin/reports/daily",
+  "lang": "bn"
+ },
+ {
+  "text": "item gula dekhao dam soho",
+  "expect": "/admin/products",
+  "lang": "bl"
+ },
+ {
+  "text": "নতুন অ্যাডমিনের জন্য গাইড",
+  "expect": "/admin/manual",
+  "lang": "bn"
+ },
+ {
+  "text": "product price list",
+  "expect": "/admin/products",
+  "lang": "en"
+ },
+ {
+  "text": "monthly sales and profit per employee",
+  "expect": "/admin/reports/monthly",
+  "lang": "en"
+ },
+ {
+  "text": "আপলোডের ইতিহাস দেখান",
+  "expect": "/admin/csv/history",
+  "lang": "bn"
+ },
+ {
+  "text": "90-day plan tasks in progress",
+  "expect": "/admin/plan",
+  "lang": "en"
+ },
+ {
+  "text": "অর্জনের সর্বোচ্চ সীমা ১২০% করব",
+  "expect": "/admin/settings",
+  "lang": "bn"
+ },
+ {
+  "text": "মাশরুম লাভার্সের পুরনো গ্রুপগুলো আর কাজ করে না",
+  "expect": "/admin/sections",
+  "lang": "bn"
+ },
+ {
+  "text": "deily report",
+  "expect": "/admin/reports/daily",
+  "lang": "bl"
+ },
+ {
+  "text": "bangladesh vs india match kobe",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "go back to dashbord",
+  "expect": "/admin/dashboard",
+  "lang": "en"
+ },
+ {
+  "text": "give me a bird's eye view of the business",
+  "expect": "/admin/dashboard",
+  "lang": "en"
+ },
+ {
+  "text": "turn off some dead links",
+  "expect": "/admin/sections",
+  "lang": "en"
+ },
+ {
+  "text": "panel theke ber hobo kivabe",
+  "expect": "ANSWER",
+  "lang": "bl"
+ },
+ {
+  "text": "show me reports by week",
+  "expect": "/admin/reports/weekly",
+  "lang": "en"
+ },
+ {
+  "text": "ekta joke bolo",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "campaign ta end kore dao",
+  "expect": "/admin/campaigns",
+  "lang": "bl"
+ },
+ {
+  "text": "log of all actions",
+  "expect": "/admin/audit",
+  "lang": "en"
+ },
+ {
+  "text": "where do I add custom phrases for you",
+  "expect": "/admin/assistant",
+  "lang": "en"
+ },
+ {
+  "text": "50 + 75 koto",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "audit log dekhao",
+  "expect": "/admin/audit",
+  "lang": "bl"
+ },
+ {
+  "text": "টাস্ক সম্পন্ন হিসেবে চিহ্নিত করুন",
+  "expect": "/admin/plan",
+  "lang": "bn"
+ },
+ {
+  "text": "I want to bulk add 200 group links",
+  "expect": "/admin/sections",
+  "lang": "en"
+ },
+ {
+  "text": "kichu link off kore dite hobe",
+  "expect": "/admin/sections",
+  "lang": "bl"
+ },
+ {
+  "text": "সেকশনের বিবরণ পরিবর্তন করব কিভাবে",
+  "expect": "/admin/sections",
+  "lang": "bn"
+ },
+ {
+  "text": "অডিট লগ দেখাও",
+  "expect": "/admin/audit",
+  "lang": "bn"
+ },
+ {
+  "text": "amar phone er screen vanga",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "monthly goal set kora jay kivabe",
+  "expect": "/admin/targets",
+  "lang": "bl"
+ },
+ {
+  "text": "notun customer pelam facebook theke",
+  "expect": "/admin/leads",
+  "lang": "bl"
+ },
+ {
+  "text": "কর্মীদের তালিকা দেখাও",
+  "expect": "/admin/employees",
+  "lang": "bn"
+ },
+ {
+  "text": "বিজ্ঞাপনে খরচ আর আয়ের অনুপাত দেখতে চাই",
+  "expect": "/admin/campaigns",
+  "lang": "bn"
+ },
+ {
+  "text": "গত মাসের টার্গেট এই মাসে কপি করুন",
+  "expect": "/admin/targets",
+  "lang": "bn"
+ },
+ {
+  "text": "where is the upload history?",
+  "expect": "/admin/csv/history",
+  "lang": "en"
+ },
+ {
+  "text": "where are the daily reports",
+  "expect": "/admin/reports/daily",
+  "lang": "en"
+ },
+ {
+  "text": "admin passcode vule gesi",
+  "expect": "ANSWER",
+  "lang": "bl"
+ },
+ {
+  "text": "ফোন নম্বর দিয়ে ক্রেতা খুঁজব",
+  "expect": "/admin/leads",
+  "lang": "bn"
+ },
+ {
+  "text": "অ্যাডমিন পাসকোড ভুলে গেছি",
+  "expect": "ANSWER",
+  "lang": "bn"
+ },
+ {
+  "text": "setting default e reset",
+  "expect": "/admin/settings",
+  "lang": "bl"
+ },
+ {
+  "text": "চ্যাটবটকে প্রশিক্ষণ দাও",
+  "expect": "/admin/assistant",
+  "lang": "bn"
+ },
+ {
+  "text": "failing threshold change korbo",
+  "expect": "/admin/settings",
+  "lang": "bl"
+ },
+ {
+  "text": "sob change er history",
+  "expect": "/admin/audit",
+  "lang": "bl"
+ },
+ {
+  "text": "the bot didn't understand me, how do I train it",
+  "expect": "/admin/assistant",
+  "lang": "en"
+ },
+ {
+  "text": "মান্থলি রিপোর্ট খোলো",
+  "expect": "/admin/reports/monthly",
+  "lang": "bn"
+ },
+ {
+  "text": "show audit log",
+  "expect": "/admin/audit",
+  "lang": "en"
+ },
+ {
+  "text": "পুরানো আপলোডের তালিকা",
+  "expect": "/admin/csv/history",
+  "lang": "bn"
+ },
+ {
+  "text": "notun campaign khulbo",
+  "expect": "/admin/campaigns",
+  "lang": "bl"
+ },
+ {
+  "text": "show me upload history for Dhaka Farmers",
+  "expect": "/admin/csv/history",
+  "lang": "en"
+ },
+ {
+  "text": "show today's daily report",
+  "expect": "/admin/reports/daily",
+  "lang": "en"
+ },
+ {
+  "text": "bot ke notun phrase dibo",
+  "expect": "/admin/assistant",
+  "lang": "bl"
+ },
+ {
+  "text": "edit window koydin rakhbo",
+  "expect": "/admin/settings",
+  "lang": "bl"
+ },
+ {
+  "text": "ager csv upload gula dekhao",
+  "expect": "/admin/csv/history",
+  "lang": "bl"
+ },
+ {
+  "text": "open youtube",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "filter changes by user Karim",
+  "expect": "/admin/audit",
+  "lang": "en"
+ },
+ {
+  "text": "facebook ad er hisab kothay",
+  "expect": "/admin/campaigns",
+  "lang": "bl"
+ },
+ {
+  "text": "a buyer from Gazipur called asking about 50kg, log it",
+  "expect": "/admin/leads",
+  "lang": "en"
+ },
+ {
+  "text": "boost er budget limit barabo",
+  "expect": "/admin/campaigns",
+  "lang": "bl"
+ },
+ {
+  "text": "montly report",
+  "expect": "/admin/reports/monthly",
+  "lang": "en"
+ },
+ {
+  "text": "90 diner plan dekhao",
+  "expect": "/admin/plan",
+  "lang": "bl"
+ },
+ {
+  "text": "মাশরুমের দাম পরিবর্তন করতে চাই",
+  "expect": "/admin/products",
+  "lang": "bn"
+ },
+ {
+  "text": "what did everyone do yesterday",
+  "expect": "/admin/reports/daily",
+  "lang": "en"
+ },
+ {
+  "text": "mushroom er dam change koro",
+  "expect": "/admin/products",
+  "lang": "bl"
+ },
+ {
+  "text": "মাইলস্টোন মূল্যায়ন করব",
+  "expect": "/admin/plan",
+  "lang": "bn"
+ },
+ {
+  "text": "শুরুর চেকলিস্টটা কোথায়?",
+  "expect": "/admin/dashboard",
+  "lang": "bn"
+ },
+ {
+  "text": "sohokari ke shabdo shekhano",
+  "expect": "/admin/assistant",
+  "lang": "bl"
+ },
+ {
+  "text": "আজ ঢাকার আবহাওয়া কেমন",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "how many days can employees edit old data? change it",
+  "expect": "/admin/settings",
+  "lang": "en"
+ },
+ {
+  "text": "আপলোড হিস্টোরি কোথায়?",
+  "expect": "/admin/csv/history",
+  "lang": "bn"
+ },
+ {
+  "text": "kal je file upload korsilam oita dekhte chai",
+  "expect": "/admin/csv/history",
+  "lang": "bl"
+ },
+ {
+  "text": "show me the handbook",
+  "expect": "/admin/manual",
+  "lang": "en"
+ },
+ {
+  "text": "where are the products",
+  "expect": "/admin/products",
+  "lang": "en"
+ },
+ {
+  "text": "পাসকোড পরিবর্তন করা যায়?",
+  "expect": "ANSWER",
+  "lang": "bn"
+ },
+ {
+  "text": "সেপ্টেম্বর মাসের রিপোর্ট",
+  "expect": "/admin/reports/monthly",
+  "lang": "bn"
+ },
+ {
+  "text": "change the failing threshold to 70%",
+  "expect": "/admin/settings",
+  "lang": "en"
+ },
+ {
+  "text": "gotomasher result",
+  "expect": "/admin/reports/monthly",
+  "lang": "bl"
+ },
+ {
+  "text": "weight loss target kivabe set korbo",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "আজ করিম রিপোর্ট জমা দিয়েছে কিনা",
+  "expect": "/admin/reports/daily",
+  "lang": "bn"
+ },
+ {
+  "text": "I need to finalize the week's report",
+  "expect": "/admin/reports/weekly",
+  "lang": "en"
+ },
+ {
+  "text": "weekly report",
+  "expect": "/admin/reports/weekly",
+  "lang": "en"
+ },
+ {
+  "text": "purano file upload er record",
+  "expect": "/admin/csv/history",
+  "lang": "bl"
+ },
+ {
+  "text": "move Mr. Hasan to ordered stage",
+  "expect": "/admin/leads",
+  "lang": "en"
+ },
+ {
+  "text": "write a python function to sort a list",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "filter leads by marketer Sumaiya",
+  "expect": "/admin/leads",
+  "lang": "en"
+ },
+ {
+  "text": "rahim aj report diyeche naki",
+  "expect": "/admin/reports/daily",
+  "lang": "bl"
+ },
+ {
+  "text": "পণ্যের তালিকা দেখাও",
+  "expect": "/admin/products",
+  "lang": "bn"
+ },
+ {
+  "text": "plan er start date change",
+  "expect": "/admin/plan",
+  "lang": "bl"
+ },
+ {
+  "text": "আমার এক কর্মী লগইন করতে পারছে না, কী করব?",
+  "expect": "/admin/employees",
+  "lang": "bn"
+ },
+ {
+  "text": "mash sheshe report",
+  "expect": "/admin/reports/monthly",
+  "lang": "bl"
+ },
+ {
+  "text": "what is the ROAS of the oyster campaign",
+  "expect": "/admin/campaigns",
+  "lang": "en"
+ },
+ {
+  "text": "ডিফল্ট ভাষা বাংলা করুন",
+  "expect": "/admin/settings",
+  "lang": "bn"
+ },
+ {
+  "text": "ধাপে ধাপে নির্দেশনা",
+  "expect": "/admin/manual",
+  "lang": "bn"
+ },
+ {
+  "text": "where are the draft weekly reports",
+  "expect": "/admin/reports/weekly",
+  "lang": "en"
+ },
+ {
+  "text": "help book ta dekhao",
+  "expect": "/admin/manual",
+  "lang": "bl"
+ },
+ {
+  "text": "এগ্রো বিডির সব লিংক বন্ধ করে দাও",
+  "expect": "/admin/sections",
+  "lang": "bn"
+ },
+ {
+  "text": "employee ra kivabe login kore",
+  "expect": "ANSWER",
+  "lang": "bl"
+ },
+ {
+  "text": "publish this week's report",
+  "expect": "/admin/reports/weekly",
+  "lang": "en"
+ },
+ {
+  "text": "logout kivabe korbo",
+  "expect": "ANSWER",
+  "lang": "bl"
+ },
+ {
+  "text": "ওজন কমানোর লক্ষ্য কিভাবে ঠিক করব",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "kal ke ki kaj korse",
+  "expect": "/admin/reports/daily",
+  "lang": "bl"
+ },
+ {
+  "text": "notun section banabo",
+  "expect": "/admin/sections",
+  "lang": "bl"
+ },
+ {
+  "text": "task done mark korbo",
+  "expect": "/admin/plan",
+  "lang": "bl"
+ },
+ {
+  "text": "who changed the target yesterday",
+  "expect": "/admin/audit",
+  "lang": "en"
+ },
+ {
+  "text": "প্রোডাক্ট পেজ কোথায়",
+  "expect": "/admin/products",
+  "lang": "bn"
+ },
+ {
+  "text": "ডিফল্ট সেটিংসে ফিরে যাব",
+  "expect": "/admin/settings",
+  "lang": "bn"
+ },
+ {
+  "text": "campaign pause korbo",
+  "expect": "/admin/campaigns",
+  "lang": "bl"
+ },
+ {
+  "text": "undo on koro",
+  "expect": "/admin/settings",
+  "lang": "bl"
+ },
+ {
+  "text": "kon somoy ke ki edit korse",
+  "expect": "/admin/audit",
+  "lang": "bl"
+ },
+ {
+  "text": "সিএসভি ফাইল দিয়ে অনেক লিংক একসাথে দিতে চাই",
+  "expect": "/admin/sections",
+  "lang": "bn"
+ },
+ {
+  "text": "করিমকে এগ্রো বিডি সেকশন দিতে চাই",
+  "expect": "/admin/employees",
+  "lang": "bn"
+ },
+ {
+  "text": "ad spend vs return",
+  "expect": "/admin/campaigns",
+  "lang": "en"
+ },
+ {
+  "text": "day wise report",
+  "expect": "/admin/reports/daily",
+  "lang": "en"
+ },
+ {
+  "text": "did Karim submit his report today?",
+  "expect": "/admin/reports/daily",
+  "lang": "en"
+ },
+ {
+  "text": "november er ad budget 15000 rakhbo",
+  "expect": "/admin/targets",
+  "lang": "bl"
+ },
+ {
+  "text": "where is our data stored",
+  "expect": "ANSWER",
+  "lang": "en"
+ },
+ {
+  "text": "একটা কৌতুক বলো",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "জাভাস্ক্রিপ্টে লুপ কিভাবে লিখে",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "daily report for 20 October",
+  "expect": "/admin/reports/daily",
+  "lang": "en"
+ },
+ {
+  "text": "সেটিংস কে বদলেছে জানতে চাই",
+  "expect": "/admin/audit",
+  "lang": "bn"
+ },
+ {
+  "text": "report for the whole month",
+  "expect": "/admin/reports/monthly",
+  "lang": "en"
+ },
+ {
+  "text": "sob campaign er list",
+  "expect": "/admin/campaigns",
+  "lang": "bl"
+ },
+ {
+  "text": "edit the bangla name of dried mushroom",
+  "expect": "/admin/products",
+  "lang": "en"
+ },
+ {
+  "text": "youtube khulo",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "কিছু লিংক নিষ্ক্রিয় করতে হবে",
+  "expect": "/admin/sections",
+  "lang": "bn"
+ },
+ {
+  "text": "প্যানেল থেকে বের হব কিভাবে",
+  "expect": "ANSWER",
+  "lang": "bn"
+ },
+ {
+  "text": "কার্যকলাপের লগ",
+  "expect": "/admin/audit",
+  "lang": "bn"
+ },
+ {
+  "text": "I want to read instructions for the whole panel",
+  "expect": "/admin/manual",
+  "lang": "en"
+ },
+ {
+  "text": "just hired a new marketer, where do I put her details",
+  "expect": "/admin/employees",
+  "lang": "en"
+ },
+ {
+  "text": "সব কিছুর সারাংশ এক জায়গায় দেখতে চাই",
+  "expect": "/admin/dashboard",
+  "lang": "bn"
+ },
+ {
+  "text": "মাসের বিক্রি আর লাভ কত",
+  "expect": "/admin/reports/monthly",
+  "lang": "bn"
+ },
+ {
+  "text": "a restaurant owner wants 20kg weekly, where do I save him",
+  "expect": "/admin/leads",
+  "lang": "en"
+ },
+ {
+  "text": "একজন কর্মীকে একাধিক সেকশন দেওয়া যায়?",
+  "expect": "/admin/employees",
+  "lang": "bn"
+ },
+ {
+  "text": "download the weekly report as PDF",
+  "expect": "/admin/reports/weekly",
+  "lang": "en"
+ },
+ {
+  "text": "পেঁয়াজের বাজারদর কত",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "সপ্তাহভিত্তিক রিপোর্ট",
+  "expect": "/admin/reports/weekly",
+  "lang": "bn"
+ },
+ {
+  "text": "take me to the dashboard",
+  "expect": "/admin/dashboard",
+  "lang": "en"
+ },
+ {
+  "text": "kormi add korbo kivabe",
+  "expect": "/admin/employees",
+  "lang": "bl"
+ },
+ {
+  "text": "main page e firbo kivabe",
+  "expect": "/admin/dashboard",
+  "lang": "bl"
+ },
+ {
+  "text": "how do I log out",
+  "expect": "ANSWER",
+  "lang": "en"
+ },
+ {
+  "text": "roas dekhao",
+  "expect": "/admin/campaigns",
+  "lang": "bl"
+ },
+ {
+  "text": "team er list ta dekhao",
+  "expect": "/admin/employees",
+  "lang": "bl"
+ },
+ {
+  "text": "কর্মীরা কিভাবে লগইন করে",
+  "expect": "ANSWER",
+  "lang": "bn"
+ },
+ {
+  "text": "টার্গেট মুছে ফেলতে চাই",
+  "expect": "/admin/targets",
+  "lang": "bn"
+ },
+ {
+  "text": "আগে কোন কোন ফাইল আপলোড হয়েছে",
+  "expect": "/admin/csv/history",
+  "lang": "bn"
+ },
+ {
+  "text": "change Nusrat's phone number",
+  "expect": "/admin/employees",
+  "lang": "en"
+ },
+ {
+  "text": "I uploaded a file earlier, where can I find the record of it",
+  "expect": "/admin/csv/history",
+  "lang": "en"
+ },
+ {
+  "text": "Karim forgot his password, help",
+  "expect": "/admin/employees",
+  "lang": "en"
+ },
+ {
+  "text": "how do I cook mushroom curry",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "monthly report khulo",
+  "expect": "/admin/reports/monthly",
+  "lang": "bl"
+ },
+ {
+  "text": "সুমাইয়া চাকরি ছেড়ে দিয়েছে, তার তথ্য হালনাগাদ করতে হবে",
+  "expect": "/admin/employees",
+  "lang": "bn"
+ },
+ {
+  "text": "rahim er password vule gese",
+  "expect": "/admin/employees",
+  "lang": "bl"
+ },
+ {
+  "text": "লিড পাইপলাইন খোলো",
+  "expect": "/admin/leads",
+  "lang": "bn"
+ },
+ {
+  "text": "lead er stage change koro",
+  "expect": "/admin/leads",
+  "lang": "bl"
+ },
+ {
+  "text": "how do I grow oyster mushrooms at home",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "best laptop under 60000 taka",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "গত সপ্তাহের রিপোর্ট খোলো",
+  "expect": "/admin/reports/weekly",
+  "lang": "bn"
+ },
+ {
+  "text": "মুছে ফেলা রেকর্ডের খোঁজ",
+  "expect": "/admin/audit",
+  "lang": "bn"
+ },
+ {
+  "text": "আমার মোবাইলের ব্যাটারি দ্রুত শেষ হয়ে যায়",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "copy the json of a change record",
+  "expect": "/admin/audit",
+  "lang": "en"
+ },
+ {
+  "text": "ager maser target copy koro",
+  "expect": "/admin/targets",
+  "lang": "bl"
+ },
+ {
+  "text": "dashbord open koro",
+  "expect": "/admin/dashboard",
+  "lang": "bl"
+ },
+ {
+  "text": "recommend a movie for tonight",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "কোন কাজগুলো আটকে আছে",
+  "expect": "/admin/plan",
+  "lang": "bn"
+ },
+ {
+  "text": "what tasks are blocked",
+  "expect": "/admin/plan",
+  "lang": "en"
+ },
+ {
+  "text": "গত মাসের ফলাফল কেমন ছিল",
+  "expect": "/admin/reports/monthly",
+  "lang": "bn"
+ },
+ {
+  "text": "daily report kothay",
+  "expect": "/admin/reports/daily",
+  "lang": "bl"
+ },
+ {
+  "text": "প্যানেলের বই",
+  "expect": "/admin/manual",
+  "lang": "bn"
+ },
+ {
+  "text": "plan e task add koro",
+  "expect": "/admin/plan",
+  "lang": "bl"
+ },
+ {
+  "text": "তুমি কী কী করতে পারো",
+  "expect": "ANSWER",
+  "lang": "bn"
+ },
+ {
+  "text": "ক্যাম্পেইনের রোয়াস দেখাও",
+  "expect": "/admin/campaigns",
+  "lang": "bn"
+ },
+ {
+  "text": "ড্রাফট রিপোর্টটা পরে শেষ করব, কোথায় পাব",
+  "expect": "/admin/reports/weekly",
+  "lang": "bn"
+ },
+ {
+  "text": "বাংলাদেশ কালকে ম্যাচ জিতেছে?",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "contacted leads list",
+  "expect": "/admin/leads",
+  "lang": "en"
+ },
+ {
+  "text": "how do I fill the weekly evaluation?",
+  "expect": "/admin/reports/weekly",
+  "lang": "en"
+ },
+ {
+  "text": "edit the sales target",
+  "expect": "/admin/targets",
+  "lang": "en"
+ },
+ {
+  "text": "how do I change the admin passcode?",
+  "expect": "ANSWER",
+  "lang": "en"
+ },
+ {
+  "text": "where's the getting started checklist?",
+  "expect": "/admin/dashboard",
+  "lang": "en"
+ },
+ {
+  "text": "product list dekhao",
+  "expect": "/admin/products",
+  "lang": "bl"
+ },
+ {
+  "text": "ঝিনুক মাশরুমের কেজি প্রতি দাম কত রেখেছি দেখতে চাই",
+  "expect": "/admin/products",
+  "lang": "bn"
+ },
+ {
+  "text": "list of all files I uploaded before",
+  "expect": "/admin/csv/history",
+  "lang": "en"
+ },
+ {
+  "text": "who ranked first this month",
+  "expect": "/admin/reports/monthly",
+  "lang": "en"
+ },
+ {
+  "text": "where's the how-to guide",
+  "expect": "/admin/manual",
+  "lang": "en"
+ },
+ {
+  "text": "open daily reprots",
+  "expect": "/admin/reports/daily",
+  "lang": "en"
+ },
+ {
+  "text": "I want the first page you see after login",
+  "expect": "/admin/dashboard",
+  "lang": "en"
+ },
+ {
+  "text": "csv history",
+  "expect": "/admin/csv/history",
+  "lang": "bl"
+ },
+ {
+  "text": "our quarterly roadmap",
+  "expect": "/admin/plan",
+  "lang": "en"
+ },
+ {
+  "text": "অ্যাসিস্ট্যান্ট ট্রেনিং",
+  "expect": "/admin/assistant",
+  "lang": "bn"
+ },
+ {
+  "text": "সহকারীকে শেখাও",
+  "expect": "/admin/assistant",
+  "lang": "bn"
+ },
+ {
+  "text": "show past csv uploads",
+  "expect": "/admin/csv/history",
+  "lang": "en"
+ },
+ {
+  "text": "রহিম পাসওয়ার্ড ভুলে গেছে",
+  "expect": "/admin/employees",
+  "lang": "bn"
+ },
+ {
+  "text": "গ্রুপ সেকশন পেজ খোলো",
+  "expect": "/admin/sections",
+  "lang": "bn"
+ },
+ {
+  "text": "last upload e koyta duplicate silo",
+  "expect": "/admin/csv/history",
+  "lang": "bl"
+ },
+ {
+  "text": "কাস্টমারদের তালিকা দেখাও",
+  "expect": "/admin/leads",
+  "lang": "bn"
+ },
+ {
+  "text": "what's the weather in Dhaka",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "ফেজ ২ এর কাজগুলো",
+  "expect": "/admin/plan",
+  "lang": "bn"
+ },
+ {
+  "text": "where are my customers",
+  "expect": "/admin/leads",
+  "lang": "en"
+ },
+ {
+  "text": "set the marketing budget for November",
+  "expect": "/admin/targets",
+  "lang": "en"
+ },
+ {
+  "text": "turn on undo",
+  "expect": "/admin/settings",
+  "lang": "en"
+ },
+ {
+  "text": "ভালো একটা সিনেমার নাম বলো",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "who won the cricket match yesterday?",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "manual khulo",
+  "expect": "/admin/manual",
+  "lang": "bl"
+ },
+ {
+  "text": "why do I get an overlapping target warning when saving a goal",
+  "expect": "/admin/targets",
+  "lang": "en"
+ },
+ {
+  "text": "odit log",
+  "expect": "/admin/audit",
+  "lang": "bl"
+ },
+ {
+  "text": "চুল পড়া বন্ধ করার উপায়",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "add a phrase so the assistant opens leads",
+  "expect": "/admin/assistant",
+  "lang": "en"
+ },
+ {
+  "text": "notun product add korbo",
+  "expect": "/admin/products",
+  "lang": "bl"
+ },
+ {
+  "text": "এই সপ্তাহের রিপোর্ট প্রকাশ করুন",
+  "expect": "/admin/reports/weekly",
+  "lang": "bn"
+ },
+ {
+  "text": "kastomar list dekhao",
+  "expect": "/admin/leads",
+  "lang": "bl"
+ },
+ {
+  "text": "বাজেট খরচ ট্র্যাকিং কোথায় দেখব",
+  "expect": "/admin/targets",
+  "lang": "bn"
+ },
+ {
+  "text": "agro bd er sob link deactivate koro",
+  "expect": "/admin/sections",
+  "lang": "bl"
+ },
+ {
+  "text": "নতুন কর্মী যোগ করব কিভাবে?",
+  "expect": "/admin/employees",
+  "lang": "bn"
+ },
+ {
+  "text": "can I share the admin passcode with my manager",
+  "expect": "ANSWER",
+  "lang": "en"
+ },
+ {
+  "text": "tutorial ase?",
+  "expect": "/admin/manual",
+  "lang": "bl"
+ },
+ {
+  "text": "আমার নিজের শব্দ দিয়ে পেজ খোলার ব্যবস্থা করব",
+  "expect": "/admin/assistant",
+  "lang": "bn"
+ },
+ {
+  "text": "একজন হোটেল মালিক মাশরুম নিতে চায়, তার তথ্য কোথায় রাখব",
+  "expect": "/admin/leads",
+  "lang": "bn"
+ },
+ {
+  "text": "lead add korbo",
+  "expect": "/admin/leads",
+  "lang": "bl"
+ },
+ {
+  "text": "someone changed the scoring weights without telling me, who",
+  "expect": "/admin/audit",
+  "lang": "en"
+ },
+ {
+  "text": "স্কোর কিভাবে হিসাব হবে সেটা বদলাতে চাই",
+  "expect": "/admin/settings",
+  "lang": "bn"
+ },
+ {
+  "text": "বাসায় মাশরুম চাষ শিখতে চাই",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "tumi ki ki korte paro",
+  "expect": "ANSWER",
+  "lang": "bl"
+ },
+ {
+  "text": "I want to see history of changes",
+  "expect": "/admin/audit",
+  "lang": "en"
+ },
+ {
+  "text": "ঢাকা ফার্মার্সের জন্য আগের আপলোডগুলো দেখতে চাই",
+  "expect": "/admin/csv/history",
+  "lang": "bn"
+ },
+ {
+  "text": "add a new employee named Rahim",
+  "expect": "/admin/employees",
+  "lang": "en"
+ },
+ {
+  "text": "গতকাল কে কী কাজ করেছে",
+  "expect": "/admin/reports/daily",
+  "lang": "bn"
+ },
+ {
+  "text": "ক্রিকেট বিশ্বকাপ কবে শুরু",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "এই মাসে কে প্রথম হয়েছে",
+  "expect": "/admin/reports/monthly",
+  "lang": "bn"
+ },
+ {
+  "text": "section gula dekhao",
+  "expect": "/admin/sections",
+  "lang": "bl"
+ },
+ {
+  "text": "add a lead",
+  "expect": "/admin/leads",
+  "lang": "en"
+ },
+ {
+  "text": "target delete korte chai",
+  "expect": "/admin/targets",
+  "lang": "bl"
+ },
+ {
+  "text": "my phone screen is broken",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "ড্যাশবোর্ডে নিয়ে যাও",
+  "expect": "/admin/dashboard",
+  "lang": "bn"
+ },
+ {
+  "text": "milestone rate korbo",
+  "expect": "/admin/plan",
+  "lang": "bl"
+ },
+ {
+  "text": "track admin activity",
+  "expect": "/admin/audit",
+  "lang": "en"
+ },
+ {
+  "text": "এই সপ্তাহের রিপোর্ট পাবলিশ করতে চাই",
+  "expect": "/admin/reports/weekly",
+  "lang": "bn"
+ },
+ {
+  "text": "teach assistant page",
+  "expect": "/admin/assistant",
+  "lang": "en"
+ },
+ {
+  "text": "অক্টোবরের র‍্যাংক তালিকা",
+  "expect": "/admin/reports/monthly",
+  "lang": "bn"
+ },
+ {
+  "text": "upload a csv of group links",
+  "expect": "/admin/sections",
+  "lang": "en"
+ },
+ {
+  "text": "edit the name of a group link",
+  "expect": "/admin/sections",
+  "lang": "en"
+ },
+ {
+  "text": "tell me a joke",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "open the weekly review",
+  "expect": "/admin/reports/weekly",
+  "lang": "en"
+ },
+ {
+  "text": "show previous imports",
+  "expect": "/admin/csv/history",
+  "lang": "en"
+ },
+ {
+  "text": "where do I paste group urls",
+  "expect": "/admin/sections",
+  "lang": "en"
+ },
+ {
+  "text": "বট বুঝতে পারেনি, শিখিয়ে দিতে চাই",
+  "expect": "/admin/assistant",
+  "lang": "bn"
+ },
+ {
+  "text": "আমাদের ডাটা কোথায় সংরক্ষণ হয়",
+  "expect": "ANSWER",
+  "lang": "bn"
+ },
+ {
+  "text": "karim ke plan e notun kaj dibo",
+  "expect": "/admin/plan",
+  "lang": "bl"
+ },
+ {
+  "text": "নব্বই দিনের প্ল্যান",
+  "expect": "/admin/plan",
+  "lang": "bn"
+ },
+ {
+  "text": "অ্যাডমিন পাসকোড কি কাউকে দেওয়া যাবে",
+  "expect": "ANSWER",
+  "lang": "bn"
+ },
+ {
+  "text": "মাশরুম লাভার্স গ্রুপে নতুন ফেসবুক গ্রুপ যুক্ত করুন",
+  "expect": "/admin/sections",
+  "lang": "bn"
+ },
+ {
+  "text": "update the email of an employee",
+  "expect": "/admin/employees",
+  "lang": "en"
+ },
+ {
+  "text": "ব্যবহার নির্দেশিকা খোলো",
+  "expect": "/admin/manual",
+  "lang": "bn"
+ },
+ {
+  "text": "my car won't start",
+  "expect": "DECLINE",
+  "lang": "en"
+ },
+ {
+  "text": "which campaign is over budget",
+  "expect": "/admin/campaigns",
+  "lang": "en"
+ },
+ {
+  "text": "প্ল্যানের নাম পরিবর্তন",
+  "expect": "/admin/plan",
+  "lang": "bn"
+ },
+ {
+  "text": "বুস্ট পোস্টের হিসাব কোথায় রাখব",
+  "expect": "/admin/campaigns",
+  "lang": "bn"
+ },
+ {
+  "text": "দয়া করে এই মাসের বিক্রির টার্গেট বাড়িয়ে দিন",
+  "expect": "/admin/targets",
+  "lang": "bn"
+ },
+ {
+  "text": "একটা কবিতা লিখে দাও",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "backup ki automatic",
+  "expect": "ANSWER",
+  "lang": "bl"
+ },
+ {
+  "text": "eid campaign ta ki ekhono cholche?",
+  "expect": "/admin/campaigns",
+  "lang": "bl"
+ },
+ {
+  "text": "weekly report er draft save korbo",
+  "expect": "/admin/reports/weekly",
+  "lang": "bl"
+ },
+ {
+  "text": "assistant training",
+  "expect": "/admin/assistant",
+  "lang": "en"
+ },
+ {
+  "text": "পরিকল্পনার মাইলফলক দেখাও",
+  "expect": "/admin/plan",
+  "lang": "bn"
+ },
+ {
+  "text": "মাশরুম ভাজি কিভাবে রান্না করব",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "dollar rate koto aj",
+  "expect": "DECLINE",
+  "lang": "bl"
+ },
+ {
+  "text": "rank list for October",
+  "expect": "/admin/reports/monthly",
+  "lang": "en"
+ },
+ {
+  "text": "group link add korbo kothay",
+  "expect": "/admin/sections",
+  "lang": "bl"
+ },
+ {
+  "text": "I want to see what employees reported on a specific date",
+  "expect": "/admin/reports/daily",
+  "lang": "en"
+ },
+ {
+  "text": "add a follow-up note for the buyer who called today",
+  "expect": "/admin/leads",
+  "lang": "en"
+ },
+ {
+  "text": "রহিম আজকে কী রিপোর্ট দিয়েছে",
+  "expect": "/admin/reports/daily",
+  "lang": "bn"
+ },
+ {
+  "text": "how did we do last month",
+  "expect": "/admin/reports/monthly",
+  "lang": "en"
+ },
+ {
+  "text": "setings",
+  "expect": "/admin/settings",
+  "lang": "en"
+ },
+ {
+  "text": "নতুন বাক্য যোগ করব যাতে বট বুঝতে পারে",
+  "expect": "/admin/assistant",
+  "lang": "bn"
+ },
+ {
+  "text": "chatbot training",
+  "expect": "/admin/assistant",
+  "lang": "bl"
+ },
+ {
+  "text": "পুরো মাসের হিসাব দেখাও",
+  "expect": "/admin/reports/monthly",
+  "lang": "bn"
+ },
+ {
+  "text": "ইউজার গাইড",
+  "expect": "/admin/manual",
+  "lang": "bn"
+ },
+ {
+  "text": "how do employees sign in to their account?",
+  "expect": "ANSWER",
+  "lang": "en"
+ },
+ {
+  "text": "সোনার দাম কত আজকে",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "set a monthly target for Dhaka Farmers",
+  "expect": "/admin/targets",
+  "lang": "en"
+ },
+ {
+  "text": "add a facebook group link to Dhaka Farmers",
+  "expect": "/admin/sections",
+  "lang": "en"
+ },
+ {
+  "text": "where are the group sections",
+  "expect": "/admin/sections",
+  "lang": "en"
+ },
+ {
+  "text": "view previous bulk link uploads",
+  "expect": "/admin/csv/history",
+  "lang": "en"
+ },
+ {
+  "text": "সাপ্তাহিক রিপোর্টের সময়সূচি বদলাতে চাই",
+  "expect": "/admin/settings",
+  "lang": "bn"
+ },
+ {
+  "text": "নতুন লিড যুক্ত করুন",
+  "expect": "/admin/leads",
+  "lang": "bn"
+ },
+ {
+  "text": "সিএসভি ইতিহাস খুলুন",
+  "expect": "/admin/csv/history",
+  "lang": "bn"
+ },
+ {
+  "text": "show lost leads",
+  "expect": "/admin/leads",
+  "lang": "en"
+ },
+ {
+  "text": "সবার মাসিক স্কোর",
+  "expect": "/admin/reports/monthly",
+  "lang": "bn"
+ },
+ {
+  "text": "add a new product: oyster mushroom 250g packet",
+  "expect": "/admin/products",
+  "lang": "en"
+ },
+ {
+  "text": "লগআউট করব কিভাবে",
+  "expect": "ANSWER",
+  "lang": "bn"
+ },
+ {
+  "text": "kg proti dam koto rakhsi",
+  "expect": "/admin/products",
+  "lang": "bl"
+ },
+ {
+  "text": "user manual in bangla",
+  "expect": "/admin/manual",
+  "lang": "en"
+ },
+ {
+  "text": "goto shoptaher report khulo",
+  "expect": "/admin/reports/weekly",
+  "lang": "bl"
+ },
+ {
+  "text": "শুকনো মাশরুম প্যাকেট আইটেম হিসেবে যোগ করব",
+  "expect": "/admin/products",
+  "lang": "bn"
+ },
+ {
+  "text": "ugh this thing is useless, just show me the leads already",
+  "expect": "/admin/leads",
+  "lang": "en"
+ },
+ {
+  "text": "নুসরাতের পাসওয়ার্ড রিসেট করুন",
+  "expect": "/admin/employees",
+  "lang": "bn"
+ },
+ {
+  "text": "বিক্রির লক্ষ্য ৫০০০০ টাকা দিতে চাই",
+  "expect": "/admin/targets",
+  "lang": "bn"
+ },
+ {
+  "text": "নতুন একজন স্টাফ নিয়োগ দিয়েছি, তার তথ্য কোথায় দেব",
+  "expect": "/admin/employees",
+  "lang": "bn"
+ },
+ {
+  "text": "লিডের তথ্য কে এডিট করেছে",
+  "expect": "/admin/audit",
+  "lang": "bn"
+ },
+ {
+  "text": "how do I deactivate all links in Agro BD?",
+  "expect": "/admin/sections",
+  "lang": "en"
+ },
+ {
+  "text": "এক সেকশনের টার্গেট আরেক সেকশনে কপি",
+  "expect": "/admin/targets",
+  "lang": "bn"
+ },
+ {
+  "text": "we started selling spawn, add it as a product",
+  "expect": "/admin/products",
+  "lang": "en"
+ },
+ {
+  "text": "create a new group section called Mushroom Lovers",
+  "expect": "/admin/sections",
+  "lang": "en"
+ },
+ {
+  "text": "সহায়িকা দেখাও",
+  "expect": "/admin/manual",
+  "lang": "bn"
+ },
+ {
+  "text": "data kothay save hoy",
+  "expect": "ANSWER",
+  "lang": "bl"
+ },
+ {
+  "text": "did yesterday's file go through? I want the log of uploads",
+  "expect": "/admin/csv/history",
+  "lang": "en"
+ },
+ {
+  "text": "today's activity reports of the team",
+  "expect": "/admin/reports/daily",
+  "lang": "en"
+ },
+ {
+  "text": "নতুন সেকশন তৈরি করতে চাই",
+  "expect": "/admin/sections",
+  "lang": "bn"
+ },
+ {
+  "text": "I'm new, where can I read how everything works",
+  "expect": "/admin/manual",
+  "lang": "en"
+ },
+ {
+  "text": "nirdeshika dekhao",
+  "expect": "/admin/manual",
+  "lang": "bl"
+ },
+ {
+  "text": "dhaka farmers e link dhukabo",
+  "expect": "/admin/sections",
+  "lang": "bl"
+ },
+ {
+  "text": "assign sections to staff",
+  "expect": "/admin/employees",
+  "lang": "en"
+ },
+ {
+  "text": "targets page",
+  "expect": "/admin/targets",
+  "lang": "en"
+ },
+ {
+  "text": "কাল বৃষ্টি হবে?",
+  "expect": "DECLINE",
+  "lang": "bn"
+ },
+ {
+  "text": "employee der performance kothay dekhbo",
+  "expect": "/admin/employees",
+  "lang": "bl"
+ },
+ {
+  "text": "সেকশনের ওজন পরিবর্তন",
+  "expect": "/admin/settings",
+  "lang": "bn"
+ },
+ {
+  "text": "upload histroy",
+  "expect": "/admin/csv/history",
+  "lang": "en"
+ },
+ {
+  "text": "I forgot the admin passcode",
+  "expect": "ANSWER",
+  "lang": "en"
+ },
+ {
+  "text": "গ্রুপ লিংকগুলো কোথায় দেখব",
+  "expect": "/admin/sections",
+  "lang": "bn"
+ },
+ {
+  "text": "জামাল কয়টা লিংক শেষ করেছে দেখতে চাই",
+  "expect": "/admin/employees",
+  "lang": "bn"
+ },
+ {
+  "text": "সব পরিবর্তনের ইতিহাস",
+  "expect": "/admin/audit",
+  "lang": "bn"
+ },
+ {
+  "text": "change the budget limit of the boost campaign",
+  "expect": "/admin/campaigns",
+  "lang": "en"
+ },
+ {
+  "text": "add a task to phase 2",
+  "expect": "/admin/plan",
+  "lang": "en"
+ }
+]

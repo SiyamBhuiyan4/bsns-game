@@ -5,7 +5,7 @@
 
 import prisma from '@/lib/prisma';
 import { normalizeText } from './router';
-import { ACTION_WORDS, FILLER, PAGES, TOPICS, WEAK, type Action, type Topic } from './knowledge';
+import { ACTION_WORDS, FILLER, OFF_TOPIC, PAGES, TOPICS, WEAK, type Action, type Topic } from './knowledge';
 
 export type NavLink = { href: string; labelBn: string; labelEn: string };
 export type NavResult = { reply: string; link?: NavLink; suggestions?: NavLink[]; navigate?: boolean };
@@ -51,15 +51,39 @@ function wordScore(word: string, key: string): number {
   return score;
 }
 
-function rawWordScore(word: string, key: string): number {
+/** Fold Bangla letters that people mix up when typing (ি/ী, ু/ূ, ন/ণ, স/শ/ষ, র/ড়/ঢ়, য়/য). */
+function foldBangla(w: string): string {
+  return w
+    .replace(/ী/g, 'ি')
+    .replace(/ূ/g, 'ু')
+    .replace(/ণ/g, 'ন')
+    .replace(/[শষ]/g, 'স')
+    .replace(/[ড়ঢ়]/g, 'র')
+    .replace(/য়/g, 'য')
+    .replace(/ৃ/g, 'র')
+    .replace(/[ঁং]/g, '');
+}
+
+function rawWordScore(rawWord: string, rawKey: string): number {
+  if (rawWord === rawKey) return 3;
+  const bangla = BANGLA.test(rawWord);
+  const word = bangla ? foldBangla(rawWord) : rawWord;
+  const key = bangla ? foldBangla(rawKey) : rawKey;
   if (word === key) return 3;
+  // Bangla: one missing or wrong vowel sign / letter in a longer word.
+  if (bangla && word.length >= 4 && key.length >= 4 && distance(word, key) <= 1) return 2;
   // Bangla suffixes (কর্মীর, গ্রুপগুলো) and English forms (adding, groups).
   if (key.length >= 3 && word.startsWith(key)) return 2;
   if (word.length >= 4 && key.startsWith(word)) return 2;
   // Typos only on longer words, so short unrelated words (rice/price) do not match.
-  if (!BANGLA.test(word) && word.length >= 5 && key.length >= 5 && distance(word, key) <= 1) return 2;
+  if (!bangla && word.length >= 5 && key.length >= 5) {
+    const d = distance(word, key);
+    // Long distinctive words: one typo is still a confident match; very long words allow two.
+    if (d <= 1) return word.length >= 6 && !WEAK.has(key) ? 3 : 2;
+    if (d === 2 && word.length >= 8 && key.length >= 8) return 2;
+  }
   // 4-letter typos (krmi, liks) only against specific words, never generic ones (rice is not price).
-  if (!BANGLA.test(word) && word.length === 4 && key.length >= 4 && key.length <= 5 && !WEAK.has(key) && distance(word, key) <= 1) return 2;
+  if (!bangla && word.length === 4 && key.length >= 4 && key.length <= 5 && !WEAK.has(key) && distance(word, key) <= 1) return 2;
   return 0;
 }
 
@@ -71,8 +95,9 @@ function detectActions(words: string[]): Set<Action> {
   return found;
 }
 
-function scoreTopic(words: string[], topic: Topic, actions: Set<Action>): number {
-  if (topic.requires && !words.some((w) => topic.requires!.some((k) => wordScore(w, k) >= 2))) return 0;
+function scoreTopic(words: string[], topic: Topic, actions: Set<Action>, lowerMessage: string): number {
+  const phraseHitEarly = topic.phrases?.some((p) => lowerMessage.includes(p)) ?? false;
+  if (!phraseHitEarly && topic.requires && !words.some((w) => topic.requires!.some((k) => wordScore(w, k) >= 2))) return 0;
   let subject = 0;
   let strong = 0;
   let weak = 0;
@@ -94,8 +119,10 @@ function scoreTopic(words: string[], topic: Topic, actions: Set<Action>): number
       subject += best;
     }
   }
-  // Must mention the subject: one specific word, or at least two generic ones.
-  if (strong === 0 && weak < 2) return 0;
+  const phraseHit = topic.phrases?.some((p) => lowerMessage.includes(p)) ?? false;
+  // Must mention the subject: one specific word, at least two generic ones, or a known phrase.
+  if (strong === 0 && weak < 2 && !phraseHit) return 0;
+  if (phraseHit) subject += 4;
   const actionBonus = topic.actions.some((a) => actions.has(a)) ? 3 : 0;
   return subject + actionBonus;
 }
@@ -185,7 +212,7 @@ export function classify(message: string): Classification {
   if (words.length && words.every((w) => GREETING.includes(w) || FILLER.has(w))) return { ...base, kind: 'greeting' };
   if (meaningful.length && meaningful.every((w) => THANKS.includes(w))) return { ...base, kind: 'thanks' };
 
-  const ranked = TOPICS.map((t) => ({ t, s: scoreTopic(words, t, actions) }))
+  const ranked = TOPICS.map((t) => ({ t, s: scoreTopic(words, t, actions, lower) }))
     .filter((r) => r.s >= 3)
     .sort((a, b) => b.s - a.s);
 
@@ -195,6 +222,8 @@ export function classify(message: string): Classification {
     return { kind: 'topic', topic: audit, others: ranked.map((r) => r.t).filter((t) => t !== audit), actions, name: '' };
   }
   if (!ranked.length) return { ...base, kind: 'none' };
+  // Clearly outside the panel ("weekly football schedule", "dollar rate") unless the match is very strong.
+  if (words.some((w) => OFF_TOPIC.has(w)) && ranked[0].s < 10) return { ...base, kind: 'none' };
   const topic = ranked[0].t;
   return { kind: 'topic', topic, others: ranked.slice(1).map((r) => r.t), actions, name: extractName(message, topic) };
 }
