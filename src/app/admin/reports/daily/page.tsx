@@ -20,6 +20,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
 import { formatTaka, getDhakaDateString, getDhakaOffsetDateString } from '@/lib/date';
+import { useLanguage } from '@/components/LanguageContext';
 
 interface DailyEmployeeReport {
   employee_id: string;
@@ -74,6 +75,7 @@ interface DailyReportResponse {
 }
 
 function AdminDailyReportContent() {
+  const { L } = useLanguage();
   const searchParams = useSearchParams();
   const dateParam = searchParams.get('date');
 
@@ -105,12 +107,12 @@ function AdminDailyReportContent() {
       setErrorMsg('');
       const res = await fetch(`/api/reports/daily?date=${date}`);
       if (!res.ok) {
-        throw new Error('দৈনিক রিপোর্ট ডাটা লোড করা যায়নি');
+        throw new Error(L('দৈনিক রিপোর্ট ডাটা লোড করা যায়নি'));
       }
       const data = await res.json();
       setReportData(data);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'ত্রুটি হয়েছে');
+      setErrorMsg(err instanceof Error ? err.message : L('ত্রুটি হয়েছে'));
     } finally {
       setLoading(false);
     }
@@ -127,8 +129,8 @@ function AdminDailyReportContent() {
     <div className="space-y-6">
       <PageHeader
         icon={<BarChart3 className="h-5 w-5" />}
-        title="দৈনিক রিপোর্ট"
-        subtitle="প্রতিটি সদস্যের লক্ষ্য অর্জন ও স্কোর"
+        title={L("দৈনিক রিপোর্ট")}
+        subtitle={L("প্রতিটি সদস্যের লক্ষ্য অর্জন ও স্কোর")}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
@@ -141,7 +143,7 @@ function AdminDailyReportContent() {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                আজ (Today)
+                {L("আজ (Today)")}
               </button>
               <button
                 type="button"
@@ -152,7 +154,7 @@ function AdminDailyReportContent() {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                গতকাল (Yesterday)
+                {L("গতকাল (Yesterday)")}
               </button>
               <button
                 type="button"
@@ -163,11 +165,11 @@ function AdminDailyReportContent() {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                পরশু
+                {L("পরশু")}
               </button>
             </div>
 
-            <label className="sr-only" htmlFor="daily-date">তারিখ</label>
+            <label className="sr-only" htmlFor="daily-date">{L("তারিখ")}</label>
             <div className="relative">
               <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -208,38 +210,38 @@ function AdminDailyReportContent() {
       {summary && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            label="মোট বিক্রয়"
+            label={L("মোট বিক্রয়")}
             value={formatTaka(summary.team_sales)}
-            note={`লাভ: ${formatTaka(summary.team_profit)}`}
+            note={L(`লাভ: ${formatTaka(summary.team_profit)}`)}
             icon={<DollarSign className="h-4 w-4" />}
             tone="brand"
           />
           <StatCard
-            label="কর্মীদের গড় স্কোর"
+            label={L("কর্মীদের গড় স্কোর")}
             value={
               <span className="flex items-baseline gap-2">
                 {summary.team_avg_score}
-                <span className="text-sm font-medium text-slate-400">/ ১০০</span>
+                <span className="text-sm font-medium text-slate-400">{L("/ ১০০")}</span>
                 <span className={`badge ${summary.team_avg_score >= 80 ? 'badge-green' : 'badge-red'}`}>
                   {summary.team_avg_score >= 80 ? 'পাস' : 'ফেল'}
                 </span>
               </span>
             }
-            note={`${summary.passing_count} পাস · ${summary.failing_count} উন্নতি প্রয়োজন`}
+            note={L(`${summary.passing_count} পাস · ${summary.failing_count} উন্নতি প্রয়োজন`)}
             icon={<Award className="h-4 w-4" />}
             tone="blue"
           />
           <StatCard
-            label="গ্রুপ পোস্ট"
+            label={L("গ্রুপ পোস্ট")}
             value={summary.team_posts}
-            note="অনুমোদিত গ্রুপে পোস্ট"
+            note={L("অনুমোদিত গ্রুপে পোস্ট")}
             icon={<CheckCircle2 className="h-4 w-4" />}
             tone="amber"
           />
           <StatCard
-            label="গ্রাহক ও অর্ডার"
+            label={L("গ্রাহক ও অর্ডার")}
             value={`${summary.team_new_clients} নতুন / ${summary.team_b2b} B2B`}
-            note={`রিটেনশন: ${summary.team_retention} · ফলো-আপ: ${summary.team_followups}`}
+            note={L(`রিটেনশন: ${summary.team_retention} · ফলো-আপ: ${summary.team_followups}`)}
             icon={<Users className="h-4 w-4" />}
             tone="violet"
           />
@@ -252,64 +254,64 @@ function AdminDailyReportContent() {
           <div>
             <h2 className="card-title text-base font-bold text-slate-900 flex items-center gap-2">
               <FileSpreadsheet className="h-4 w-4 text-brand-600" />
-              দৈনিক রিপোর্ট (সারসংক্ষেপ)
+              {L("দৈনিক রিপোর্ট (সারসংক্ষেপ)")}
             </h2>
             <p className="card-subtitle text-xs text-slate-500">
-              তারিখ: {selectedDate} · মূল ব্যবসায়িক সূচক ও অগ্রাধিকার
+              {L("তারিখ:")} {selectedDate} {L("· মূল ব্যবসায়িক সূচক ও অগ্রাধিকার")}
             </p>
           </div>
-          <span className="badge badge-green text-xs font-semibold">আজকের তথ্য</span>
+          <span className="badge badge-green text-xs font-semibold">{L("আজকের তথ্য")}</span>
         </div>
         <div className="overflow-x-auto">
           <table className="table-pro">
             <thead>
               <tr className="bg-slate-50">
-                <th className="w-1/3 text-slate-700 font-semibold">বিষয়</th>
-                <th className="text-slate-700 font-semibold">আজকের তথ্য</th>
+                <th className="w-1/3 text-slate-700 font-semibold">{L("বিষয়")}</th>
+                <th className="text-slate-700 font-semibold">{L("আজকের তথ্য")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
               <tr>
-                <td className="font-medium text-slate-800">নতুন লিড</td>
+                <td className="font-medium text-slate-800">{L("নতুন লিড")}</td>
                 <td className="font-semibold text-slate-900 tabular-nums">
-                  {reportData?.executive_table?.new_leads ?? summary?.team_new_clients ?? 0} টি
+                  {reportData?.executive_table?.new_leads ?? summary?.team_new_clients ?? 0} {L("টি")}
                 </td>
               </tr>
               <tr>
-                <td className="font-medium text-slate-800">নিশ্চিত অর্ডার</td>
+                <td className="font-medium text-slate-800">{L("নিশ্চিত অর্ডার")}</td>
                 <td className="font-semibold text-brand-700 tabular-nums">
-                  {reportData?.executive_table?.confirmed_orders ?? summary?.team_b2b ?? 0} টি
+                  {reportData?.executive_table?.confirmed_orders ?? summary?.team_b2b ?? 0} {L("টি")}
                 </td>
               </tr>
               <tr>
-                <td className="font-medium text-slate-800">মোট বিক্রি</td>
+                <td className="font-medium text-slate-800">{L("মোট বিক্রি")}</td>
                 <td className="font-bold text-brand-700 tabular-nums">
                   {formatTaka(reportData?.executive_table?.total_sales ?? summary?.team_sales ?? 0)}
                 </td>
               </tr>
               <tr>
-                <td className="font-medium text-slate-800">বিজ্ঞাপনের খরচ</td>
+                <td className="font-medium text-slate-800">{L("বিজ্ঞাপনের খরচ")}</td>
                 <td className="font-semibold text-rose-600 tabular-nums">
                   {formatTaka(reportData?.executive_table?.ad_spend ?? 0)}
                 </td>
               </tr>
               <tr>
-                <td className="font-medium text-slate-800">ফলোআপ সম্পন্ন</td>
+                <td className="font-medium text-slate-800">{L("ফলোআপ সম্পন্ন")}</td>
                 <td className="font-semibold text-slate-900 tabular-nums">
-                  {reportData?.executive_table?.followups_done ?? summary?.team_followups ?? 0} টি
+                  {reportData?.executive_table?.followups_done ?? summary?.team_followups ?? 0} {L("টি")}
                 </td>
               </tr>
               <tr>
-                <td className="font-medium text-slate-800">বড় B2B অনুসন্ধান</td>
+                <td className="font-medium text-slate-800">{L("বড় B2B অনুসন্ধান")}</td>
                 <td className="font-semibold text-slate-900 tabular-nums">
-                  {reportData?.executive_table?.b2b_inquiries_count ?? summary?.team_b2b ?? 0} টি{' '}
+                  {reportData?.executive_table?.b2b_inquiries_count ?? summary?.team_b2b ?? 0} {L("টি")}{' '}
                   <span className="text-xs text-slate-500 font-normal">
-                    (সম্ভাব্য মূল্য: {formatTaka(reportData?.executive_table?.b2b_inquiries_value ?? 0)})
+                    {L("(সম্ভাব্য মূল্য:")} {formatTaka(reportData?.executive_table?.b2b_inquiries_value ?? 0)})
                   </span>
                 </td>
               </tr>
               <tr>
-                <td className="font-medium text-slate-800 align-top">প্রধান সমস্যা</td>
+                <td className="font-medium text-slate-800 align-top">{L("প্রধান সমস্যা")}</td>
                 <td className="text-slate-700 text-xs">
                   {reportData?.executive_table?.main_issues && reportData.executive_table.main_issues.length > 0 ? (
                     <ul className="list-disc list-inside space-y-1">
@@ -318,12 +320,12 @@ function AdminDailyReportContent() {
                       ))}
                     </ul>
                   ) : (
-                    <span className="text-slate-400 italic">কোনো প্রধান সমস্যা উল্লেখিত হয়নি</span>
+                    <span className="text-slate-400 italic">{L("কোনো প্রধান সমস্যা উল্লেখিত হয়নি")}</span>
                   )}
                 </td>
               </tr>
               <tr>
-                <td className="font-medium text-slate-800 align-top">আগামী দিনের অগ্রাধিকার</td>
+                <td className="font-medium text-slate-800 align-top">{L("আগামী দিনের অগ্রাধিকার")}</td>
                 <td className="text-slate-700 text-xs">
                   {reportData?.executive_table?.next_priorities && reportData.executive_table.next_priorities.length > 0 ? (
                     <ul className="list-disc list-inside space-y-1">
@@ -332,7 +334,7 @@ function AdminDailyReportContent() {
                       ))}
                     </ul>
                   ) : (
-                    <span className="text-slate-400 italic">কোনো অগ্রাধিকার তালিকাভুক্ত হয়নি</span>
+                    <span className="text-slate-400 italic">{L("কোনো অগ্রাধিকার তালিকাভুক্ত হয়নি")}</span>
                   )}
                 </td>
               </tr>
@@ -344,36 +346,36 @@ function AdminDailyReportContent() {
       <div className="card">
         <div className="card-header">
           <div>
-            <h2 className="card-title">সদস্যভিত্তিক পারফরম্যান্স ({employees.length})</h2>
-            <p className="card-subtitle">তারিখ: {selectedDate}</p>
+            <h2 className="card-title">{L("সদস্যভিত্তিক পারফরম্যান্স (")}{employees.length})</h2>
+            <p className="card-subtitle">{L("তারিখ:")} {selectedDate}</p>
           </div>
         </div>
 
         {loading ? (
-          <div className="p-12 text-center text-sm text-slate-500">লোড হচ্ছে...</div>
+          <div className="p-12 text-center text-sm text-slate-500">{L("লোড হচ্ছে...")}</div>
         ) : employees.length === 0 ? (
           <EmptyState
             icon={<Users className="h-5 w-5" />}
-            title="কোনো তথ্য পাওয়া যায়নি"
-            description="এই তারিখে কোনো রিপোর্ট নেই।"
+            title={L("কোনো তথ্য পাওয়া যায়নি")}
+            description={L("এই তারিখে কোনো রিপোর্ট নেই।")}
           />
         ) : (
           <div className="overflow-x-auto">
             <table className="table-pro">
               <thead>
                 <tr>
-                  <th>নাম</th>
-                  <th>সেকশন</th>
-                  <th className="text-center">পোস্ট</th>
-                  <th className="text-right">বিক্রয় (৳)</th>
-                  <th className="text-right">মুনাফা (৳)</th>
-                  <th className="text-center">নতুন ক্রেতা</th>
+                  <th>{L("নাম")}</th>
+                  <th>{L("সেকশন")}</th>
+                  <th className="text-center">{L("পোস্ট")}</th>
+                  <th className="text-right">{L("বিক্রয় (৳)")}</th>
+                  <th className="text-right">{L("মুনাফা (৳)")}</th>
+                  <th className="text-center">{L("নতুন ক্রেতা")}</th>
                   <th className="text-center">B2B</th>
-                  <th className="text-center">রিটেনশন</th>
-                  <th className="text-center">ফলো-আপ</th>
-                  <th className="text-right">স্কোর</th>
-                  <th className="text-center">স্ট্যাটাস</th>
-                  <th className="text-center">প্রতিফলন</th>
+                  <th className="text-center">{L("রিটেনশন")}</th>
+                  <th className="text-center">{L("ফলো-আপ")}</th>
+                  <th className="text-right">{L("স্কোর")}</th>
+                  <th className="text-center">{L("স্ট্যাটাস")}</th>
+                  <th className="text-center">{L("প্রতিফলন")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -407,9 +409,9 @@ function AdminDailyReportContent() {
                       <td className="text-right font-semibold tabular-nums text-slate-900">{emp.score}</td>
                       <td className="text-center">
                         {isFail ? (
-                          <span className="badge badge-red">উন্নতি প্রয়োজন</span>
+                          <span className="badge badge-red">{L("উন্নতি প্রয়োজন")}</span>
                         ) : (
-                          <span className="badge badge-green">পাস</span>
+                          <span className="badge badge-green">{L("পাস")}</span>
                         )}
                       </td>
                       <td className="text-center">
@@ -425,7 +427,7 @@ function AdminDailyReportContent() {
                             className="btn btn-ghost btn-sm"
                           >
                             <MessageSquare className="h-3.5 w-3.5" />
-                            দেখুন
+                            {L("দেখুন")}
                           </button>
                         ) : (
                           <span className="text-slate-300">-</span>
@@ -445,13 +447,13 @@ function AdminDailyReportContent() {
           <div className="modal-panel">
             <div className="card-header">
               <div>
-                <h3 className="card-title">দৈনিক প্রতিফলন: {selectedReflection.name}</h3>
-                <p className="card-subtitle">তারিখ: {selectedDate}</p>
+                <h3 className="card-title">{L("দৈনিক প্রতিফলন:")} {selectedReflection.name}</h3>
+                <p className="card-subtitle">{L("তারিখ:")} {selectedDate}</p>
               </div>
               <button
                 onClick={() => setSelectedReflection(null)}
                 className="btn-icon"
-                aria-label="বন্ধ করুন"
+                aria-label={L("বন্ধ করুন")}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -459,22 +461,22 @@ function AdminDailyReportContent() {
 
             <div className="card-body space-y-4 text-sm">
               <div>
-                <span className="label">প্রধান সমস্যা / বাধা</span>
+                <span className="label">{L("প্রধান সমস্যা / বাধা")}</span>
                 <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 leading-relaxed text-slate-800">
-                  {selectedReflection.main_issue || 'কোনো সমস্যা উল্লেখ করা হয়নি।'}
+                  {selectedReflection.main_issue || L('কোনো সমস্যা উল্লেখ করা হয়নি।')}
                 </p>
               </div>
               <div>
-                <span className="label">আগামীকালের ৩টি অগ্রাধিকার</span>
+                <span className="label">{L("আগামীকালের ৩টি অগ্রাধিকার")}</span>
                 <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 leading-relaxed text-slate-800">
-                  {selectedReflection.next_priorities || 'কোনো অগ্রাধিকার উল্লেখ করা হয়নি।'}
+                  {selectedReflection.next_priorities || L('কোনো অগ্রাধিকার উল্লেখ করা হয়নি।')}
                 </p>
               </div>
             </div>
 
             <div className="flex justify-end border-t border-slate-100 px-5 py-4">
               <button onClick={() => setSelectedReflection(null)} className="btn btn-secondary">
-                বন্ধ করুন
+                {L("বন্ধ করুন")}
               </button>
             </div>
           </div>

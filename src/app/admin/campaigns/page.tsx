@@ -60,8 +60,7 @@ interface SummaryData {
 }
 
 export default function AdminCampaignsPage() {
-  const { lang } = useLanguage();
-  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
+  const { lang, L } = useLanguage();
   const [campaigns, setCampaigns] = useState<CampaignItem[]>([]);
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [products, setProducts] = useState<ProductRef[]>([]);
@@ -107,10 +106,10 @@ export default function AdminCampaignsPage() {
           setSummary(data.summary);
         }
       } else {
-        setErrorMessage(data.error || 'ক্যাম্পেইন লোড করা যায়নি');
+        setErrorMessage(data.error || L('ক্যাম্পেইন লোড করা যায়নি'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক সমস্যা');
+      setErrorMessage(L('নেটওয়ার্ক সমস্যা'));
     } finally {
       setLoading(false);
     }
@@ -155,16 +154,16 @@ export default function AdminCampaignsPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage('নতুন মার্কেটিং ক্যাম্পেইন তৈরি হয়েছে');
+        setSuccessMessage(L('নতুন মার্কেটিং ক্যাম্পেইন তৈরি হয়েছে'));
         setIsAddOpen(false);
         setName('');
         setBudget('');
         fetchCampaigns();
       } else {
-        setErrorMessage(data.error || 'ক্যাম্পেইন তৈরি ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('ক্যাম্পেইন তৈরি ব্যর্থ হয়েছে'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক ত্রুটি');
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setAddSubmitting(false);
     }
@@ -201,14 +200,14 @@ export default function AdminCampaignsPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage('ক্যাম্পেইনের তথ্য ও বাজেট সফলভাবে আপডেট করা হয়েছে');
+        setSuccessMessage(L('ক্যাম্পেইনের তথ্য ও বাজেট সফলভাবে আপডেট করা হয়েছে'));
         setEditingCampaign(null);
         fetchCampaigns();
       } else {
-        setErrorMessage(data.error || 'আপডেট ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('আপডেট ব্যর্থ হয়েছে'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক ত্রুটি');
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setEditSubmitting(false);
     }
@@ -467,7 +466,7 @@ export default function AdminCampaignsPage() {
                   <th>{L('খরচ', 'Spend')}</th>
                   <th className="text-right">{L('রাজস্ব', 'Revenue')}</th>
                   <th className="text-center">ROAS</th>
-                  <th className="text-center">লিড / অর্ডার</th>
+                  <th className="text-center">{L("লিড / অর্ডার")}</th>
                   <th className="text-center">{L('স্ট্যাটাস', 'Status')}</th>
                   <th className="text-right">
                     <span className="sr-only">Actions</span>
@@ -493,13 +492,13 @@ export default function AdminCampaignsPage() {
                     </td>
 
                     <td className="whitespace-nowrap text-right tabular-nums text-slate-900">
-                      ৳ {c.budget_amount.toLocaleString('en-IN')}
+                      {L("৳")} {c.budget_amount.toLocaleString('en-IN')}
                     </td>
 
                     <td className="whitespace-nowrap">
                       <div className="flex items-center justify-between gap-3">
                         <span className="tabular-nums font-medium text-slate-900">
-                          ৳ {c.spend.toLocaleString('en-IN')}
+                          {L("৳")} {c.spend.toLocaleString('en-IN')}
                         </span>
                         {getBudgetStatusBadge(c.budget_status, c.spend_percentage)}
                       </div>
@@ -518,7 +517,7 @@ export default function AdminCampaignsPage() {
                     </td>
 
                     <td className="whitespace-nowrap text-right tabular-nums font-medium text-slate-900">
-                      ৳ {c.revenue.toLocaleString('en-IN')}
+                      {L("৳")} {c.revenue.toLocaleString('en-IN')}
                     </td>
 
                     <td className="whitespace-nowrap text-center">{getRoasBadge(c.roas)}</td>
@@ -567,7 +566,7 @@ export default function AdminCampaignsPage() {
                     id="camp_name"
                     type="text"
                     required
-                    placeholder="যেমন: মাশরুম পাইকারি বুস্ট"
+                    placeholder={L("যেমন: মাশরুম পাইকারি বুস্ট")}
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="input"
@@ -724,7 +723,7 @@ export default function AdminCampaignsPage() {
                     className="input tabular-nums"
                   />
                   <p className="hint">
-                    {L('বর্তমান খরচ', 'Current spend')}: ৳{editingCampaign.spend.toLocaleString('en-IN')}
+                    {L('বর্তমান খরচ', 'Current spend')}{L(": ৳")}{editingCampaign.spend.toLocaleString('en-IN')}
                   </p>
                 </div>
 

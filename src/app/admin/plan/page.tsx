@@ -100,15 +100,14 @@ function getErrorMessage(err: unknown, fallback: string = 'ত্রুটি �
 }
 
 export default function AdminPlanPage() {
-  const { lang } = useLanguage();
+  const { lang, L } = useLanguage();
   const isEn = lang === 'en';
-  const L = (bn: string, en: string) => (isEn ? en : bn);
   const fmtNum = (val: number | string | undefined | null) => {
     if (val === undefined || val === null) return '';
     return isEn ? String(val) : toBengaliDigits(val);
   };
   const getCleanPlanTitle = (name: string) => {
-    if (!name) return isEn ? 'Marketing Action Plan' : 'মার্কেটিং কর্মপরিকল্পনা';
+    if (!name) return isEn ? 'Marketing Action Plan' : L('মার্কেটিং কর্মপরিকল্পনা');
     const match = name.match(/^(.*?)\s*\((.*?)\)$/);
     if (match) {
       return isEn ? match[2].trim() : match[1].trim();
@@ -221,7 +220,7 @@ export default function AdminPlanPage() {
       setLoading(true);
       const res = await fetch('/api/plan');
       if (!res.ok) {
-        throw new Error('প্ল্যান ডাটা লোড করতে ব্যর্থ হয়েছে');
+        throw new Error(L('প্ল্যান ডাটা লোড করতে ব্যর্থ হয়েছে'));
       }
       const data = await res.json();
       setPlan(data.plan);
@@ -236,7 +235,7 @@ export default function AdminPlanPage() {
         }));
       }
     } catch (err: unknown) {
-      showToast('error', getErrorMessage(err, 'ডাটাবেস কানেকশনে সমস্যা হয়েছে'));
+      showToast('error', getErrorMessage(err, L('ডাটাবেস কানেকশনে সমস্যা হয়েছে')));
     } finally {
       setLoading(false);
     }
@@ -261,10 +260,10 @@ export default function AdminPlanPage() {
       });
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || 'প্ল্যান তথ্য সংরক্ষণ ব্যর্থ হয়েছে');
+        throw new Error(errorData.error || L('প্ল্যান তথ্য সংরক্ষণ ব্যর্থ হয়েছে'));
       }
       setIsEditingPlan(false);
-      showToast('success', 'প্ল্যানের নাম ও শুরুর তারিখ সফলভাবে আপডেট হয়েছে');
+      showToast('success', L('প্ল্যানের নাম ও শুরুর তারিখ সফলভাবে আপডেট হয়েছে'));
       fetchPlanData();
     } catch (err: unknown) {
       showToast('error', getErrorMessage(err));
@@ -290,10 +289,10 @@ export default function AdminPlanPage() {
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || 'মাইলস্টোন মূল্যায়ন সংরক্ষণ করা যায়নি');
+        throw new Error(err.error || L('মাইলস্টোন মূল্যায়ন সংরক্ষণ করা যায়নি'));
       }
       setEvaluatingMilestone(null);
-      showToast('success', 'মাইলস্টোন ও মূল্যায়ন সফলভাবে সংরক্ষিত হয়েছে');
+      showToast('success', L('মাইলস্টোন ও মূল্যায়ন সফলভাবে সংরক্ষিত হয়েছে'));
       fetchPlanData();
     } catch (err: unknown) {
       showToast('error', getErrorMessage(err));
@@ -326,10 +325,10 @@ export default function AdminPlanPage() {
       });
 
       if (!res.ok) {
-        throw new Error('স্ট্যাটাস পরিবর্তন ব্যর্থ হয়েছে');
+        throw new Error(L('স্ট্যাটাস পরিবর্তন ব্যর্থ হয়েছে'));
       }
       fetchPlanData();
-      showToast('success', 'টাস্ক স্ট্যাটাস আপডেট হয়েছে');
+      showToast('success', L('টাস্ক স্ট্যাটাস আপডেট হয়েছে'));
     } catch (err: unknown) {
       showToast('error', getErrorMessage(err));
       fetchPlanData();
@@ -348,10 +347,10 @@ export default function AdminPlanPage() {
       });
 
       if (!res.ok) {
-        throw new Error('দায়িত্ব পরিবর্তন ব্যর্থ হয়েছে');
+        throw new Error(L('দায়িত্ব পরিবর্তন ব্যর্থ হয়েছে'));
       }
       fetchPlanData();
-      showToast('success', 'টাস্কের দায়িত্বপ্রাপ্ত ব্যক্তি পরিবর্তন হয়েছে');
+      showToast('success', L('টাস্কের দায়িত্বপ্রাপ্ত ব্যক্তি পরিবর্তন হয়েছে'));
     } catch (err: unknown) {
       showToast('error', getErrorMessage(err));
     }
@@ -370,7 +369,7 @@ export default function AdminPlanPage() {
       });
 
       if (!res.ok) {
-        throw new Error('অগ্রগতি আপডেট করা যায়নি');
+        throw new Error(L('অগ্রগতি আপডেট করা যায়নি'));
       }
       fetchPlanData();
     } catch (err: unknown) {
@@ -390,11 +389,11 @@ export default function AdminPlanPage() {
       });
 
       if (!res.ok) {
-        throw new Error('ফলাফল নোট সংরক্ষণ করা যায়নি');
+        throw new Error(L('ফলাফল নোট সংরক্ষণ করা যায়নি'));
       }
       setEditingOutcomeId(null);
       fetchPlanData();
-      showToast('success', 'ফলাফল নোট সংরক্ষিত হয়েছে');
+      showToast('success', L('ফলাফল নোট সংরক্ষিত হয়েছে'));
     } catch (err: unknown) {
       showToast('error', getErrorMessage(err));
     }
@@ -405,7 +404,7 @@ export default function AdminPlanPage() {
     e.preventDefault();
     if (!plan || !selectedPhaseIdForAdd) return;
     if (!taskForm.title_bn.trim() || !taskForm.title_en.trim()) {
-      showToast('error', 'বাংলা এবং ইংরেজি উভয় শিরোনামই আবশ্যক');
+      showToast('error', L('বাংলা এবং ইংরেজি উভয় শিরোনামই আবশ্যক'));
       return;
     }
 
@@ -429,7 +428,7 @@ export default function AdminPlanPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || 'নতুন টাস্ক তৈরি করা সম্ভব হয়নি');
+        throw new Error(err.error || L('নতুন টাস্ক তৈরি করা সম্ভব হয়নি'));
       }
 
       setShowAddTaskModal(false);
@@ -442,7 +441,7 @@ export default function AdminPlanPage() {
         progress_percent: 0,
         status: 'NOT_STARTED',
       });
-      showToast('success', 'নতুন টাস্ক সফলভাবে তৈরি হয়েছে');
+      showToast('success', L('নতুন টাস্ক সফলভাবে তৈরি হয়েছে'));
       fetchPlanData();
     } catch (err: unknown) {
       showToast('error', getErrorMessage(err));
@@ -474,11 +473,11 @@ export default function AdminPlanPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || 'টাস্ক হালনাগাদ করা যায়নি');
+        throw new Error(err.error || L('টাস্ক হালনাগাদ করা যায়নি'));
       }
 
       setEditingTask(null);
-      showToast('success', 'টাস্ক সফলভাবে আপডেট করা হয়েছে');
+      showToast('success', L('টাস্ক সফলভাবে আপডেট করা হয়েছে'));
       fetchPlanData();
     } catch (err: unknown) {
       showToast('error', getErrorMessage(err));
@@ -497,10 +496,10 @@ export default function AdminPlanPage() {
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || 'টাস্ক মুছে ফেলতে ব্যর্থ হয়েছে');
+        throw new Error(err.error || L('টাস্ক মুছে ফেলতে ব্যর্থ হয়েছে'));
       }
       setDeletingTaskId(null);
-      showToast('success', 'টাস্ক মুছে ফেলা হয়েছে');
+      showToast('success', L('টাস্ক মুছে ফেলা হয়েছে'));
       fetchPlanData();
     } catch (err: unknown) {
       showToast('error', getErrorMessage(err));
@@ -527,10 +526,10 @@ export default function AdminPlanPage() {
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || 'ফেজ আপডেট ব্যর্থ হয়েছে');
+        throw new Error(err.error || L('ফেজ আপডেট ব্যর্থ হয়েছে'));
       }
       setEditingPhase(null);
-      showToast('success', 'ফেজ তথ্য সফলভাবে আপডেট হয়েছে');
+      showToast('success', L('ফেজ তথ্য সফলভাবে আপডেট হয়েছে'));
       fetchPlanData();
     } catch (err: unknown) {
       showToast('error', getErrorMessage(err));
@@ -558,11 +557,11 @@ export default function AdminPlanPage() {
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || 'নতুন ফেজ তৈরি করা যায়নি');
+        throw new Error(err.error || L('নতুন ফেজ তৈরি করা যায়নি'));
       }
       setShowAddPhaseModal(false);
       setPhaseForm({ name_bn: '', name_en: '', day_start: 1, day_end: 30 });
-      showToast('success', 'নতুন ফেজ সফলভাবে তৈরি হয়েছে');
+      showToast('success', L('নতুন ফেজ সফলভাবে তৈরি হয়েছে'));
       fetchPlanData();
     } catch (err: unknown) {
       showToast('error', getErrorMessage(err));
@@ -581,10 +580,10 @@ export default function AdminPlanPage() {
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || 'ফেজ মুছে ফেলা সম্ভব হয়নি');
+        throw new Error(err.error || L('ফেজ মুছে ফেলা সম্ভব হয়নি'));
       }
       setDeletingPhaseId(null);
-      showToast('success', 'ফেজ সফলভাবে মুছে ফেলা হয়েছে');
+      showToast('success', L('ফেজ সফলভাবে মুছে ফেলা হয়েছে'));
       fetchPlanData();
     } catch (err: unknown) {
       showToast('error', getErrorMessage(err));
@@ -597,23 +596,23 @@ export default function AdminPlanPage() {
 
   const statusOptions = (
     <>
-      <option value="NOT_STARTED">শুরু হয়নি</option>
-      <option value="IN_PROGRESS">চলমান</option>
-      <option value="DONE">সম্পন্ন</option>
-      <option value="BLOCKED">আটকে আছে</option>
+      <option value="NOT_STARTED">{L("শুরু হয়নি")}</option>
+      <option value="IN_PROGRESS">{L("চলমান")}</option>
+      <option value="DONE">{L("সম্পন্ন")}</option>
+      <option value="BLOCKED">{L("আটকে আছে")}</option>
     </>
   );
 
   const milestoneBadge = (status?: PlanMilestone['status']) => {
     switch (status) {
       case 'MET':
-        return <span className="badge badge-green">অর্জিত</span>;
+        return <span className="badge badge-green">{L("অর্জিত")}</span>;
       case 'PARTIAL':
-        return <span className="badge badge-blue">আংশিক</span>;
+        return <span className="badge badge-blue">{L("আংশিক")}</span>;
       case 'MISSED':
-        return <span className="badge badge-red">অনর্জিত</span>;
+        return <span className="badge badge-red">{L("অনর্জিত")}</span>;
       case 'PENDING':
-        return <span className="badge badge-amber">অপেক্ষমাণ</span>;
+        return <span className="badge badge-amber">{L("অপেক্ষমাণ")}</span>;
       default:
         return null;
     }
@@ -623,7 +622,7 @@ export default function AdminPlanPage() {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
         <Loader2 className="h-7 w-7 animate-spin text-brand-600" />
-        <p className="text-sm text-slate-500">লোড হচ্ছে...</p>
+        <p className="text-sm text-slate-500">{L("লোড হচ্ছে...")}</p>
       </div>
     );
   }
@@ -633,8 +632,8 @@ export default function AdminPlanPage() {
       <div className="card">
         <EmptyState
           icon={<AlertCircle className="h-5 w-5" />}
-          title="প্ল্যান ডাটা পাওয়া যায়নি"
-          description="সার্ভারের সাথে সংযোগ হয়নি। আবার চেষ্টা করুন।"
+          title={L("প্ল্যান ডাটা পাওয়া যায়নি")}
+          description={L("সার্ভারের সাথে সংযোগ হয়নি। আবার চেষ্টা করুন।")}
           action={
             <button
               onClick={async () => {
@@ -654,7 +653,7 @@ export default function AdminPlanPage() {
               }}
               className="btn btn-primary"
             >
-              <Plus className="h-4 w-4" /> কর্মপরিকল্পনা তৈরি করুন (Create Action Plan)
+              <Plus className="h-4 w-4" /> {L("কর্মপরিকল্পনা তৈরি করুন (Create Action Plan)")}
             </button>
           }
         />
@@ -704,7 +703,7 @@ export default function AdminPlanPage() {
             <Calendar className="h-3.5 w-3.5 text-slate-400" />
             {isEn
               ? `${totalPlanDays} Days Plan · Start: ${formatDisplayDate(plan.start_date, 'en')}`
-              : `${fmtNum(totalPlanDays)} দিনের প্ল্যান · শুরু: ${formatDisplayDate(plan.start_date, 'bn')}`}
+              : L(`${fmtNum(totalPlanDays)} দিনের প্ল্যান · শুরু: ${formatDisplayDate(plan.start_date, 'bn')}`)}
           </span>
         }
         actions={
@@ -732,11 +731,11 @@ export default function AdminPlanPage() {
       {isEditingPlan && (
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">প্ল্যানের তথ্য সম্পাদনা</h2>
+            <h2 className="card-title">{L("প্ল্যানের তথ্য সম্পাদনা")}</h2>
           </div>
           <div className="card-body grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="label" htmlFor="plan-name">প্ল্যানের নাম</label>
+              <label className="label" htmlFor="plan-name">{L("প্ল্যানের নাম")}</label>
               <input
                 id="plan-name"
                 type="text"
@@ -746,7 +745,7 @@ export default function AdminPlanPage() {
               />
             </div>
             <div>
-              <label className="label" htmlFor="plan-start">শুরুর তারিখ</label>
+              <label className="label" htmlFor="plan-start">{L("শুরুর তারিখ")}</label>
               <input
                 id="plan-start"
                 type="date"
@@ -773,7 +772,7 @@ export default function AdminPlanPage() {
         <StatCard
           label={L('চলমান দিন', 'Current Day')}
           value={isEn ? `${stats?.current_day || 1} / ${totalPlanDays}` : `${fmtNum(stats?.current_day || 1)} / ${fmtNum(totalPlanDays)}`}
-          note={isEn ? `Phase ${stats?.current_phase_order || 1} active` : `ফেজ ${fmtNum(stats?.current_phase_order || 1)} সক্রিয়`}
+          note={isEn ? `Phase ${stats?.current_phase_order || 1} active` : L(`ফেজ ${fmtNum(stats?.current_phase_order || 1)} সক্রিয়`)}
           icon={<Clock className="h-4 w-4" />}
           tone="blue"
         />
@@ -853,7 +852,7 @@ export default function AdminPlanPage() {
                     <p className="mt-0.5 text-xs text-slate-500">
                       {isEn
                         ? `Days ${phase.day_start} – ${phase.day_end}`
-                        : `দিন ${fmtNum(phase.day_start)} – ${fmtNum(phase.day_end)}`}
+                        : L(`দিন ${fmtNum(phase.day_start)} – ${fmtNum(phase.day_end)}`)}
                     </p>
                   </div>
                 </div>
@@ -960,7 +959,7 @@ export default function AdminPlanPage() {
                           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                             <div className="min-w-0 flex-1 space-y-2">
                               <div className="flex flex-wrap items-center gap-2">
-                                <label className="sr-only" htmlFor={`task-status-${task.id}`}>স্ট্যাটাস</label>
+                                <label className="sr-only" htmlFor={`task-status-${task.id}`}>{L("স্ট্যাটাস")}</label>
                                 <select
                                   id={`task-status-${task.id}`}
                                   value={task.status}
@@ -1031,7 +1030,7 @@ export default function AdminPlanPage() {
                                 </div>
                               ) : (
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <label className="sr-only" htmlFor={`outcome-${task.id}`}>ফলাফল নোট</label>
+                                  <label className="sr-only" htmlFor={`outcome-${task.id}`}>{L("ফলাফল নোট")}</label>
                                   <input
                                     id={`outcome-${task.id}`}
                                     type="text"
@@ -1150,7 +1149,7 @@ export default function AdminPlanPage() {
                 <h3 className="card-title">{L('মাইলস্টোন ও গাইডলাইন সম্পাদনা', 'Milestone & Guidelines')}</h3>
                 <p className="card-subtitle truncate">{evaluatingMilestone.title_bn}</p>
               </div>
-              <button onClick={() => setEvaluatingMilestone(null)} className="btn-icon" aria-label="বন্ধ করুন">
+              <button onClick={() => setEvaluatingMilestone(null)} className="btn-icon" aria-label={L("বন্ধ করুন")}>
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1226,7 +1225,7 @@ export default function AdminPlanPage() {
           <div className="modal-panel">
             <div className="card-header">
               <h3 className="card-title">{L('নতুন টাস্ক তৈরি করুন', 'Create New Task')}</h3>
-              <button onClick={() => setShowAddTaskModal(false)} className="btn-icon" aria-label="বন্ধ করুন">
+              <button onClick={() => setShowAddTaskModal(false)} className="btn-icon" aria-label={L("বন্ধ করুন")}>
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1239,7 +1238,7 @@ export default function AdminPlanPage() {
                     id="add-title-bn"
                     type="text"
                     required
-                    placeholder="যেমন: নতুন লিড সংগ্রহ ও ফলো-আপ"
+                    placeholder={L("যেমন: নতুন লিড সংগ্রহ ও ফলো-আপ")}
                     value={taskForm.title_bn}
                     onChange={(e) => setTaskForm({ ...taskForm, title_bn: e.target.value })}
                     className="input"
@@ -1264,7 +1263,7 @@ export default function AdminPlanPage() {
                   <textarea
                     id="add-desc"
                     rows={2}
-                    placeholder="কাজের বিস্তারিত বিবরণ ও করণীয়..."
+                    placeholder={L("কাজের বিস্তারিত বিবরণ ও করণীয়...")}
                     value={taskForm.description}
                     onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
                     className="input"
@@ -1347,7 +1346,7 @@ export default function AdminPlanPage() {
           <div className="modal-panel">
             <div className="card-header">
               <h3 className="card-title">{L('টাস্ক সম্পাদনা ও নিয়ন্ত্রণ', 'Edit Task & Controls')}</h3>
-              <button onClick={() => setEditingTask(null)} className="btn-icon" aria-label="বন্ধ করুন">
+              <button onClick={() => setEditingTask(null)} className="btn-icon" aria-label={L("বন্ধ করুন")}>
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1491,7 +1490,7 @@ export default function AdminPlanPage() {
           <div className="modal-panel">
             <div className="card-header">
               <h3 className="card-title">{L('ফেজ সম্পাদনা', 'Edit Phase')}</h3>
-              <button onClick={() => setEditingPhase(null)} className="btn-icon" aria-label="বন্ধ করুন">
+              <button onClick={() => setEditingPhase(null)} className="btn-icon" aria-label={L("বন্ধ করুন")}>
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1582,7 +1581,7 @@ export default function AdminPlanPage() {
           <div className="modal-panel">
             <div className="card-header">
               <h3 className="card-title">{L('নতুন ফেজ যোগ করুন', 'Add New Phase')}</h3>
-              <button onClick={() => setShowAddPhaseModal(false)} className="btn-icon" aria-label="বন্ধ করুন">
+              <button onClick={() => setShowAddPhaseModal(false)} className="btn-icon" aria-label={L("বন্ধ করুন")}>
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1594,7 +1593,7 @@ export default function AdminPlanPage() {
                   <input
                     type="text"
                     required
-                    placeholder="যেমন: স্কেলিং ও অটোমেশন"
+                    placeholder={L("যেমন: স্কেলিং ও অটোমেশন")}
                     value={phaseForm.name_bn}
                     onChange={(e) => setPhaseForm({ ...phaseForm, name_bn: e.target.value })}
                     className="input"

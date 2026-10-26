@@ -81,8 +81,7 @@ interface ProductSaleRow {
 }
 
 function EmployeeMyWorkContent() {
-  const { lang } = useLanguage();
-  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
+  const { lang, L } = useLanguage();
   const searchParams = useSearchParams();
 
   // Active view tab: 'links' (Task 1) | 'daily_entry' (Task 2) | 'completed'
@@ -158,10 +157,10 @@ function EmployeeMyWorkContent() {
           setExtraSectionId(data.assignedSections[0].id);
         }
       } else {
-        setErrorMessage(data.error || 'টাস্ক কিউ লোড করা যায়নি');
+        setErrorMessage(data.error || L('টাস্ক কিউ লোড করা যায়নি'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক ত্রুটি');
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setLoadingLinks(false);
     }
@@ -288,7 +287,7 @@ function EmployeeMyWorkContent() {
         setTodoLinks(previousTodo);
         setCompletedLinks(previousCompleted);
         setProgress(previousProgress);
-        setErrorMessage(data.error || 'সংরক্ষণ ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('সংরক্ষণ ব্যর্থ হয়েছে'));
       } else {
         setCompletedLinks((prev) =>
           prev.map((item) =>
@@ -308,7 +307,7 @@ function EmployeeMyWorkContent() {
       setTodoLinks(previousTodo);
       setCompletedLinks(previousCompleted);
       setProgress(previousProgress);
-      setErrorMessage('নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।');
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।'));
     } finally {
       setActionLoadingId(null);
     }
@@ -354,7 +353,7 @@ function EmployeeMyWorkContent() {
         setTodoLinks(previousTodo);
         setCompletedLinks(previousCompleted);
         setProgress(previousProgress);
-        setErrorMessage(data.error || 'আনডু করা যায়নি');
+        setErrorMessage(data.error || L('আনডু করা যায়নি'));
       } else {
         setSuccessToast(L('লিংকটি টু-ডু তালিকায় ফিরিয়ে আনা হয়েছে।', 'Link returned to To-Do queue.'));
         setTimeout(() => setSuccessToast(null), 3000);
@@ -363,7 +362,7 @@ function EmployeeMyWorkContent() {
       setTodoLinks(previousTodo);
       setCompletedLinks(previousCompleted);
       setProgress(previousProgress);
-      setErrorMessage('নেটওয়ার্ক সমস্যা');
+      setErrorMessage(L('নেটওয়ার্ক সমস্যা'));
     } finally {
       setActionLoadingId(null);
     }
@@ -398,7 +397,7 @@ function EmployeeMyWorkContent() {
 
       const data = await res.json();
       if (!res.ok) {
-        setErrorMessage(data.error || 'অতিরিক্ত কাজ সংরক্ষণ ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('অতিরিক্ত কাজ সংরক্ষণ ব্যর্থ হয়েছে'));
       } else {
         triggerReward(50, L('🎉 দুর্দান্ত! আপনার অতিরিক্ত পোস্ট যুক্ত ও সম্পন্ন হয়েছে (+৫০ XP)', 'Awesome! Extra bonus post logged successfully (+50 XP)'));
         setShowAddModal(false);
@@ -407,7 +406,7 @@ function EmployeeMyWorkContent() {
         fetchWorkQueue();
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক ত্রুটি');
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setSavingExtra(false);
     }
@@ -460,13 +459,13 @@ function EmployeeMyWorkContent() {
 
       const data = await res.json();
       if (!res.ok) {
-        setErrorMessage(data.error || 'দৈনিক এন্ট্রি সেভ ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('দৈনিক এন্ট্রি সেভ ব্যর্থ হয়েছে'));
       } else {
         triggerReward(50, L('🎉 দুর্দান্ত! আজকের দৈনিক কাজের হিসাব সফলভাবে সেভ হয়েছে (+৫০ XP)', 'Awesome! Today daily work logged successfully (+50 XP)'));
         fetchDailyEntry(selectedDate);
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।');
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।'));
     } finally {
       setSavingEntry(false);
     }
@@ -583,7 +582,7 @@ function EmployeeMyWorkContent() {
             <Coins className="w-4 h-4" />
             <span>{L('টাস্ক ২: দৈনিক বিক্রয় ও মেট্রিক্স এন্ট্রি', 'Task 2: Daily Sales & Log')}</span>
             <span className="ml-1 px-1.5 py-0.2 rounded-md bg-black/20 text-xs font-mono">
-              ৳ {formatTaka(Number(salesAmount))}
+              {L("৳")} {formatTaka(Number(salesAmount))}
             </span>
           </button>
 
@@ -893,7 +892,7 @@ function EmployeeMyWorkContent() {
                     {L('মোট বিক্রি (৳)', 'Total Sales (৳)')} *
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-slate-400 font-bold">৳</span>
+                    <span className="absolute left-3 top-2.5 text-slate-400 font-bold">{L("৳")}</span>
                     <input
                       type="number"
                       min="0"
@@ -909,7 +908,7 @@ function EmployeeMyWorkContent() {
                     {L('অবদানমূলক লাভ (৳)', 'Net Profit (৳)')} *
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-slate-400 font-bold">৳</span>
+                    <span className="absolute left-3 top-2.5 text-slate-400 font-bold">{L("৳")}</span>
                     <input
                       type="number"
                       min="0"
@@ -985,7 +984,7 @@ function EmployeeMyWorkContent() {
                       <span>{L('পণ্যভিত্তিক বিক্রির হিসাব', 'Product Sales Breakdown')}</span>
                     </h3>
                     <span className="text-xs font-bold text-emerald-600">
-                      {L('মোট পণ্য বিক্রি', 'Total')}: ৳ {formatTaka(totalProductAmount)}
+                      {L('মোট পণ্য বিক্রি', 'Total')}{L(": ৳")} {formatTaka(totalProductAmount)}
                     </span>
                   </div>
 
@@ -997,19 +996,19 @@ function EmployeeMyWorkContent() {
                       >
                         <div className="font-semibold text-sm truncate">{ps.product_name_bn}</div>
                         <div className="text-xs text-slate-500 mb-2">
-                          মূল্য: ৳{ps.selling_price} / {ps.unit}
+                          {L("মূল্য: ৳")}{ps.selling_price} / {ps.unit}
                         </div>
                         <div className="flex items-center gap-2">
                           <input
                             type="number"
                             min="0"
-                            placeholder="পরিমাণ"
+                            placeholder={L("পরিমাণ")}
                             value={ps.quantity || ''}
                             onChange={(e) => handleProductQuantityChange(ps.product_id, e.target.value)}
                             className="input input-sm w-full font-semibold"
                           />
                           <span className="text-xs font-mono shrink-0 font-bold text-slate-700 dark:text-slate-300">
-                            ৳{formatTaka(ps.amount)}
+                            {L("৳")}{formatTaka(ps.amount)}
                           </span>
                         </div>
                       </div>

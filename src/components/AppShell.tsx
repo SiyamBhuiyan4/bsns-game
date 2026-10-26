@@ -27,7 +27,7 @@ type Props = {
 export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeHref, roleLabel, groups, session, logoutRedirect, children }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const { t, lang } = useLanguage();
+  const { t, lang, L } = useLanguage();
 
   useEffect(() => setOpen(false), [pathname]);
 
@@ -41,7 +41,7 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
     .toUpperCase();
 
   const nav = (
-    <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label={lang === 'bn' ? 'মেনু' : 'Menu'}>
+    <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label={lang === 'bn' ? L('মেনু') : 'Menu'}>
       {groups.map((group) => (
         <div key={group.key} className="mb-5 last:mb-0">
           {group.labelBn && (
@@ -84,9 +84,9 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
         <span className="block text-[11px] font-medium uppercase tracking-wider text-slate-400">
           {lang === 'bn'
             ? roleLabel.toLowerCase().includes('marketer')
-              ? 'মার্কেটার'
+              ? L('মার্কেটার')
               : roleLabel.toLowerCase().includes('admin')
-              ? 'অ্যাডমিন'
+              ? L('অ্যাডমিন')
               : roleLabel
             : roleLabel}
         </span>
@@ -124,7 +124,7 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
           <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-white shadow-xl">
             <div className="flex items-center justify-between pr-3">
               {brand}
-              <button type="button" className="btn-icon" onClick={() => setOpen(false)} aria-label={lang === 'bn' ? 'মেনু বন্ধ করুন' : 'Close menu'}>
+              <button type="button" className="btn-icon" onClick={() => setOpen(false)} aria-label={lang === 'bn' ? L('মেনু বন্ধ করুন') : 'Close menu'}>
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -137,7 +137,7 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
       <div className="lg:pl-64">
         {/* Top bar */}
         <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6">
-          <button type="button" className="btn-icon lg:hidden" onClick={() => setOpen(true)} aria-label={lang === 'bn' ? 'মেনু খুলুন' : 'Open menu'}>
+          <button type="button" className="btn-icon lg:hidden" onClick={() => setOpen(true)} aria-label={lang === 'bn' ? L('মেনু খুলুন') : 'Open menu'}>
             <Menu className="h-5 w-5" />
           </button>
           <div className="min-w-0 flex-1 truncate text-sm font-medium text-slate-500">

@@ -41,16 +41,16 @@ interface LeaderboardItem {
 
 type PeriodType = 'thisMonth' | 'today' | 'yesterday' | 'last7days';
 
-const PERIOD_OPTIONS: { id: PeriodType; label: string; sub: string; icon: string }[] = [
-  { id: 'today', label: 'আজকের যুদ্ধ', sub: "Today's Clash", icon: '🔥' },
-  { id: 'yesterday', label: 'গতকাল', sub: 'Yesterday', icon: '🛡️' },
-  { id: 'last7days', label: 'গত ৭ দিন', sub: 'Last 7 Days', icon: '⚔️' },
-  { id: 'thisMonth', label: 'চলতি মৌসুম (মাস)', sub: 'Current Season', icon: '🏆' },
-];
+
 
 export default function EmployeeLeaderboardPage() {
-  const { lang } = useLanguage();
-  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
+  const { lang, L } = useLanguage();
+  const PERIOD_OPTIONS: { id: PeriodType; label: string; sub: string; icon: string }[] = [
+    { id: 'today', label: L('আজকের যুদ্ধ'), sub: "Today's Clash", icon: '🔥' },
+    { id: 'yesterday', label: L('গতকাল'), sub: 'Yesterday', icon: '🛡️' },
+    { id: 'last7days', label: L('গত ৭ দিন'), sub: 'Last 7 Days', icon: '⚔️' },
+    { id: 'thisMonth', label: L('চলতি মৌসুম (মাস)'), sub: 'Current Season', icon: '🏆' },
+  ];
   const [period, setPeriod] = useState<PeriodType>('today');
   const [loading, setLoading] = useState(true);
   const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
@@ -62,13 +62,13 @@ export default function EmployeeLeaderboardPage() {
       setErrorMsg('');
       const res = await fetch(`/api/employee/leaderboard?period=${selectedPeriod}`);
       if (!res.ok) {
-        throw new Error('লিডারবোর্ড তথ্য লোড করতে ব্যর্থ হয়েছে');
+        throw new Error(L('লিডারবোর্ড তথ্য লোড করতে ব্যর্থ হয়েছে'));
       }
       const data = await res.json();
       const list: LeaderboardItem[] = Array.isArray(data) ? data : data.leaderboard || [];
       setLeaderboard(list);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'ত্রুটি হয়েছে');
+      setErrorMsg(err instanceof Error ? err.message : L('ত্রুটি হয়েছে'));
     } finally {
       setLoading(false);
     }
@@ -81,11 +81,11 @@ export default function EmployeeLeaderboardPage() {
   const currentEmployee = leaderboard.find((item) => item.is_current_user);
 
   const SECTION_COLS: { key: keyof SectionScores; bn: string; en: string; pt: string }[] = [
-    { key: 'sales_profit', bn: 'বিক্রি ও লাভ', en: 'Sales & Profit', pt: '৩০' },
-    { key: 'content', bn: 'পোস্ট ও কনটেন্ট', en: 'Content Raids', pt: '২০' },
-    { key: 'new_buyers_b2b', bn: 'নতুন ক্রেতা/B2B', en: 'New Buyers/B2B', pt: '২০' },
-    { key: 'retention', bn: 'রিটেনশন', en: 'Retention Shield', pt: '১৫' },
-    { key: 'inbox_followup', bn: 'ফলোআপ স্ট্রাইক', en: 'Follow-up Blitz', pt: '১৫' },
+    { key: 'sales_profit', bn: L('বিক্রি ও লাভ'), en: 'Sales & Profit', pt: L('৩০') },
+    { key: 'content', bn: L('পোস্ট ও কনটেন্ট'), en: 'Content Raids', pt: L('২০') },
+    { key: 'new_buyers_b2b', bn: L('নতুন ক্রেতা/B2B'), en: 'New Buyers/B2B', pt: L('২০') },
+    { key: 'retention', bn: L('রিটেনশন'), en: 'Retention Shield', pt: L('১৫') },
+    { key: 'inbox_followup', bn: L('ফলোআপ স্ট্রাইক'), en: 'Follow-up Blitz', pt: L('১৫') },
   ];
 
   const first = leaderboard[0];
@@ -171,7 +171,7 @@ export default function EmployeeLeaderboardPage() {
                   <span className="font-extrabold text-amber-400 text-sm tabular-nums">
                     {toBengaliDigits(currentEmployee.total_score.toFixed(2))}
                   </span>{' '}
-                  <span className="text-slate-500">/ ১০০ পয়েন্ট</span>
+                  <span className="text-slate-500">{L("/ ১০০ পয়েন্ট")}</span>
                 </div>
               </div>
             </div>
@@ -180,9 +180,9 @@ export default function EmployeeLeaderboardPage() {
               <ArrowUp className="h-4 w-4 shrink-0 text-amber-400 animate-pulse" />
               <span>
                 {currentEmployee.gap_text ||
-                  `পরবর্তী স্থান দখলের ব্যবধান: ${toBengaliDigits(
+                  L(`পরবর্তী স্থান দখলের ব্যবধান: ${toBengaliDigits(
                     (currentEmployee.gap_to_next ?? 0).toFixed(2)
-                  )} পয়েন্ট`}
+                  )} পয়েন্ট`)}
               </span>
             </div>
           </div>
@@ -217,7 +217,7 @@ export default function EmployeeLeaderboardPage() {
                     {toBengaliDigits(second.total_score.toFixed(2))} <span className="text-[10px] text-slate-400">XP</span>
                   </div>
                   <div className="mt-3 flex w-full h-24 sm:h-28 flex-col items-center justify-center rounded-t-2xl border-t-4 border-slate-400 bg-gradient-to-b from-slate-200/50 to-slate-300/30 dark:from-slate-800 dark:to-slate-900 shadow-inner">
-                    <span className="text-lg font-black text-slate-600 dark:text-slate-300">#২</span>
+                    <span className="text-lg font-black text-slate-600 dark:text-slate-300">{L("#২")}</span>
                     <span className="text-[10px] font-bold uppercase text-slate-500">Challenger</span>
                   </div>
                 </>
@@ -243,7 +243,7 @@ export default function EmployeeLeaderboardPage() {
                     {toBengaliDigits(first.total_score.toFixed(2))} <span className="text-xs text-slate-400">XP</span>
                   </div>
                   <div className="mt-3 flex w-full h-32 sm:h-36 flex-col items-center justify-center rounded-t-2xl border-t-4 border-amber-400 bg-gradient-to-b from-amber-400/20 via-amber-300/10 to-transparent dark:from-amber-950/40 dark:to-slate-900 shadow-lg">
-                    <span className="text-2xl font-black text-amber-600 dark:text-amber-400">#১</span>
+                    <span className="text-2xl font-black text-amber-600 dark:text-amber-400">{L("#১")}</span>
                     <span className="text-xs font-extrabold uppercase text-amber-700 dark:text-amber-300">Champion</span>
                   </div>
                 </>
@@ -268,7 +268,7 @@ export default function EmployeeLeaderboardPage() {
                     {toBengaliDigits(third.total_score.toFixed(2))} <span className="text-[10px] text-slate-400">XP</span>
                   </div>
                   <div className="mt-3 flex w-full h-20 sm:h-22 flex-col items-center justify-center rounded-t-2xl border-t-4 border-amber-700 bg-gradient-to-b from-amber-700/20 to-amber-900/10 dark:from-slate-800 dark:to-slate-900 shadow-inner">
-                    <span className="text-base font-black text-amber-700 dark:text-amber-500">#৩</span>
+                    <span className="text-base font-black text-amber-700 dark:text-amber-500">{L("#৩")}</span>
                     <span className="text-[10px] font-bold uppercase text-amber-700 dark:text-amber-500">Gladiator</span>
                   </div>
                 </>
@@ -317,8 +317,8 @@ export default function EmployeeLeaderboardPage() {
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
                 <tr>
-                  <th className="px-4 py-3.5 text-center w-16">র‍্যাঙ্ক</th>
-                  <th className="px-4 py-3.5">মার্কেটার যোদ্ধা</th>
+                  <th className="px-4 py-3.5 text-center w-16">{L("র‍্যাঙ্ক")}</th>
+                  <th className="px-4 py-3.5">{L("মার্কেটার যোদ্ধা")}</th>
                   {SECTION_COLS.map((c) => (
                     <th key={c.key} className="px-3 py-3.5 text-center hidden md:table-cell">
                       {c.bn}
@@ -326,8 +326,8 @@ export default function EmployeeLeaderboardPage() {
                     </th>
                   ))}
                   <th className="px-4 py-3.5 text-right font-black text-amber-600 dark:text-amber-400">
-                    মোট স্কোর
-                    <span className="block text-[10px] font-normal lowercase text-slate-400">(/১০০ pt)</span>
+                    {L("মোট স্কোর")}
+                    <span className="block text-[10px] font-normal lowercase text-slate-400">{L("(/১০০ pt)")}</span>
                   </th>
                 </tr>
               </thead>

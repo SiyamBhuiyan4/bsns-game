@@ -25,6 +25,7 @@ import {
 } from '@/lib/dashboard';
 import { toBengaliDigits, formatTaka } from '@/lib/date';
 import { BarChart3 } from 'lucide-react';
+import { useLanguage } from '@/components/LanguageContext';
 
 interface Props {
   sectionTargets: SectionTargetChartItem[];
@@ -61,6 +62,7 @@ export default function DashboardCharts({
   campaignBudgets,
   leadSources,
 }: Props) {
+  const { L } = useLanguage();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -131,7 +133,7 @@ export default function DashboardCharts({
         <div className="card flex min-w-0 flex-col">
           <div className="card-header">
             <div className="min-w-0">
-              <h3 className="card-title">সেকশন অনুযায়ী লক্ষ্য ও অর্জন</h3>
+              <h3 className="card-title">{L("সেকশন অনুযায়ী লক্ষ্য ও অর্জন")}</h3>
               <p className="card-subtitle">Target vs achieved, by section</p>
             </div>
           </div>
@@ -173,7 +175,7 @@ export default function DashboardCharts({
                             <div className="flex items-center justify-between gap-4 text-slate-600">
                               <span className="flex items-center gap-1.5">
                                 <span className="h-2.5 w-2.5 rounded-full bg-slate-300"></span>
-                                লক্ষ্য:
+                                {L("লক্ষ্য:")}
                               </span>
                               <span className="font-semibold text-slate-800">
                                 {item.unit === '৳' ? formatTaka(item.target) : `${item.target.toLocaleString()} ${item.unit}`}
@@ -182,14 +184,14 @@ export default function DashboardCharts({
                             <div className="flex items-center justify-between gap-4 text-slate-600">
                               <span className="flex items-center gap-1.5">
                                 <span className="h-2.5 w-2.5 rounded-full bg-brand-600"></span>
-                                অর্জন:
+                                {L("অর্জন:")}
                               </span>
                               <span className="font-semibold text-brand-700">
                                 {item.unit === '৳' ? formatTaka(item.achieved) : `${item.achieved.toLocaleString()} ${item.unit}`}
                               </span>
                             </div>
                             <div className="pt-1 mt-1 border-t border-slate-100 flex items-center justify-between font-bold">
-                              <span>অর্জন হার:</span>
+                              <span>{L("অর্জন হার:")}</span>
                               <span className={item.percent >= 100 ? 'text-brand-700' : 'text-slate-700'}>
                                 {toBengaliDigits(item.percent)}%
                               </span>
@@ -207,14 +209,14 @@ export default function DashboardCharts({
                   />
                   <Bar
                     dataKey="target"
-                    name="লক্ষ্য"
+                    name={L("লক্ষ্য")}
                     fill={TARGET}
                     radius={[4, 4, 0, 0]}
                     maxBarSize={32}
                   />
                   <Bar
                     dataKey="achieved"
-                    name="অর্জন"
+                    name={L("অর্জন")}
                     fill={PALETTE[0]}
                     radius={[4, 4, 0, 0]}
                     maxBarSize={32}
@@ -231,7 +233,7 @@ export default function DashboardCharts({
         <div className="card flex min-w-0 flex-col">
           <div className="card-header">
             <div className="min-w-0">
-              <h3 className="card-title">কর্মীদের স্কোর ভাগ</h3>
+              <h3 className="card-title">{L("কর্মীদের স্কোর ভাগ")}</h3>
               <p className="card-subtitle">Score share by employee</p>
             </div>
           </div>
@@ -250,14 +252,14 @@ export default function DashboardCharts({
                         <div className="rounded-lg border border-slate-200 bg-white p-3 text-xs shadow-md">
                           <p className="font-bold text-slate-900">{item.name}</p>
                           <p className="text-slate-600 mt-1">
-                            মোট স্কোর: <strong className="text-slate-800">{toBengaliDigits(item.score)} পয়েন্ট</strong>
+                            {L("মোট স্কোর:")} <strong className="text-slate-800">{toBengaliDigits(item.score)} {L("পয়েন্ট")}</strong>
                           </p>
                           <p className="text-slate-600">
-                            টিমে অবদান: <strong className="text-brand-700">{toBengaliDigits(item.percent)}%</strong>
+                            {L("টিমে অবদান:")} <strong className="text-brand-700">{toBengaliDigits(item.percent)}%</strong>
                           </p>
                           {item.sales > 0 && (
                             <p className="text-slate-500 mt-1">
-                              বিক্রয়: {formatTaka(item.sales)}
+                              {L("বিক্রয়:")} {formatTaka(item.sales)}
                             </p>
                           )}
                         </div>
@@ -273,7 +275,7 @@ export default function DashboardCharts({
                       const item = teamScoreShare.find((t) => t.name === value);
                       return (
                         <span className="text-[11px] text-slate-700 ">
-                          {value} ({item?.percent ? toBengaliDigits(item.percent) : '০'}%)
+                          {value} ({item?.percent ? toBengaliDigits(item.percent) : L('০')}%)
                         </span>
                       );
                     }}
@@ -312,7 +314,7 @@ export default function DashboardCharts({
       <div className="card min-w-0">
         <div className="card-header">
             <div className="min-w-0">
-              <h3 className="card-title">কর্মীদের দৈনিক পারফরম্যান্স (৩০ দিন)</h3>
+              <h3 className="card-title">{L("কর্মীদের দৈনিক পারফরম্যান্স (৩০ দিন)")}</h3>
               <p className="card-subtitle">Daily score per employee, overall total</p>
             </div>
           </div>
@@ -347,7 +349,7 @@ export default function DashboardCharts({
                     return (
                       <div className="rounded-lg border border-slate-200 bg-white p-3 text-xs shadow-md max-w-xs">
                         <p className="font-bold text-slate-900 mb-1.5 border-b border-slate-100 pb-1">
-                          তারিখ: {label}
+                          {L("তারিখ:")} {label}
                         </p>
                         <div className="space-y-1">
                           {payload.map((entry, idx) => (
@@ -383,7 +385,7 @@ export default function DashboardCharts({
                 <Line
                   type="monotone"
                   dataKey="total"
-                  name="টিম মোট"
+                  name={L("টিম মোট")}
                   stroke="#334155"
                   strokeWidth={2}
                   strokeDasharray="4 4"
@@ -416,7 +418,7 @@ export default function DashboardCharts({
         <div className="card flex min-w-0 flex-col">
           <div className="card-header">
             <div className="min-w-0">
-              <h3 className="card-title">ক্যাম্পেইন বাজেট বনাম খরচ</h3>
+              <h3 className="card-title">{L("ক্যাম্পেইন বাজেট বনাম খরচ")}</h3>
               <p className="card-subtitle">Budget vs ad spend, per campaign</p>
             </div>
           </div>
@@ -461,7 +463,7 @@ export default function DashboardCharts({
                             <div className="flex items-center justify-between gap-4 text-slate-600">
                               <span className="flex items-center gap-1.5">
                                 <span className="h-2.5 w-2.5 rounded-full bg-sky-500"></span>
-                                বাজেট:
+                                {L("বাজেট:")}
                               </span>
                               <span className="font-semibold text-slate-800">
                                 {formatTaka(item.budget)}
@@ -470,14 +472,14 @@ export default function DashboardCharts({
                             <div className="flex items-center justify-between gap-4 text-slate-600">
                               <span className="flex items-center gap-1.5">
                                 <span className="h-2.5 w-2.5 rounded-full bg-amber-500"></span>
-                                খরচ:
+                                {L("খরচ:")}
                               </span>
                               <span className="font-semibold text-slate-800">
                                 {formatTaka(item.spend)}
                               </span>
                             </div>
                             <div className="pt-1 mt-1 border-t border-slate-100 flex items-center justify-between font-bold">
-                              <span>ব্যবহার হার:</span>
+                              <span>{L("ব্যবহার হার:")}</span>
                               <span className={item.usagePercent > 100 ? 'text-rose-600' : 'text-brand-700'}>
                                 {toBengaliDigits(item.usagePercent)}%
                               </span>
@@ -495,14 +497,14 @@ export default function DashboardCharts({
                   />
                   <Bar
                     dataKey="budget"
-                    name="বাজেট"
+                    name={L("বাজেট")}
                     fill={PALETTE[1]}
                     radius={[4, 4, 0, 0]}
                     maxBarSize={32}
                   />
                   <Bar
                     dataKey="spend"
-                    name="খরচ"
+                    name={L("খরচ")}
                     fill={PALETTE[2]}
                     radius={[4, 4, 0, 0]}
                     maxBarSize={32}
@@ -519,7 +521,7 @@ export default function DashboardCharts({
         <div className="card flex min-w-0 flex-col">
           <div className="card-header">
             <div className="min-w-0">
-              <h3 className="card-title">লিড উৎস</h3>
+              <h3 className="card-title">{L("লিড উৎস")}</h3>
               <p className="card-subtitle">Where leads came from</p>
             </div>
           </div>
@@ -538,10 +540,10 @@ export default function DashboardCharts({
                         <div className="rounded-lg border border-slate-200 bg-white p-3 text-xs shadow-md">
                           <p className="font-bold text-slate-900">{item.name}</p>
                           <p className="text-slate-600 mt-1">
-                            মোট লিড: <strong className="text-slate-800">{toBengaliDigits(item.count)} জন</strong>
+                            {L("মোট লিড:")} <strong className="text-slate-800">{toBengaliDigits(item.count)} {L("জন")}</strong>
                           </p>
                           <p className="text-slate-600">
-                            শতকরা হার: <strong className="text-slate-800">{toBengaliDigits(item.percent)}%</strong>
+                            {L("শতকরা হার:")} <strong className="text-slate-800">{toBengaliDigits(item.percent)}%</strong>
                           </p>
                         </div>
                       );
@@ -556,7 +558,7 @@ export default function DashboardCharts({
                       const item = leadSources.find((l) => l.name === value);
                       return (
                         <span className="text-[11px] text-slate-700 ">
-                          {value} ({item?.percent ? toBengaliDigits(item.percent) : '০'}%)
+                          {value} ({item?.percent ? toBengaliDigits(item.percent) : L('০')}%)
                         </span>
                       );
                     }}

@@ -37,7 +37,7 @@ interface Section {
 }
 
 export default function SectionsPage() {
-  const { t } = useLanguage();
+  const { t, L } = useLanguage();
   const [sections, setSections] = useState<Section[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,10 +89,10 @@ export default function SectionsPage() {
       if (res.ok) {
         setSections(data.sections || []);
       } else {
-        setErrorMessage(data.error || 'সেকশন তালিকা লোড করা যায়নি');
+        setErrorMessage(data.error || L('সেকশন তালিকা লোড করা যায়নি'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।');
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।'));
     } finally {
       setLoading(false);
     }
@@ -105,7 +105,7 @@ export default function SectionsPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (createName.trim().length < 2) {
-      setErrorMessage('সেকশনের নাম কমপক্ষে ২ অক্ষরের হতে হবে (Name must be at least 2 chars)');
+      setErrorMessage(L('সেকশনের নাম কমপক্ষে ২ অক্ষরের হতে হবে (Name must be at least 2 chars)'));
       return;
     }
 
@@ -123,17 +123,17 @@ export default function SectionsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage('নতুন সেকশন সফলভাবে তৈরি হয়েছে (Section created successfully)');
+        setSuccessMessage(L('নতুন সেকশন সফলভাবে তৈরি হয়েছে (Section created successfully)'));
         setIsCreateOpen(false);
         setCreateName('');
         setCreateDesc('');
         setCreateActive(true);
         fetchSections();
       } else {
-        setErrorMessage(data.error || 'সেকশন তৈরি ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('সেকশন তৈরি ব্যর্থ হয়েছে'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক সমস্যা');
+      setErrorMessage(L('নেটওয়ার্ক সমস্যা'));
     } finally {
       setCreateSubmitting(false);
     }
@@ -143,7 +143,7 @@ export default function SectionsPage() {
     e.preventDefault();
     if (!editingSection) return;
     if (editName.trim().length < 2) {
-      setErrorMessage('সেকশনের নাম কমপক্ষে ২ অক্ষরের হতে হবে (Name must be at least 2 chars)');
+      setErrorMessage(L('সেকশনের নাম কমপক্ষে ২ অক্ষরের হতে হবে (Name must be at least 2 chars)'));
       return;
     }
 
@@ -161,14 +161,14 @@ export default function SectionsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage('সেকশন তথ্য সফলভাবে আপডেট হয়েছে (Section updated)');
+        setSuccessMessage(L('সেকশন তথ্য সফলভাবে আপডেট হয়েছে (Section updated)'));
         setEditingSection(null);
         fetchSections();
       } else {
-        setErrorMessage(data.error || 'আপডেট ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('আপডেট ব্যর্থ হয়েছে'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক সমস্যা');
+      setErrorMessage(L('নেটওয়ার্ক সমস্যা'));
     } finally {
       setEditSubmitting(false);
     }
@@ -185,13 +185,13 @@ export default function SectionsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage(`সেকশন "${sec.name}" ${!sec.is_active ? 'সক্রিয়' : 'নিষ্ক্রিয়'} করা হয়েছে`);
+        setSuccessMessage(L(`সেকশন "${sec.name}" ${!sec.is_active ? 'সক্রিয়' : 'নিষ্ক্রিয়'} করা হয়েছে`));
         fetchSections();
       } else {
-        setErrorMessage(data.error || 'স্ট্যাটাস আপডেট ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('স্ট্যাটাস আপডেট ব্যর্থ হয়েছে'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক সমস্যা');
+      setErrorMessage(L('নেটওয়ার্ক সমস্যা'));
     } finally {
       setTogglingId(null);
     }
@@ -212,14 +212,14 @@ export default function SectionsPage() {
         });
         const data = await res.json();
         if (res.ok) {
-          setSuccessMessage('সেকশনটি সফলভাবে নিষ্ক্রিয় করা হয়েছে (Deactivated)');
+          setSuccessMessage(L('সেকশনটি সফলভাবে নিষ্ক্রিয় করা হয়েছে (Deactivated)'));
           setDeleteSection(null);
           fetchSections();
         } else {
-          setDeleteError(data.error || 'নিষ্ক্রিয়করণ ব্যর্থ হয়েছে');
+          setDeleteError(data.error || L('নিষ্ক্রিয়করণ ব্যর্থ হয়েছে'));
         }
       } catch {
-        setDeleteError('নেটওয়ার্ক ত্রুটি');
+        setDeleteError(L('নেটওয়ার্ক ত্রুটি'));
       } finally {
         setDeleteSubmitting(false);
       }
@@ -233,14 +233,14 @@ export default function SectionsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage('সেকশনটি সফলভাবে মুছে ফেলা হয়েছে (Deleted)');
+        setSuccessMessage(L('সেকশনটি সফলভাবে মুছে ফেলা হয়েছে (Deleted)'));
         setDeleteSection(null);
         fetchSections();
       } else {
-        setDeleteError(data.error || 'ডিলিট ব্যর্থ হয়েছে');
+        setDeleteError(data.error || L('ডিলিট ব্যর্থ হয়েছে'));
       }
     } catch {
-      setDeleteError('নেটওয়ার্ক ত্রুটি');
+      setDeleteError(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setDeleteSubmitting(false);
     }
@@ -258,7 +258,7 @@ export default function SectionsPage() {
         setAssignedEmpIds(data.assignedEmployeeIds || []);
       }
     } catch {
-      setErrorMessage('কর্মী তালিকা লোড করা যায়নি');
+      setErrorMessage(L('কর্মী তালিকা লোড করা যায়নি'));
     } finally {
       setAssignLoading(false);
     }
@@ -276,14 +276,14 @@ export default function SectionsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage('কর্মী সফলভাবে এসাইন করা হয়েছে (Employees assigned successfully)');
+        setSuccessMessage(L('কর্মী সফলভাবে এসাইন করা হয়েছে (Employees assigned successfully)'));
         setAssigningSection(null);
         fetchSections();
       } else {
-        setErrorMessage(data.error || 'অ্যাসাইনমেন্ট ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('অ্যাসাইনমেন্ট ব্যর্থ হয়েছে'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক ত্রুটি');
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setAssignSubmitting(false);
     }
@@ -747,11 +747,11 @@ export default function SectionsPage() {
               {assignLoading ? (
                 <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-500">
                   <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
-                  <span>লোড হচ্ছে...</span>
+                  <span>{L("লোড হচ্ছে...")}</span>
                 </div>
               ) : assignEmployeesList.length === 0 ? (
                 <div className="rounded-lg bg-slate-50 p-4 text-center text-xs text-slate-500">
-                  কোনো সক্রিয় কর্মী পাওয়া যায়নি। প্রথমে কর্মী যোগ করুন।
+                  {L("কোনো সক্রিয় কর্মী পাওয়া যায়নি। প্রথমে কর্মী যোগ করুন।")}
                 </div>
               ) : (
                 <div className="max-h-60 space-y-2 overflow-y-auto divide-y divide-slate-100 rounded-lg border border-slate-200 p-2">

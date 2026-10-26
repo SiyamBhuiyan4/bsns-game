@@ -58,8 +58,7 @@ interface PerformanceResponse {
 const PIE_COLORS = ['#059669', '#0284c7', '#d97706', '#8b5cf6', '#ec4899'];
 
 export default function EmployeePerformancePage() {
-  const { lang } = useLanguage();
-  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
+  const { lang, L } = useLanguage();
   const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<PerformanceResponse | null>(null);
@@ -80,12 +79,12 @@ export default function EmployeePerformancePage() {
       setErrorMsg('');
       const res = await fetch(`/api/employee/performance?period=${p}`);
       if (!res.ok) {
-        throw new Error('পারফরম্যান্স ডাটা লোড করতে ব্যর্থ হয়েছে');
+        throw new Error(L('পারফরম্যান্স ডাটা লোড করতে ব্যর্থ হয়েছে'));
       }
       const json = await res.json();
       setData(json);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'ত্রুটি হয়েছে');
+      setErrorMsg(err instanceof Error ? err.message : L('ত্রুটি হয়েছে'));
     } finally {
       setLoading(false);
     }
@@ -179,7 +178,7 @@ export default function EmployeePerformancePage() {
             </div>
             <div className="mt-3 flex items-baseline gap-1.5">
               <span className="text-4xl font-semibold tracking-tight text-slate-900 tabular-nums">{totalScore}</span>
-              <span className="text-sm text-slate-400">/ ১০০</span>
+              <span className="text-sm text-slate-400">{L("/ ১০০")}</span>
             </div>
           </div>
 
@@ -223,7 +222,7 @@ export default function EmployeePerformancePage() {
                   )}
                   <div className="mt-2 flex items-baseline justify-between">
                     <span className="text-2xl font-semibold text-slate-900 tabular-nums">{sec.scaledScore}</span>
-                    <span className="text-xs text-slate-400">/ {sec.weight} পয়েন্ট</span>
+                    <span className="text-xs text-slate-400">/ {sec.weight} {L("পয়েন্ট")}</span>
                   </div>
                 </div>
                 <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
@@ -283,7 +282,7 @@ export default function EmployeePerformancePage() {
                     <Line
                       type="monotone"
                       dataKey="score"
-                      name="দৈনিক স্কোর"
+                      name={L("দৈনিক স্কোর")}
                       stroke="#059669"
                       strokeWidth={2}
                       dot={{ r: 2.5, fill: '#059669' }}
@@ -311,8 +310,8 @@ export default function EmployeePerformancePage() {
                   <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#64748b' }} interval={0} />
                   <YAxis domain={[0, 'auto']} tick={{ fontSize: 10, fill: '#64748b' }} width={32} />
                   <Tooltip contentStyle={tooltipStyle} />
-                  <Bar dataKey="score" name="অর্জিত স্কোর" fill="#059669" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="weight" name="সর্বোচ্চ ওয়েট" fill="#e2e8f0" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="score" name={L("অর্জিত স্কোর")} fill="#059669" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="weight" name={L("সর্বোচ্চ ওয়েট")} fill="#e2e8f0" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -370,7 +369,7 @@ export default function EmployeePerformancePage() {
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-semibold text-slate-900 tabular-nums">{m.isNA ? '-' : m.scaledScore}</div>
-                      <div className="text-[11px] text-slate-400">ওয়েট {m.weight}%</div>
+                      <div className="text-[11px] text-slate-400">{L("ওয়েট")} {m.weight}%</div>
                     </div>
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-3 text-xs tabular-nums">
@@ -406,11 +405,11 @@ export default function EmployeePerformancePage() {
               <thead>
                 <tr>
                   <th>{L('মেট্রিক', 'Metric')}</th>
-                  <th>টার্গেট</th>
-                  <th>অর্জিত</th>
+                  <th>{L("টার্গেট")}</th>
+                  <th>{L("অর্জিত")}</th>
                   <th>{L('হার', 'Rate')}</th>
-                  <th>ওয়েট</th>
-                  <th className="text-right">স্কোর</th>
+                  <th>{L("ওয়েট")}</th>
+                  <th className="text-right">{L("স্কোর")}</th>
                 </tr>
               </thead>
               <tbody className="tabular-nums">
@@ -424,7 +423,7 @@ export default function EmployeePerformancePage() {
                       </td>
                       <td>
                         {m.isNA
-                          ? 'N/A (সেট নেই)'
+                          ? L('N/A (সেট নেই)')
                           : isCurrency
                           ? formatTaka(m.target)
                           : Number(m.target).toLocaleString()}

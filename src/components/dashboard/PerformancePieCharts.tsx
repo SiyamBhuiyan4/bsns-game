@@ -57,8 +57,7 @@ export default function PerformancePieCharts({
   teamScoreShare = [],
   sectionsOverview: _sectionsOverview = [],
 }: PerformancePieChartsProps) {
-  const { lang, formatMoney, formatNum } = useLanguage();
-  const L = (bn: string, en: string) => (lang === 'bn' ? bn : en);
+  const { lang, formatMoney, formatNum, L } = useLanguage();
 
   // States
   const [viewCategory, setViewCategory] = useState<ViewCategory>('OVERALL');
@@ -237,35 +236,35 @@ export default function PerformancePieCharts({
     { titleBn: string; titleEn: string; icon: any; total: number; unit: string }
   > = {
     POSTS: {
-      titleBn: 'গ্রুপ পোস্ট পারফরম্যান্স',
+      titleBn: L('গ্রুপ পোস্ট পারফরম্যান্স'),
       titleEn: 'Group Posts Performance',
       icon: Share2,
       total: totals.posts,
       unit: L('টি', 'posts'),
     },
     ORDERS: {
-      titleBn: 'নিশ্চিত অর্ডার পারফরম্যান্স',
+      titleBn: L('নিশ্চিত অর্ডার পারফরম্যান্স'),
       titleEn: 'Confirmed Orders Performance',
       icon: ShoppingCart,
       total: totals.orders,
       unit: L('টি', 'orders'),
     },
     MESSAGES: {
-      titleBn: 'মেসেজ রিপ্লাই পারফরম্যান্স',
+      titleBn: L('মেসেজ রিপ্লাই পারফরম্যান্স'),
       titleEn: 'Messages Replied Performance',
       icon: MessageSquare,
       total: totals.messages,
       unit: L('টি', 'replies'),
     },
     LEADS: {
-      titleBn: 'লিড সংগ্রহ পারফরম্যান্স',
+      titleBn: L('লিড সংগ্রহ পারফরম্যান্স'),
       titleEn: 'Leads Collected Performance',
       icon: UserPlus,
       total: totals.leads,
       unit: L('জন', 'leads'),
     },
     SALES: {
-      titleBn: 'মোট বিক্রয় পারফরম্যান্স',
+      titleBn: L('মোট বিক্রয় পারফরম্যান্স'),
       titleEn: 'Sales Performance',
       icon: DollarSign,
       total: totals.sales,

@@ -57,7 +57,7 @@ export default function SectionCsvUploadPage({
 }) {
   const { id: sectionId } = use(params);
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, L } = useLanguage();
 
   const [sectionName, setSectionName] = useState<string>('');
   const [file, setFile] = useState<File | null>(null);
@@ -150,10 +150,10 @@ export default function SectionCsvUploadPage({
       if (res.ok) {
         setPreviewData(data);
       } else {
-        setErrorMessage(data.error || 'ফাইল প্রিভিউ প্রক্রিয়া ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('ফাইল প্রিভিউ প্রক্রিয়া ব্যর্থ হয়েছে'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।');
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।'));
     } finally {
       setParsing(false);
     }
@@ -186,10 +186,10 @@ export default function SectionCsvUploadPage({
           batchId: data.batchId,
         });
       } else {
-        setErrorMessage(data.error || 'সংরক্ষণ ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('সংরক্ষণ ব্যর্থ হয়েছে'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক সমস্যা');
+      setErrorMessage(L('নেটওয়ার্ক সমস্যা'));
     } finally {
       setConfirming(false);
     }

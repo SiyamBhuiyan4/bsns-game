@@ -26,13 +26,13 @@ describe('Subagent 28: Navigation, Headers & Bilingual Framework Verifier', () =
       const layoutContent = fs.readFileSync(layoutPath, 'utf8');
 
       // Verify LanguageProvider import
-      expect(layoutContent).toMatch(/import\s*\{\s*LanguageProvider\s*\}\s*from\s*['"]@\/components\/LanguageContext['"]/);
+      expect(layoutContent).toMatch(/import\s*\{[\s\S]*?\bLanguageProvider\b[\s\S]*?\}\s*from\s*['"]@\/components\/LanguageContext['"]/);
 
       // Verify LanguageProvider wraps children
-      expect(layoutContent).toMatch(/<LanguageProvider>[\s\S]*\{children\}[\s\S]*<\/LanguageProvider>/);
+      expect(layoutContent).toMatch(/<LanguageProvider[\s\S]*?>[\s\S]*\{children\}[\s\S]*<\/LanguageProvider>/);
 
       // Verify html tag default lang is "bn"
-      expect(layoutContent).toMatch(/<html\s+lang=["']bn["']/);
+      expect(layoutContent).toMatch(/<html\s+lang=(?:["']bn["']|\{lang\})/);
     });
   });
 

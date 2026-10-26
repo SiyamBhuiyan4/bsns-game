@@ -19,6 +19,7 @@ import {
 import PageHeader from '@/components/ui/PageHeader';
 import { formatTaka } from '@/lib/date';
 import { WeeklyAutoData } from '@/lib/reports';
+import { useLanguage } from '@/components/LanguageContext';
 
 interface PastReportItem {
   id: string;
@@ -46,6 +47,7 @@ interface WeeklyReportData {
 }
 
 export default function AdminWeeklyReportPage() {
+  const { L } = useLanguage();
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().slice(0, 10)
   );
@@ -65,7 +67,7 @@ export default function AdminWeeklyReportPage() {
 
       const res = await fetch(`/api/reports/weekly?date=${dateStr}`);
       if (!res.ok) {
-        throw new Error('সাপ্তাহিক রিপোর্ট লোড করা যায়নি');
+        throw new Error(L('সাপ্তাহিক রিপোর্ট লোড করা যায়নি'));
       }
 
       const data = await res.json();
@@ -84,7 +86,7 @@ export default function AdminWeeklyReportPage() {
         setPastReports(histData.reports || []);
       }
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'ত্রুটি হয়েছে');
+      setErrorMsg(err instanceof Error ? err.message : L('ত্রুটি হয়েছে'));
     } finally {
       setLoading(false);
     }
@@ -102,7 +104,7 @@ export default function AdminWeeklyReportPage() {
     if (!report) return;
 
     if (publish) {
-      if (!confirm('আপনি কি নিশ্চিত যে এই রিপোর্টটি প্রকাশ (Publish) করবেন? প্রকাশের পর এটি দলীয় আর্কাইভে সংরক্ষিত হবে।')) {
+      if (!confirm(L('আপনি কি নিশ্চিত যে এই রিপোর্টটি প্রকাশ (Publish) করবেন? প্রকাশের পর এটি দলীয় আর্কাইভে সংরক্ষিত হবে।'))) {
         return;
       }
     }
@@ -130,13 +132,13 @@ export default function AdminWeeklyReportPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'সংরক্ষণ ব্যর্থ হয়েছে');
+        throw new Error(data.error || L('সংরক্ষণ ব্যর্থ হয়েছে'));
       }
 
-      setSuccessMsg(data.message || 'সফলভাবে সংরক্ষিত হয়েছে!');
+      setSuccessMsg(data.message || L('সফলভাবে সংরক্ষিত হয়েছে!'));
       fetchReport(selectedDate);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'ত্রুটি হয়েছে');
+      setErrorMsg(err instanceof Error ? err.message : L('ত্রুটি হয়েছে'));
     } finally {
       setSaving(false);
     }
@@ -146,8 +148,8 @@ export default function AdminWeeklyReportPage() {
   const isPublished = report?.status === 'PUBLISHED';
 
   const publishNote = isPublished
-    ? 'প্রকাশিত রিপোর্ট আর খসড়ায় ফেরানো যায় না।'
-    : 'প্রকাশ চূড়ান্ত: এরপর আর খসড়ায় ফেরানো যাবে না, রিপোর্টটি আর্কাইভে যাবে।';
+    ? L('প্রকাশিত রিপোর্ট আর খসড়ায় ফেরানো যায় না।')
+    : L('প্রকাশ চূড়ান্ত: এরপর আর খসড়ায় ফেরানো যাবে না, রিপোর্টটি আর্কাইভে যাবে।');
 
   return (
     <div className="space-y-6">
@@ -155,25 +157,25 @@ export default function AdminWeeklyReportPage() {
         icon={<CalendarRange className="h-5 w-5" />}
         title={
           <span className="flex flex-wrap items-center gap-2">
-            সাপ্তাহিক রিপোর্ট
+            {L("সাপ্তাহিক রিপোর্ট")}
             {report && (
               <span className={`badge ${isPublished ? 'badge-green' : 'badge-amber'}`}>
                 {isPublished ? (
                   <>
                     <Lock className="h-3 w-3" />
-                    প্রকাশিত
+                    {L("প্রকাশিত")}
                   </>
                 ) : (
-                  'খসড়া'
+                  L('খসড়া')
                 )}
               </span>
             )}
           </span>
         }
-        subtitle="স্বয়ংক্রিয় বিশ্লেষণ ও ৫টি কৌশলগত প্রশ্ন"
+        subtitle={L("স্বয়ংক্রিয় বিশ্লেষণ ও ৫টি কৌশলগত প্রশ্ন")}
         actions={
           <>
-            <label className="sr-only" htmlFor="weekly-date">তারিখ</label>
+            <label className="sr-only" htmlFor="weekly-date">{L("তারিখ")}</label>
             <div className="relative">
               <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
@@ -222,27 +224,27 @@ export default function AdminWeeklyReportPage() {
       )}
 
       {loading || !report || !autoData ? (
-        <div className="card p-12 text-center text-sm text-slate-500">লোড হচ্ছে...</div>
+        <div className="card p-12 text-center text-sm text-slate-500">{L("লোড হচ্ছে...")}</div>
       ) : (
         <div className="space-y-6">
           <div className="card">
             <div className="card-header">
               <div>
-                <h2 className="card-title">সপ্তাহের সারাংশ</h2>
+                <h2 className="card-title">{L("সপ্তাহের সারাংশ")}</h2>
                 <p className="card-subtitle">
-                  {report.week_start.slice(0, 10)} – {report.week_end.slice(0, 10)} (রবি–শনি)
+                  {report.week_start.slice(0, 10)} – {report.week_end.slice(0, 10)} {L("(রবি–শনি)")}
                 </p>
               </div>
-              <span className="text-xs text-slate-500">প্রস্তুতকারক: {report.creator?.name}</span>
+              <span className="text-xs text-slate-500">{L("প্রস্তুতকারক:")} {report.creator?.name}</span>
             </div>
             <div className="card-body grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
               {[
-                { label: 'মোট বিক্রয়', value: formatTaka(autoData.summary.total_sales) },
-                { label: 'মোট মুনাফা', value: formatTaka(autoData.summary.total_profit) },
-                { label: 'গ্রুপ পোস্ট', value: `${autoData.summary.total_posts} টি` },
-                { label: 'নতুন ক্রেতা', value: `${autoData.summary.total_new_clients} জন` },
-                { label: 'B2B অর্ডার', value: `${autoData.summary.total_b2b_orders} টি` },
-                { label: 'গড় স্কোর', value: `${autoData.summary.team_avg_score}%` },
+                { label: L('মোট বিক্রয়'), value: formatTaka(autoData.summary.total_sales) },
+                { label: L('মোট মুনাফা'), value: formatTaka(autoData.summary.total_profit) },
+                { label: L('গ্রুপ পোস্ট'), value: `${autoData.summary.total_posts} টি` },
+                { label: L('নতুন ক্রেতা'), value: `${autoData.summary.total_new_clients} জন` },
+                { label: L('B2B অর্ডার'), value: `${autoData.summary.total_b2b_orders} টি` },
+                { label: L('গড় স্কোর'), value: `${autoData.summary.team_avg_score}%` },
               ].map((m) => (
                 <div key={m.label} className="min-w-0">
                   <span className="block text-xs text-slate-500">{m.label}</span>
@@ -259,11 +261,11 @@ export default function AdminWeeklyReportPage() {
               <div className="card-header">
                 <h3 className="card-title flex items-center gap-2">
                   <Package className="h-4 w-4 text-slate-400" />
-                  শীর্ষ বিক্রিত পণ্য
+                  {L("শীর্ষ বিক্রিত পণ্য")}
                 </h3>
               </div>
               {autoData.top_products.length === 0 ? (
-                <div className="p-6 text-center text-sm text-slate-400">কোনো তথ্য নেই</div>
+                <div className="p-6 text-center text-sm text-slate-400">{L("কোনো তথ্য নেই")}</div>
               ) : (
                 <ul className="divide-y divide-slate-100">
                   {autoData.top_products.slice(0, 4).map((p, i) => (
@@ -289,11 +291,11 @@ export default function AdminWeeklyReportPage() {
               <div className="card-header">
                 <h3 className="card-title flex items-center gap-2">
                   <Megaphone className="h-4 w-4 text-slate-400" />
-                  ক্যাম্পেইন পারফরম্যান্স
+                  {L("ক্যাম্পেইন পারফরম্যান্স")}
                 </h3>
               </div>
               {autoData.campaign_performance.length === 0 ? (
-                <div className="p-6 text-center text-sm text-slate-400">কোনো ক্যাম্পেইন সক্রিয় নেই</div>
+                <div className="p-6 text-center text-sm text-slate-400">{L("কোনো ক্যাম্পেইন সক্রিয় নেই")}</div>
               ) : (
                 <ul className="divide-y divide-slate-100">
                   {autoData.campaign_performance.slice(0, 4).map((c, i) => (
@@ -303,7 +305,7 @@ export default function AdminWeeklyReportPage() {
                           {i + 1}. {c.campaign_name}
                         </span>
                         <span className="text-xs text-slate-500">
-                          {c.leads_count} লিড · কনভার্সন {c.conversion_rate}%
+                          {c.leads_count} {L("লিড · কনভার্সন")} {c.conversion_rate}%
                         </span>
                       </div>
                       <span className="shrink-0 font-medium tabular-nums text-slate-900">
@@ -319,7 +321,7 @@ export default function AdminWeeklyReportPage() {
               <div className="card-header">
                 <h3 className="card-title flex items-center gap-2">
                   <Share2 className="h-4 w-4 text-slate-400" />
-                  চ্যানেলভিত্তিক বিক্রয়
+                  {L("চ্যানেলভিত্তিক বিক্রয়")}
                 </h3>
               </div>
               <ul className="divide-y divide-slate-100">
@@ -328,7 +330,7 @@ export default function AdminWeeklyReportPage() {
                     <div className="min-w-0">
                       <span className="block truncate font-medium text-slate-800">{ch.channel_bn}</span>
                       <span className="text-xs text-slate-500">
-                        লিড {ch.leads_count} · অর্ডার {ch.orders_count}
+                        {L("লিড")} {ch.leads_count} {L("· অর্ডার")} {ch.orders_count}
                       </span>
                     </div>
                     <span className="shrink-0 font-medium tabular-nums text-slate-900">
@@ -343,8 +345,8 @@ export default function AdminWeeklyReportPage() {
           <div className="card">
             <div className="card-header">
               <div>
-                <h2 className="card-title">কৌশলগত প্রশ্নসমূহ</h2>
-                <p className="card-subtitle">হেড অব মার্কেটিং নিচের ৫টি প্রশ্নের উত্তর দেবেন</p>
+                <h2 className="card-title">{L("কৌশলগত প্রশ্নসমূহ")}</h2>
+                <p className="card-subtitle">{L("হেড অব মার্কেটিং নিচের ৫টি প্রশ্নের উত্তর দেবেন")}</p>
               </div>
             </div>
             <div className="card-body space-y-5">
@@ -358,7 +360,7 @@ export default function AdminWeeklyReportPage() {
                     rows={3}
                     value={answers[ans.question_no] ?? ans.answer_text}
                     onChange={(e) => handleAnswerChange(ans.question_no, e.target.value)}
-                    placeholder="মূল্যায়ন বা দিকনির্দেশনা লিখুন..."
+                    placeholder={L("মূল্যায়ন বা দিকনির্দেশনা লিখুন...")}
                     className="input"
                   />
                 </div>
@@ -378,7 +380,7 @@ export default function AdminWeeklyReportPage() {
                   className="btn btn-secondary"
                 >
                   <Save className="h-4 w-4" />
-                  {isPublished ? 'সংরক্ষণ' : 'খসড়া সংরক্ষণ'}
+                  {isPublished ? L('সংরক্ষণ') : L('খসড়া সংরক্ষণ')}
                 </button>
                 <button
                   type="button"
@@ -387,7 +389,7 @@ export default function AdminWeeklyReportPage() {
                   className="btn btn-primary"
                 >
                   <Send className="h-4 w-4" />
-                  {isPublished ? 'প্রকাশিত' : 'প্রকাশ করুন'}
+                  {isPublished ? L('প্রকাশিত') : L('প্রকাশ করুন')}
                 </button>
               </div>
             </div>
@@ -398,7 +400,7 @@ export default function AdminWeeklyReportPage() {
               <div className="card-header">
                 <h3 className="card-title flex items-center gap-2">
                   <History className="h-4 w-4 text-slate-400" />
-                  আগের রিপোর্ট
+                  {L("আগের রিপোর্ট")}
                 </h3>
               </div>
               <ul className="divide-y divide-slate-100">
@@ -411,7 +413,7 @@ export default function AdminWeeklyReportPage() {
                       <span className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                         {r.creator?.name}
                         <span className={`badge ${r.status === 'PUBLISHED' ? 'badge-green' : 'badge-amber'}`}>
-                          {r.status === 'PUBLISHED' ? 'প্রকাশিত' : 'খসড়া'}
+                          {r.status === 'PUBLISHED' ? L('প্রকাশিত') : L('খসড়া')}
                         </span>
                       </span>
                     </div>
@@ -419,7 +421,7 @@ export default function AdminWeeklyReportPage() {
                       onClick={() => setSelectedDate(r.week_start.slice(0, 10))}
                       className="btn btn-secondary btn-sm"
                     >
-                      খুলুন
+                      {L("খুলুন")}
                     </button>
                   </li>
                 ))}

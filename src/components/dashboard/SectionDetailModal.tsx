@@ -86,7 +86,7 @@ export default function SectionDetailModal({
   standardGroupSection,
 }: SectionDetailModalProps) {
   const router = useRouter();
-  const { lang, digitStyle, formatNum, formatMoney } = useLanguage();
+  const { lang, digitStyle, formatNum, formatMoney, L } = useLanguage();
   const [activeTab, setActiveTab] = useState<'employees' | 'subgroups' | 'history'>('employees');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
@@ -147,7 +147,6 @@ export default function SectionDetailModal({
     setIsAddCustomerOpen(false);
   }, [selected]);
 
-  const L = (bn: string, en: string) => (lang === 'bn' ? bn : en);
 
   const formatDigits = (val: string | number) => {
     return digitStyle === 'bn' ? toBengaliDigits(val) : String(val);
@@ -363,11 +362,11 @@ export default function SectionDetailModal({
 
       const todayStr = new Date().toISOString().split('T')[0];
       const buyerTypeLabel =
-        custBuyerType === 'WHOLESALER' ? 'পাইকারি' :
-        custBuyerType === 'DEALER' ? 'ডিলার' :
-        custBuyerType === 'RESTAURANT' ? 'রেস্টুরেন্ট' :
-        custBuyerType === 'FARMER' ? 'খামারি' :
-        custBuyerType === 'RETAIL' ? 'খুচরা' : 'অন্যান্য';
+        custBuyerType === 'WHOLESALER' ? L('পাইকারি') :
+        custBuyerType === 'DEALER' ? L('ডিলার') :
+        custBuyerType === 'RESTAURANT' ? L('রেস্টুরেন্ট') :
+        custBuyerType === 'FARMER' ? L('খামারি') :
+        custBuyerType === 'RETAIL' ? L('খুচরা') : L('অন্যান্য');
 
       const newLog = {
         date: todayStr,

@@ -5,7 +5,7 @@ import { useLanguage } from './LanguageContext';
 import { Languages } from 'lucide-react';
 
 export default function LanguageToggle() {
-  const { lang, setLang, setDigitStyle } = useLanguage();
+  const { lang, setLang, setDigitStyle, L } = useLanguage();
 
   const toggleLanguage = () => {
     if (lang === 'bn') {
@@ -22,7 +22,7 @@ export default function LanguageToggle() {
       type="button"
       onClick={toggleLanguage}
       className="btn btn-secondary btn-sm gap-2 font-medium transition-all shadow-sm hover:border-slate-300"
-      title={lang === 'bn' ? 'Switch to English (সব ইংলিশ করুন)' : 'Switch to Bangla (সব বাংলা করুন)'}
+      title={lang === 'bn' ? L('Switch to English (সব ইংলিশ করুন)') : L('Switch to Bangla (সব বাংলা করুন)')}
       aria-label={lang === 'bn' ? 'Switch to English' : 'Switch to Bangla'}
     >
       <Languages className="h-3.5 w-3.5 text-emerald-600" />
@@ -34,7 +34,7 @@ export default function LanguageToggle() {
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
-          বাংলা
+          {L("বাংলা")}
         </span>
         <span className="text-slate-300 font-light">/</span>
         <span

@@ -73,8 +73,7 @@ interface MarketerOption {
 }
 
 export default function AdminLeadsPage() {
-  const { lang } = useLanguage();
-  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
+  const { lang, L } = useLanguage();
   const [leads, setLeads] = useState<LeadItem[]>([]);
   const [products, setProducts] = useState<Array<{ id: string; name_bn: string }>>([]);
   const [campaigns, setCampaigns] = useState<Array<{ id: string; name: string }>>([]);
@@ -237,23 +236,23 @@ export default function AdminLeadsPage() {
         const res = await fetch(`/api/leads/check-phone?phone=${encodeURIComponent(cleaned)}`);
         const data = await res.json();
         if (data.exists) {
-          const ownerDisplay = data.ownerName || 'অন্য কর্মী';
+          const ownerDisplay = data.ownerName || L('অন্য কর্মী');
           setPhoneCheckResult({
             checked: true,
             isExisting: true,
             leadName: data.leadName,
             ownerName: ownerDisplay,
-            message: `পুরাতন কাস্টমার (Old Customer: ${data.leadName || 'বিদ্যমান'}, যোগ করেছেন: ${ownerDisplay})`,
+            message: L(`পুরাতন কাস্টমার (Old Customer: ${data.leadName || 'বিদ্যমান'}, যোগ করেছেন: ${ownerDisplay})`),
           });
           setPhoneWarning(
-            `এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার: ${data.leadName || ''}, যোগ করেছেন: ${ownerDisplay})। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।`
+            L(`এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার: ${data.leadName || ''}, যোগ করেছেন: ${ownerDisplay})। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।`)
           );
         } else if (data.valid) {
           setPhoneWarning(null);
           setPhoneCheckResult({
             checked: true,
             isExisting: false,
-            message: 'নতুন কাস্টমার (New Customer)',
+            message: L('নতুন কাস্টমার (New Customer)'),
           });
         } else {
           setPhoneWarning(null);
@@ -273,7 +272,7 @@ export default function AdminLeadsPage() {
   const handleAddLead = async (e: React.FormEvent) => {
     e.preventDefault();
     if (phoneCheckResult?.isExisting) {
-      setErrorMessage('এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার)। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।');
+      setErrorMessage(L('এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার)। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।'));
       return;
     }
     setAddSubmitting(true);
@@ -301,7 +300,7 @@ export default function AdminLeadsPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage('নতুন লিড সফলভাবে যুক্ত হয়েছে');
+        setSuccessMessage(L('নতুন লিড সফলভাবে যুক্ত হয়েছে'));
         setIsAddOpen(false);
         setAddName('');
         setAddPhone('');
@@ -314,10 +313,10 @@ export default function AdminLeadsPage() {
         setPhoneCheckResult(null);
         fetchLeads();
       } else {
-        setErrorMessage(data.error || 'এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার)। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।');
+        setErrorMessage(data.error || L('এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার)। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক ত্রুটি');
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setAddSubmitting(false);
     }
@@ -343,17 +342,17 @@ export default function AdminLeadsPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage('লিড স্ট্যাটাস সফলভাবে আপডেট হয়েছে');
+        setSuccessMessage(L('লিড স্ট্যাটাস সফলভাবে আপডেট হয়েছে'));
         setStatusLead(null);
         setOrderAmount('');
         setLostReason('');
         setStatusQualityRating('');
         fetchLeads();
       } else {
-        setStatusError(data.error || 'আপডেট ব্যর্থ হয়েছে');
+        setStatusError(data.error || L('আপডেট ব্যর্থ হয়েছে'));
       }
     } catch {
-      setStatusError('নেটওয়ার্ক ত্রুটি');
+      setStatusError(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setStatusSubmitting(false);
     }
@@ -749,7 +748,7 @@ export default function AdminLeadsPage() {
                   <th>{L('যোগ করার সময় (BST)', 'Added (BST)')}</th>
                   <th>{L('মার্কেটার', 'Owner')}</th>
                   <th>{L('ধরন', 'Type')}</th>
-                  <th>পণ্য / চ্যানেল</th>
+                  <th>{L("পণ্য / চ্যানেল")}</th>
                   <th className="text-center">{L('স্টেজ', 'Stage')}</th>
                   <th className="text-right">{L('মূল্য', 'Value')}</th>
                   <th className="text-right">
@@ -814,9 +813,9 @@ export default function AdminLeadsPage() {
 
                     <td className="whitespace-nowrap text-right tabular-nums">
                       {l.status === 'ORDERED' && l.order_amount ? (
-                        <span className="font-medium text-slate-900">৳ {l.order_amount.toLocaleString('en-IN')}</span>
+                        <span className="font-medium text-slate-900">{L("৳")} {l.order_amount.toLocaleString('en-IN')}</span>
                       ) : l.expected_value ? (
-                        <span className="text-slate-500">৳ {l.expected_value.toLocaleString('en-IN')}</span>
+                        <span className="text-slate-500">{L("৳")} {l.expected_value.toLocaleString('en-IN')}</span>
                       ) : (
                         <span className="text-slate-400">—</span>
                       )}
@@ -923,7 +922,7 @@ export default function AdminLeadsPage() {
 
                     {leadDetail.status === 'ORDERED' && leadDetail.order_amount && (
                       <div className="alert alert-success">
-                        {L('অর্ডার মূল্য', 'Order')}: ৳ {leadDetail.order_amount.toLocaleString('en-IN')}
+                        {L('অর্ডার মূল্য', 'Order')}{L(": ৳")} {leadDetail.order_amount.toLocaleString('en-IN')}
                       </div>
                     )}
 
@@ -994,7 +993,7 @@ export default function AdminLeadsPage() {
                     id="lead_name"
                     type="text"
                     required
-                    placeholder="যেমন: মো: আরিফুল ইসলাম"
+                    placeholder={L("যেমন: মো: আরিফুল ইসলাম")}
                     value={addName}
                     onChange={(e) => setAddName(e.target.value)}
                     className="input"
@@ -1107,7 +1106,7 @@ export default function AdminLeadsPage() {
                       id="lead_source"
                       type="text"
                       required
-                      placeholder="যেমন: ফেসবুক বিজ্ঞাপন"
+                      placeholder={L("যেমন: ফেসবুক বিজ্ঞাপন")}
                       value={addSource}
                       onChange={(e) => setAddSource(e.target.value)}
                       className="input"
@@ -1133,7 +1132,7 @@ export default function AdminLeadsPage() {
                     <input
                       id="lead_address"
                       type="text"
-                      placeholder="উপজেলা, জেলা"
+                      placeholder={L("উপজেলা, জেলা")}
                       value={addAddress}
                       onChange={(e) => setAddAddress(e.target.value)}
                       className="input"
@@ -1176,7 +1175,7 @@ export default function AdminLeadsPage() {
                   <textarea
                     id="lead_note"
                     rows={2}
-                    placeholder="ক্রেতার আগ্রহ ও প্রাথমিক কথা…"
+                    placeholder={L("ক্রেতার আগ্রহ ও প্রাথমিক কথা…")}
                     value={addNote}
                     onChange={(e) => setAddNote(e.target.value)}
                     className="input"
@@ -1279,7 +1278,7 @@ export default function AdminLeadsPage() {
                       id="lost_reason"
                       rows={2}
                       required
-                      placeholder="যেমন: দাম বেশি মনে হয়েছে"
+                      placeholder={L("যেমন: দাম বেশি মনে হয়েছে")}
                       value={lostReason}
                       onChange={(e) => setLostReason(e.target.value)}
                       className="input"

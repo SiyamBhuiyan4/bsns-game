@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
+import { useLanguage } from '@/components/LanguageContext';
 
 interface Actor {
   id: string;
@@ -50,25 +51,27 @@ interface PaginationMeta {
   totalPages: number;
 }
 
-const ACTION_LABELS: Record<string, { labelBn: string; color: string }> = {
-  CREATE: { labelBn: 'তৈরি', color: 'badge-green' },
-  UPDATE: { labelBn: 'আপডেট', color: 'badge-blue' },
-  DELETE: { labelBn: 'ডিলিট', color: 'badge-red' },
-  LOGIN: { labelBn: 'লগইন', color: 'badge-gray' },
-  UPLOAD: { labelBn: 'আপলোড', color: 'badge-violet' },
-  ASSIGN: { labelBn: 'অ্যাসাইন', color: 'badge-blue' },
-  TARGET_SET: { labelBn: 'টার্গেট সেট', color: 'badge-violet' },
-  BUDGET_SET: { labelBn: 'বাজেট সেট', color: 'badge-violet' },
-  ENTRY_SAVE: { labelBn: 'এন্ট্রি সেভ', color: 'badge-green' },
-  LEAD_UPDATE: { labelBn: 'লিড আপডেট', color: 'badge-blue' },
-  UNDO: { labelBn: 'আনডু', color: 'badge-amber' },
-  REPORT_PUBLISH: { labelBn: 'রিপোর্ট প্রকাশ', color: 'badge-green' },
-  REPORT_FINALIZE: { labelBn: 'রিপোর্ট চূড়ান্ত', color: 'badge-green' },
-  PLAN_UPDATE: { labelBn: 'প্ল্যান আপডেট', color: 'badge-blue' },
-  EXPORT: { labelBn: 'এক্সপোর্ট', color: 'badge-gray' },
-};
 
 export default function AuditLogPage() {
+  const { L } = useLanguage();
+  const ACTION_LABELS: Record<string, { labelBn: string; color: string }> = {
+    CREATE: { labelBn: L('তৈরি'), color: 'badge-green' },
+    UPDATE: { labelBn: L('আপডেট'), color: 'badge-blue' },
+    DELETE: { labelBn: L('ডিলিট'), color: 'badge-red' },
+    LOGIN: { labelBn: L('লগইন'), color: 'badge-gray' },
+    UPLOAD: { labelBn: L('আপলোড'), color: 'badge-violet' },
+    ASSIGN: { labelBn: L('অ্যাসাইন'), color: 'badge-blue' },
+    TARGET_SET: { labelBn: L('টার্গেট সেট'), color: 'badge-violet' },
+    BUDGET_SET: { labelBn: L('বাজেট সেট'), color: 'badge-violet' },
+    ENTRY_SAVE: { labelBn: L('এন্ট্রি সেভ'), color: 'badge-green' },
+    LEAD_UPDATE: { labelBn: L('লিড আপডেট'), color: 'badge-blue' },
+    UNDO: { labelBn: L('আনডু'), color: 'badge-amber' },
+    REPORT_PUBLISH: { labelBn: L('রিপোর্ট প্রকাশ'), color: 'badge-green' },
+    REPORT_FINALIZE: { labelBn: L('রিপোর্ট চূড়ান্ত'), color: 'badge-green' },
+    PLAN_UPDATE: { labelBn: L('প্ল্যান আপডেট'), color: 'badge-blue' },
+    EXPORT: { labelBn: L('এক্সপোর্ট'), color: 'badge-gray' },
+  };
+
   const [logs, setLogs] = useState<AuditLogItem[]>([]);
   const [users, setUsers] = useState<Actor[]>([]);
   const [pagination, setPagination] = useState<PaginationMeta>({
@@ -198,12 +201,12 @@ export default function AuditLogPage() {
     <div className="space-y-6">
       <PageHeader
         icon={<ShieldAlert className="h-5 w-5" />}
-        title="অডিট লগ"
-        subtitle="সকল পরিবর্তন ও ব্যবহারকারী অ্যাক্টিভিটির রেকর্ড"
+        title={L("অডিট লগ")}
+        subtitle={L("সকল পরিবর্তন ও ব্যবহারকারী অ্যাক্টিভিটির রেকর্ড")}
         actions={
           <button onClick={() => fetchLogs()} disabled={loading} className="btn btn-secondary">
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            রিফ্রেশ
+            {L("রিফ্রেশ")}
           </button>
         }
       />
@@ -211,7 +214,7 @@ export default function AuditLogPage() {
       <div className="card">
         <div className="card-body grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           <div>
-            <label className="label" htmlFor="audit-actor">ব্যবহারকারী</label>
+            <label className="label" htmlFor="audit-actor">{L("ব্যবহারকারী")}</label>
             <select
               id="audit-actor"
               value={selectedActor}
@@ -221,7 +224,7 @@ export default function AuditLogPage() {
               }}
               className="input"
             >
-              <option value="">সকল ব্যবহারকারী</option>
+              <option value="">{L("সকল ব্যবহারকারী")}</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.name} ({u.role})
@@ -231,7 +234,7 @@ export default function AuditLogPage() {
           </div>
 
           <div>
-            <label className="label" htmlFor="audit-action">অ্যাকশন</label>
+            <label className="label" htmlFor="audit-action">{L("অ্যাকশন")}</label>
             <select
               id="audit-action"
               value={selectedAction}
@@ -241,7 +244,7 @@ export default function AuditLogPage() {
               }}
               className="input"
             >
-              <option value="">সকল অ্যাকশন</option>
+              <option value="">{L("সকল অ্যাকশন")}</option>
               {Object.entries(ACTION_LABELS).map(([actionKey, { labelBn }]) => (
                 <option key={actionKey} value={actionKey}>
                   {labelBn}
@@ -251,13 +254,13 @@ export default function AuditLogPage() {
           </div>
 
           <div>
-            <label className="label" htmlFor="audit-entity">এনটিটি</label>
+            <label className="label" htmlFor="audit-entity">{L("এনটিটি")}</label>
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 id="audit-entity"
                 type="text"
-                placeholder="যেমন: Product, Lead"
+                placeholder={L("যেমন: Product, Lead")}
                 value={entityQuery}
                 onChange={(e) => {
                   setEntityQuery(e.target.value);
@@ -269,7 +272,7 @@ export default function AuditLogPage() {
           </div>
 
           <div>
-            <label className="label" htmlFor="audit-start">শুরুর তারিখ</label>
+            <label className="label" htmlFor="audit-start">{L("শুরুর তারিখ")}</label>
             <input
               id="audit-start"
               type="date"
@@ -283,7 +286,7 @@ export default function AuditLogPage() {
           </div>
 
           <div>
-            <label className="label" htmlFor="audit-end">শেষের তারিখ</label>
+            <label className="label" htmlFor="audit-end">{L("শেষের তারিখ")}</label>
             <input
               id="audit-end"
               type="date"
@@ -299,10 +302,10 @@ export default function AuditLogPage() {
 
         {(selectedActor || selectedAction || entityQuery || startDate || endDate) && (
           <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-5 py-3">
-            <span className="text-xs text-slate-500">ফিল্টার সক্রিয়</span>
+            <span className="text-xs text-slate-500">{L("ফিল্টার সক্রিয়")}</span>
             <button onClick={handleResetFilters} className="btn btn-ghost btn-sm">
               <RotateCcw className="h-3.5 w-3.5" />
-              ফিল্টার রিসেট
+              {L("ফিল্টার রিসেট")}
             </button>
           </div>
         )}
@@ -313,11 +316,11 @@ export default function AuditLogPage() {
           <table className="table-pro">
             <thead>
               <tr>
-                <th>সময় (ঢাকা)</th>
-                <th>ব্যবহারকারী</th>
-                <th>অ্যাকশন</th>
-                <th>এনটিটি</th>
-                <th className="text-right">বিবরণ</th>
+                <th>{L("সময় (ঢাকা)")}</th>
+                <th>{L("ব্যবহারকারী")}</th>
+                <th>{L("অ্যাকশন")}</th>
+                <th>{L("এনটিটি")}</th>
+                <th className="text-right">{L("বিবরণ")}</th>
               </tr>
             </thead>
             <tbody>
@@ -326,7 +329,7 @@ export default function AuditLogPage() {
                   <td colSpan={5} className="py-12 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <RefreshCw className="h-5 w-5 animate-spin text-brand-600" />
-                      <span>লোড হচ্ছে...</span>
+                      <span>{L("লোড হচ্ছে...")}</span>
                     </div>
                   </td>
                 </tr>
@@ -335,8 +338,8 @@ export default function AuditLogPage() {
                   <td colSpan={5} className="p-0">
                     <EmptyState
                       icon={<ShieldAlert className="h-5 w-5" />}
-                      title="কোনো অডিট লগ পাওয়া যায়নি"
-                      description="নির্বাচিত ফিল্টারে কোনো রেকর্ড মেলেনি।"
+                      title={L("কোনো অডিট লগ পাওয়া যায়নি")}
+                      description={L("নির্বাচিত ফিল্টারে কোনো রেকর্ড মেলেনি।")}
                     />
                   </td>
                 </tr>
@@ -370,7 +373,7 @@ export default function AuditLogPage() {
                         ) : (
                           <span className="inline-flex items-center gap-1 text-slate-400">
                             <User className="h-3.5 w-3.5" />
-                            সিস্টেম
+                            {L("সিস্টেম")}
                           </span>
                         )}
                       </td>
@@ -407,7 +410,7 @@ export default function AuditLogPage() {
                             className="btn btn-secondary btn-sm"
                           >
                             <Eye className="h-3.5 w-3.5" />
-                            দেখুন
+                            {L("দেখুন")}
                           </button>
                         ) : (
                           <span className="text-xs text-slate-400">—</span>
@@ -427,10 +430,10 @@ export default function AuditLogPage() {
               {pagination.total === 0
                 ? 0
                 : (pagination.page - 1) * pagination.limit + 1}
-              –{Math.min(pagination.page * pagination.limit, pagination.total)} / মোট {pagination.total}
+              –{Math.min(pagination.page * pagination.limit, pagination.total)} {L("/ মোট")} {pagination.total}
             </span>
             <label className="flex items-center gap-1.5">
-              <span>প্রতি পৃষ্ঠায়</span>
+              <span>{L("প্রতি পৃষ্ঠায়")}</span>
               <select
                 value={limit}
                 onChange={(e) => {
@@ -439,9 +442,9 @@ export default function AuditLogPage() {
                 }}
                 className="input w-auto py-1 text-xs"
               >
-                <option value={25}>২৫</option>
-                <option value={50}>৫০</option>
-                <option value={100}>১০০</option>
+                <option value={25}>{L("২৫")}</option>
+                <option value={50}>{L("৫০")}</option>
+                <option value={100}>{L("১০০")}</option>
               </select>
             </label>
           </div>
@@ -453,7 +456,7 @@ export default function AuditLogPage() {
               className="btn btn-secondary btn-sm"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
-              আগের
+              {L("আগের")}
             </button>
             <span className="px-2 tabular-nums text-slate-700">
               {pagination.page} / {pagination.totalPages || 1}
@@ -463,7 +466,7 @@ export default function AuditLogPage() {
               disabled={currentPage >= pagination.totalPages || loading}
               className="btn btn-secondary btn-sm"
             >
-              পরের
+              {L("পরের")}
               <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -477,13 +480,13 @@ export default function AuditLogPage() {
               <div className="flex min-w-0 items-center gap-2">
                 <FileCode className="h-4 w-4 shrink-0 text-slate-400" />
                 <div className="min-w-0">
-                  <h3 className="card-title">লগ বিবরণ</h3>
+                  <h3 className="card-title">{L("লগ বিবরণ")}</h3>
                   <p className="card-subtitle truncate">
                     {selectedLog.entity} · {formatDhakaDateTime(selectedLog.created_at)}
                   </p>
                 </div>
               </div>
-              <button onClick={() => setSelectedLog(null)} className="btn-icon" aria-label="বন্ধ করুন">
+              <button onClick={() => setSelectedLog(null)} className="btn-icon" aria-label={L("বন্ধ করুন")}>
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -492,7 +495,7 @@ export default function AuditLogPage() {
               <div className="segmented">
                 {hasDiff && (
                   <button data-active={modalTab === 'diff'} onClick={() => setModalTab('diff')}>
-                    পরিবর্তন
+                    {L("পরিবর্তন")}
                   </button>
                 )}
                 <button data-active={modalTab === 'raw' || !hasDiff} onClick={() => setModalTab('raw')}>
@@ -504,12 +507,12 @@ export default function AuditLogPage() {
                 {copied ? (
                   <>
                     <Check className="h-3.5 w-3.5 text-brand-600" />
-                    কপি হয়েছে
+                    {L("কপি হয়েছে")}
                   </>
                 ) : (
                   <>
                     <Copy className="h-3.5 w-3.5" />
-                    JSON কপি
+                    {L("JSON কপি")}
                   </>
                 )}
               </button>
@@ -518,7 +521,7 @@ export default function AuditLogPage() {
             <div className="flex-1 overflow-y-auto p-5 text-sm">
               {modalTab === 'diff' && hasDiff ? (
                 diffKeys.length === 0 ? (
-                  <p className="py-6 text-center text-slate-500">কোনো ফিল্ডে পরিবর্তন নেই।</p>
+                  <p className="py-6 text-center text-slate-500">{L("কোনো ফিল্ডে পরিবর্তন নেই।")}</p>
                 ) : (
                   <div className="space-y-3">
                     {diffKeys.map((key) => {
@@ -535,17 +538,17 @@ export default function AuditLogPage() {
                         >
                           <div className="mb-2 flex items-center gap-2 font-mono text-xs font-semibold text-slate-800">
                             {key}
-                            {isChanged && <span className="badge badge-amber">পরিবর্তিত</span>}
+                            {isChanged && <span className="badge badge-amber">{L("পরিবর্তিত")}</span>}
                           </div>
                           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                             <div className="min-w-0 rounded-md border border-rose-100 bg-rose-50 p-2 text-rose-900">
-                              <span className="mb-1 block text-[11px] font-medium text-rose-700">আগের মান</span>
+                              <span className="mb-1 block text-[11px] font-medium text-rose-700">{L("আগের মান")}</span>
                               <pre className="whitespace-pre-wrap break-all font-mono text-[11px]">
                                 {oldVal !== undefined ? JSON.stringify(oldVal, null, 2) : '(none)'}
                               </pre>
                             </div>
                             <div className="min-w-0 rounded-md border border-emerald-100 bg-emerald-50 p-2 text-emerald-900">
-                              <span className="mb-1 block text-[11px] font-medium text-emerald-700">নতুন মান</span>
+                              <span className="mb-1 block text-[11px] font-medium text-emerald-700">{L("নতুন মান")}</span>
                               <pre className="whitespace-pre-wrap break-all font-mono text-[11px]">
                                 {newVal !== undefined ? JSON.stringify(newVal, null, 2) : '(none)'}
                               </pre>
@@ -565,7 +568,7 @@ export default function AuditLogPage() {
 
             <div className="flex justify-end border-t border-slate-100 px-5 py-4">
               <button onClick={() => setSelectedLog(null)} className="btn btn-secondary">
-                বন্ধ করুন
+                {L("বন্ধ করুন")}
               </button>
             </div>
           </div>

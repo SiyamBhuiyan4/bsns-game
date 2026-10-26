@@ -72,8 +72,7 @@ export default function EmployeeDailyEntryPage() {
     router.replace('/employee/my-work?tab=daily_entry');
   }, [router]);
 
-  const { lang } = useLanguage();
-  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
+  const { lang, L } = useLanguage();
   const [selectedDate, setSelectedDate] = useState(() => getDhakaDateString());
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,7 +166,7 @@ export default function EmployeeDailyEntryPage() {
       }
 
       if (!res.ok) {
-        throw new Error('তথ্য লোড করতে সমস্যা হয়েছে');
+        throw new Error(L('তথ্য লোড করতে সমস্যা হয়েছে'));
       }
 
       const data = await res.json();
@@ -244,7 +243,7 @@ export default function EmployeeDailyEntryPage() {
       // History
       setHistory(data.history || []);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'ত্রুটি হয়েছে');
+      setErrorMsg(err instanceof Error ? err.message : L('ত্রুটি হয়েছে'));
     } finally {
       setLoading(false);
     }
@@ -322,7 +321,7 @@ export default function EmployeeDailyEntryPage() {
     }
 
     if (activeWarnings.length > 0) {
-      const confirmText = `${activeWarnings.join('\n')}\n\nআপনি কি নিশ্চিত যে এই তথ্য সংরক্ষণ করবেন?`;
+      const confirmText = L(`${activeWarnings.join('\n')}\n\nআপনি কি নিশ্চিত যে এই তথ্য সংরক্ষণ করবেন?`);
       if (!window.confirm(confirmText)) {
         return;
       }
@@ -368,13 +367,13 @@ export default function EmployeeDailyEntryPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'তথ্য সংরক্ষণ করা যায়নি');
+        throw new Error(data.error || L('তথ্য সংরক্ষণ করা যায়নি'));
       }
 
       setSuccessMsg(data.message || SAVE_SUCCESS_MESSAGE);
       loadDayData(selectedDate);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'ত্রুটি হয়েছে');
+      setErrorMsg(err instanceof Error ? err.message : L('ত্রুটি হয়েছে'));
     } finally {
       setSaving(false);
     }
@@ -610,7 +609,7 @@ export default function EmployeeDailyEntryPage() {
                     {L('মোট বিক্রি (৳)', 'Sales (৳)')} <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">৳</span>
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">{L("৳")}</span>
                     <input
                       id="de-sales"
                       type="number"
@@ -632,7 +631,7 @@ export default function EmployeeDailyEntryPage() {
                     {L('লাভ (৳)', 'Profit (৳)')} <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">৳</span>
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">{L("৳")}</span>
                     <input
                       id="de-profit"
                       type="number"
@@ -865,7 +864,7 @@ export default function EmployeeDailyEntryPage() {
                   {L('বিজ্ঞাপনের খরচ (৳)', 'Ad spend (৳)')}
                 </label>
                 <div className="relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">৳</span>
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">{L("৳")}</span>
                   <input
                     id="de-ad"
                     type="number"
@@ -958,7 +957,7 @@ export default function EmployeeDailyEntryPage() {
                     {L('সম্ভাব্য মূল্য (৳)', 'Potential value (৳)')}
                   </label>
                   <div className="relative">
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">৳</span>
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">{L("৳")}</span>
                     <input
                       id="de-b2b-value"
                       type="number"
@@ -1113,15 +1112,15 @@ export default function EmployeeDailyEntryPage() {
                 <thead>
                   <tr>
                     <th>{L('তারিখ', 'Date')}</th>
-                    <th>পোস্ট</th>
-                    <th>বিক্রি (৳)</th>
-                    <th>লাভ (৳)</th>
-                    <th>অর্ডার</th>
-                    <th>লিড</th>
-                    <th>নতুন ক্রেতা</th>
-                    <th>বিজ্ঞাপন (৳)</th>
-                    <th>ফলোআপ</th>
-                    <th>B2B অর্ডার</th>
+                    <th>{L("পোস্ট")}</th>
+                    <th>{L("বিক্রি (৳)")}</th>
+                    <th>{L("লাভ (৳)")}</th>
+                    <th>{L("অর্ডার")}</th>
+                    <th>{L("লিড")}</th>
+                    <th>{L("নতুন ক্রেতা")}</th>
+                    <th>{L("বিজ্ঞাপন (৳)")}</th>
+                    <th>{L("ফলোআপ")}</th>
+                    <th>{L("B2B অর্ডার")}</th>
                   </tr>
                 </thead>
                 <tbody className="tabular-nums">

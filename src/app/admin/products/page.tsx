@@ -25,8 +25,7 @@ interface ProductItem {
 }
 
 export default function AdminProductsPage() {
-  const { lang } = useLanguage();
-  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
+  const { lang, L } = useLanguage();
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -64,10 +63,10 @@ export default function AdminProductsPage() {
       if (res.ok) {
         setProducts(data.products || []);
       } else {
-        setErrorMessage(data.error || 'পণ্য লোড করা যায়নি');
+        setErrorMessage(data.error || L('পণ্য লোড করা যায়নি'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক সমস্যা');
+      setErrorMessage(L('নেটওয়ার্ক সমস্যা'));
     } finally {
       setLoading(false);
     }
@@ -91,14 +90,14 @@ export default function AdminProductsPage() {
       const data = await res.json();
       if (res.ok) {
         setSuccessMessage(
-          `"${product.name_bn}" পণ্যটি ${!product.is_active ? 'সক্রিয়' : 'নিষ্ক্রিয়'} করা হয়েছে`
+          L(`"${product.name_bn}" পণ্যটি ${!product.is_active ? 'সক্রিয়' : 'নিষ্ক্রিয়'} করা হয়েছে`)
         );
         fetchProducts();
       } else {
-        setErrorMessage(data.error || 'স্ট্যাটাস পরিবর্তন ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('স্ট্যাটাস পরিবর্তন ব্যর্থ হয়েছে'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক ত্রুটি');
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setTogglingId(null);
     }
@@ -112,7 +111,7 @@ export default function AdminProductsPage() {
 
     const parsedPrice = parseFloat(price);
     if (isNaN(parsedPrice) || parsedPrice <= 0) {
-      setAddError('বিক্রয়মূল্য অবশ্যই ০ এর বেশি হতে হবে');
+      setAddError(L('বিক্রয়মূল্য অবশ্যই ০ এর বেশি হতে হবে'));
       setAddSubmitting(false);
       return;
     }
@@ -131,17 +130,17 @@ export default function AdminProductsPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage('নতুন পণ্য সফলভাবে যুক্ত হয়েছে');
+        setSuccessMessage(L('নতুন পণ্য সফলভাবে যুক্ত হয়েছে'));
         setIsAddOpen(false);
         setNameBn('');
         setNameEn('');
         setPrice('');
         fetchProducts();
       } else {
-        setAddError(data.error || 'পণ্য তৈরি ব্যর্থ হয়েছে');
+        setAddError(data.error || L('পণ্য তৈরি ব্যর্থ হয়েছে'));
       }
     } catch {
-      setAddError('নেটওয়ার্ক ত্রুটি');
+      setAddError(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setAddSubmitting(false);
     }
@@ -156,7 +155,7 @@ export default function AdminProductsPage() {
 
     const parsedPrice = parseFloat(editPrice);
     if (isNaN(parsedPrice) || parsedPrice <= 0) {
-      setEditError('বিক্রয়মূল্য অবশ্যই ০ এর বেশি হতে হবে');
+      setEditError(L('বিক্রয়মূল্য অবশ্যই ০ এর বেশি হতে হবে'));
       setEditSubmitting(false);
       return;
     }
@@ -176,14 +175,14 @@ export default function AdminProductsPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage('পণ্য তথ্য আপডেট সফল হয়েছে');
+        setSuccessMessage(L('পণ্য তথ্য আপডেট সফল হয়েছে'));
         setEditingProduct(null);
         fetchProducts();
       } else {
-        setEditError(data.error || 'আপডেট ব্যর্থ হয়েছে');
+        setEditError(data.error || L('আপডেট ব্যর্থ হয়েছে'));
       }
     } catch {
-      setEditError('নেটওয়ার্ক ত্রুটি');
+      setEditError(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setEditSubmitting(false);
     }
@@ -262,9 +261,9 @@ export default function AdminProductsPage() {
                     <div className="font-medium text-slate-900">{p.name_bn}</div>
                     <div className="text-xs text-slate-500">{p.name_en}</div>
                   </td>
-                  <td className="text-slate-600">প্রতি {p.unit}</td>
+                  <td className="text-slate-600">{L("প্রতি")} {p.unit}</td>
                   <td className="text-right font-medium tabular-nums text-slate-900">
-                    ৳ {Number(p.selling_price).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    {L("৳")} {Number(p.selling_price).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </td>
                   <td className="text-center">
                     <button
@@ -339,7 +338,7 @@ export default function AdminProductsPage() {
                     id="add_name_bn"
                     type="text"
                     required
-                    placeholder="যেমন: মাশরুম"
+                    placeholder={L("যেমন: মাশরুম")}
                     value={nameBn}
                     onChange={(e) => setNameBn(e.target.value)}
                     className="input"

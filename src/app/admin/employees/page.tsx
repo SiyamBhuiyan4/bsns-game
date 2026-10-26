@@ -49,7 +49,7 @@ interface EmployeeItem {
 }
 
 export default function EmployeesPage() {
-  const { t } = useLanguage();
+  const { t, L } = useLanguage();
   const [employees, setEmployees] = useState<EmployeeItem[]>([]);
   const [sections, setSections] = useState<SectionRef[]>([]);
   const [loading, setLoading] = useState(true);
@@ -115,7 +115,7 @@ export default function EmployeesPage() {
         setWorkData(d);
       }
     } catch {
-      setErrorMessage('কর্মীর কাজের বিবরণ লোড করতে সমস্যা হয়েছে');
+      setErrorMessage(L('কর্মীর কাজের বিবরণ লোড করতে সমস্যা হয়েছে'));
     } finally {
       setLoadingWorkData(false);
     }
@@ -141,10 +141,10 @@ export default function EmployeesPage() {
       if (res.ok) {
         setEmployees(data.employees || []);
       } else {
-        setErrorMessage(data.error || 'কর্মী তালিকা লোড করা যায়নি');
+        setErrorMessage(data.error || L('কর্মী তালিকা লোড করা যায়নি'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক সমস্যা');
+      setErrorMessage(L('নেটওয়ার্ক সমস্যা'));
     } finally {
       setLoading(false);
     }
@@ -187,7 +187,7 @@ export default function EmployeesPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage('নতুন কর্মী সফলভাবে যোগ করা হয়েছে (Employee created)');
+        setSuccessMessage(L('নতুন কর্মী সফলভাবে যোগ করা হয়েছে (Employee created)'));
         setIsAddOpen(false);
         setAddName('');
         setAddEmail('');
@@ -196,10 +196,10 @@ export default function EmployeesPage() {
         setAddSelectedSections([]);
         fetchEmployees();
       } else {
-        setErrorMessage(data.error || 'কর্মী যোগ করা যায়নি');
+        setErrorMessage(data.error || L('কর্মী যোগ করা যায়নি'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক ত্রুটি');
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setAddSubmitting(false);
     }
@@ -226,14 +226,14 @@ export default function EmployeesPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage('কর্মী তথ্য আপডেট সফল হয়েছে');
+        setSuccessMessage(L('কর্মী তথ্য আপডেট সফল হয়েছে'));
         setEditingEmp(null);
         fetchEmployees();
       } else {
-        setErrorMessage(data.error || 'আপডেট ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('আপডেট ব্যর্থ হয়েছে'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক ত্রুটি');
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setEditSubmitting(false);
     }
@@ -263,14 +263,14 @@ export default function EmployeesPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage('সেকশন অ্যাসাইনমেন্ট ও পোস্ট লিমিট সংরক্ষিত হয়েছে');
+        setSuccessMessage(L('সেকশন অ্যাসাইনমেন্ট ও পোস্ট লিমিট সংরক্ষিত হয়েছে'));
         setAssigningEmp(null);
         fetchEmployees();
       } else {
-        setErrorMessage(data.error || 'অ্যাসাইনমেন্ট ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('অ্যাসাইনমেন্ট ব্যর্থ হয়েছে'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক ত্রুটি');
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setAssignSubmitting(false);
     }
@@ -289,10 +289,10 @@ export default function EmployeesPage() {
       if (res.ok) {
         setTempPassword(data.temporaryPassword);
       } else {
-        setErrorMessage(data.error || 'পাসওয়ার্ড রিসেট ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('পাসওয়ার্ড রিসেট ব্যর্থ হয়েছে'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক ত্রুটি');
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setResetSubmitting(false);
     }
@@ -442,7 +442,7 @@ export default function EmployeesPage() {
                               <span>{sec.name}</span>
                               {sec.post_limit && sec.post_limit > 0 && (
                                 <span className="font-bold text-brand-700">
-                                  ({sec.post_limit}টি)
+                                  ({sec.post_limit}{L("টি)")}
                                 </span>
                               )}
                             </span>
@@ -560,7 +560,7 @@ export default function EmployeesPage() {
                     id="add_emp_name"
                     type="text"
                     required
-                    placeholder="যেমন: রাকিব হাসান"
+                    placeholder={L("যেমন: রাকিব হাসান")}
                     value={addName}
                     onChange={(e) => setAddName(e.target.value)}
                     className="input"
@@ -1019,7 +1019,7 @@ export default function EmployeesPage() {
                             <div>
                               <div className="font-semibold text-xs text-slate-800">{sec.section_name}</div>
                               <div className="text-[11px] text-slate-500">
-                                {sec.post_limit ? `${t('emp.quota', 'কোটা', 'Quota')}: ${sec.post_limit}টি` : t('emp.no_limit', 'সীমাহীন', 'No Limit')}
+                                {sec.post_limit ? L(`${t('emp.quota', 'কোটা', 'Quota')}: ${sec.post_limit}টি`) : t('emp.no_limit', 'সীমাহীন', 'No Limit')}
                               </div>
                             </div>
                             <div>

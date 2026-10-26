@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight, Bot, Loader2, Send, X } from 'lucide-react';
+import { useLanguage } from '@/components/LanguageContext';
 
 type Role = 'user' | 'assistant' | 'system';
 
@@ -36,11 +37,14 @@ interface AgentResponse {
   navigate?: boolean;
 }
 
-const HINTS = ['কর্মী যোগ করব কীভাবে?', 'গ্রুপে লিংক যোগ', 'আজকের রিপোর্ট', 'how do I set a target?', 'তুমি কী পারো?', '#status'];
-const NETWORK_ERROR =
-  'Network problem. Please check your connection and try again. / নেটওয়ার্ক সমস্যা। ইন্টারনেট চেক করে আবার চেষ্টা করুন।';
+
+
 
 export default function AgentChat() {
+  const { L } = useLanguage();
+  const HINTS = [L('কর্মী যোগ করব কীভাবে?'), L('গ্রুপে লিংক যোগ'), L('আজকের রিপোর্ট'), 'how do I set a target?', L('তুমি কী পারো?'), '#status'];
+  const NETWORK_ERROR =
+    L('Network problem. Please check your connection and try again. / নেটওয়ার্ক সমস্যা। ইন্টারনেট চেক করে আবার চেষ্টা করুন।');
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
@@ -50,7 +54,7 @@ export default function AgentChat() {
       id: 0,
       role: 'assistant',
       text:
-        'হ্যালো! কী করতে চান লিখুন, আমি সঠিক পেজে নিয়ে যাব। যেমন: "নতুন কর্মী যোগ", "রহিমের অবস্থা দেখাও"।\n' +
+        L('হ্যালো! কী করতে চান লিখুন, আমি সঠিক পেজে নিয়ে যাব। যেমন: "নতুন কর্মী যোগ", "রহিমের অবস্থা দেখাও"।\n') +
         'Hi! Tell me what you want to do and I will open the right page. Example: "add employee", "show Rahim".',
     },
   ]);
@@ -105,7 +109,7 @@ export default function AgentChat() {
         addMessage({
           role: 'assistant',
           text:
-            'Something went wrong. Please try again. / কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।',
+            L('Something went wrong. Please try again. / কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।'),
         });
         return;
       }
@@ -140,13 +144,13 @@ export default function AgentChat() {
       prev.map((m) => (m.id === msgId ? { ...m, confirmAnswered: true } : m)),
     );
     if (yes) {
-      addMessage({ role: 'user', text: 'Yes, do it / হ্যাঁ, করুন' });
+      addMessage({ role: 'user', text: L('Yes, do it / হ্যাঁ, করুন') });
       void callAgent({ message: original, confirm: true, pending });
     } else {
-      addMessage({ role: 'user', text: 'No / না' });
+      addMessage({ role: 'user', text: L('No / না') });
       addMessage({
         role: 'assistant',
-        text: 'Cancelled. Nothing was changed. / বাতিল করা হয়েছে। কিছু পরিবর্তন হয়নি।',
+        text: L('Cancelled. Nothing was changed. / বাতিল করা হয়েছে। কিছু পরিবর্তন হয়নি।'),
       });
     }
   };
@@ -165,7 +169,7 @@ export default function AgentChat() {
           ref={launcherRef}
           type="button"
           onClick={() => setOpen(true)}
-          aria-label="Open AI assistant / AI সহকারী খুলুন"
+          aria-label={L("Open AI assistant / AI সহকারী খুলুন")}
           aria-expanded={open}
           aria-controls="agent-chat-panel"
           className="fixed bottom-4 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg transition hover:bg-brand-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/40"
@@ -179,7 +183,7 @@ export default function AgentChat() {
           id="agent-chat-panel"
           role="dialog"
           aria-modal="false"
-          aria-label="AI assistant / AI সহকারী"
+          aria-label={L("AI assistant / AI সহকারী")}
           className="fixed inset-0 z-50 flex flex-col bg-white sm:inset-auto sm:bottom-4 sm:right-4 sm:h-[560px] sm:max-h-[calc(100vh-2rem)] sm:w-[380px] sm:rounded-2xl sm:border sm:border-slate-200 sm:shadow-2xl"
         >
           {/* Header */}
@@ -187,13 +191,13 @@ export default function AgentChat() {
             <div className="flex items-center gap-2 min-w-0">
               <Bot className="h-5 w-5 shrink-0 text-brand-600" aria-hidden="true" />
               <h2 className="truncate text-sm font-semibold text-slate-900">
-                সহকারী · Assistant
+                {L("সহকারী · Assistant")}
               </h2>
             </div>
             <button
               type="button"
               onClick={() => setOpen(false)}
-              aria-label="Close / বন্ধ করুন"
+              aria-label={L("Close / বন্ধ করুন")}
               className="rounded-lg p-1.5 hover:bg-slate-100 text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
             >
               <X className="h-5 w-5" aria-hidden="true" />
@@ -229,7 +233,7 @@ export default function AgentChat() {
                         onClick={() => answerConfirmation(m.id, m.originalMessage!, true, m.pending)}
                         className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
                       >
-                        Yes, do it / হ্যাঁ, করুন
+                        {L("Yes, do it / হ্যাঁ, করুন")}
                       </button>
                       <button
                         type="button"
@@ -237,7 +241,7 @@ export default function AgentChat() {
                         onClick={() => answerConfirmation(m.id, m.originalMessage!, false)}
                         className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
                       >
-                        No / না
+                        {L("No / না")}
                       </button>
                     </div>
                   )}
@@ -268,7 +272,7 @@ export default function AgentChat() {
               <div className="flex justify-start" role="status">
                 <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm bg-slate-100 px-3 py-2 text-sm text-slate-500">
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                  <span>Thinking... / ভাবছি...</span>
+                  <span>{L("Thinking... / ভাবছি...")}</span>
                 </div>
               </div>
             )}
@@ -295,7 +299,7 @@ export default function AgentChat() {
           {/* Input */}
           <div className="flex items-end gap-2 px-4 py-3">
             <label htmlFor="agent-chat-input" className="sr-only">
-              Message / বার্তা
+              {L("Message / বার্তা")}
             </label>
             <textarea
               ref={inputRef}
@@ -304,14 +308,14 @@ export default function AgentChat() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Type a message... / বার্তা লিখুন..."
+              placeholder={L("Type a message... / বার্তা লিখুন...")}
               className="max-h-32 min-h-[40px] flex-1 resize-none rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
             />
             <button
               type="button"
               onClick={send}
               disabled={loading || !input.trim()}
-              aria-label="Send / পাঠান"
+              aria-label={L("Send / পাঠান")}
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
             >
               <Send className="h-4 w-4" aria-hidden="true" />

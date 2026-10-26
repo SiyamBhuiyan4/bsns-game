@@ -37,10 +37,9 @@ export default function EmployeeHistoryModal({
   allEmployees,
   onSelectEmployee,
 }: EmployeeHistoryModalProps) {
-  const { lang, formatMoney, formatNum } = useLanguage();
+  const { lang, formatMoney, formatNum, L } = useLanguage();
   const [historySearch, setHistorySearch] = useState('');
 
-  const L = (bn: string, en: string) => (lang === 'bn' ? bn : en);
 
   // Close on ESC key
   useEffect(() => {
@@ -85,13 +84,13 @@ export default function EmployeeHistoryModal({
         if (!isNaN(d.getTime())) {
           const weekdayEn = d.toLocaleDateString('en-US', { weekday: 'short' });
           const weekdayBnMap: Record<string, string> = {
-            Sun: 'রবি',
-            Mon: 'সোম',
-            Tue: 'মঙ্গল',
-            Wed: 'বুধ',
-            Thu: 'বৃহঃ',
-            Fri: 'শুক্র',
-            Sat: 'শনি',
+            Sun: L('রবি'),
+            Mon: L('সোম'),
+            Tue: L('মঙ্গল'),
+            Wed: L('বুধ'),
+            Thu: L('বৃহঃ'),
+            Fri: L('শুক্র'),
+            Sat: L('শনি'),
           };
           const weekday = lang === 'bn' ? (weekdayBnMap[weekdayEn] || weekdayEn) : weekdayEn;
           return {

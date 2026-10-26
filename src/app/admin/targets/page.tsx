@@ -59,64 +59,64 @@ interface SectionTarget {
   created_at: string;
 }
 
-const METRIC_CONFIG: Record<
-  string,
-  { bn: string; en: string; unitBn: string; unitEn: string; isCurrency: boolean }
-> = {
-  POSTS_DONE: {
-    bn: 'গ্রুপ পোস্ট / লিংক সম্পন্ন',
-    en: 'Group Links / Posts Done',
-    unitBn: 'টি',
-    unitEn: 'links',
-    isCurrency: false,
-  },
-  NEW_LEADS: {
-    bn: 'নতুন লিড সংগ্রহ',
-    en: 'New Leads Collected',
-    unitBn: 'টি',
-    unitEn: 'leads',
-    isCurrency: false,
-  },
-  CONFIRMED_ORDERS: {
-    bn: 'কনফার্মড অর্ডার',
-    en: 'Confirmed Orders',
-    unitBn: 'টি',
-    unitEn: 'orders',
-    isCurrency: false,
-  },
-  SALES_AMOUNT: {
-    bn: 'মোট বিক্রয়',
-    en: 'Total Sales',
-    unitBn: '৳',
-    unitEn: 'BDT',
-    isCurrency: true,
-  },
-  NEW_CLIENTS: {
-    bn: 'নতুন ক্রেতা',
-    en: 'New Clients',
-    unitBn: 'জন',
-    unitEn: 'clients',
-    isCurrency: false,
-  },
-  FOLLOWUPS_DONE: {
-    bn: 'ইনবক্স ফলো-আপ',
-    en: 'Inbox Follow-ups',
-    unitBn: 'টি',
-    unitEn: 'follow-ups',
-    isCurrency: false,
-  },
-  PROFIT_AMOUNT: {
-    bn: 'মোট মুনাফা',
-    en: 'Total Profit',
-    unitBn: '৳',
-    unitEn: 'BDT',
-    isCurrency: true,
-  },
-};
+
 
 export default function AdminTargetsPage() {
-  const { lang, formatNum, formatMoney } = useLanguage();
-  const L = useCallback((bn: string, en: string) => (lang === 'en' ? en : bn), [lang]);
+  const { lang, formatNum, formatMoney, L } = useLanguage();
+  const METRIC_CONFIG: Record<
+    string,
+    { bn: string; en: string; unitBn: string; unitEn: string; isCurrency: boolean }
+  > = {
+    POSTS_DONE: {
+      bn: L('গ্রুপ পোস্ট / লিংক সম্পন্ন'),
+      en: 'Group Links / Posts Done',
+      unitBn: L('টি'),
+      unitEn: 'links',
+      isCurrency: false,
+    },
+    NEW_LEADS: {
+      bn: L('নতুন লিড সংগ্রহ'),
+      en: 'New Leads Collected',
+      unitBn: L('টি'),
+      unitEn: 'leads',
+      isCurrency: false,
+    },
+    CONFIRMED_ORDERS: {
+      bn: L('কনফার্মড অর্ডার'),
+      en: 'Confirmed Orders',
+      unitBn: L('টি'),
+      unitEn: 'orders',
+      isCurrency: false,
+    },
+    SALES_AMOUNT: {
+      bn: L('মোট বিক্রয়'),
+      en: 'Total Sales',
+      unitBn: L('৳'),
+      unitEn: 'BDT',
+      isCurrency: true,
+    },
+    NEW_CLIENTS: {
+      bn: L('নতুন ক্রেতা'),
+      en: 'New Clients',
+      unitBn: L('জন'),
+      unitEn: 'clients',
+      isCurrency: false,
+    },
+    FOLLOWUPS_DONE: {
+      bn: L('ইনবক্স ফলো-আপ'),
+      en: 'Inbox Follow-ups',
+      unitBn: L('টি'),
+      unitEn: 'follow-ups',
+      isCurrency: false,
+    },
+    PROFIT_AMOUNT: {
+      bn: L('মোট মুনাফা'),
+      en: 'Total Profit',
+      unitBn: L('৳'),
+      unitEn: 'BDT',
+      isCurrency: true,
+    },
+  };
 
   const [targets, setTargets] = useState<SectionTarget[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -185,7 +185,7 @@ export default function AdminTargetsPage() {
         setSections(d.sections || []);
       }
     } catch {
-      setErrorMsg('ডাটা লোড করতে সমস্যা হয়েছে');
+      setErrorMsg(L('ডাটা লোড করতে সমস্যা হয়েছে'));
     } finally {
       setLoading(false);
     }
@@ -873,7 +873,7 @@ export default function AdminTargetsPage() {
                   const cfg = METRIC_CONFIG[t.metric_type] || {
                     bn: t.metric_type,
                     en: t.metric_type,
-                    unitBn: 'টি',
+                    unitBn: L('টি'),
                     unitEn: 'units',
                     isCurrency: false,
                   };
@@ -1172,7 +1172,7 @@ export default function AdminTargetsPage() {
                     const cfg = METRIC_CONFIG[job.metric_type] || {
                       bn: job.metric_type,
                       en: job.metric_type,
-                      unitBn: 'টি',
+                      unitBn: L('টি'),
                       unitEn: 'units',
                       isCurrency: false,
                     };

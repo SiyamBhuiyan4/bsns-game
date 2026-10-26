@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useLanguage } from '@/components/LanguageContext';
 
 export interface PieSliceData {
   id: string;
@@ -46,6 +47,7 @@ export default function ThreeDPieChart({
   valueFormatter = (v) => v.toLocaleString(),
   emptyMessage = 'কোনো তথ্য নেই (No data)',
 }: ThreeDPieChartProps) {
+  const { L } = useLanguage();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [is3D, setIs3D] = useState(true);
 
@@ -91,7 +93,7 @@ export default function ThreeDPieChart({
           📊
         </div>
         <p className="text-sm font-medium text-slate-600">{emptyMessage}</p>
-        <p className="text-xs text-slate-400 mt-1">এই সময়ে কোনো রেকর্ড নেই</p>
+        <p className="text-xs text-slate-400 mt-1">{L("এই সময়ে কোনো রেকর্ড নেই")}</p>
       </div>
     );
   }
@@ -113,9 +115,9 @@ export default function ThreeDPieChart({
                 ? 'bg-brand-50 border-brand-200 text-brand-700 shadow-xs'
                 : 'bg-slate-100 border-slate-200 text-slate-600'
             }`}
-            title="3D / 2D পরিবর্তন করুন"
+            title={L("3D / 2D পরিবর্তন করুন")}
           >
-            {is3D ? '🧊 3D ভিউ' : '⭕ 2D ভিউ'}
+            {is3D ? L('🧊 3D ভিউ') : L('⭕ 2D ভিউ')}
           </button>
         </div>
       )}
@@ -347,7 +349,7 @@ export default function ThreeDPieChart({
                   {active.name.length > 18 ? active.name.slice(0, 16) + '...' : active.name}
                 </text>
                 <text x="30" y="55" fill="#94a3b8" fontSize="11px">
-                  পরিমাণ: <tspan fill="#38bdf8" fontWeight="bold">{valueFormatter(active.value)}</tspan> ({active.percent}%)
+                  {L("পরিমাণ:")} <tspan fill="#38bdf8" fontWeight="bold">{valueFormatter(active.value)}</tspan> ({active.percent}%)
                 </text>
               </g>
             );

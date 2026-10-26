@@ -18,13 +18,7 @@ interface PeriodOption {
   labelEn: string;
 }
 
-const PERIOD_OPTIONS: PeriodOption[] = [
-  { key: 'today', labelBn: 'আজ', labelEn: 'Today' },
-  { key: 'yesterday', labelBn: 'গতকাল', labelEn: 'Yesterday' },
-  { key: 'last7days', labelBn: 'গত ৭ দিন', labelEn: 'Last 7 Days' },
-  { key: 'thisMonth', labelBn: 'এই মাস', labelEn: 'This Month' },
-  { key: 'custom', labelBn: 'কাস্টম', labelEn: 'Custom' },
-];
+
 
 export default function DashboardPeriodSelector({
   currentPeriod,
@@ -33,8 +27,14 @@ export default function DashboardPeriodSelector({
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { lang } = useLanguage();
-  const L = (bn: string, en: string) => (lang === 'bn' ? bn : en);
+  const { lang, L } = useLanguage();
+  const PERIOD_OPTIONS: PeriodOption[] = [
+    { key: 'today', labelBn: L('আজ'), labelEn: 'Today' },
+    { key: 'yesterday', labelBn: L('গতকাল'), labelEn: 'Yesterday' },
+    { key: 'last7days', labelBn: L('গত ৭ দিন'), labelEn: 'Last 7 Days' },
+    { key: 'thisMonth', labelBn: L('এই মাস'), labelEn: 'This Month' },
+    { key: 'custom', labelBn: L('কাস্টম'), labelEn: 'Custom' },
+  ];
 
   const [isCustomOpen, setIsCustomOpen] = useState(currentPeriod === 'custom');
   const [fromDate, setFromDate] = useState(currentFrom || '');

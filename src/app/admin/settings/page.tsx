@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { toBengaliDigits } from '@/lib/date';
 import PageHeader from '@/components/ui/PageHeader';
+import { useLanguage } from '@/components/LanguageContext';
 
 interface SectionWeights {
   SALES_PROFIT: number;
@@ -57,55 +58,58 @@ const DEFAULT_SETTINGS: SettingsState = {
   digit_style: 'bn',
 };
 
-const SECTION_CONFIG = [
-  {
-    key: 'SALES_PROFIT' as keyof SectionWeights,
-    nameBn: 'বিক্রি ও লাভ',
-    nameEn: 'Sales & Profit',
-    descBn: 'মোট বিক্রয় ও মোট মুনাফা অর্জনের ওজন',
-    color: 'emerald',
-  },
-  {
-    key: 'CONTENT' as keyof SectionWeights,
-    nameBn: 'কনটেন্ট ও পোস্ট বাস্তবায়ন',
-    nameEn: 'Content',
-    descBn: 'গ্রুপ পোস্ট ও মিডিয়া পাবলিশিং কার্যকারিতার ওজন',
-    color: 'blue',
-  },
-  {
-    key: 'NEW_BUYERS_B2B' as keyof SectionWeights,
-    nameBn: 'নতুন ক্রেতা ও B2B বিক্রি',
-    nameEn: 'New Buyers & B2B',
-    descBn: 'নতুন কাস্টমার সংগ্রহ ও পাইকারি অর্ডার অর্জনের ওজন',
-    color: 'indigo',
-  },
-  {
-    key: 'RETENTION' as keyof SectionWeights,
-    nameBn: 'পুরোনো ক্রেতা ধরে রাখা',
-    nameEn: 'Retention',
-    descBn: 'রিপিট পারচেজ ও পুরোনো গ্রাহক ধরে রাখার সক্ষমতা',
-    color: 'amber',
-  },
-  {
-    key: 'INBOX_FOLLOWUP' as keyof SectionWeights,
-    nameBn: 'ইনবক্স ও ফলোআপ',
-    nameEn: 'Inbox & Follow-up',
-    descBn: 'গ্রাহকদের বার্তা উত্তর ও নিয়মিত যোগাযোগ সম্পন্নের ওজন',
-    color: 'purple',
-  },
-];
 
-const WEEK_DAYS = [
-  { value: 'SUNDAY', labelBn: 'রবিবার' },
-  { value: 'MONDAY', labelBn: 'সোমবার' },
-  { value: 'TUESDAY', labelBn: 'মঙ্গলবার' },
-  { value: 'WEDNESDAY', labelBn: 'বুধবার' },
-  { value: 'THURSDAY', labelBn: 'বৃহস্পতিবার' },
-  { value: 'FRIDAY', labelBn: 'শুক্রবার' },
-  { value: 'SATURDAY', labelBn: 'শনিবার' },
-];
+
+
 
 export default function AdminSettingsPage() {
+  const { L } = useLanguage();
+  const SECTION_CONFIG = [
+    {
+      key: 'SALES_PROFIT' as keyof SectionWeights,
+      nameBn: L('বিক্রি ও লাভ'),
+      nameEn: 'Sales & Profit',
+      descBn: L('মোট বিক্রয় ও মোট মুনাফা অর্জনের ওজন'),
+      color: 'emerald',
+    },
+    {
+      key: 'CONTENT' as keyof SectionWeights,
+      nameBn: L('কনটেন্ট ও পোস্ট বাস্তবায়ন'),
+      nameEn: 'Content',
+      descBn: L('গ্রুপ পোস্ট ও মিডিয়া পাবলিশিং কার্যকারিতার ওজন'),
+      color: 'blue',
+    },
+    {
+      key: 'NEW_BUYERS_B2B' as keyof SectionWeights,
+      nameBn: L('নতুন ক্রেতা ও B2B বিক্রি'),
+      nameEn: 'New Buyers & B2B',
+      descBn: L('নতুন কাস্টমার সংগ্রহ ও পাইকারি অর্ডার অর্জনের ওজন'),
+      color: 'indigo',
+    },
+    {
+      key: 'RETENTION' as keyof SectionWeights,
+      nameBn: L('পুরোনো ক্রেতা ধরে রাখা'),
+      nameEn: 'Retention',
+      descBn: L('রিপিট পারচেজ ও পুরোনো গ্রাহক ধরে রাখার সক্ষমতা'),
+      color: 'amber',
+    },
+    {
+      key: 'INBOX_FOLLOWUP' as keyof SectionWeights,
+      nameBn: L('ইনবক্স ও ফলোআপ'),
+      nameEn: 'Inbox & Follow-up',
+      descBn: L('গ্রাহকদের বার্তা উত্তর ও নিয়মিত যোগাযোগ সম্পন্নের ওজন'),
+      color: 'purple',
+    },
+  ];
+  const WEEK_DAYS = [
+    { value: 'SUNDAY', labelBn: L('রবিবার') },
+    { value: 'MONDAY', labelBn: L('সোমবার') },
+    { value: 'TUESDAY', labelBn: L('মঙ্গলবার') },
+    { value: 'WEDNESDAY', labelBn: L('বুধবার') },
+    { value: 'THURSDAY', labelBn: L('বৃহস্পতিবার') },
+    { value: 'FRIDAY', labelBn: L('শুক্রবার') },
+    { value: 'SATURDAY', labelBn: L('শনিবার') },
+  ];
   const [settings, setSettings] = useState<SettingsState>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -120,7 +124,7 @@ export default function AdminSettingsPage() {
         setLoading(true);
         const res = await fetch('/api/admin/settings');
         if (!res.ok) {
-          throw new Error('সেটিংস লোড করতে ব্যর্থ হয়েছে');
+          throw new Error(L('সেটিংস লোড করতে ব্যর্থ হয়েছে'));
         }
         const data = await res.json();
         if (data.settings) {
@@ -147,7 +151,7 @@ export default function AdminSettingsPage() {
           }
         }
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'সেটিংস লোড করতে সমস্যা হয়েছে';
+        const message = err instanceof Error ? err.message : L('সেটিংস লোড করতে সমস্যা হয়েছে');
         setErrorMsg(message);
       } finally {
         setLoading(false);
@@ -183,7 +187,7 @@ export default function AdminSettingsPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isSumValid) {
-      setErrorMsg(`সেকশন ওয়েটগুলোর যোগফল ঠিক ১০০% হতে হবে (বর্তমান যোগফল: ${currentSum}%)`);
+      setErrorMsg(L(`সেকশন ওয়েটগুলোর যোগফল ঠিক ১০০% হতে হবে (বর্তমান যোগফল: ${currentSum}%)`));
       return;
     }
 
@@ -212,10 +216,10 @@ export default function AdminSettingsPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'সেটিংস সংরক্ষণ ব্যর্থ হয়েছে');
+        throw new Error(data.error || L('সেটিংস সংরক্ষণ ব্যর্থ হয়েছে'));
       }
 
-      setSuccessMsg('সেটিংস সংরক্ষিত হয়েছে। পরিবর্তন এখনই কার্যকর।');
+      setSuccessMsg(L('সেটিংস সংরক্ষিত হয়েছে। পরিবর্তন এখনই কার্যকর।'));
       const nowBn = new Date().toLocaleString('bn-BD');
       setLastAuditTimestamp(nowBn);
 
@@ -224,7 +228,7 @@ export default function AdminSettingsPage() {
         setSuccessMsg('');
       }, 6000);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'সেটিংস সংরক্ষণ করতে ত্রুটি হয়েছে';
+      const message = err instanceof Error ? err.message : L('সেটিংস সংরক্ষণ করতে ত্রুটি হয়েছে');
       setErrorMsg(message);
     } finally {
       setSaving(false);
@@ -232,7 +236,7 @@ export default function AdminSettingsPage() {
   };
 
   const handleResetToDefaults = () => {
-    if (confirm('আপনি কি ডিফল্ট সেটিংস ফিরিয়ে আনতে চান? (সংরক্ষণের জন্য Save বাটনে চাপতে হবে)')) {
+    if (confirm(L('আপনি কি ডিফল্ট সেটিংস ফিরিয়ে আনতে চান? (সংরক্ষণের জন্য Save বাটনে চাপতে হবে)'))) {
       setSettings((prev) => ({
         ...DEFAULT_SETTINGS,
         updated_at: prev.updated_at,
@@ -245,24 +249,24 @@ export default function AdminSettingsPage() {
       <div className="flex min-h-[400px] items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="h-7 w-7 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
-          <p className="text-sm text-slate-500">লোড হচ্ছে...</p>
+          <p className="text-sm text-slate-500">{L("লোড হচ্ছে...")}</p>
         </div>
       </div>
     );
   }
 
   const capOptions = [
-    { value: 1.0, title: '১০০%', note: 'স্ট্যান্ডার্ড, বোনাস নেই' },
-    { value: 1.2, title: '১২০%', note: 'টার্গেটের ১২০% পর্যন্ত' },
-    { value: 999, title: 'নো ক্যাপ', note: 'যত কাজ তত স্কোর' },
+    { value: 1.0, title: L('১০০%'), note: 'স্ট্যান্ডার্ড, বোনাস নেই' },
+    { value: 1.2, title: L('১২০%'), note: 'টার্গেটের ১২০% পর্যন্ত' },
+    { value: 999, title: L('নো ক্যাপ'), note: 'যত কাজ তত স্কোর' },
   ];
 
   return (
     <div className="space-y-6">
       <PageHeader
         icon={<Settings className="h-5 w-5" />}
-        title="সেটিংস"
-        subtitle="স্কোরিং নীতি, কর্মী অনুমতি ও রিপোর্ট শিডিউল"
+        title={L("সেটিংস")}
+        subtitle={L("স্কোরিং নীতি, কর্মী অনুমতি ও রিপোর্ট শিডিউল")}
       />
 
       {successMsg && (
@@ -272,7 +276,7 @@ export default function AdminSettingsPage() {
             <p className="font-medium">{successMsg}</p>
             <p className="flex flex-wrap items-center gap-1.5 text-xs">
               <ShieldCheck className="h-3.5 w-3.5" />
-              অডিট লগে রেকর্ড হয়েছে
+              {L("অডিট লগে রেকর্ড হয়েছে")}
               {lastAuditTimestamp && <span>· {lastAuditTimestamp}</span>}
             </p>
           </div>
@@ -291,16 +295,16 @@ export default function AdminSettingsPage() {
         <div className="card">
           <div className="card-header">
             <div>
-              <h2 className="card-title">সেকশন ওয়েট</h2>
-              <p className="card-subtitle">৫টি সেকশনের গুরুত্ব। যোগফল ঠিক ১০০% হতে হবে।</p>
+              <h2 className="card-title">{L("সেকশন ওয়েট")}</h2>
+              <p className="card-subtitle">{L("৫টি সেকশনের গুরুত্ব। যোগফল ঠিক ১০০% হতে হবে।")}</p>
             </div>
             <span className={`badge ${isSumValid ? 'badge-green' : 'badge-red'}`}>
               {isSumValid ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
-              মোট {toBengaliDigits(currentSum)}%
+              {L("মোট")} {toBengaliDigits(currentSum)}%
               {!isSumValid &&
                 (currentSum > 100
-                  ? ` · ${toBengaliDigits(currentSum - 100)}% বেশি`
-                  : ` · ${toBengaliDigits(100 - currentSum)}% বাকি`)}
+                  ? L(` · ${toBengaliDigits(currentSum - 100)}% বেশি`)
+                  : L(` · ${toBengaliDigits(100 - currentSum)}% বাকি`))}
             </span>
           </div>
           <div className="card-body space-y-5">
@@ -343,7 +347,7 @@ export default function AdminSettingsPage() {
             {!isSumValid && (
               <div className="alert alert-warning">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>যোগফল ১০০% না হলে সংরক্ষণ করা যাবে না।</span>
+                <span>{L("যোগফল ১০০% না হলে সংরক্ষণ করা যাবে না।")}</span>
               </div>
             )}
           </div>
@@ -353,14 +357,14 @@ export default function AdminSettingsPage() {
         <div className="card">
           <div className="card-header">
             <div>
-              <h2 className="card-title">স্কোরিং নিয়ম</h2>
-              <p className="card-subtitle">সর্বোচ্চ স্কোর সীমা ও ফেল করার সীমা</p>
+              <h2 className="card-title">{L("স্কোরিং নিয়ম")}</h2>
+              <p className="card-subtitle">{L("সর্বোচ্চ স্কোর সীমা ও ফেল করার সীমা")}</p>
             </div>
           </div>
           <div className="card-body grid grid-cols-1 gap-6 lg:grid-cols-2">
             <fieldset>
-              <legend className="label">অ্যাচিভমেন্ট ক্যাপ</legend>
-              <p className="hint mb-3 mt-0">টার্গেটের বেশি কাজ করলে সর্বোচ্চ কত স্কোর</p>
+              <legend className="label">{L("অ্যাচিভমেন্ট ক্যাপ")}</legend>
+              <p className="hint mb-3 mt-0">{L("টার্গেটের বেশি কাজ করলে সর্বোচ্চ কত স্কোর")}</p>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                 {capOptions.map((opt) => {
                   const active = settings.achievement_cap === opt.value;
@@ -387,8 +391,8 @@ export default function AdminSettingsPage() {
             </fieldset>
 
             <div>
-              <label className="label" htmlFor="failing-threshold">ফেল থ্রেশহোল্ড</label>
-              <p className="hint mb-3 mt-0">এই স্কোরের নিচে কর্মী &ldquo;উন্নতি প্রয়োজন&rdquo; চিহ্নিত হবে</p>
+              <label className="label" htmlFor="failing-threshold">{L("ফেল থ্রেশহোল্ড")}</label>
+              <p className="hint mb-3 mt-0">{L("এই স্কোরের নিচে কর্মী &ldquo;উন্নতি প্রয়োজন&rdquo; চিহ্নিত হবে")}</p>
               <div className="flex items-center gap-4">
                 <div className="flex-1">
                   <input
@@ -396,7 +400,7 @@ export default function AdminSettingsPage() {
                     min="0"
                     max="1"
                     step="0.05"
-                    aria-label="ফেল থ্রেশহোল্ড স্লাইডার"
+                    aria-label={L("ফেল থ্রেশহোল্ড স্লাইডার")}
                     value={settings.failing_threshold}
                     onChange={(e) =>
                       setSettings((s) => ({ ...s, failing_threshold: parseFloat(e.target.value) || 0 }))
@@ -404,9 +408,9 @@ export default function AdminSettingsPage() {
                     className="w-full cursor-pointer accent-brand-600"
                   />
                   <div className="mt-1 flex justify-between text-[11px] text-slate-400">
-                    <span>০%</span>
-                    <span>৫০%</span>
-                    <span>১০০%</span>
+                    <span>{L("০%")}</span>
+                    <span>{L("৫০%")}</span>
+                    <span>{L("১০০%")}</span>
                   </div>
                 </div>
                 <div className="relative w-20 shrink-0">
@@ -430,7 +434,7 @@ export default function AdminSettingsPage() {
               </div>
               <p className="hint flex items-center gap-1.5">
                 <Info className="h-3.5 w-3.5 shrink-0" />
-                ডিফল্ট ৮০%। ড্যাশবোর্ড ও দৈনিক রিপোর্টে প্রযোজ্য।
+                {L("ডিফল্ট ৮০%। ড্যাশবোর্ড ও দৈনিক রিপোর্টে প্রযোজ্য।")}
               </p>
             </div>
           </div>
@@ -441,21 +445,21 @@ export default function AdminSettingsPage() {
           <div className="card">
             <div className="card-header">
               <div>
-                <h2 className="card-title">কর্মী অনুমতি</h2>
-                <p className="card-subtitle">আনডু ও পুরোনো এন্ট্রি এডিট</p>
+                <h2 className="card-title">{L("কর্মী অনুমতি")}</h2>
+                <p className="card-subtitle">{L("আনডু ও পুরোনো এন্ট্রি এডিট")}</p>
               </div>
             </div>
             <div className="card-body space-y-5">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <div className="text-sm font-medium text-slate-900">লিংক আনডু</div>
-                  <p className="text-xs text-slate-500">কর্মীরা সম্পন্ন লিংক আনডু করতে পারবে</p>
+                  <div className="text-sm font-medium text-slate-900">{L("লিংক আনডু")}</div>
+                  <p className="text-xs text-slate-500">{L("কর্মীরা সম্পন্ন লিংক আনডু করতে পারবে")}</p>
                 </div>
                 <button
                   type="button"
                   role="switch"
                   aria-checked={settings.undo_enabled}
-                  aria-label="লিংক আনডু"
+                  aria-label={L("লিংক আনডু")}
                   onClick={() => setSettings((s) => ({ ...s, undo_enabled: !s.undo_enabled }))}
                   className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 ${
                     settings.undo_enabled ? 'bg-brand-600' : 'bg-slate-300'
@@ -470,7 +474,7 @@ export default function AdminSettingsPage() {
               </div>
 
               <div>
-                <label className="label" htmlFor="edit-window">এডিট উইন্ডো (দিন)</label>
+                <label className="label" htmlFor="edit-window">{L("এডিট উইন্ডো (দিন)")}</label>
                 <input
                   id="edit-window"
                   type="number"
@@ -487,7 +491,7 @@ export default function AdminSettingsPage() {
                   className="input w-28 tabular-nums"
                   required
                 />
-                <p className="hint">০ = শুধু আজ, ১ = আজ ও গতকাল, ৭ = বিগত ৭ দিন</p>
+                <p className="hint">{L("০ = শুধু আজ, ১ = আজ ও গতকাল, ৭ = বিগত ৭ দিন")}</p>
               </div>
             </div>
           </div>
@@ -496,8 +500,8 @@ export default function AdminSettingsPage() {
           <div className="card">
             <div className="card-header">
               <div>
-                <h2 className="card-title">রিপোর্ট শিডিউল ও ভাষা</h2>
-                <p className="card-subtitle">সাপ্তাহিক রিপোর্ট, ডিফল্ট ভাষা ও সংখ্যা</p>
+                <h2 className="card-title">{L("রিপোর্ট শিডিউল ও ভাষা")}</h2>
+                <p className="card-subtitle">{L("সাপ্তাহিক রিপোর্ট, ডিফল্ট ভাষা ও সংখ্যা")}</p>
               </div>
             </div>
             <div className="card-body space-y-5">
@@ -505,7 +509,7 @@ export default function AdminSettingsPage() {
                 <div>
                   <label className="label flex items-center gap-1.5" htmlFor="report-day">
                     <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                    রিপোর্টের দিন
+                    {L("রিপোর্টের দিন")}
                   </label>
                   <select
                     id="report-day"
@@ -523,7 +527,7 @@ export default function AdminSettingsPage() {
                 <div>
                   <label className="label flex items-center gap-1.5" htmlFor="report-time">
                     <Clock className="h-3.5 w-3.5 text-slate-400" />
-                    রিপোর্টের সময়
+                    {L("রিপোর্টের সময়")}
                   </label>
                   <input
                     id="report-time"
@@ -540,16 +544,16 @@ export default function AdminSettingsPage() {
                 <div>
                   <span className="label flex items-center gap-1.5">
                     <Globe className="h-3.5 w-3.5 text-slate-400" />
-                    ডিফল্ট ভাষা
+                    {L("ডিফল্ট ভাষা")}
                   </span>
-                  <div className="segmented w-full" role="group" aria-label="ডিফল্ট ভাষা">
+                  <div className="segmented w-full" role="group" aria-label={L("ডিফল্ট ভাষা")}>
                     <button
                       type="button"
                       className="flex-1"
                       data-active={settings.language_default === 'bn'}
                       onClick={() => setSettings((s) => ({ ...s, language_default: 'bn' }))}
                     >
-                      বাংলা
+                      {L("বাংলা")}
                     </button>
                     <button
                       type="button"
@@ -564,16 +568,16 @@ export default function AdminSettingsPage() {
                 <div>
                   <span className="label flex items-center gap-1.5">
                     <Hash className="h-3.5 w-3.5 text-slate-400" />
-                    সংখ্যা
+                    {L("সংখ্যা")}
                   </span>
-                  <div className="segmented w-full" role="group" aria-label="সংখ্যা প্রদর্শন">
+                  <div className="segmented w-full" role="group" aria-label={L("সংখ্যা প্রদর্শন")}>
                     <button
                       type="button"
                       className="flex-1"
                       data-active={settings.digit_style === 'bn'}
                       onClick={() => setSettings((s) => ({ ...s, digit_style: 'bn' }))}
                     >
-                      ০-৯
+                      {L("০-৯")}
                     </button>
                     <button
                       type="button"
@@ -596,18 +600,18 @@ export default function AdminSettingsPage() {
             <History className="h-4 w-4 shrink-0 text-slate-400" />
             <span>
               {lastAuditTimestamp
-                ? `সর্বশেষ সংরক্ষিত: ${lastAuditTimestamp}`
-                : 'প্রতিটি পরিবর্তন অডিট লগে রেকর্ড হয়'}
+                ? L(`সর্বশেষ সংরক্ষিত: ${lastAuditTimestamp}`)
+                : L('প্রতিটি পরিবর্তন অডিট লগে রেকর্ড হয়')}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <button type="button" onClick={handleResetToDefaults} className="btn btn-ghost">
               <RotateCcw className="h-4 w-4" />
-              ডিফল্টে ফেরান
+              {L("ডিফল্টে ফেরান")}
             </button>
             <button type="submit" disabled={saving || !isSumValid} className="btn btn-primary">
               <Save className="h-4 w-4" />
-              {saving ? 'সংরক্ষণ হচ্ছে...' : 'সংরক্ষণ করুন'}
+              {saving ? L('সংরক্ষণ হচ্ছে...') : L('সংরক্ষণ করুন')}
             </button>
           </div>
         </div>

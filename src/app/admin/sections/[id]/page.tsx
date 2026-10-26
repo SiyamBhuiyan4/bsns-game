@@ -65,7 +65,7 @@ export default function SectionDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: sectionId } = use(params);
-  const { t } = useLanguage();
+  const { t, L } = useLanguage();
 
   const [section, setSection] = useState<SectionInfo | null>(null);
   const [links, setLinks] = useState<GroupLinkItem[]>([]);
@@ -121,10 +121,10 @@ export default function SectionDetailsPage({
         setTotalLinks(data.pagination?.total || 0);
         setSelectedIds([]);
       } else {
-        setErrorMessage(data.error || 'লিংক লোড করা যায়নি');
+        setErrorMessage(data.error || L('লিংক লোড করা যায়নি'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক ত্রুটি');
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setLoading(false);
     }
@@ -150,17 +150,17 @@ export default function SectionDetailsPage({
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage('নতুন গ্রুপ লিঙ্ক সফলভাবে যুক্ত হয়েছে');
+        setSuccessMessage(L('নতুন গ্রুপ লিঙ্ক সফলভাবে যুক্ত হয়েছে'));
         setIsAddOpen(false);
         setAddUrl('');
         setAddTitle('');
         fetchLinks();
         fetchSectionInfo();
       } else {
-        setErrorMessage(data.error || 'লিঙ্ক যোগ করা যায়নি');
+        setErrorMessage(data.error || L('লিঙ্ক যোগ করা যায়নি'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক সমস্যা');
+      setErrorMessage(L('নেটওয়ার্ক সমস্যা'));
     } finally {
       setAddSubmitting(false);
     }
@@ -183,15 +183,15 @@ export default function SectionDetailsPage({
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage('লিংক আপডেট সফল হয়েছে');
+        setSuccessMessage(L('লিংক আপডেট সফল হয়েছে'));
         setEditingLink(null);
         fetchLinks();
         fetchSectionInfo();
       } else {
-        setErrorMessage(data.error || 'আপডেট ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('আপডেট ব্যর্থ হয়েছে'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক সমস্যা');
+      setErrorMessage(L('নেটওয়ার্ক সমস্যা'));
     } finally {
       setEditSubmitting(false);
     }
@@ -199,7 +199,7 @@ export default function SectionDetailsPage({
 
   const handleBulkDeactivate = async () => {
     if (selectedIds.length === 0) return;
-    if (!confirm(`আপনি কি নির্বাচিত ${selectedIds.length}টি লিঙ্ক নিষ্ক্রিয় করতে চান?`)) return;
+    if (!confirm(L(`আপনি কি নির্বাচিত ${selectedIds.length}টি লিঙ্ক নিষ্ক্রিয় করতে চান?`))) return;
 
     setBulkLoading(true);
     try {
@@ -210,22 +210,22 @@ export default function SectionDetailsPage({
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage(data.message || 'নির্বাচিত লিঙ্কসমূহ নিষ্ক্রিয় করা হয়েছে');
+        setSuccessMessage(data.message || L('নির্বাচিত লিঙ্কসমূহ নিষ্ক্রিয় করা হয়েছে'));
         setSelectedIds([]);
         fetchLinks();
         fetchSectionInfo();
       } else {
-        setErrorMessage(data.error || 'বাল্ক নিষ্ক্রিয়করণ ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('বাল্ক নিষ্ক্রিয়করণ ব্যর্থ হয়েছে'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক সমস্যা');
+      setErrorMessage(L('নেটওয়ার্ক সমস্যা'));
     } finally {
       setBulkLoading(false);
     }
   };
 
   const handleBulkDeactivateAll = async () => {
-    if (!confirm('আপনি কি এই সেকশনের সকল সক্রিয় লিঙ্ক নিষ্ক্রিয় করতে চান? (Are you sure you want to deactivate all active links in this section?)')) return;
+    if (!confirm(L('আপনি কি এই সেকশনের সকল সক্রিয় লিঙ্ক নিষ্ক্রিয় করতে চান? (Are you sure you want to deactivate all active links in this section?)'))) return;
 
     setBulkLoading(true);
     try {
@@ -236,15 +236,15 @@ export default function SectionDetailsPage({
       });
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage(data.message || 'সকল সক্রিয় লিঙ্ক নিষ্ক্রিয় করা হয়েছে');
+        setSuccessMessage(data.message || L('সকল সক্রিয় লিঙ্ক নিষ্ক্রিয় করা হয়েছে'));
         setSelectedIds([]);
         fetchLinks();
         fetchSectionInfo();
       } else {
-        setErrorMessage(data.error || 'বাল্ক নিষ্ক্রিয়করণ ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || L('বাল্ক নিষ্ক্রিয়করণ ব্যর্থ হয়েছে'));
       }
     } catch {
-      setErrorMessage('নেটওয়ার্ক সমস্যা');
+      setErrorMessage(L('নেটওয়ার্ক সমস্যা'));
     } finally {
       setBulkLoading(false);
     }

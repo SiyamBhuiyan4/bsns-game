@@ -96,15 +96,14 @@ interface CurrentUser {
 }
 
 export default function EmployeePlanPage() {
-  const { lang } = useLanguage();
+  const { lang, L } = useLanguage();
   const isEn = lang === 'en';
-  const L = (bn: string, en: string) => (isEn ? en : bn);
   const fmtNum = (val: number | string | undefined | null) => {
     if (val === undefined || val === null) return '';
     return isEn ? String(val) : toBengaliDigits(val);
   };
   const getCleanPlanTitle = (name: string) => {
-    if (!name) return isEn ? 'Marketing Action Plan' : 'মার্কেটিং কর্মপরিকল্পনা';
+    if (!name) return isEn ? 'Marketing Action Plan' : L('মার্কেটিং কর্মপরিকল্পনা');
     const match = name.match(/^(.*?)\s*\((.*?)\)$/);
     if (match) {
       return isEn ? match[2].trim() : match[1].trim();
@@ -128,7 +127,7 @@ export default function EmployeePlanPage() {
       setLoading(true);
       const res = await fetch('/api/plan');
       if (!res.ok) {
-        throw new Error('প্ল্যান ডাটা লোড করা সম্ভব হয়নি');
+        throw new Error(L('প্ল্যান ডাটা লোড করা সম্ভব হয়নি'));
       }
       const data = await res.json();
       setPlan(data.plan);
@@ -208,7 +207,7 @@ export default function EmployeePlanPage() {
         subtitle={
           <span className="inline-flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5 text-slate-400" />
-            {isEn ? 'Start' : 'শুরু'}: {formatDisplayDate(plan.start_date, lang)}
+            {isEn ? 'Start' : L('শুরু')}: {formatDisplayDate(plan.start_date, lang)}
           </span>
         }
         actions={
@@ -217,12 +216,12 @@ export default function EmployeePlanPage() {
               <Clock className="h-3 w-3" />
               {isEn
                 ? `Day ${stats?.current_day || 1} / ${totalPlanDays} · Phase ${stats?.current_phase_order || 1}`
-                : `দিন ${fmtNum(stats?.current_day || 1)} / ${fmtNum(totalPlanDays)} · ফেজ ${fmtNum(stats?.current_phase_order || 1)}`}
+                : L(`দিন ${fmtNum(stats?.current_day || 1)} / ${fmtNum(totalPlanDays)} · ফেজ ${fmtNum(stats?.current_phase_order || 1)}`)}
             </span>
             {stats && stats.overdue_tasks > 0 ? (
               <span className="badge badge-red">
                 <AlertTriangle className="h-3 w-3" />
-                {isEn ? `${stats.overdue_tasks} overdue` : `${fmtNum(stats.overdue_tasks)}টি বিলম্বিত`}
+                {isEn ? `${stats.overdue_tasks} overdue` : L(`${fmtNum(stats.overdue_tasks)}টি বিলম্বিত`)}
               </span>
             ) : (
               <span className="badge badge-gray">
@@ -313,7 +312,7 @@ export default function EmployeePlanPage() {
                 <span className="badge badge-gray font-medium">
                   {isEn
                     ? `Days ${phase.day_start} – ${phase.day_end}`
-                    : `দিন ${fmtNum(phase.day_start)} – ${fmtNum(phase.day_end)}`}
+                    : L(`দিন ${fmtNum(phase.day_start)} – ${fmtNum(phase.day_end)}`)}
                 </span>
                 {isSystemCurrentPhase && (
                   <span className="badge badge-green">
@@ -336,7 +335,7 @@ export default function EmployeePlanPage() {
                   </span>
                   {myTasksInPhase > 0 && (
                     <span className="ml-1 text-brand-700">
-                      ({isEn ? `${myTasksInPhase} yours` : `${fmtNum(myTasksInPhase)}টি আপনার`})
+                      ({isEn ? `${myTasksInPhase} yours` : L(`${fmtNum(myTasksInPhase)}টি আপনার`)})
                     </span>
                   )}
                 </span>
