@@ -20,7 +20,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import { toBengaliDigits, getDhakaDateString, formatDisplayDate } from '@/lib/date';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
@@ -119,6 +119,7 @@ export default function AdminPlanPage() {
     if (!title) return '';
     return title.replace(/(\d|[\u09E6-\u09EF])\s*[–—-]\s*(\d|[\u09E6-\u09EF])/g, '$1 – $2');
   };
+
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [stats, setStats] = useState<PlanStats | null>(null);
   const [employees, setEmployees] = useState<Owner[]>([]);
@@ -136,10 +137,23 @@ export default function AdminPlanPage() {
   const [planNameInput, setPlanNameInput] = useState('');
   const [startDateInput, setStartDateInput] = useState('');
 
-  // Milestone Review Modal State
+  // Milestone Review & Edit Modal State
   const [evaluatingMilestone, setEvaluatingMilestone] = useState<PlanMilestone | null>(null);
+  const [milestoneTitleBn, setMilestoneTitleBn] = useState('');
+  const [milestoneExpectedResult, setMilestoneExpectedResult] = useState('');
   const [milestoneStatus, setMilestoneStatus] = useState<'PENDING' | 'MET' | 'PARTIAL' | 'MISSED'>('PENDING');
   const [milestoneResultNote, setMilestoneResultNote] = useState('');
+
+  // Phase Edit & Add Modal State
+  const [editingPhase, setEditingPhase] = useState<PlanPhase | null>(null);
+  const [showAddPhaseModal, setShowAddPhaseModal] = useState(false);
+  const [phaseForm, setPhaseForm] = useState({
+    name_bn: '',
+    name_en: '',
+    day_start: 1,
+    day_end: 30,
+  });
+  const [deletingPhaseId, setDeletingPhaseId] = useState<string | null>(null);
 
   // Add Task Modal State
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
@@ -179,11 +193,19 @@ export default function AdminPlanPage() {
   };
 
   const expandAllPhases = () => {
-    setExpandedPhases({ 1: true, 2: true, 3: true });
+    const allExpanded: Record<number, boolean> = {};
+    plan?.phases.forEach((p) => {
+      allExpanded[p.order_no] = true;
+    });
+    setExpandedPhases(allExpanded);
   };
 
   const collapseAllPhases = () => {
-    setExpandedPhases({ 1: false, 2: false, 3: false });
+    const allCollapsed: Record<number, boolean> = {};
+    plan?.phases.forEach((p) => {
+      allCollapsed[p.order_no] = false;
+    });
+    setExpandedPhases(allCollapsed);
   };
 
   const fetchPlanData = useCallback(async () => {
@@ -197,8 +219,8 @@ export default function AdminPlanPage() {
       setPlan(data.plan);
       setStats(data.stats);
       setEmployees(data.employees || []);
-      setPlanNameInput(data.plan.name);
-      setStartDateInput(data.plan.start_date);
+      setPlanNameInput(data.plan?.name || '');
+      setStartDateInput(data.plan?.start_date || '');
       if (data.stats?.current_phase_order) {
         setExpandedPhases((prev) => ({
           ...prev,
@@ -243,7 +265,7 @@ export default function AdminPlanPage() {
     }
   };
 
-  // Handle Milestone Evaluation
+  // Handle Milestone Evaluation & Edit
   const handleSaveMilestoneEvaluation = async () => {
     if (!evaluatingMilestone) return;
     setSubmitting(true);
@@ -252,6 +274,8 @@ export default function AdminPlanPage() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          title_bn: milestoneTitleBn.trim() || evaluatingMilestone.title_bn,
+          expected_result: milestoneExpectedResult.trim() || evaluatingMilestone.expected_result,
           status: milestoneStatus,
           achieved_result: milestoneResultNote.trim() || null,
         }),
@@ -261,7 +285,7 @@ export default function AdminPlanPage() {
         throw new Error(err.error || 'মাইলস্টোন মূল্যায়ন সংরক্ষণ করা যায়নি');
       }
       setEvaluatingMilestone(null);
-      showToast('success', 'মাইলস্টোন মূল্যায়ন সফলভাবে সংরক্ষিত হয়েছে');
+      showToast('success', 'মাইলস্টোন ও মূল্যায়ন সফলভাবে সংরক্ষিত হয়েছে');
       fetchPlanData();
     } catch (err: unknown) {
       showToast('error', getErrorMessage(err));
@@ -273,7 +297,6 @@ export default function AdminPlanPage() {
   // Handle Quick Task Status Change
   const handleQuickStatusChange = async (taskId: string, newStatus: 'NOT_STARTED' | 'IN_PROGRESS' | 'DONE' | 'BLOCKED') => {
     try {
-      // Optimistic update
       setPlan((prev) => {
         if (!prev) return prev;
         return {
@@ -478,6 +501,90 @@ export default function AdminPlanPage() {
     }
   };
 
+  // Handle Update Phase
+  const handleUpdatePhase = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPhase) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/plan/phases/${editingPhase.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name_bn: editingPhase.name_bn.trim(),
+          name_en: editingPhase.name_en.trim(),
+          day_start: Number(editingPhase.day_start),
+          day_end: Number(editingPhase.day_end),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'ফেজ আপডেট ব্যর্থ হয়েছে');
+      }
+      setEditingPhase(null);
+      showToast('success', 'ফেজ তথ্য সফলভাবে আপডেট হয়েছে');
+      fetchPlanData();
+    } catch (err: unknown) {
+      showToast('error', getErrorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Handle Create Phase
+  const handleCreatePhase = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!plan) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/plan/phases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan_id: plan.id,
+          name_bn: phaseForm.name_bn.trim(),
+          name_en: phaseForm.name_en.trim(),
+          day_start: Number(phaseForm.day_start),
+          day_end: Number(phaseForm.day_end),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'নতুন ফেজ তৈরি করা যায়নি');
+      }
+      setShowAddPhaseModal(false);
+      setPhaseForm({ name_bn: '', name_en: '', day_start: 1, day_end: 30 });
+      showToast('success', 'নতুন ফেজ সফলভাবে তৈরি হয়েছে');
+      fetchPlanData();
+    } catch (err: unknown) {
+      showToast('error', getErrorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Handle Delete Phase
+  const handleDeletePhase = async () => {
+    if (!deletingPhaseId) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`/api/plan/phases/${deletingPhaseId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'ফেজ মুছে ফেলা সম্ভব হয়নি');
+      }
+      setDeletingPhaseId(null);
+      showToast('success', 'ফেজ সফলভাবে মুছে ফেলা হয়েছে');
+      fetchPlanData();
+    } catch (err: unknown) {
+      showToast('error', getErrorMessage(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   type TaskStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'DONE' | 'BLOCKED';
 
   const statusOptions = (
@@ -593,7 +700,15 @@ export default function AdminPlanPage() {
           </span>
         }
         actions={
-          <>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowAddPhaseModal(true)}
+              className="btn btn-primary btn-sm gap-1.5"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>{L('নতুন ফেজ যোগ করুন', 'Add Phase')}</span>
+            </button>
             <button type="button" onClick={expandAllPhases} className="btn btn-secondary btn-sm">
               <ChevronDown className="h-3.5 w-3.5" />
               {L('সব খুলুন', 'Expand All')}
@@ -602,14 +717,14 @@ export default function AdminPlanPage() {
               <ChevronUp className="h-3.5 w-3.5" />
               {L('সব বন্ধ', 'Collapse All')}
             </button>
-          </>
+          </div>
         }
       />
 
       {isEditingPlan && (
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">প্ল্যানের তথ্য</h2>
+            <h2 className="card-title">প্ল্যানের তথ্য সম্পাদনা</h2>
           </div>
           <div className="card-body grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
@@ -645,6 +760,7 @@ export default function AdminPlanPage() {
         </div>
       )}
 
+      {/* STATS OVERVIEW */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label={L('চলমান দিন', 'Current Day')}
@@ -682,6 +798,7 @@ export default function AdminPlanPage() {
         />
       </div>
 
+      {/* PHASES LIST */}
       <div className="space-y-4">
         {plan.phases.map((phase) => {
           const isExpanded = !!expandedPhases[phase.order_no];
@@ -697,11 +814,9 @@ export default function AdminPlanPage() {
               key={phase.id}
               className={`card overflow-hidden ${isSystemCurrentPhase ? 'ring-1 ring-brand-500/40' : ''}`}
             >
-              <button
-                type="button"
+              <div
                 onClick={() => togglePhaseCollapse(phase.order_no)}
-                aria-expanded={isExpanded}
-                className={`flex w-full flex-col gap-4 px-5 py-4 text-left transition-colors md:flex-row md:items-center md:justify-between ${
+                className={`flex w-full flex-col gap-4 px-5 py-4 text-left transition-colors md:flex-row md:items-center md:justify-between cursor-pointer ${
                   isExpanded ? 'border-b border-slate-100' : 'hover:bg-slate-50/60'
                 }`}
               >
@@ -715,6 +830,17 @@ export default function AdminPlanPage() {
                         {formatPhaseTitle(isEn ? (phase.name_en || phase.name_bn) : phase.name_bn)}
                       </h3>
                       {isSystemCurrentPhase && <span className="badge badge-green">{L('চলমান', 'Current')}</span>}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingPhase(phase);
+                        }}
+                        className="btn-icon p-1 text-slate-400 hover:text-brand-600"
+                        title={L('ফেজের নাম ও দিন সম্পাদনা করুন', 'Edit phase details')}
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                     <p className="mt-0.5 text-xs text-slate-500">
                       {isEn
@@ -741,70 +867,74 @@ export default function AdminPlanPage() {
                     {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   </span>
                 </div>
-              </button>
+              </div>
 
               {isExpanded && (
                 <div className="divide-y divide-slate-100">
-                  {/* Milestone */}
+                  {/* Milestone & Phase Goal */}
                   <div className="flex flex-col gap-4 bg-slate-50/50 px-5 py-4 md:flex-row md:items-start md:justify-between">
                     <div className="min-w-0 flex-1 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <Award className="h-4 w-4 text-slate-400" />
-                        <span className="text-xs font-medium text-slate-500">{L('মাইলস্টোন', 'Milestone')}</span>
+                        <span className="text-xs font-semibold text-slate-700">{L('মাইলস্টোন ও গাইডলাইন', 'Milestone & Guidelines')}</span>
                         {milestoneBadge(phaseMilestone?.status)}
                       </div>
                       <h4 className="text-sm font-semibold text-slate-900">
                         {phaseMilestone?.title_bn || L('মাইলস্টোন', 'Milestone')}
                       </h4>
                       <p className="text-sm text-slate-600">
-                        <span className="text-slate-500">{L('প্রত্যাশিত:', 'Expected:')} </span>
+                        <span className="text-slate-500 font-medium">{L('প্রত্যাশিত:', 'Expected:')} </span>
                         {phaseMilestone?.expected_result}
                       </p>
                       {phaseMilestone?.achieved_result && (
                         <p className="text-sm text-slate-700">
-                          <span className="text-slate-500">{L('অর্জিত:', 'Achieved:')} </span>
+                          <span className="text-slate-500 font-medium">{L('অর্জিত:', 'Achieved:')} </span>
                           {phaseMilestone.achieved_result}
                         </p>
                       )}
                     </div>
                     <button
+                      type="button"
                       onClick={() => {
                         if (phaseMilestone) {
                           setEvaluatingMilestone(phaseMilestone);
+                          setMilestoneTitleBn(phaseMilestone.title_bn || '');
+                          setMilestoneExpectedResult(phaseMilestone.expected_result || '');
                           setMilestoneStatus(phaseMilestone.status);
                           setMilestoneResultNote(phaseMilestone.achieved_result || '');
                         }
                       }}
-                      className="btn btn-secondary btn-sm shrink-0"
+                      className="btn btn-secondary btn-sm gap-1.5 shrink-0"
                     >
-                      <Award className="h-3.5 w-3.5" />
-                      মূল্যায়ন করুন
+                      <Edit2 className="h-3.5 w-3.5" />
+                      <span>{L('সম্পাদনা ও মূল্যায়ন', 'Edit & Evaluate')}</span>
                     </button>
                   </div>
 
                   {/* Tasks header */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 bg-white">
                     <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                      টাস্ক
+                      {L('টাস্ক তালিকা', 'Task List')}
                       <span className="badge badge-gray">{toBengaliDigits(phaseTasks.length)}</span>
                     </h4>
                     <button
+                      type="button"
                       onClick={() => {
                         setSelectedPhaseIdForAdd(phase.id);
                         setShowAddTaskModal(true);
                       }}
-                      className="btn btn-primary btn-sm"
+                      className="btn btn-primary btn-sm gap-1"
                     >
                       <Plus className="h-3.5 w-3.5" />
-                      নতুন টাস্ক
+                      <span>{L('নতুন টাস্ক', 'New Task')}</span>
                     </button>
                   </div>
 
                   {phaseTasks.length === 0 ? (
                     <EmptyState
                       icon={<FileText className="h-5 w-5" />}
-                      title="এই ফেজে কোনো টাস্ক নেই"
-                      description="“নতুন টাস্ক” বাটনে ক্লিক করে প্রথম টাস্ক যোগ করুন।"
+                      title={L('এই ফেজে কোনো টাস্ক নেই', 'No tasks in this phase')}
+                      description={L('“নতুন টাস্ক” বাটনে ক্লিক করে টাস্ক যোগ করুন।', 'Click "New Task" to add tasks to this phase.')}
                     />
                   ) : (
                     phaseTasks.map((task) => {
@@ -827,7 +957,7 @@ export default function AdminPlanPage() {
                                   id={`task-status-${task.id}`}
                                   value={task.status}
                                   onChange={(e) => handleQuickStatusChange(task.id, e.target.value as TaskStatus)}
-                                  className={`cursor-pointer rounded-md border px-2 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/20 ${
+                                  className={`cursor-pointer rounded-md border px-2 py-1 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20 ${
                                     task.status === 'DONE'
                                       ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                                       : task.status === 'IN_PROGRESS'
@@ -843,40 +973,52 @@ export default function AdminPlanPage() {
                                 {isOverdue && (
                                   <span className="badge badge-red">
                                     <AlertTriangle className="h-3 w-3" />
-                                    বিলম্বিত
+                                    {L('বিলম্বিত', 'Overdue')}
                                   </span>
                                 )}
 
                                 <span className="flex items-center gap-1 text-xs text-slate-500">
                                   <Calendar className="h-3.5 w-3.5" />
-                                  {task.due_date ? format(new Date(task.due_date), 'dd MMM yyyy') : 'তারিখ নেই'}
+                                  {task.due_date ? format(new Date(task.due_date), 'dd MMM yyyy') : L('তারিখ নেই', 'No date')}
                                 </span>
                               </div>
 
-                              <div>
-                                <h5 className="text-sm font-medium leading-snug text-slate-900">{task.title_bn}</h5>
-                                <p className="mt-0.5 text-xs text-slate-500">{task.title_en}</p>
-                                {task.description && (
-                                  <p className="mt-1 text-sm text-slate-600">{task.description}</p>
-                                )}
+                              {/* Task Title (Clickable for instant edit) */}
+                              <div
+                                onClick={() => setEditingTask(task)}
+                                className="cursor-pointer group flex items-start gap-1.5"
+                                title={L('সম্পাদনা করতে ক্লিক করুন', 'Click to edit task')}
+                              >
+                                <div>
+                                  <h5 className="text-sm font-semibold leading-snug text-slate-900 group-hover:text-brand-600 group-hover:underline flex items-center gap-1.5">
+                                    {task.title_bn}
+                                    <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100 text-brand-600 transition-opacity" />
+                                  </h5>
+                                  <p className="mt-0.5 text-xs text-slate-500">{task.title_en}</p>
+                                  {task.description && (
+                                    <p className="mt-1 text-sm text-slate-600">{task.description}</p>
+                                  )}
+                                </div>
                               </div>
 
+                              {/* Outcome Note */}
                               {!isEditingOutcome ? (
                                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                                  <span className="text-slate-500">ফলাফল:</span>
+                                  <span className="text-slate-500 font-medium">{L('ফলাফল:', 'Outcome:')}</span>
                                   {task.outcome_note ? (
                                     <span className="text-slate-700">{task.outcome_note}</span>
                                   ) : (
-                                    <span className="text-slate-400">নেই</span>
+                                    <span className="text-slate-400">{L('নেই', 'None')}</span>
                                   )}
                                   <button
+                                    type="button"
                                     onClick={() => {
                                       setEditingOutcomeId(task.id);
                                       setOutcomeDraft(task.outcome_note || '');
                                     }}
-                                    className="font-medium text-brand-700 hover:underline"
+                                    className="font-semibold text-brand-700 hover:underline"
                                   >
-                                    {task.outcome_note ? 'সম্পাদনা' : 'নোট যোগ করুন'}
+                                    {task.outcome_note ? L('সম্পাদনা', 'Edit') : L('নোট যোগ করুন', 'Add note')}
                                   </button>
                                 </div>
                               ) : (
@@ -885,31 +1027,34 @@ export default function AdminPlanPage() {
                                   <input
                                     id={`outcome-${task.id}`}
                                     type="text"
-                                    placeholder="অর্জিত ফলাফল লিখুন..."
+                                    placeholder={L('অর্জিত ফলাফল লিখুন...', 'Enter achieved outcome...')}
                                     value={outcomeDraft}
                                     onChange={(e) => setOutcomeDraft(e.target.value)}
-                                    className="input max-w-md flex-1 py-1.5"
+                                    className="input max-w-md flex-1 py-1 text-xs"
                                   />
                                   <button onClick={() => handleSaveOutcomeNote(task.id)} className="btn btn-primary btn-sm">
-                                    সংরক্ষণ
+                                    {L('সংরক্ষণ', 'Save')}
                                   </button>
                                   <button onClick={() => setEditingOutcomeId(null)} className="btn btn-ghost btn-sm">
-                                    বাতিল
+                                    {L('বাতিল', 'Cancel')}
                                   </button>
                                 </div>
                               )}
                             </div>
 
                             <div className="flex flex-wrap items-end gap-4 lg:flex-nowrap">
+                              {/* Assigned Marketer */}
                               <div className="w-44">
-                                <label className="label" htmlFor={`task-owner-${task.id}`}>দায়িত্বপ্রাপ্ত</label>
+                                <label className="label text-xs font-medium" htmlFor={`task-owner-${task.id}`}>
+                                  {L('দায়িত্বপ্রাপ্ত', 'Assigned To')}
+                                </label>
                                 <select
                                   id={`task-owner-${task.id}`}
                                   value={task.owner_id || 'UNASSIGNED'}
                                   onChange={(e) => handleQuickOwnerChange(task.id, e.target.value)}
-                                  className="input py-1.5 text-xs"
+                                  className="input py-1.5 text-xs font-semibold"
                                 >
-                                  <option value="UNASSIGNED">অবণ্টিত</option>
+                                  <option value="UNASSIGNED">{L('অবণ্টিত', 'Unassigned')}</option>
                                   {employees.map((emp) => (
                                     <option key={emp.id} value={emp.id}>
                                       {emp.name}
@@ -918,10 +1063,11 @@ export default function AdminPlanPage() {
                                 </select>
                               </div>
 
+                              {/* Progress Slider */}
                               <div className="w-36">
-                                <div className="label flex items-center justify-between">
-                                  <label htmlFor={`task-progress-${task.id}`}>অগ্রগতি</label>
-                                  <span className="tabular-nums text-slate-900">{toBengaliDigits(task.progress_percent)}%</span>
+                                <div className="label flex items-center justify-between text-xs font-medium">
+                                  <label htmlFor={`task-progress-${task.id}`}>{L('অগ্রগতি', 'Progress')}</label>
+                                  <span className="tabular-nums font-bold text-slate-900">{toBengaliDigits(task.progress_percent)}%</span>
                                 </div>
                                 <input
                                   id={`task-progress-${task.id}`}
@@ -953,20 +1099,23 @@ export default function AdminPlanPage() {
                                 />
                               </div>
 
+                              {/* Action Buttons */}
                               <div className="flex items-center gap-1">
                                 <button
+                                  type="button"
                                   onClick={() => setEditingTask(task)}
                                   className="btn-icon"
-                                  title="টাস্ক সম্পাদনা"
-                                  aria-label="টাস্ক সম্পাদনা"
+                                  title={L('টাস্ক সম্পাদনা', 'Edit task')}
+                                  aria-label={L('টাস্ক সম্পাদনা', 'Edit task')}
                                 >
                                   <Edit2 className="h-4 w-4" />
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={() => setDeletingTaskId(task.id)}
                                   className="btn-icon hover:bg-rose-50 hover:text-rose-600"
-                                  title="টাস্ক মুছুন"
-                                  aria-label="টাস্ক মুছুন"
+                                  title={L('টাস্ক মুছুন', 'Delete task')}
+                                  aria-label={L('টাস্ক মুছুন', 'Delete task')}
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>
@@ -984,13 +1133,13 @@ export default function AdminPlanPage() {
         })}
       </div>
 
-      {/* MILESTONE EVALUATION MODAL */}
+      {/* MILESTONE REVIEW & EDIT MODAL */}
       {evaluatingMilestone && (
         <div className="modal-backdrop" role="dialog" aria-modal="true">
           <div className="modal-panel">
             <div className="card-header">
               <div className="min-w-0">
-                <h3 className="card-title">মাইলস্টোন মূল্যায়ন</h3>
+                <h3 className="card-title">{L('মাইলস্টোন ও গাইডলাইন সম্পাদনা', 'Milestone & Guidelines')}</h3>
                 <p className="card-subtitle truncate">{evaluatingMilestone.title_bn}</p>
               </div>
               <button onClick={() => setEvaluatingMilestone(null)} className="btn-icon" aria-label="বন্ধ করুন">
@@ -999,34 +1148,52 @@ export default function AdminPlanPage() {
             </div>
 
             <div className="card-body space-y-4 text-sm">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <span className="text-xs font-medium text-slate-500">প্রত্যাশিত ফলাফল</span>
-                <p className="mt-1 text-slate-800">{evaluatingMilestone.expected_result}</p>
+              <div>
+                <label className="label" htmlFor="ms-title">{L('মাইলস্টোনের নাম (বাংলা)', 'Milestone Title')}</label>
+                <input
+                  id="ms-title"
+                  type="text"
+                  value={milestoneTitleBn}
+                  onChange={(e) => setMilestoneTitleBn(e.target.value)}
+                  className="input"
+                />
               </div>
 
               <div>
-                <label className="label" htmlFor="ms-status">মূল্যায়ন</label>
+                <label className="label" htmlFor="ms-expected">{L('প্রত্যাশিত ফলাফল ও কর্মপরিকল্পনার গাইডলাইন', 'Expected Goal & Guidance')}</label>
+                <textarea
+                  id="ms-expected"
+                  rows={3}
+                  value={milestoneExpectedResult}
+                  onChange={(e) => setMilestoneExpectedResult(e.target.value)}
+                  className="input"
+                  placeholder={L('বর্তমান ব্যবসার বেসলাইন, অগ্রাধিকারভিত্তিক পণ্যের তালিকা...', 'Guidelines for this phase...')}
+                />
+              </div>
+
+              <div>
+                <label className="label" htmlFor="ms-status">{L('মূল্যায়ন স্ট্যাটাস', 'Evaluation Status')}</label>
                 <select
                   id="ms-status"
                   value={milestoneStatus}
                   onChange={(e) => setMilestoneStatus(e.target.value as 'PENDING' | 'MET' | 'PARTIAL' | 'MISSED')}
-                  className="input"
+                  className="input font-semibold"
                 >
-                  <option value="PENDING">অপেক্ষমাণ — এখনও মূল্যায়ন হয়নি</option>
-                  <option value="MET">অর্জিত — সম্পূর্ণ অর্জিত</option>
-                  <option value="PARTIAL">আংশিক — কিছু অংশ পূর্ণ</option>
-                  <option value="MISSED">অনর্জিত — লক্ষ্য পূরণ হয়নি</option>
+                  <option value="PENDING">{L('অপেক্ষমাণ — এখনও মূল্যায়ন হয়নি', 'Pending — Not evaluated yet')}</option>
+                  <option value="MET">{L('অর্জিত — সম্পূর্ণ অর্জিত', 'Met — Fully achieved')}</option>
+                  <option value="PARTIAL">{L('আংশিক — কিছু অংশ পূর্ণ', 'Partial — Partially met')}</option>
+                  <option value="MISSED">{L('অনর্জিত — লক্ষ্য পূরণ হয়নি', 'Missed — Target not met')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="label" htmlFor="ms-note">অর্জিত ফলাফল</label>
+                <label className="label" htmlFor="ms-note">{L('অর্জিত ফলাফল ও অগ্রগতি নোট', 'Achieved Results & Notes')}</label>
                 <textarea
                   id="ms-note"
                   rows={3}
                   value={milestoneResultNote}
                   onChange={(e) => setMilestoneResultNote(e.target.value)}
-                  placeholder="যেমন: সকল অডিট সম্পন্ন, প্রথম ১৫ দিনে ৭০টি লিড..."
+                  placeholder={L('যেমন: সকল অডিট সম্পন্ন, পণ্যের তথ্য ও ডাটাবেস পর্যালোচিত...', 'e.g. Audits done, database cleaned...')}
                   className="input"
                 />
               </div>
@@ -1034,11 +1201,11 @@ export default function AdminPlanPage() {
 
             <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
               <button onClick={() => setEvaluatingMilestone(null)} className="btn btn-secondary">
-                বাতিল
+                {L('বাতিল', 'Cancel')}
               </button>
               <button disabled={submitting} onClick={handleSaveMilestoneEvaluation} className="btn btn-primary">
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                সংরক্ষণ
+                {L('সংরক্ষণ করুন', 'Save')}
               </button>
             </div>
           </div>
@@ -1050,7 +1217,7 @@ export default function AdminPlanPage() {
         <div className="modal-backdrop" role="dialog" aria-modal="true">
           <div className="modal-panel">
             <div className="card-header">
-              <h3 className="card-title">নতুন টাস্ক</h3>
+              <h3 className="card-title">{L('নতুন টাস্ক তৈরি করুন', 'Create New Task')}</h3>
               <button onClick={() => setShowAddTaskModal(false)} className="btn-icon" aria-label="বন্ধ করুন">
                 <X className="h-4 w-4" />
               </button>
@@ -1059,14 +1226,12 @@ export default function AdminPlanPage() {
             <form onSubmit={handleCreateTask}>
               <div className="card-body space-y-4">
                 <div>
-                  <label className="label" htmlFor="add-title-bn">
-                    শিরোনাম (বাংলা) <span className="text-rose-500">*</span>
-                  </label>
+                  <label className="label" htmlFor="add-title-bn">{L('শিরোনাম (বাংলা)', 'Title (Bangla)')} *</label>
                   <input
                     id="add-title-bn"
                     type="text"
                     required
-                    placeholder="যেমন: ফেসবুক গ্রুপে কন্টেন্ট ক্যাম্পেইন"
+                    placeholder="যেমন: নতুন লিড সংগ্রহ ও ফলো-আপ"
                     value={taskForm.title_bn}
                     onChange={(e) => setTaskForm({ ...taskForm, title_bn: e.target.value })}
                     className="input"
@@ -1074,14 +1239,12 @@ export default function AdminPlanPage() {
                 </div>
 
                 <div>
-                  <label className="label" htmlFor="add-title-en">
-                    Title (English) <span className="text-rose-500">*</span>
-                  </label>
+                  <label className="label" htmlFor="add-title-en">{L('Title (English)', 'Title (English)')} *</label>
                   <input
                     id="add-title-en"
                     type="text"
                     required
-                    placeholder="e.g. Facebook Group Content Campaign"
+                    placeholder="e.g. Lead collection and outreach"
                     value={taskForm.title_en}
                     onChange={(e) => setTaskForm({ ...taskForm, title_en: e.target.value })}
                     className="input"
@@ -1089,11 +1252,11 @@ export default function AdminPlanPage() {
                 </div>
 
                 <div>
-                  <label className="label" htmlFor="add-desc">বিবরণ (ঐচ্ছিক)</label>
+                  <label className="label" htmlFor="add-desc">{L('কাজের বিবরণ ও নির্দেশনা (ঐচ্ছিক)', 'Description & Guidance')}</label>
                   <textarea
                     id="add-desc"
                     rows={2}
-                    placeholder="কাজের বিবরণ বা উদ্দেশ্য..."
+                    placeholder="কাজের বিস্তারিত বিবরণ ও করণীয়..."
                     value={taskForm.description}
                     onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
                     className="input"
@@ -1102,14 +1265,14 @@ export default function AdminPlanPage() {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="label" htmlFor="add-owner">দায়িত্বপ্রাপ্ত</label>
+                    <label className="label" htmlFor="add-owner">{L('দায়িত্বপ্রাপ্ত কর্মকর্তা', 'Assigned To')}</label>
                     <select
                       id="add-owner"
                       value={taskForm.owner_id}
                       onChange={(e) => setTaskForm({ ...taskForm, owner_id: e.target.value })}
                       className="input"
                     >
-                      <option value="">অবণ্টিত</option>
+                      <option value="">{L('অবণ্টিত', 'Unassigned')}</option>
                       {employees.map((emp) => (
                         <option key={emp.id} value={emp.id}>
                           {emp.name} ({emp.email})
@@ -1118,7 +1281,7 @@ export default function AdminPlanPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="label" htmlFor="add-due">শেষ তারিখ</label>
+                    <label className="label" htmlFor="add-due">{L('শেষ তারিখ (Due Date)', 'Due Date')}</label>
                     <input
                       id="add-due"
                       type="date"
@@ -1131,18 +1294,18 @@ export default function AdminPlanPage() {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="label" htmlFor="add-status">স্ট্যাটাস</label>
+                    <label className="label" htmlFor="add-status">{L('স্ট্যাটাস', 'Status')}</label>
                     <select
                       id="add-status"
                       value={taskForm.status}
                       onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value as TaskStatus })}
-                      className="input"
+                      className="input font-semibold"
                     >
                       {statusOptions}
                     </select>
                   </div>
                   <div>
-                    <label className="label" htmlFor="add-progress">অগ্রগতি (%)</label>
+                    <label className="label" htmlFor="add-progress">{L('অগ্রগতি (%)', 'Progress (%)')}</label>
                     <input
                       id="add-progress"
                       type="number"
@@ -1158,11 +1321,11 @@ export default function AdminPlanPage() {
 
               <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
                 <button type="button" onClick={() => setShowAddTaskModal(false)} className="btn btn-secondary">
-                  বাতিল
+                  {L('বাতিল', 'Cancel')}
                 </button>
                 <button type="submit" disabled={submitting} className="btn btn-primary">
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                  টাস্ক যোগ করুন
+                  {L('টাস্ক যোগ করুন', 'Add Task')}
                 </button>
               </div>
             </form>
@@ -1170,12 +1333,12 @@ export default function AdminPlanPage() {
         </div>
       )}
 
-      {/* EDIT TASK MODAL */}
+      {/* EDIT TASK MODAL (All Fields Control) */}
       {editingTask && (
         <div className="modal-backdrop" role="dialog" aria-modal="true">
           <div className="modal-panel">
             <div className="card-header">
-              <h3 className="card-title">টাস্ক সম্পাদনা</h3>
+              <h3 className="card-title">{L('টাস্ক সম্পাদনা ও নিয়ন্ত্রণ', 'Edit Task & Controls')}</h3>
               <button onClick={() => setEditingTask(null)} className="btn-icon" aria-label="বন্ধ করুন">
                 <X className="h-4 w-4" />
               </button>
@@ -1184,19 +1347,19 @@ export default function AdminPlanPage() {
             <form onSubmit={handleUpdateTask}>
               <div className="card-body space-y-4">
                 <div>
-                  <label className="label" htmlFor="edit-title-bn">শিরোনাম (বাংলা)</label>
+                  <label className="label" htmlFor="edit-title-bn">{L('শিরোনাম (বাংলা)', 'Title (Bangla)')} *</label>
                   <input
                     id="edit-title-bn"
                     type="text"
                     required
                     value={editingTask.title_bn}
                     onChange={(e) => setEditingTask({ ...editingTask, title_bn: e.target.value })}
-                    className="input"
+                    className="input font-semibold"
                   />
                 </div>
 
                 <div>
-                  <label className="label" htmlFor="edit-title-en">Title (English)</label>
+                  <label className="label" htmlFor="edit-title-en">{L('Title (English)', 'Title (English)')} *</label>
                   <input
                     id="edit-title-en"
                     type="text"
@@ -1208,7 +1371,7 @@ export default function AdminPlanPage() {
                 </div>
 
                 <div>
-                  <label className="label" htmlFor="edit-desc">বিবরণ</label>
+                  <label className="label" htmlFor="edit-desc">{L('কাজের বিবরণ ও নির্দেশনা', 'Description & Guidance')}</label>
                   <textarea
                     id="edit-desc"
                     rows={2}
@@ -1220,14 +1383,14 @@ export default function AdminPlanPage() {
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="label" htmlFor="edit-owner">দায়িত্বপ্রাপ্ত</label>
+                    <label className="label" htmlFor="edit-owner">{L('দায়িত্বপ্রাপ্ত কর্মকর্তা', 'Assigned To')}</label>
                     <select
                       id="edit-owner"
                       value={editingTask.owner_id || ''}
                       onChange={(e) => setEditingTask({ ...editingTask, owner_id: e.target.value || null })}
-                      className="input"
+                      className="input font-semibold"
                     >
-                      <option value="">অবণ্টিত</option>
+                      <option value="">{L('অবণ্টিত', 'Unassigned')}</option>
                       {employees.map((emp) => (
                         <option key={emp.id} value={emp.id}>
                           {emp.name}
@@ -1236,60 +1399,65 @@ export default function AdminPlanPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="label" htmlFor="edit-due">শেষ তারিখ</label>
+                    <label className="label" htmlFor="edit-due">{L('শেষ তারিখ (Due Date)', 'Due Date')}</label>
                     <input
                       id="edit-due"
                       type="date"
                       value={editingTask.due_date ? format(new Date(editingTask.due_date), 'yyyy-MM-dd') : ''}
                       onChange={(e) => setEditingTask({ ...editingTask, due_date: e.target.value || null })}
-                      className="input"
+                      className="input font-semibold"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="label" htmlFor="edit-status">স্ট্যাটাস</label>
+                    <label className="label" htmlFor="edit-status">{L('স্ট্যাটাস', 'Status')}</label>
                     <select
                       id="edit-status"
                       value={editingTask.status}
                       onChange={(e) => {
-                        const st = e.target.value as TaskStatus;
+                        const nextSt = e.target.value as TaskStatus;
                         setEditingTask({
                           ...editingTask,
-                          status: st,
-                          progress_percent: st === 'DONE' ? 100 : editingTask.progress_percent,
+                          status: nextSt,
+                          progress_percent: nextSt === 'DONE' ? 100 : editingTask.progress_percent,
                         });
                       }}
-                      className="input"
+                      className="input font-semibold"
                     >
                       {statusOptions}
                     </select>
                   </div>
                   <div>
-                    <label className="label" htmlFor="edit-progress">অগ্রগতি (%)</label>
+                    <label className="label" htmlFor="edit-progress">{L('অগ্রগতি (%)', 'Progress (%)')}</label>
                     <input
                       id="edit-progress"
                       type="number"
                       min="0"
                       max="100"
                       value={editingTask.progress_percent}
-                      onChange={(e) =>
-                        setEditingTask({ ...editingTask, progress_percent: Number(e.target.value) })
-                      }
-                      className="input"
+                      onChange={(e) => {
+                        const p = Number(e.target.value);
+                        setEditingTask({
+                          ...editingTask,
+                          progress_percent: p,
+                          status: p === 100 ? 'DONE' : editingTask.status,
+                        });
+                      }}
+                      className="input font-semibold"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="label" htmlFor="edit-outcome">ফলাফল নোট</label>
+                  <label className="label" htmlFor="edit-outcome">{L('ফলাফল নোট (Outcome / Result)', 'Outcome Note')}</label>
                   <input
                     id="edit-outcome"
                     type="text"
                     value={editingTask.outcome_note || ''}
                     onChange={(e) => setEditingTask({ ...editingTask, outcome_note: e.target.value })}
-                    placeholder="কাজের ফলাফল..."
+                    placeholder={L('অর্জিত ফলাফল বা আপডেট লিখুন...', 'Enter achieved outcome...')}
                     className="input"
                   />
                 </div>
@@ -1297,11 +1465,11 @@ export default function AdminPlanPage() {
 
               <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
                 <button type="button" onClick={() => setEditingTask(null)} className="btn btn-secondary">
-                  বাতিল
+                  {L('বাতিল', 'Cancel')}
                 </button>
                 <button type="submit" disabled={submitting} className="btn btn-primary">
                   {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                  সংরক্ষণ
+                  {L('সংরক্ষণ করুন', 'Save Changes')}
                 </button>
               </div>
             </form>
@@ -1309,7 +1477,175 @@ export default function AdminPlanPage() {
         </div>
       )}
 
-      {/* DELETE CONFIRM MODAL */}
+      {/* EDIT PHASE MODAL */}
+      {editingPhase && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-panel">
+            <div className="card-header">
+              <h3 className="card-title">{L('ফেজ সম্পাদনা', 'Edit Phase')}</h3>
+              <button onClick={() => setEditingPhase(null)} className="btn-icon" aria-label="বন্ধ করুন">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdatePhase}>
+              <div className="card-body space-y-4">
+                <div>
+                  <label className="label">{L('ফেজের নাম (বাংলা)', 'Phase Name (Bangla)')} *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingPhase.name_bn}
+                    onChange={(e) => setEditingPhase({ ...editingPhase, name_bn: e.target.value })}
+                    className="input font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="label">{L('Phase Name (English)', 'Phase Name (English)')} *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingPhase.name_en}
+                    onChange={(e) => setEditingPhase({ ...editingPhase, name_en: e.target.value })}
+                    className="input"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">{L('শুরুর দিন (Day Start)', 'Day Start')} *</label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={editingPhase.day_start}
+                      onChange={(e) => setEditingPhase({ ...editingPhase, day_start: Number(e.target.value) })}
+                      className="input"
+                    />
+                  </div>
+                  <div>
+                    <label className="label">{L('শেষ দিন (Day End)', 'Day End')} *</label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={editingPhase.day_end}
+                      onChange={(e) => setEditingPhase({ ...editingPhase, day_end: Number(e.target.value) })}
+                      className="input"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-100 px-5 py-4">
+                {plan.phases.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeletingPhaseId(editingPhase.id);
+                      setEditingPhase(null);
+                    }}
+                    className="btn btn-danger btn-sm"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>{L('ফেজ মুছুন', 'Delete Phase')}</span>
+                  </button>
+                ) : <div />}
+
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setEditingPhase(null)} className="btn btn-secondary">
+                    {L('বাতিল', 'Cancel')}
+                  </button>
+                  <button type="submit" disabled={submitting} className="btn btn-primary">
+                    {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {L('সংরক্ষণ করুন', 'Save')}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ADD PHASE MODAL */}
+      {showAddPhaseModal && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-panel">
+            <div className="card-header">
+              <h3 className="card-title">{L('নতুন ফেজ যোগ করুন', 'Add New Phase')}</h3>
+              <button onClick={() => setShowAddPhaseModal(false)} className="btn-icon" aria-label="বন্ধ করুন">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreatePhase}>
+              <div className="card-body space-y-4">
+                <div>
+                  <label className="label">{L('ফেজের নাম (বাংলা)', 'Phase Name (Bangla)')} *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="যেমন: স্কেলিং ও অটোমেশন"
+                    value={phaseForm.name_bn}
+                    onChange={(e) => setPhaseForm({ ...phaseForm, name_bn: e.target.value })}
+                    className="input"
+                  />
+                </div>
+
+                <div>
+                  <label className="label">{L('Phase Name (English)', 'Phase Name (English)')} *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Scaling & Automation"
+                    value={phaseForm.name_en}
+                    onChange={(e) => setPhaseForm({ ...phaseForm, name_en: e.target.value })}
+                    className="input"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label">{L('শুরুর দিন (Day Start)', 'Day Start')} *</label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={phaseForm.day_start}
+                      onChange={(e) => setPhaseForm({ ...phaseForm, day_start: Number(e.target.value) })}
+                      className="input"
+                    />
+                  </div>
+                  <div>
+                    <label className="label">{L('শেষ দিন (Day End)', 'Day End')} *</label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={phaseForm.day_end}
+                      onChange={(e) => setPhaseForm({ ...phaseForm, day_end: Number(e.target.value) })}
+                      className="input"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
+                <button type="button" onClick={() => setShowAddPhaseModal(false)} className="btn btn-secondary">
+                  {L('বাতিল', 'Cancel')}
+                </button>
+                <button type="submit" disabled={submitting} className="btn btn-primary">
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {L('ফেজ তৈরি করুন', 'Create Phase')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE TASK CONFIRM MODAL */}
       {deletingTaskId && (
         <div className="modal-backdrop" role="dialog" aria-modal="true">
           <div className="modal-panel sm:max-w-sm">
@@ -1317,16 +1653,40 @@ export default function AdminPlanPage() {
               <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-rose-50 text-rose-600">
                 <Trash2 className="h-5 w-5" />
               </div>
-              <h3 className="card-title">টাস্ক মুছে ফেলবেন?</h3>
-              <p className="text-sm text-slate-500">এটি স্থায়ীভাবে মুছে যাবে, ফিরিয়ে আনা যাবে না।</p>
+              <h3 className="card-title">{L('টাস্ক মুছে ফেলবেন?', 'Delete Task?')}</h3>
+              <p className="text-sm text-slate-500">{L('এটি স্থায়ীভাবে মুছে যাবে, ফিরিয়ে আনা যাবে না।', 'This action cannot be undone.')}</p>
             </div>
             <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
               <button onClick={() => setDeletingTaskId(null)} className="btn btn-secondary">
-                বাতিল
+                {L('বাতিল', 'Cancel')}
               </button>
               <button disabled={submitting} onClick={handleDeleteTask} className="btn btn-danger">
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                মুছে ফেলুন
+                {L('মুছে ফেলুন', 'Delete')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE PHASE CONFIRM MODAL */}
+      {deletingPhaseId && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal-panel sm:max-w-sm">
+            <div className="card-body space-y-3 text-center">
+              <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+                <Trash2 className="h-5 w-5" />
+              </div>
+              <h3 className="card-title">{L('ফেজ মুছে ফেলবেন?', 'Delete Phase?')}</h3>
+              <p className="text-sm text-slate-500">{L('এই ফেজের সকল টাস্ক ও মাইলস্টোন মুছে যাবে।', 'All tasks and milestones in this phase will be permanently deleted.')}</p>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
+              <button onClick={() => setDeletingPhaseId(null)} className="btn btn-secondary">
+                {L('বাতিল', 'Cancel')}
+              </button>
+              <button disabled={submitting} onClick={handleDeletePhase} className="btn btn-danger">
+                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                {L('ফেজ মুছুন', 'Delete')}
               </button>
             </div>
           </div>
