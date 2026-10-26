@@ -12,6 +12,7 @@ import {
   extractMonthFromQuery,
   getDhakaDateString,
   formatTaka,
+  formatBstDateTime,
   BN_MONTHS,
   EN_MONTHS,
   toBengaliDigits,
@@ -374,6 +375,169 @@ export async function navigate(message: string): Promise<NavResult> {
   }
 
   // 2.1 Live Website Data Queries (Products, Campaigns, Employees, Sections, Scoring, Customer Rules, Action Plan)
+  // Direct Phone Number / Customer Quick Lookup
+  const phoneLookupMatch = /(?:\+?880|0)?(1[3-9]\d{8})\b/.exec(lower);
+  if (phoneLookupMatch && !actions.has('add') && !actions.has('edit')) {
+    const cleanPhone = '0' + phoneLookupMatch[1];
+    const lead = await prisma.lead.findFirst({
+      where: { phone: { contains: cleanPhone } },
+      include: { employee: { select: { name: true } } },
+    });
+    if (lead) {
+      const statusNames: Record<string, string> = {
+        NEW: 'নতুন লিড (NEW)',
+        CONTACTED: 'যোগাযোগ করা হয়েছে (CONTACTED)',
+        INTERESTED: 'আগ্রহী (INTERESTED)',
+        ORDERED: 'অর্ডার নিশ্চিত (ORDERED)',
+        CANCELLED: 'বাতিল (CANCELLED)',
+      };
+      const formattedDate = formatBstDateTime(lead.created_at, bn ? 'bn' : 'en');
+      return {
+        reply: bn
+          ? `👤 **কাস্টমার বিবরণ পাওয়া গেছে!**\n` +
+            `• 📱 ফোন: **${lead.phone}**\n` +
+            `• 👤 নাম: ${lead.name || 'নাম দেওয়া নেই'}\n` +
+            `• 📊 স্ট্যাটাস: **${statusNames[lead.status] || lead.status}**\n` +
+            `• 👨‍💼 দায়িত্বপ্রাপ্ত কর্মী: **${lead.employee?.name || 'অ্যাসাইন নেই'}**\n` +
+            `• ⏰ রেজিস্ট্রেশন: ${formattedDate}\n` +
+            (lead.order_value ? `• 💰 অর্ডারের মূল্য: ৳ ${lead.order_value}\n` : '') +
+            (lead.notes ? `• 📝 নোট: ${lead.notes}\n` : '') +
+            `\nকাস্টমার বিস্তারিত পেজে নিয়ে যাচ্ছি...`
+          : `👤 **Customer Found!**\n` +
+            `• 📱 Phone: **${lead.phone}**\n` +
+            `• 👤 Name: ${lead.name || 'Not provided'}\n` +
+            `• 📊 Status: **${lead.status}**\n` +
+            `• 👨‍💼 Assigned Employee: **${lead.employee?.name || 'Unassigned'}**\n` +
+            `• ⏰ Registered: ${formattedDate}\n` +
+            (lead.order_value ? `• 💰 Order Value: ৳ ${lead.order_value}\n` : '') +
+            (lead.notes ? `• 📝 Notes: ${lead.notes}\n` : '') +
+            `\nOpening customer list...`,
+        link: { href: `/admin/leads?q=${encodeURIComponent(cleanPhone)}`, labelBn: 'কাস্টমার প্রোফাইল', labelEn: 'Customer Profile' },
+        navigate: true,
+      };
+    } else {
+      return {
+        reply: bn
+          ? `🔍 **${cleanPhone}** নম্বরে কোনো কাস্টমার বা লিড ডেটাবেসে পাওয়া যায়নি। নতুন কাস্টমার হিসেবে যুক্ত করতে পারেন।`
+          : `🔍 No customer found with phone **${cleanPhone}** in our database. You can register them as a new customer.`,
+        link: { href: `/admin/leads?add=1&phone=${encodeURIComponent(cleanPhone)}`, labelBn: 'নতুন কাস্টমার যোগ করুন', labelEn: 'Add New Customer' },
+        navigate: false,
+      };
+    }
+  }
+
+  // Active / Who Worked Today or Yesterday Inquiry
+  const isWhoWorkedInquiry =
+    /(?:ke\s*ke\s*kaj|kara\s*kaj|who\s*worked|active\s*employees?|worked\s*today|kaj\s*korse|kaj\s*kore\s*nai|submission\s*list|কে\s*কে\s*কাজ|কারা\s*কাজ)/iu.test(lower) &&
+    !actions.has('add') &&
+    !actions.has('edit');
+
+  if (isWhoWorkedInquiry) {
+    const dateInfo = extractDateFromQuery(message);
+    const targetDateStr = dateInfo ? dateInfo.dateStr : getDhakaDateString();
+    const dayStartUtc = new Date(`${targetDateStr}T00:00:00+06:00`);
+    const dayEndUtc = new Date(`${targetDateStr}T23:59:59.999+06:00`);
+
+    const allEmps = await prisma.user.findMany({
+      where: { role: 'EMPLOYEE', is_active: true },
+      select: { id: true, name: true },
+    });
+
+    const activeCompletions = await prisma.linkCompletion.findMany({
+      where: { completed_at: { gte: dayStartUtc, lte: dayEndUtc }, undone_at: null },
+      select: { employee_id: true },
+    });
+    const activeDailyEntries = await prisma.dailyEntry.findMany({
+      where: { entry_date: new Date(`${targetDateStr}T00:00:00.000Z`) },
+      select: { employee_id: true },
+    });
+
+    const activeIds = new Set([
+      ...activeCompletions.map((c) => c.employee_id),
+      ...activeDailyEntries.map((d) => d.employee_id),
+    ]);
+
+    const workedEmps = allEmps.filter((e) => activeIds.has(e.id));
+    const notWorkedEmps = allEmps.filter((e) => !activeIds.has(e.id));
+
+    const workedList = workedEmps.map((e) => `• ✅ **${e.name}**`).join('\n') || (bn ? '• কোনো কাজ এখনও জমা পড়েনি' : '• None yet');
+    const notWorkedList = notWorkedEmps.map((e) => `• ⏳ **${e.name}**`).join('\n') || (bn ? '• সকলেই সক্রিয়!' : '• Everyone active!');
+
+    const title = dateInfo?.isYesterday ? (bn ? 'গতকালকের' : "Yesterday's") : (bn ? 'আজকের' : "Today's");
+
+    return {
+      reply: bn
+        ? `📋 **${title} কর্মীদের কাজের স্ট্যাটাস (${targetDateStr})**:\n\n` +
+          `🟢 **কাজে সক্রিয় ছিলেন (${workedEmps.length} জন)**:\n${workedList}\n\n` +
+          `🔴 **এখনও কোনো রিপোর্ট বা পোস্ট জমা দেননি (${notWorkedEmps.length} জন)**:\n${notWorkedList}\n\n` +
+          `বিস্তারিত রিপোর্ট দেখতে দৈনিক রিপোর্ট পেজে নিয়ে যাচ্ছি...`
+        : `📋 **${title} Employee Activity Status (${targetDateStr})**:\n\n` +
+          `🟢 **Active (${workedEmps.length} employees)**:\n${workedList}\n\n` +
+          `🔴 **Pending / No Submissions Yet (${notWorkedEmps.length} employees)**:\n${notWorkedList}\n\n` +
+          `Opening daily report page...`,
+      link: { href: `/admin/reports/daily?date=${targetDateStr}`, labelBn: 'দৈনিক রিপোর্ট', labelEn: 'Daily Report' },
+      navigate: true,
+    };
+  }
+
+  // Colloquial Business Health / Overall Status Inquiry
+  const isBusinessHealthInquiry =
+    /(?:ki\s*obostha|business\s*kemon|kemon\s*choltese|kemon\s*gelo|how\s*is\s*business|business\s*overview|system\s*status|ব্যবসার\s*খবর|কী\s*অবস্থা)/iu.test(lower) &&
+    !actions.has('add') &&
+    !actions.has('edit');
+
+  if (isBusinessHealthInquiry) {
+    const todayStr = getDhakaDateString();
+    const summary = await getDailyReportSummary(todayStr);
+    return {
+      reply: bn
+        ? `🚀 **আজকের ব্যবসার লাইভ চিত্র (${todayStr})**:\n` +
+          `• 💰 মোট বিক্রি: ${formatTaka(summary.total_sales)}\n` +
+          `• 📈 মোট লাভ: ${formatTaka(summary.total_profit)}\n` +
+          `• 🎯 নতুন গ্রাহক/লিড: ${summary.new_leads} টি\n` +
+          `• 📦 নিশ্চিত অর্ডার: ${summary.confirmed_orders} টি\n` +
+          `• 📝 সোশ্যাল গ্রুপ পোস্ট: ${summary.total_posts} টি\n` +
+          `• 👥 কর্মক্ষেত্রে সক্রিয়: ${summary.active_employees_count} জন কর্মী\n` +
+          `• 📊 গড় স্কোর: ${summary.team_avg_score}/১০০\n\n` +
+          `ড্যাশবোর্ডে সম্পূর্ণ ওভারভিউ দেখতে ড্যাশবোর্ড পেজে নিয়ে যাচ্ছি...`
+        : `🚀 **Today's Live Business Overview (${todayStr})**:\n` +
+          `• 💰 Total Sales: ${formatTaka(summary.total_sales, false)}\n` +
+          `• 📈 Total Profit: ${formatTaka(summary.total_profit, false)}\n` +
+          `• 🎯 New Customer Leads: ${summary.new_leads}\n` +
+          `• 📦 Confirmed Orders: ${summary.confirmed_orders}\n` +
+          `• 📝 Social Group Posts: ${summary.total_posts}\n` +
+          `• 👥 Active Employees: ${summary.active_employees_count}\n` +
+          `• 📊 Team Avg Score: ${summary.team_avg_score}/100\n\n` +
+          `Opening Admin Dashboard...`,
+      link: { href: '/admin/dashboard', labelBn: 'ড্যাশবোর্ড', labelEn: 'Dashboard' },
+      navigate: true,
+    };
+  }
+
+  // Failing / Low Scoring Employees Inquiry
+  const isFailingInquiry =
+    /(?:fail\s*korse|failing|score\s*kom|kar\s*score\s*kom|below\s*80|improvement\s*lagbe|খারাপ\s*করছে|উন্নতি\s*প্রয়োজন)/iu.test(lower);
+  if (isFailingInquiry) {
+    const dateInfo = extractDateFromQuery(message);
+    const targetDateStr = dateInfo ? dateInfo.dateStr : getDhakaDateString();
+    const summary = await getDailyReportSummary(targetDateStr);
+    return {
+      reply: bn
+        ? `⚠️ **কর্মীদের স্কোর বিশ্লেষণ (${targetDateStr})**:\n` +
+          `• ❌ লক্ষ্যমাত্রা পূরণে উন্নতি প্রয়োজন: **${summary.failing_count} জন**\n` +
+          `• ✅ লক্ষ্যমাত্রা উত্তীর্ণ: **${summary.passing_count} জন**\n` +
+          `• 📊 টিম গড় স্কোর: **${summary.team_avg_score}/১০০**\n\n` +
+          `ব্যক্তিগত স্কোর ও পারফরম্যান্স মেট্রিক্স দেখতে দৈনিক রিপোর্টে নিয়ে যাচ্ছি...`
+        : `⚠️ **Employee Score Analysis (${targetDateStr})**:\n` +
+          `• ❌ Needs Improvement (Failing threshold): **${summary.failing_count}**\n` +
+          `• ✅ Meeting Target (Passing): **${summary.passing_count}**\n` +
+          `• 📊 Team Avg Score: **${summary.team_avg_score}/100**\n\n` +
+          `Opening detailed daily report...`,
+      link: { href: `/admin/reports/daily?date=${targetDateStr}`, labelBn: 'দৈনিক রিপোর্ট', labelEn: 'Daily Report' },
+      navigate: true,
+    };
+  }
+
   // Products Inquiry
   const isProductInquiry =
     /(?:product|products|পণ্য|প্রোডাক্ট)/i.test(lower) &&

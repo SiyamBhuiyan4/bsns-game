@@ -41,9 +41,9 @@ export const MEGA_INTENTS: MegaIntent[] = [
       bl: ['dashboard', 'admin dashboard', 'overview', 'home page', 'main page', 'summary screen', 'snapshot', 'business stats', 'front page'],
     },
     directPhrases: {
-      en: ['open dashboard', 'show me the home overview', 'admin dashboard page', 'take me to main dashboard', 'business summary at a glance'],
-      bn: ['ড্যাশবোর্ড পেজ খোলো', 'এক নজরে ব্যবসার চিত্র দেখাও', 'হোম পেজে নিয়ে যাও', 'অ্যাডমিন ওভারভিউ দেখতে চাই', 'মূল পাতা ওপেন করো'],
-      bl: ['dashboard kholo', 'overview dekhte chai', 'admin home page e niye jao', 'main summary dekhao', 'dashboard e jabo'],
+      en: ['open dashboard', 'show me the home overview', 'admin dashboard page', 'take me to main dashboard', 'business summary at a glance', 'how is business doing', 'business health overview', 'system status today'],
+      bn: ['ড্যাশবোর্ড পেজ খোলো', 'এক নজরে ব্যবসার চিত্র দেখাও', 'হোম পেজে নিয়ে যাও', 'অ্যাডমিন ওভারভিউ দেখতে চাই', 'মূল পাতা ওপেন করো', 'আজকের ব্যবসার কী অবস্থা', 'ব্যবসার সার্বিক খবর'],
+      bl: ['dashboard kholo', 'overview dekhte chai', 'admin home page e niye jao', 'main summary dekhao', 'dashboard e jabo', 'ki obostha', 'business kemon choltese', 'ajker business kemon'],
     },
   },
 
@@ -244,14 +244,17 @@ export const MEGA_INTENTS: MegaIntent[] = [
         'yesterday report', 'yesterday sales', 'yesterdays numbers', 'day before yesterday report',
         '2 days ago report', 'yesterday performance', 'report for date', 'sales figure of yesterday',
         'daily activity calculation', 'previous day statistics', 'yesterday leads and orders',
-        'report of 25th', 'report of 24th', 'report of 26th'
+        'report of 25th', 'report of 24th', 'report of 26th',
+        'who worked today', 'who worked yesterday', 'active employee submission list', 'failing employees list',
+        'who needs performance improvement', 'top performer yesterday'
       ],
       bn: [
         'আজকের রিপোর্ট', 'দৈনিক রিপোর্ট', 'আজকের বিক্রি', 'আজকের পোস্ট সংখ্যা', 'দৈনিক পারফরম্যান্স',
         'গতকালের রিপোর্ট', 'কালকের রিপোর্ট', 'গতকালকের রিপোর্ট', 'কালকের বিক্রি', 'গতকালের হিসাব',
         'কালকের হিসাব', 'পরশুর রিপোর্ট', 'আগের দিনের রিপোর্ট', 'নির্দিষ্ট তারিখের রিপোর্ট',
         'গতকালকের কাজের বিবরণ', 'কালকে কত বিক্রি হইছে', 'কালকের লিড ও অর্ডার', '২৫ তারিখের রিপোর্ট',
-        '২৪ তারিখের রিপোর্ট', '২৬ তারিখের রিপোর্ট'
+        '২৪ তারিখের রিপোর্ট', '২৬ তারিখের রিপোর্ট', 'আজকে কে কে কাজ করেছে', 'কারা কাজ করে নাই',
+        'কারা ফেইল করেছে', 'কার স্কোর কম'
       ],
       bl: [
         'ajker report', 'daily report', 'ajker sale', 'daily post count', 'ajker score',
@@ -259,7 +262,9 @@ export const MEGA_INTENTS: MegaIntent[] = [
         'kalker hishab', 'kalker hisab', 'poroshur report', 'ager diner report', 'gotokaler hisab',
         'yesterday report', 'kalke koyta order aslo', 'kalke koto bikri hoise', 'kalker kajer hisab',
         'date onushare report', 'kalker number gula', 'kalke ke ke post korse', '25 tarikh er report',
-        '24 tarikh er report', '26 tarikh er report', 'tarikh hishebe report'
+        '24 tarikh er report', '26 tarikh er report', 'tarikh hishebe report',
+        'ajke ke ke kaj korse', 'kalke ke ke kaj korse', 'kara fail korse', 'kar score kom',
+        'kalke kar score shobcheye beshi chilo', 'submission list'
       ],
     },
     directPhrases: {
