@@ -131,6 +131,19 @@ export default function EmployeeLeadsPage() {
   const [newNoteText, setNewNoteText] = useState('');
   const [noteSubmitting, setNoteSubmitting] = useState(false);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('add') === '1') setIsAddOpen(true);
+    const p = params.get('period');
+    if (p && ['1d', '3d', '7d', '30d', 'all', 'custom'].includes(p)) setDatePreset(p as any);
+    const start = params.get('startDate') || params.get('from');
+    if (start) setCustomStartDate(start);
+    const end = params.get('endDate') || params.get('to');
+    if (end) setCustomEndDate(end);
+    const q = params.get('q');
+    if (q) setSearchQuery(q);
+  }, []);
+
   const fetchLeads = useCallback(async () => {
     try {
       let url = `/api/leads?q=${encodeURIComponent(searchQuery)}`;

@@ -735,3 +735,129 @@ export async function computeMonthlyAutoData(monthStr: string): Promise<MonthlyA
     channel_breakdown: channelBreakdown,
   };
 }
+
+export interface DailyReportSummary {
+  date: string;
+  total_sales: number;
+  total_profit: number;
+  total_posts: number;
+  new_leads: number;
+  confirmed_orders: number;
+  active_employees_count: number;
+  team_avg_score: number;
+  passing_count: number;
+  failing_count: number;
+}
+
+/**
+ * Calculates high-level summary metrics for a given date in Asia/Dhaka (+06:00).
+ */
+export async function getDailyReportSummary(dateStr: string): Promise<DailyReportSummary> {
+  const dayStartUtc = new Date(`${dateStr}T00:00:00+06:00`);
+  const dayEndUtc = new Date(`${dateStr}T23:59:59.999+06:00`);
+  const targetDate = new Date(`${dateStr}T00:00:00.000Z`);
+
+  const entries = await prisma.dailyEntry.findMany({
+    where: { entry_date: targetDate },
+  });
+
+  let total_sales = 0;
+  let total_profit = 0;
+  const activeEmployeeIds = new Set<string>();
+
+  for (const e of entries) {
+    activeEmployeeIds.add(e.employee_id);
+    if (e.metric_type === MetricType.SALES_AMOUNT) total_sales += Number(e.value);
+    if (e.metric_type === MetricType.PROFIT_AMOUNT) total_profit += Number(e.value);
+  }
+
+  const total_posts = await prisma.linkCompletion.count({
+    where: {
+      completed_at: { gte: dayStartUtc, lte: dayEndUtc },
+      undone_at: null,
+    },
+  });
+
+  const new_leads = await prisma.lead.count({
+    where: {
+      created_at: { gte: dayStartUtc, lte: dayEndUtc },
+    },
+  });
+
+  const confirmed_orders = await prisma.lead.count({
+    where: {
+      status: 'ORDERED',
+      updated_at: { gte: dayStartUtc, lte: dayEndUtc },
+    },
+  });
+
+  const employees = await prisma.user.findMany({
+    where: { role: 'EMPLOYEE', is_active: true },
+    include: { assignments_as_employee: true },
+  });
+
+  const allTargets = await prisma.sectionTarget.findMany();
+  const settings = await prisma.scoringSettings.findUnique({ where: { id: 'default' } });
+  const cap = settings ? Number(settings.achievement_cap) : 1.0;
+  const failingThreshold = settings ? Number(settings.failing_threshold) : 0.8;
+
+  let totalScoreSum = 0;
+  let passing_count = 0;
+  let failing_count = 0;
+
+  for (const emp of employees) {
+    const assignedSectionIds = emp.assignments_as_employee.map((a: any) => a.section_id);
+    const empTargets = allTargets.filter((t) => assignedSectionIds.includes(t.section_id));
+    const dailyTargets = calculateEffectiveTargetsForRange(empTargets, targetDate, targetDate);
+
+    const empEntries = entries.filter((e) => e.employee_id === emp.id);
+    const metricMap: Record<string, number> = {
+      POSTS_DONE: 0,
+      SALES_AMOUNT: 0,
+      PROFIT_AMOUNT: 0,
+      NEW_CLIENTS: 0,
+      B2B_ORDERS: 0,
+      RETENTION_COUNT: 0,
+      FOLLOWUPS_DONE: 0,
+    };
+    for (const e of empEntries) {
+      if (e.metric_type !== MetricType.POSTS_DONE) {
+        metricMap[e.metric_type] = Number(e.value);
+      }
+    }
+
+    const scoringInput = {
+      [MetricType.POSTS_DONE]: { target: dailyTargets.POSTS_DONE || null, achieved: metricMap.POSTS_DONE },
+      [MetricType.SALES_AMOUNT]: { target: dailyTargets.SALES_AMOUNT || null, achieved: metricMap.SALES_AMOUNT },
+      [MetricType.PROFIT_AMOUNT]: { target: dailyTargets.PROFIT_AMOUNT || null, achieved: metricMap.PROFIT_AMOUNT },
+      [MetricType.NEW_CLIENTS]: { target: dailyTargets.NEW_CLIENTS || null, achieved: metricMap.NEW_CLIENTS },
+      [MetricType.B2B_ORDERS]: { target: dailyTargets.B2B_ORDERS || null, achieved: metricMap.B2B_ORDERS },
+      [MetricType.RETENTION_COUNT]: { target: dailyTargets.RETENTION_COUNT || null, achieved: metricMap.RETENTION_COUNT },
+      [MetricType.FOLLOWUPS_DONE]: { target: dailyTargets.FOLLOWUPS_DONE || null, achieved: metricMap.FOLLOWUPS_DONE },
+    };
+
+    const scoreResult = calculateEmployeeScore(scoringInput, {
+      achievementCap: cap,
+      failingThreshold,
+    });
+
+    totalScoreSum += scoreResult.totalScore;
+    if (scoreResult.isFailing) failing_count++;
+    else passing_count++;
+  }
+
+  const team_avg_score = employees.length > 0 ? Number((totalScoreSum / employees.length).toFixed(2)) : 0;
+
+  return {
+    date: dateStr,
+    total_sales,
+    total_profit,
+    total_posts,
+    new_leads,
+    confirmed_orders,
+    active_employees_count: activeEmployeeIds.size,
+    team_avg_score,
+    passing_count,
+    failing_count,
+  };
+}

@@ -111,9 +111,18 @@ export default function AdminLeadsPage() {
   const [addNote, setAddNote] = useState('');
   const [addSubmitting, setAddSubmitting] = useState(false);
 
-  // Deep link from the assistant: ?add=1 opens the add form.
+  // Deep link from the assistant / URL: ?add=1, ?period=..., ?startDate=..., ?endDate=..., ?q=...
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('add') === '1') setIsAddOpen(true);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('add') === '1') setIsAddOpen(true);
+    const p = params.get('period');
+    if (p && ['1d', '3d', '7d', '30d', 'all', 'custom'].includes(p)) setDatePreset(p as any);
+    const start = params.get('startDate') || params.get('from');
+    if (start) setStartDate(start);
+    const end = params.get('endDate') || params.get('to');
+    if (end) setEndDate(end);
+    const q = params.get('q');
+    if (q) setSearchQuery(q);
   }, []);
 
   // Phone Duplicate Check Warning State (Requirement 1)

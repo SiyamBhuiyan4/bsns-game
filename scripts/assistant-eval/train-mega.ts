@@ -233,19 +233,56 @@ export const MEGA_INTENTS: MegaIntent[] = [
   {
     label: '/admin/reports/daily',
     verbs: {
-      en: ['show', 'open', 'view', 'see', 'check', 'inspect', 'print'],
-      bn: ['দেখাও', 'খোলো', 'দেখতে চাই', 'চেক করো', 'বের করো'],
-      bl: ['dekhao', 'kholo', 'dekhte chai', 'check koro', 'open koro'],
+      en: ['show', 'open', 'view', 'see', 'check', 'inspect', 'print', 'give me', 'fetch', 'tell me', 'calculate'],
+      bn: ['দেখাও', 'খোলো', 'দেখতে চাই', 'চেক করো', 'বের করো', 'দাও', 'বলো', 'জানাও', 'হিসাব দাও'],
+      bl: ['dekhao', 'kholo', 'dekhte chai', 'check koro', 'open koro', 'dao', 'bolo', 'jante chai', 'ber koro', 'hisab dao'],
     },
     objects: {
-      en: ["today's report", 'the daily report', "today's sales", 'daily posts', 'daily performance score', "yesterday's sales numbers", 'daily summary'],
-      bn: ['আজকের রিপোর্ট', 'দৈনিক রিপোর্ট', 'আজকের বিক্রি', 'আজকের পোস্ট সংখ্যা', 'দৈনিক পারফরম্যান্স', 'গতকালের রিপোর্ট'],
-      bl: ['ajker report', 'daily report', 'ajker sale', 'daily post count', 'ajker score', 'gotokaler report'],
+      en: [
+        "today's report", 'the daily report', "today's sales", 'daily posts', 'daily performance score',
+        "yesterday's sales numbers", 'daily summary', "yesterday's report", "yesterday summary",
+        'yesterday report', 'yesterday sales', 'yesterdays numbers', 'day before yesterday report',
+        '2 days ago report', 'yesterday performance', 'report for date', 'sales figure of yesterday',
+        'daily activity calculation', 'previous day statistics', 'yesterday leads and orders',
+        'report of 25th', 'report of 24th', 'report of 26th'
+      ],
+      bn: [
+        'আজকের রিপোর্ট', 'দৈনিক রিপোর্ট', 'আজকের বিক্রি', 'আজকের পোস্ট সংখ্যা', 'দৈনিক পারফরম্যান্স',
+        'গতকালের রিপোর্ট', 'কালকের রিপোর্ট', 'গতকালকের রিপোর্ট', 'কালকের বিক্রি', 'গতকালের হিসাব',
+        'কালকের হিসাব', 'পরশুর রিপোর্ট', 'আগের দিনের রিপোর্ট', 'নির্দিষ্ট তারিখের রিপোর্ট',
+        'গতকালকের কাজের বিবরণ', 'কালকে কত বিক্রি হইছে', 'কালকের লিড ও অর্ডার', '২৫ তারিখের রিপোর্ট',
+        '২৪ তারিখের রিপোর্ট', '২৬ তারিখের রিপোর্ট'
+      ],
+      bl: [
+        'ajker report', 'daily report', 'ajker sale', 'daily post count', 'ajker score',
+        'gotokaler report', 'kalker report', 'kalker sale', 'kalke ki hoise', 'kalker summary',
+        'kalker hishab', 'kalker hisab', 'poroshur report', 'ager diner report', 'gotokaler hisab',
+        'yesterday report', 'kalke koyta order aslo', 'kalke koto bikri hoise', 'kalker kajer hisab',
+        'date onushare report', 'kalker number gula', 'kalke ke ke post korse', '25 tarikh er report',
+        '24 tarikh er report', '26 tarikh er report', 'tarikh hishebe report'
+      ],
     },
     directPhrases: {
-      en: ['open daily report', "show today's sales report", 'daily activity summary', 'how much did we sell today'],
-      bn: ['দৈনিক রিপোর্ট পেজ খোলো', 'আজকের বিক্রির রিপোর্ট দেখাও', 'আজ কে কত কাজ করেছে', 'দৈনিক সামারি দেখতে চাই'],
-      bl: ['daily report page e jao', 'ajker report kholo', 'ajker sale koto hoise', 'daily report dekhao'],
+      en: [
+        'open daily report', "show today's sales report", 'daily activity summary', 'how much did we sell today',
+        'give me yesterday report', "show me yesterday's numbers", 'what happened yesterday',
+        'can you give yesterday summary', 'open yesterday report', 'show report of 25th',
+        'how many orders came in yesterday', 'tell me yesterday sales figures', 'open report for yesterday',
+        'show me what the employees did yesterday', 'yesterday daily sales'
+      ],
+      bn: [
+        'দৈনিক রিপোর্ট পেজ খোলো', 'আজকের বিক্রির রিপোর্ট দেখাও', 'আজ কে কত কাজ করেছে', 'দৈনিক সামারি দেখতে চাই',
+        'কালকের রিপোর্ট দাও', 'গতকালকের রিপোর্ট দেখাও', 'কালকে কত বিক্রি হইছে', 'কালকের হিসাব দাও',
+        'গতকাল কি কি কাজ হয়েছে', 'পরশুর রিপোর্ট দেখতে চাই', 'আগের দিনের রিপোর্ট খোলো', 'তারিখ হিসেবে রিপোর্ট দেখাও',
+        'গতকালকের সম্পূর্ণ রিপোর্ট দেখতে চাই', 'কালকে কয়টা লিড আসছে', 'কালকের সেলস রিপোর্ট ওপেন করো'
+      ],
+      bl: [
+        'daily report page e jao', 'ajker report kholo', 'ajker sale koto hoise', 'daily report dekhao',
+        'kalker report dao', 'kalker report dekhao', 'kalke koto bikri hoise', 'kalker hisab dao',
+        'gotokaler summary dekhao', 'boloto kalke ki hoisilo', 'ami kalker report dekhte chai',
+        'kalke ke ke kaj korse', 'ager diner report koi', 'poroshur report open koro',
+        'kalke koyta lead aslo', 'yesterday sales koto chilo', 'kalker full report e niye jao'
+      ],
     },
   },
 
@@ -797,6 +834,11 @@ export const WRAPPERS: Record<Lang, string[]> = {
     'admin asks where or how can i {S}',
     'kothay ba kemne {S} korbo',
     'kothay pabo ar kivabe {S}',
+    'boloto {S}',
+    'ami jante chai {S}',
+    'shuno {S}',
+    'tell me {S}',
+    'can you show me {S}',
   ],
 };
 
@@ -850,6 +892,10 @@ const COMMON_TYPOS: Record<string, string[]> = {
   settings: ['seting', 'setings', 'settngs', 'setting'],
   leads: ['leed', 'leds', 'leeds'],
   kormi: ['kormy', 'kormee', 'kormira', 'kormider'],
+  kalker: ['kalke', 'klaker', 'kalekr', 'kalkeer', 'kalkar', 'kalkr'],
+  gotokal: ['gotokaler', 'gotkla', 'gotokaal', 'gotokale'],
+  yesterday: ['yesterdays', 'yesterdy', 'yestarday', 'yestrday'],
+  tarikh: ['traikh', 'trkh', 'tariq'],
   notun: ['notn', 'notoon', 'nutun'],
   dekhao: ['dehkhao', 'dekao', 'dekho', 'dekaho'],
   kholo: ['khol', 'kolbo', 'kulo'],

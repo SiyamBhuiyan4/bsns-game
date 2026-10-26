@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   FileSpreadsheet,
   Calendar,
@@ -13,11 +14,12 @@ import {
   MessageSquare,
   X,
   BarChart3,
+  Loader2,
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
-import { formatTaka, getDhakaDateString } from '@/lib/date';
+import { formatTaka, getDhakaDateString, getDhakaOffsetDateString } from '@/lib/date';
 
 interface DailyEmployeeReport {
   employee_id: string;
@@ -71,10 +73,23 @@ interface DailyReportResponse {
   employees: DailyEmployeeReport[];
 }
 
-export default function AdminDailyReportPage() {
-  const [selectedDate, setSelectedDate] = useState<string>(() =>
-    getDhakaDateString()
-  );
+function AdminDailyReportContent() {
+  const searchParams = useSearchParams();
+  const dateParam = searchParams.get('date');
+
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search).get('date');
+      if (p && /^\d{4}-\d{2}-\d{2}$/.test(p)) return p;
+    }
+    return getDhakaDateString();
+  });
+
+  useEffect(() => {
+    if (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam)) {
+      setSelectedDate(dateParam);
+    }
+  }, [dateParam]);
   const [reportData, setReportData] = useState<DailyReportResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -115,7 +130,43 @@ export default function AdminDailyReportPage() {
         title="দৈনিক রিপোর্ট"
         subtitle="প্রতিটি সদস্যের লক্ষ্য অর্জন ও স্কোর"
         actions={
-          <>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+              <button
+                type="button"
+                onClick={() => setSelectedDate(getDhakaDateString())}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                  selectedDate === getDhakaDateString()
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                আজ (Today)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedDate(getDhakaOffsetDateString(1))}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                  selectedDate === getDhakaOffsetDateString(1)
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                গতকাল (Yesterday)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedDate(getDhakaOffsetDateString(2))}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+                  selectedDate === getDhakaOffsetDateString(2)
+                    ? 'bg-brand-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                পরশু
+              </button>
+            </div>
+
             <label className="sr-only" htmlFor="daily-date">তারিখ</label>
             <div className="relative">
               <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -143,7 +194,7 @@ export default function AdminDailyReportPage() {
               <Download className="h-4 w-4" />
               PDF
             </a>
-          </>
+          </div>
         }
       />
 
@@ -430,5 +481,19 @@ export default function AdminDailyReportPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminDailyReportPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+        </div>
+      }
+    >
+      <AdminDailyReportContent />
+    </Suspense>
   );
 }

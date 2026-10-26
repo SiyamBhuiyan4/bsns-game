@@ -7,6 +7,8 @@ import prisma from '@/lib/prisma';
 import { normalizeText } from './router';
 import { predict } from './classifier';
 import { ACTION_WORDS, FILLER, OFF_TOPIC, PAGES, TOPICS, WEAK, type Action, type Topic } from './knowledge';
+import { extractDateFromQuery, getDhakaDateString, formatTaka } from '@/lib/date';
+import { getDailyReportSummary } from '@/lib/reports';
 
 export type NavLink = { href: string; labelBn: string; labelEn: string };
 export type NavResult = { reply: string; link?: NavLink; suggestions?: NavLink[]; navigate?: boolean };
@@ -267,10 +269,17 @@ export function classify(message: string): Classification {
   const toPerson = words.some((w) => (w.length > 3 && w.endsWith('কে')) || w === 'ke');
   if (toPerson && (hasAny(GIVE) || hasAny(['assign'])) && !hasAny(['task', 'টাস্ক', 'লিংক', 'link', 'links'])) return pick('assign_section');
 
-  // Period + number-type word ("আজকের স্কোর", "monthly score", "mon to sun summary")  -> that report
+  // Period + number-type word ("আজকের স্কোর", "monthly score", "mon to sun summary", "kalker report") -> that report
+  const queryDate = extractDateFromQuery(message);
+  const isCustomerWord = hasAny(['customer', 'customers', 'lead', 'leads', 'client', 'clients', 'কাস্টমার', 'ক্রেতা', 'গ্রাহক', 'লিড']);
+
+  if (queryDate && isCustomerWord) {
+    return pick(actions.has('add') ? 'add_lead' : 'lead_stage');
+  }
+
   const dated = /\d{1,2}\s*(january|february|march|april|may|june|july|august|september|october|november|december|জানুয়ারি|ফেব্রুয়ারি|মার্চ|এপ্রিল|মে|জুন|জুলাই|আগস্ট|সেপ্টেম্বর|অক্টোবর|নভেম্বর|ডিসেম্বর)/.test(lower);
-  if (hasAny(METRIC) && !hasAny(NOT_REPORT) && !isWhoChanged(words)) {
-    if (dated || hasAny(DAY)) return pick('report_daily');
+  if ((hasAny(METRIC) || hasAny(['report', 'রিপোর্ট', 'সারসংক্ষেপ', 'summary', 'hishab', 'হিসাব', 'কাজ', 'kaj'])) && !hasAny(NOT_REPORT) && !isWhoChanged(words)) {
+    if (queryDate || dated || hasAny(DAY)) return pick('report_daily');
     if (hasAny(WEEK) || /mon to sun|শনি থেকে শুক্র|shoni theke/.test(lower)) return pick('report_weekly');
     if (hasAny(MONTH) || /full month|গত মাস|last month/.test(lower)) return pick('report_monthly');
   }
@@ -383,6 +392,94 @@ export async function navigate(message: string): Promise<NavResult> {
 
   let link: NavLink = { href: topic.href, labelBn: topic.pageBn, labelEn: topic.pageEn };
   let lead = say(`${topic.pageBn} পেজ খুলছি।`, `Opening ${topic.pageEn}.`);
+
+  // Date-Aware Daily Report Routing & Live Stats
+  if (topic.id === 'report_daily') {
+    const dateInfo = extractDateFromQuery(message);
+    const targetDateStr = dateInfo ? dateInfo.dateStr : getDhakaDateString();
+    const summary = await getDailyReportSummary(targetDateStr);
+
+    const dateTitleBn = dateInfo?.isYesterday
+      ? `গতকালকের (${targetDateStr})`
+      : dateInfo?.isToday
+      ? `আজকের (${targetDateStr})`
+      : `${targetDateStr} তারিখের`;
+
+    const dateTitleEn = dateInfo?.isYesterday
+      ? `Yesterday's (${targetDateStr})`
+      : dateInfo?.isToday
+      ? `Today's (${targetDateStr})`
+      : `Daily (${targetDateStr})`;
+
+    link = {
+      href: `/admin/reports/daily?date=${targetDateStr}`,
+      labelBn: `${dateTitleBn} রিপোর্ট`,
+      labelEn: `${dateTitleEn} Report`,
+    };
+
+    lead = bn
+      ? `📅 **${dateTitleBn} রিপোর্ট সারসংক্ষেপ**:\n` +
+        `• 💰 মোট বিক্রি: ${formatTaka(summary.total_sales)}\n` +
+        `• 📈 মোট লাভ: ${formatTaka(summary.total_profit)}\n` +
+        `• 🎯 নতুন লিড: ${summary.new_leads} টি\n` +
+        `• 📦 নিশ্চিত অর্ডার: ${summary.confirmed_orders} টি\n` +
+        `• 📝 গ্রুপ পোস্ট: ${summary.total_posts} টি\n` +
+        `• 👥 সক্রিয় কর্মী: ${summary.active_employees_count} জন\n` +
+        `• 📊 গড় স্কোর: ${summary.team_avg_score}/১০০ (${summary.passing_count} পাস, ${summary.failing_count} উন্নতি প্রয়োজন)\n\n` +
+        `${dateTitleBn} বিস্তারিত রিপোর্ট পেজ খুলছি...`
+      : `📅 **${dateTitleEn} Report Summary**:\n` +
+        `• 💰 Total Sales: ${formatTaka(summary.total_sales, false)}\n` +
+        `• 📈 Total Profit: ${formatTaka(summary.total_profit, false)}\n` +
+        `• 🎯 New Leads: ${summary.new_leads}\n` +
+        `• 📦 Confirmed Orders: ${summary.confirmed_orders}\n` +
+        `• 📝 Group Posts: ${summary.total_posts}\n` +
+        `• 👥 Active Employees: ${summary.active_employees_count}\n` +
+        `• 📊 Team Avg Score: ${summary.team_avg_score}/100 (${summary.passing_count} passed, ${summary.failing_count} needs improvement)\n\n` +
+        `Opening ${dateTitleEn} full report page...`;
+  }
+
+  // Date-Aware Customer / Leads Routing
+  if (topic.id === 'lead_stage' || topic.id === 'add_lead' || topic.href === '/admin/leads') {
+    const dateInfo = extractDateFromQuery(message);
+    if (dateInfo) {
+      if (dateInfo.isToday) {
+        link = {
+          href: '/admin/leads?period=1d',
+          labelBn: 'আজকের কাস্টমার তালিকা',
+          labelEn: "Today's Customer List",
+        };
+        lead = say('আজকের কাস্টমার তালিকা খুলছি।', "Opening today's customer list.");
+      } else {
+        link = {
+          href: `/admin/leads?period=custom&startDate=${dateInfo.dateStr}&endDate=${dateInfo.dateStr}`,
+          labelBn: `${dateInfo.labelBn} কাস্টমার তালিকা`,
+          labelEn: `${dateInfo.labelEn} Customer List`,
+        };
+        lead = say(`${dateInfo.labelBn} কাস্টমার তালিকা খুলছি।`, `Opening ${dateInfo.labelEn} customer list.`);
+      }
+    } else if (/(?:7\s*(?:din|দিন|days?)|week|shoptaho|সপ্তাহ)/i.test(lower)) {
+      link = {
+        href: '/admin/leads?period=7d',
+        labelBn: 'গত ৭ দিনের কাস্টমার তালিকা',
+        labelEn: 'Last 7 Days Customers',
+      };
+      lead = say('গত ৭ দিনের কাস্টমার তালিকা খুলছি।', 'Opening last 7 days customer list.');
+    } else if (/(?:3\s*(?:din|দিন|days?))/i.test(lower)) {
+      link = {
+        href: '/admin/leads?period=3d',
+        labelBn: 'গত ৩ দিনের কাস্টমার তালিকা',
+        labelEn: 'Last 3 Days Customers',
+      };
+      lead = say('গত ৩ দিনের কাস্টমার তালিকা খুলছি।', 'Opening last 3 days customer list.');
+    } else if (/(?:30\s*(?:din|দিন|days?)|month|mas|মাস)/i.test(lower)) {
+      link = {
+        href: '/admin/leads?period=30d',
+        labelBn: 'গত ৩০ দিনের কাস্টমার তালিকা',
+        labelEn: 'Last 30 Days Customers',
+      };
+      lead = say('গত ৩০ দিনের কাস্টমার তালিকা খুলছি।', 'Opening last 30 days customer list.');
+    }
+  }
 
   // These pages open their add form from ?add=1.
   if (!topic.deep && actions.has('add') && ['add_product', 'add_lead', 'add_campaign', 'plan_task'].includes(topic.id)) {
