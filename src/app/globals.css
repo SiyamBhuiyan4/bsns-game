@@ -20,7 +20,7 @@
 :root {
   --background: #f6f7f9;
   --foreground: #0f172a;
-  --font-bengali-stack: var(--font-hind-siliguri), var(--font-noto-bengali), 'Hind Siliguri', 'Noto Sans Bengali', sans-serif;
+  --font-bengali-stack: var(--font-noto-bengali), var(--font-hind-siliguri), 'Noto Sans Bengali', 'Hind Siliguri', 'Kalpurush', 'SolaimanLipi', sans-serif;
 }
 
 body {
@@ -29,7 +29,6 @@ body {
   font-family: var(--font-bengali-stack);
   letter-spacing: 0.012em;
   line-height: 1.62;
-  font-feature-settings: 'cv11', 'ss01';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;

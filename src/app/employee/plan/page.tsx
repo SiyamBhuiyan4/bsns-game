@@ -111,6 +111,11 @@ export default function EmployeePlanPage() {
     }
     return name;
   };
+  const formatPhaseTitle = (title: string) => {
+    if (!title) return '';
+    // Format "৩১–৬০" as "৩১ – ৬০" with clean spacing so the digit '১' does not collide with the dash
+    return title.replace(/(\d|[\u09E6-\u09EF])\s*[–—-]\s*(\d|[\u09E6-\u09EF])/g, '$1 – $2');
+  };
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [stats, setStats] = useState<PlanStats | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -241,7 +246,7 @@ export default function EmployeePlanPage() {
                 {L('অ্যাডমিনের দিকনির্দেশনা ও লক্ষ্য', "ADMIN'S GUIDANCE & PHASE GOAL")}
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-slate-200">
-                {isEn ? (activePhase?.name_en || activePhase?.name_bn) : activePhase?.name_bn}
+                {formatPhaseTitle(isEn ? (activePhase?.name_en || activePhase?.name_bn) : activePhase?.name_bn)}
               </span>
             </div>
             <p className="text-sm font-semibold text-slate-100 mt-1">
@@ -305,10 +310,10 @@ export default function EmployeePlanPage() {
               }`}
             >
               <div className="flex w-full items-center justify-between gap-2">
-                <span className="badge badge-gray">
+                <span className="badge badge-gray font-medium">
                   {isEn
-                    ? `Days ${phase.day_start}–${phase.day_end}`
-                    : `দিন ${fmtNum(phase.day_start)}–${fmtNum(phase.day_end)}`}
+                    ? `Days ${phase.day_start} – ${phase.day_end}`
+                    : `দিন ${fmtNum(phase.day_start)} – ${fmtNum(phase.day_end)}`}
                 </span>
                 {isSystemCurrentPhase && (
                   <span className="badge badge-green">
@@ -319,8 +324,8 @@ export default function EmployeePlanPage() {
               </div>
 
               <div className="mt-3">
-                <div className="text-[15px] font-semibold text-slate-900">
-                  {isEn ? (phase.name_en || phase.name_bn) : phase.name_bn}
+                <div className="text-[15px] font-semibold text-slate-900 leading-snug">
+                  {formatPhaseTitle(isEn ? (phase.name_en || phase.name_bn) : phase.name_bn)}
                 </div>
               </div>
 
@@ -383,7 +388,7 @@ export default function EmployeePlanPage() {
               <div className="min-w-0">
                 <h2 className="card-title flex items-center gap-2">
                   <span className="truncate">
-                    {isEn ? (activePhase.name_en || activePhase.name_bn) : activePhase.name_bn} · {L('টাস্ক', 'Tasks')}
+                    {formatPhaseTitle(isEn ? (activePhase.name_en || activePhase.name_bn) : activePhase.name_bn)} · {L('টাস্ক', 'Tasks')}
                   </span>
                   <span className="badge badge-gray tabular-nums">{fmtNum(displayTasks.length)}</span>
                 </h2>

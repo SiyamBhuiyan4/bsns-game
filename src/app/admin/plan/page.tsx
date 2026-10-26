@@ -115,6 +115,10 @@ export default function AdminPlanPage() {
     }
     return name;
   };
+  const formatPhaseTitle = (title: string) => {
+    if (!title) return '';
+    return title.replace(/(\d|[\u09E6-\u09EF])\s*[–—-]\s*(\d|[\u09E6-\u09EF])/g, '$1 – $2');
+  };
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [stats, setStats] = useState<PlanStats | null>(null);
   const [employees, setEmployees] = useState<Owner[]>([]);
@@ -707,15 +711,15 @@ export default function AdminPlanPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-[15px] font-semibold text-slate-900">
-                        {isEn ? (phase.name_en || phase.name_bn) : phase.name_bn}
+                      <h3 className="text-[15px] font-semibold text-slate-900 leading-snug">
+                        {formatPhaseTitle(isEn ? (phase.name_en || phase.name_bn) : phase.name_bn)}
                       </h3>
                       {isSystemCurrentPhase && <span className="badge badge-green">{L('চলমান', 'Current')}</span>}
                     </div>
                     <p className="mt-0.5 text-xs text-slate-500">
                       {isEn
-                        ? `Days ${phase.day_start}–${phase.day_end}`
-                        : `দিন ${fmtNum(phase.day_start)}–${fmtNum(phase.day_end)}`}
+                        ? `Days ${phase.day_start} – ${phase.day_end}`
+                        : `দিন ${fmtNum(phase.day_start)} – ${fmtNum(phase.day_end)}`}
                     </p>
                   </div>
                 </div>
