@@ -27,11 +27,12 @@ function readSecret(name: string, devFallback: string, minLength = MIN_SECRET_LE
   }
 
   const trimmed = value.trim();
-  if (isProd && trimmed.length < minLength) {
-    throw new Error(`${name} must be at least ${minLength} characters long.`);
-  }
   if (isProd && (trimmed === devFallback || trimmed.startsWith('dev-only-'))) {
     throw new Error(`${name} is still set to a development placeholder.`);
+  }
+  // A short secret is weak but working; warn rather than take a live site down.
+  if (isProd && trimmed.length < minLength) {
+    console.warn(`[security] ${name} is only ${trimmed.length} characters; use at least ${minLength}.`);
   }
   return trimmed;
 }

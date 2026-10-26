@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { timingSafeEqual } from 'crypto';
+import { createHash, timingSafeEqual } from 'crypto';
 import { z } from 'zod';
 import prisma from '@/lib/prisma';
 import { signToken } from '@/lib/auth';
@@ -12,9 +12,11 @@ const adminLoginSchema = z.object({
 });
 
 function passcodeMatches(input: string, expected: string): boolean {
-  const a = Buffer.from(input);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
+  // Digest first: equal-length buffers, so neither the length of the real
+  // passcode nor how far a guess matched is observable from the timing.
+  const a = createHash('sha256').update(input).digest();
+  const b = createHash('sha256').update(expected).digest();
+  return timingSafeEqual(a, b);
 }
 
 export async function POST(request: NextRequest) {

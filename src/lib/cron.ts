@@ -5,6 +5,15 @@ import { createAuditLog } from './audit';
 import { subDays, subWeeks, startOfWeek, endOfWeek, format, parseISO } from 'date-fns';
 import { ReportStatus, AuditAction, Prisma } from '@prisma/client';
 import { NextRequest } from 'next/server';
+import { createHash, timingSafeEqual } from 'crypto';
+import { getCronSecret } from './env';
+
+/** Compares two secrets without leaking their length or a prefix match. */
+function secretsMatch(provided: string, expected: string): boolean {
+  const a = createHash('sha256').update(provided).digest();
+  const b = createHash('sha256').update(expected).digest();
+  return timingSafeEqual(a, b);
+}
 
 export interface DailyLockResult {
   success: boolean;
@@ -35,16 +44,23 @@ export interface WeeklyReportDraftResult {
 }
 
 /**
- * Validates the Authorization header against CRON_SECRET or 'cron-secret-key'.
+ * Validates the Authorization header against CRON_SECRET (required in production).
  */
 export function validateCronAuthorization(req: NextRequest): boolean {
   const authHeader = req.headers.get('authorization');
   if (!authHeader) return false;
 
-  const expectedSecret = process.env.CRON_SECRET || 'cron-secret-key';
+  let expectedSecret: string;
+  try {
+    expectedSecret = getCronSecret();
+  } catch (error) {
+    // No secret configured: refuse the call rather than run unauthenticated.
+    console.error('[security] cron request rejected:', error instanceof Error ? error.message : error);
+    return false;
+  }
   const parts = authHeader.split(' ');
   if (parts.length === 2 && parts[0].toLowerCase() === 'bearer') {
-    return parts[1] === expectedSecret;
+    return secretsMatch(parts[1], expectedSecret);
   }
   return false;
 }

@@ -6,14 +6,13 @@ import { requireAdmin } from '@/lib/session';
 import { parseMessage } from '@/lib/agent/router';
 import { executeCommand, type AgentResult } from '@/lib/agent/commands';
 import { navigate, type NavLink } from '@/lib/agent/navigator';
+import { getJwtSecret } from '@/lib/env';
 
 export const runtime = 'nodejs';
 
 // Pending actions are sealed (encrypted) so that args such as a new employee password
 // never travel to the browser in plain text. Valid for 10 minutes.
-const SEAL_SECRET = createHash('sha256')
-  .update(process.env.JWT_SECRET || 'super-secret-jwt-key-for-marketing-system-2026-secure-random')
-  .digest();
+const SEAL_SECRET = createHash('sha256').update(getJwtSecret()).digest();
 
 async function sealPending(command: string, args: string[]): Promise<string> {
   return new EncryptJWT({ command, args })

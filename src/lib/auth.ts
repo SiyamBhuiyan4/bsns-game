@@ -1,9 +1,9 @@
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
+import { getJwtKey } from './env';
 
 const BCRYPT_ROUNDS = 12;
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-jwt-key-for-marketing-system-2026-secure-random';
-const secretKey = new TextEncoder().encode(JWT_SECRET);
+const secretKey = getJwtKey();
 
 export interface SessionUser {
   id: string;
@@ -41,7 +41,7 @@ export async function signToken(payload: {
 
 export async function verifyToken(token: string): Promise<SessionUser | null> {
   try {
-    const { payload } = await jwtVerify(token, secretKey);
+    const { payload } = await jwtVerify(token, secretKey, { algorithms: ['HS256'] });
     const userId = (payload.userId || payload.id) as string;
     return {
       id: userId,
