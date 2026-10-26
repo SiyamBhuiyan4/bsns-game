@@ -4,13 +4,11 @@ import { Hind_Siliguri, Noto_Sans_Bengali, Inter } from 'next/font/google';
 import './globals.css';
 import {
   LanguageProvider,
-  COOKIE_LANG_KEY,
-  COOKIE_DIGIT_KEY,
-  COOKIE_THEME_KEY,
   type Language,
   type DigitStyle,
   type Theme,
 } from '@/components/LanguageContext';
+import { COOKIE_LANG_KEY, COOKIE_DIGIT_KEY, COOKIE_THEME_KEY } from '@/lib/i18n/cookies';
 
 const hindSiliguri = Hind_Siliguri({
   weight: ['300', '400', '500', '600', '700'],

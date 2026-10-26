@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { makeTranslator } from '@/lib/i18n/translate';
+import { readLangFromRequest } from '@/lib/i18n/request-lang';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { MonthlyAutoData, computeMonthlyAutoData } from '@/lib/reports';
@@ -9,6 +11,9 @@ import PDFDocument from 'pdfkit';
 
 export async function GET(req: NextRequest) {
   try {
+    // The document follows the language the admin is reading the app in.
+    const L = makeTranslator(readLangFromRequest(req));
+
     const session = await getSession();
     if (!session || session.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -61,38 +66,38 @@ export async function GET(req: NextRequest) {
       // Sheet 1: Executive Summary (Sections 1, 3, 7, 8)
       const sheet1 = workbook.addWorksheet('Executive Summary');
       sheet1.mergeCells('A1:E1');
-      sheet1.getCell('A1').value = `মাসিক মূল্যায়ন ও অগ্রগতি প্রতিবেদন (মাস: ${month})`;
+      sheet1.getCell('A1').value = L(`মাসিক মূল্যায়ন ও অগ্রগতি প্রতিবেদন (মাস: ${month})`);
       sheet1.getCell('A1').font = { size: 15, bold: true, color: { argb: 'FF0F172A' } };
       sheet1.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
 
       sheet1.addRow([]);
-      sheet1.addRow(['স্ট্যাটাস', reportStatus, 'চূড়ান্ত অনুমোদনের তারিখ', finalizedStr]);
+      sheet1.addRow([L('স্ট্যাটাস'), reportStatus, L('চূড়ান্ত অনুমোদনের তারিখ'), finalizedStr]);
       sheet1.addRow([]);
 
       // Section 1: MoM Growth Table
-      sheet1.addRow(['সেকশন ১: মাসভিত্তিক প্রবৃদ্ধি (Month-over-Month Growth)']);
+      sheet1.addRow([L('সেকশন ১: মাসভিত্তিক প্রবৃদ্ধি (Month-over-Month Growth)')]);
       sheet1.getRow(5).font = { bold: true };
-      sheet1.addRow(['মেট্রিক', 'চলতি মাস', 'পূর্ববর্তী মাস', 'পার্থক্য (Diff)', 'প্রবৃদ্ধি (Growth %)']);
+      sheet1.addRow([L('মেট্রিক'), L('চলতি মাস'), L('পূর্ববর্তী মাস'), L('পার্থক্য (Diff)'), L('প্রবৃদ্ধি (Growth %)')]);
       const momHeader = sheet1.getRow(6);
       momHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       momHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D9488' } };
 
       sheet1.addRow([
-        'বিক্রয় (Sales ৳)',
+        L('বিক্রয় (Sales ৳)'),
         autoData.mom_growth.current.sales,
         autoData.mom_growth.previous.sales,
         autoData.mom_growth.diff.sales,
         `${autoData.mom_growth.growth_pct.sales}%`,
       ]);
       sheet1.addRow([
-        'মুনাফা (Profit ৳)',
+        L('মুনাফা (Profit ৳)'),
         autoData.mom_growth.current.profit,
         autoData.mom_growth.previous.profit,
         autoData.mom_growth.diff.profit,
         `${autoData.mom_growth.growth_pct.profit}%`,
       ]);
       sheet1.addRow([
-        'গ্রুপ পোস্ট (Posts)',
+        L('গ্রুপ পোস্ট (Posts)'),
         autoData.mom_growth.current.posts,
         autoData.mom_growth.previous.posts,
         autoData.mom_growth.diff.posts,
@@ -101,39 +106,39 @@ export async function GET(req: NextRequest) {
       sheet1.addRow([]);
 
       // Section 3: Budget Table
-      sheet1.addRow(['সেকশন ৩: বাজেট ব্যবহার ও ব্যয় বিবরণী']);
+      sheet1.addRow([L('সেকশন ৩: বাজেট ব্যবহার ও ব্যয় বিবরণী')]);
       sheet1.getRow(11).font = { bold: true };
-      sheet1.addRow(['বাজেট সারসংক্ষেপ', 'পরিমাণ (৳)']);
+      sheet1.addRow([L('বাজেট সারসংক্ষেপ'), L('পরিমাণ (৳)')]);
       const budHeader = sheet1.getRow(12);
       budHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       budHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0284C7' } };
 
-      sheet1.addRow(['নির্ধারিত বাজেট', autoData.budget_summary.monthly_budget]);
-      sheet1.addRow(['প্রকৃত খরচ (Spend)', autoData.budget_summary.actual_spend]);
-      sheet1.addRow(['ব্যবহারের হার (% Used)', `${autoData.budget_summary.percentage_used}%`]);
-      sheet1.addRow(['অবশিষ্ট বাজেট', autoData.budget_summary.remaining]);
+      sheet1.addRow([L('নির্ধারিত বাজেট'), autoData.budget_summary.monthly_budget]);
+      sheet1.addRow([L('প্রকৃত খরচ (Spend)'), autoData.budget_summary.actual_spend]);
+      sheet1.addRow([L('ব্যবহারের হার (% Used)'), `${autoData.budget_summary.percentage_used}%`]);
+      sheet1.addRow([L('অবশিষ্ট বাজেট'), autoData.budget_summary.remaining]);
       sheet1.addRow([]);
 
       // Section 7: Admin Text Summary
-      sheet1.addRow(['সেকশন ৭: মাসিক কাজের সারসংক্ষেপ ও মূল্যায়ন']);
+      sheet1.addRow([L('সেকশন ৭: মাসিক কাজের সারসংক্ষেপ ও মূল্যায়ন')]);
       sheet1.getRow(18).font = { bold: true };
-      sheet1.addRow([report?.summary_text || '(কোনো মন্তব্য সংরক্ষিত নেই)']);
+      sheet1.addRow([report?.summary_text || L('(কোনো মন্তব্য সংরক্ষিত নেই)')]);
       sheet1.addRow([]);
 
       // Section 8: Admin Next Month Goals & Budget
-      sheet1.addRow(['সেকশন ৮: পরবর্তী মাসের প্রধান লক্ষ্যসমূহ ও প্রস্তাবিত বাজেট']);
+      sheet1.addRow([L('সেকশন ৮: পরবর্তী মাসের প্রধান লক্ষ্যসমূহ ও প্রস্তাবিত বাজেট')]);
       sheet1.getRow(21).font = { bold: true };
-      sheet1.addRow(['পরবর্তী মাসের লক্ষ্য', report?.next_month_goal || '(কোনো লক্ষ্য নির্ধারিত নেই)']);
-      sheet1.addRow(['প্রস্তাবিত মার্কেটিং বাজেট (৳)', report?.next_month_budget ? Number(report.next_month_budget) : 'N/A']);
+      sheet1.addRow([L('পরবর্তী মাসের লক্ষ্য'), report?.next_month_goal || L('(কোনো লক্ষ্য নির্ধারিত নেই)')]);
+      sheet1.addRow([L('প্রস্তাবিত মার্কেটিং বাজেট (৳)'), report?.next_month_budget ? Number(report.next_month_budget) : 'N/A']);
 
       sheet1.columns.forEach((c) => (c.width = 24));
 
       // Sheet 2: Section 2 - Marketer Performance & Rankings
       const sheet2 = workbook.addWorksheet('Marketer Rankings');
-      sheet2.addRow(['সেকশন ২: মার্কেটারদের পারফরম্যান্স ও র‌্যাঙ্কিং']);
+      sheet2.addRow([L('সেকশন ২: মার্কেটারদের পারফরম্যান্স ও র‌্যাঙ্কিং')]);
       sheet2.getRow(1).font = { bold: true };
       sheet2.addRow([]);
-      sheet2.addRow(['র‌্যাংক', 'নাম', 'ইমেইল', 'পোস্ট সংখ্যা', 'বিক্রয় (৳)', 'মুনাফা (৳)', 'স্কোর (%)', 'সেরা পারফর্মার']);
+      sheet2.addRow([L('র‌্যাংক'), L('নাম'), L('ইমেইল'), L('পোস্ট সংখ্যা'), L('বিক্রয় (৳)'), L('মুনাফা (৳)'), L('স্কোর (%)'), L('সেরা পারফর্মার')]);
       const empHeader = sheet2.getRow(3);
       empHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       empHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } };
@@ -147,17 +152,17 @@ export async function GET(req: NextRequest) {
           emp.sales_amount,
           emp.profit_amount,
           `${emp.score}%`,
-          emp.is_top_performer ? '🏆 হ্যাঁ' : 'না',
+          emp.is_top_performer ? L('🏆 হ্যাঁ') : L('না'),
         ]);
       }
       sheet2.columns.forEach((c) => (c.width = 20));
 
       // Sheet 3: Section 4 - Section Target Achievements
       const sheet3 = workbook.addWorksheet('Section Achievements');
-      sheet3.addRow(['সেকশন ৪: গ্রুপ সেকশন লক্ষ্যমাত্রা বনাম অর্জন']);
+      sheet3.addRow([L('সেকশন ৪: গ্রুপ সেকশন লক্ষ্যমাত্রা বনাম অর্জন')]);
       sheet3.getRow(1).font = { bold: true };
       sheet3.addRow([]);
-      sheet3.addRow(['সেকশন নাম', 'পোস্ট টার্গেট', 'প্রকৃত পোস্ট', 'পোস্ট অর্জন (%)', 'বিক্রয় টার্গেট (৳)', 'প্রকৃত বিক্রয় (৳)', 'বিক্রয় অর্জন (%)']);
+      sheet3.addRow([L('সেকশন নাম'), L('পোস্ট টার্গেট'), L('প্রকৃত পোস্ট'), L('পোস্ট অর্জন (%)'), L('বিক্রয় টার্গেট (৳)'), L('প্রকৃত বিক্রয় (৳)'), L('বিক্রয় অর্জন (%)')]);
       const secHeader = sheet3.getRow(3);
       secHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       secHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
@@ -177,9 +182,9 @@ export async function GET(req: NextRequest) {
 
       // Sheet 4: Section 5 & 6 - Products & Channels Breakdown
       const sheet4 = workbook.addWorksheet('Products & Channels');
-      sheet4.addRow(['সেকশন ৫: শীর্ষ বিক্রিত পণ্যসমূহ (Top Products by Revenue)']);
+      sheet4.addRow([L('সেকশন ৫: শীর্ষ বিক্রিত পণ্যসমূহ (Top Products by Revenue)')]);
       sheet4.getRow(1).font = { bold: true };
-      sheet4.addRow(['পণ্যের নাম (বাংলা)', 'ইংরেজি নাম', 'একক', 'বিক্রির পরিমাণ', 'মোট বিক্রয় (৳)', 'বিক্রয় অংশ (%)']);
+      sheet4.addRow([L('পণ্যের নাম (বাংলা)'), L('ইংরেজি নাম'), L('একক'), L('বিক্রির পরিমাণ'), L('মোট বিক্রয় (৳)'), L('বিক্রয় অংশ (%)')]);
       const pHeader = sheet4.getRow(2);
       pHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       pHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF8B5CF6' } };
@@ -189,9 +194,9 @@ export async function GET(req: NextRequest) {
       }
 
       sheet4.addRow([]);
-      sheet4.addRow(['সেকশন ৬: চ্যানেল ও প্রচারণা বিশ্লেষণ (Channels & Campaigns)']);
+      sheet4.addRow([L('সেকশন ৬: চ্যানেল ও প্রচারণা বিশ্লেষণ (Channels & Campaigns)')]);
       sheet4.getRow(sheet4.rowCount).font = { bold: true };
-      sheet4.addRow(['চ্যানেল', 'লিড সংখ্যা', 'অর্ডার সংখ্যা', 'মোট বিক্রয় (৳)', 'কনভার্সন রেট (%)']);
+      sheet4.addRow([L('চ্যানেল'), L('লিড সংখ্যা'), L('অর্ডার সংখ্যা'), L('মোট বিক্রয় (৳)'), L('কনভার্সন রেট (%)')]);
       const chHeader = sheet4.getRow(sheet4.rowCount);
       chHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       chHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF59E0B' } };

@@ -457,7 +457,7 @@ export default function EmployeeLeadsPage() {
         <div className="alert alert-error items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{errorMessage}</span>
+            <span>{L(errorMessage)}</span>
           </div>
           <button
             onClick={() => setErrorMessage(null)}
@@ -473,7 +473,7 @@ export default function EmployeeLeadsPage() {
         <div className="alert alert-success items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
-            <span>{successMessage}</span>
+            <span>{L(successMessage)}</span>
           </div>
           <button
             onClick={() => setSuccessMessage(null)}
@@ -974,7 +974,7 @@ export default function EmployeeLeadsPage() {
               {statusError && (
                 <div className="alert alert-error">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>{statusError}</span>
+                  <span>{L(statusError)}</span>
                 </div>
               )}
 

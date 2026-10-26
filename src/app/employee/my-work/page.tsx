@@ -629,7 +629,7 @@ function EmployeeMyWorkContent() {
         <div className="flex items-center justify-between rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-red-800 dark:text-red-300 shadow-sm">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
-            <span className="text-sm font-medium">{errorMessage}</span>
+            <span className="text-sm font-medium">{L(errorMessage)}</span>
           </div>
           <button onClick={() => setErrorMessage(null)} className="text-red-700 font-bold ml-2">
             ×

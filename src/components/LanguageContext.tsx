@@ -16,6 +16,7 @@ import {
   FormatterOptions,
 } from '@/lib/formatter';
 import { makeTranslator, translate } from '@/lib/i18n/translate';
+import { COOKIE_LANG_KEY, COOKIE_DIGIT_KEY, COOKIE_THEME_KEY } from '@/lib/i18n/cookies';
 
 export type Language = 'bn' | 'en';
 export type DigitStyle = 'bn' | 'en';
@@ -41,10 +42,6 @@ export interface LanguageContextType {
     options?: Omit<FormatterOptions, 'digitStyle'>
   ) => string;
 }
-
-export const COOKIE_LANG_KEY = 'app_lang';
-export const COOKIE_DIGIT_KEY = 'app_digit_style';
-export const COOKIE_THEME_KEY = 'app_theme';
 
 const dictionary: Record<Language, Record<string, string>> = {
   bn: {

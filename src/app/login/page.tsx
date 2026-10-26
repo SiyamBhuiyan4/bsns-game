@@ -7,6 +7,7 @@ import LanguageToggle from '@/components/LanguageToggle';
 import { useLanguage } from '@/components/LanguageContext';
 
 export default function LoginPage() {
+  const { L } = useLanguage();
   const router = useRouter();
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
@@ -67,7 +68,7 @@ export default function LoginPage() {
           {errorMessage && (
             <div className="alert alert-error mb-4" role="alert">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-              <div>{errorMessage}</div>
+              <div>{L(errorMessage)}</div>
             </div>
           )}
 

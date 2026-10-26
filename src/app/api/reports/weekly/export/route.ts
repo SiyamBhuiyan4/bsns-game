@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { makeTranslator } from '@/lib/i18n/translate';
+import { readLangFromRequest } from '@/lib/i18n/request-lang';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { parseDateOnly } from '@/lib/date';
@@ -12,6 +14,9 @@ import PDFDocument from 'pdfkit';
 
 export async function GET(req: NextRequest) {
   try {
+    // The document follows the language the admin is reading the app in.
+    const L = makeTranslator(readLangFromRequest(req));
+
     const session = await getSession();
     if (!session || session.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -119,7 +124,7 @@ export async function GET(req: NextRequest) {
     const questionRows = WEEKLY_FIXED_QUESTIONS.map((q) => ({
       no: q.no,
       question: questionTextMap.get(q.no) || q.text,
-      answer: answersMap.get(q.no) || '(কোনো উত্তর দেওয়া হয়নি)',
+      answer: answersMap.get(q.no) || L('(কোনো উত্তর দেওয়া হয়নি)'),
     }));
 
     // Record audit log
@@ -143,39 +148,39 @@ export async function GET(req: NextRequest) {
       // Sheet 1: Summary & Target vs Actual & 5 Questions
       const sheet1 = workbook.addWorksheet('Weekly Evaluation');
       sheet1.mergeCells('A1:E1');
-      sheet1.getCell('A1').value = `সাপ্তাহিক মূল্যায়ন প্রতিবেদন (${weekStartStr} হতে ${weekEndStr})`;
+      sheet1.getCell('A1').value = L(`সাপ্তাহিক মূল্যায়ন প্রতিবেদন (${weekStartStr} হতে ${weekEndStr})`);
       sheet1.getCell('A1').font = { size: 15, bold: true, color: { argb: 'FF0F172A' } };
       sheet1.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
       sheet1.addRow([]);
 
       // Section: Weekly Totals
-      const totHeader = sheet1.addRow(['মেট্রিক', 'সাপ্তাহিক সর্বমোট ফলাফল']);
+      const totHeader = sheet1.addRow([L('মেট্রিক'), L('সাপ্তাহিক সর্বমোট ফলাফল')]);
       totHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       totHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D9488' } };
 
-      sheet1.addRow(['মোট বিক্রয় (৳)', autoData.summary.total_sales]);
-      sheet1.addRow(['মোট মুনাফা (৳)', autoData.summary.total_profit]);
-      sheet1.addRow(['সম্পন্ন পোস্ট', autoData.summary.total_posts]);
-      sheet1.addRow(['নতুন ক্রেতা', autoData.summary.total_new_clients]);
-      sheet1.addRow(['B2B অর্ডার', autoData.summary.total_b2b_orders]);
-      sheet1.addRow(['রিটেনশন', autoData.summary.total_retention]);
-      sheet1.addRow(['ফলোআপ সম্পন্ন', autoData.summary.total_followups]);
-      sheet1.addRow(['গড় টিম স্কোর', `${autoData.summary.team_avg_score}%`]);
+      sheet1.addRow([L('মোট বিক্রয় (৳)'), autoData.summary.total_sales]);
+      sheet1.addRow([L('মোট মুনাফা (৳)'), autoData.summary.total_profit]);
+      sheet1.addRow([L('সম্পন্ন পোস্ট'), autoData.summary.total_posts]);
+      sheet1.addRow([L('নতুন ক্রেতা'), autoData.summary.total_new_clients]);
+      sheet1.addRow([L('B2B অর্ডার'), autoData.summary.total_b2b_orders]);
+      sheet1.addRow([L('রিটেনশন'), autoData.summary.total_retention]);
+      sheet1.addRow([L('ফলোআপ সম্পন্ন'), autoData.summary.total_followups]);
+      sheet1.addRow([L('গড় টিম স্কোর'), `${autoData.summary.team_avg_score}%`]);
       sheet1.addRow([]);
 
       // Section: Target vs Actual
-      const tvaHeader = sheet1.addRow(['মেট্রিক', 'সাপ্তাহিক লক্ষ্যমাত্রা (Target)', 'প্রকৃত অর্জিত (Actual)', 'অর্জন হার (%)']);
+      const tvaHeader = sheet1.addRow([L('মেট্রিক'), L('সাপ্তাহিক লক্ষ্যমাত্রা (Target)'), L('প্রকৃত অর্জিত (Actual)'), L('অর্জন হার (%)')]);
       tvaHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       tvaHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0284C7' } };
 
-      sheet1.addRow(['গ্রুপ পোস্ট (Posts)', postsTarget, postsActual, `${postsPct}%`]);
-      sheet1.addRow(['বিক্রয় (Sales ৳)', salesTarget, salesActual, `${salesPct}%`]);
-      sheet1.addRow(['মুনাফা (Profit ৳)', profitTarget, profitActual, `${profitPct}%`]);
-      sheet1.addRow(['নতুন ক্রেতা (New Clients)', newClientsTarget, newClientsActual, `${newClientsPct}%`]);
+      sheet1.addRow([L('গ্রুপ পোস্ট (Posts)'), postsTarget, postsActual, `${postsPct}%`]);
+      sheet1.addRow([L('বিক্রয় (Sales ৳)'), salesTarget, salesActual, `${salesPct}%`]);
+      sheet1.addRow([L('মুনাফা (Profit ৳)'), profitTarget, profitActual, `${profitPct}%`]);
+      sheet1.addRow([L('নতুন ক্রেতা (New Clients)'), newClientsTarget, newClientsActual, `${newClientsPct}%`]);
       sheet1.addRow([]);
 
       // Section: 5 Strategic Questions & Answers
-      const qHeader = sheet1.addRow(['#', 'কৌশলগত ও মূল্যায়নমূলক প্রশ্ন (৫টি প্রশ্ন)', 'উত্তর']);
+      const qHeader = sheet1.addRow(['#', L('কৌশলগত ও মূল্যায়নমূলক প্রশ্ন (৫টি প্রশ্ন)'), L('উত্তর')]);
       qHeader.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       qHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
 
@@ -189,7 +194,7 @@ export async function GET(req: NextRequest) {
 
       // Sheet 2: Top Products by Sales
       const sheet2 = workbook.addWorksheet('Top Products');
-      sheet2.addRow(['পণ্যের নাম (বাংলা)', 'ইংরেজি নাম', 'একক', 'বিক্রিত পরিমাণ', 'মোট বিক্রয় (৳)']);
+      sheet2.addRow([L('পণ্যের নাম (বাংলা)'), L('ইংরেজি নাম'), L('একক'), L('বিক্রিত পরিমাণ'), L('মোট বিক্রয় (৳)')]);
       sheet2.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
       sheet2.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0284C7' } };
 
@@ -200,7 +205,7 @@ export async function GET(req: NextRequest) {
 
       // Sheet 3: Source Quality (Channels)
       const sheet3 = workbook.addWorksheet('Source Quality');
-      sheet3.addRow(['সোর্স চ্যানেল', 'মোট লিড সংখ্যা', 'অর্ডার সংখ্যা', 'মোট বিক্রয় (৳)', 'কনভার্সন হার (%)']);
+      sheet3.addRow([L('সোর্স চ্যানেল'), L('মোট লিড সংখ্যা'), L('অর্ডার সংখ্যা'), L('মোট বিক্রয় (৳)'), L('কনভার্সন হার (%)')]);
       sheet3.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
       sheet3.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF8B5CF6' } };
 
@@ -213,26 +218,26 @@ export async function GET(req: NextRequest) {
       // Sheet 4: Unfinished Orders
       const sheet4 = workbook.addWorksheet('Unfinished Orders');
       sheet4.addRow([
-        'ক্রেতার নাম',
-        'মোবাইল নম্বর',
-        'চ্যানেল',
-        'দায়িত্বপ্রাপ্ত মার্কেটার',
-        'স্ট্যাটাস',
-        'সম্ভাব্য মূল্য (৳)',
-        'তৈরির তারিখ',
+        L('ক্রেতার নাম'),
+        L('মোবাইল নম্বর'),
+        L('চ্যানেল'),
+        L('দায়িত্বপ্রাপ্ত মার্কেটার'),
+        L('স্ট্যাটাস'),
+        L('সম্ভাব্য মূল্য (৳)'),
+        L('তৈরির তারিখ'),
       ]);
       sheet4.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
       sheet4.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD97706' } };
 
       if (unfinishedLeads.length === 0) {
-        sheet4.addRow(['(কোনো অসম্পূর্ণ বা বকেয়া অর্ডার নেই)', '-', '-', '-', '-', 0, '-']);
+        sheet4.addRow([L('(কোনো অসম্পূর্ণ বা বকেয়া অর্ডার নেই)'), '-', '-', '-', '-', 0, '-']);
       } else {
         for (const ul of unfinishedLeads) {
           sheet4.addRow([
             ul.name,
             ul.phone,
             ul.source_channel,
-            ul.owner?.name || 'অ্যাসাইন হয়নি',
+            ul.owner?.name || L('অ্যাসাইন হয়নি'),
             ul.status,
             ul.expected_value ? Number(ul.expected_value) : 0,
             ul.created_at.toISOString().slice(0, 10),
@@ -260,13 +265,13 @@ export async function GET(req: NextRequest) {
       doc.on('data', (chunk) => chunks.push(chunk));
 
       // Header
-      doc.fontSize(16).text('Weekly Evaluation Report / সাপ্তাহিক মূল্যায়ন প্রতিবেদন', { align: 'center' });
+      doc.fontSize(16).text(L('Weekly Evaluation Report / সাপ্তাহিক মূল্যায়ন প্রতিবেদন'), { align: 'center' });
       doc.fontSize(10).text(`Period: ${weekStartStr} to ${weekEndStr} (Dhaka Time)`, { align: 'center' });
       doc.fontSize(9).text(`Status: ${report?.status || 'DRAFT'}`, { align: 'center' });
       doc.moveDown(1);
 
       // Section 1: Weekly Totals
-      doc.fontSize(12).text('1. Weekly Totals / সাপ্তাহিক মোট ফলাফল:', { underline: true });
+      doc.fontSize(12).text(L('1. Weekly Totals / সাপ্তাহিক মোট ফলাফল:'), { underline: true });
       doc.fontSize(9);
       doc.moveDown(0.4);
       doc.text(`• Total Sales: Tk. ${autoData.summary.total_sales.toLocaleString()}  |  Total Profit: Tk. ${autoData.summary.total_profit.toLocaleString()}`);
@@ -275,7 +280,7 @@ export async function GET(req: NextRequest) {
       doc.moveDown(1);
 
       // Section 2: Target vs Actual
-      doc.fontSize(12).text('2. Target vs Actual / টার্গেট বনাম অর্জন:', { underline: true });
+      doc.fontSize(12).text(L('2. Target vs Actual / টার্গেট বনাম অর্জন:'), { underline: true });
       doc.fontSize(9);
       doc.moveDown(0.4);
       doc.text(`• Posts Target: ${postsTarget} vs Actual: ${postsActual} (${postsPct}%)`);
@@ -297,7 +302,7 @@ export async function GET(req: NextRequest) {
       doc.moveDown(0.6);
 
       // Section 4: Top Products by Sales
-      doc.fontSize(12).text('4. Top Products by Sales / শীর্ষ বিক্রিত পণ্য:', { underline: true });
+      doc.fontSize(12).text(L('4. Top Products by Sales / শীর্ষ বিক্রিত পণ্য:'), { underline: true });
       doc.moveDown(0.4);
       doc.fontSize(9);
 
@@ -318,7 +323,7 @@ export async function GET(req: NextRequest) {
       doc.moveDown(1);
 
       // Section 6: Unfinished Orders
-      doc.fontSize(12).text('6. Unfinished Orders / অপেক্ষমাণ ও অসম্পূর্ণ অর্ডার:', { underline: true });
+      doc.fontSize(12).text(L('6. Unfinished Orders / অপেক্ষমাণ ও অসম্পূর্ণ অর্ডার:'), { underline: true });
       doc.moveDown(0.4);
       doc.fontSize(9);
 

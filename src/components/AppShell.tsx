@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Menu, X, type LucideIcon } from 'lucide-react';
 import LogoutButton from '@/components/LogoutButton';
 import LanguageToggle from '@/components/LanguageToggle';
+import ThemeToggle from '@/components/ThemeToggle';
 import { useLanguage } from '@/components/LanguageContext';
 
 export type NavItem = { href: string; key: string; labelBn: string; labelEn: string; icon: LucideIcon };
@@ -58,11 +59,24 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
                   <Link
                     href={item.href}
                     aria-current={active ? 'page' : undefined}
-                    className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                      active ? 'bg-brand-50 font-semibold text-brand-800' : 'font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    className={`group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all duration-200 ${
+                      active
+                        ? 'bg-brand-50 font-semibold text-brand-800'
+                        : 'font-medium text-slate-600 hover:translate-x-0.5 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
-                    <Icon className={`h-[18px] w-[18px] shrink-0 ${active ? 'text-brand-600' : 'text-slate-400 group-hover:text-slate-600'}`} />
+                    {/* Rail on the active item, so the eye finds the current page at a glance. */}
+                    <span
+                      aria-hidden
+                      className={`absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-600 transition-all duration-200 ${
+                        active ? 'opacity-100' : 'opacity-0'
+                      }`}
+                    />
+                    <Icon
+                      className={`h-[18px] w-[18px] shrink-0 transition-transform duration-200 ${
+                        active ? 'text-brand-600' : 'text-slate-400 group-hover:scale-110 group-hover:text-slate-600'
+                      }`}
+                    />
                     <span className="truncate">{t(item.key, item.labelBn, item.labelEn)}</span>
                   </Link>
                 </li>
@@ -75,8 +89,8 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
   );
 
   const brand = (
-    <Link href={homeHref} className="flex items-center gap-2.5 px-5 py-4">
-      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white shadow-sm">
+    <Link href={homeHref} className="press flex items-center gap-2.5 px-5 py-4">
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-sm transition-transform duration-200 hover:rotate-3 hover:scale-105">
         <BrandIcon className="h-5 w-5" />
       </span>
       <span className="min-w-0">
@@ -120,8 +134,8 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
       {/* Mobile drawer */}
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
-          <div className="absolute inset-0 bg-slate-900/40" onClick={() => setOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-white shadow-xl">
+          <div className="animate-fade-in absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <aside className="animate-slide-in-left absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-white shadow-xl">
             <div className="flex items-center justify-between pr-3">
               {brand}
               <button type="button" className="btn-icon" onClick={() => setOpen(false)} aria-label={lang === 'bn' ? L('মেনু বন্ধ করুন') : 'Close menu'}>
@@ -136,18 +150,21 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
 
       <div className="lg:pl-64">
         {/* Top bar */}
-        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-slate-200 bg-white/85 px-4 backdrop-blur-md sm:px-6">
           <button type="button" className="btn-icon lg:hidden" onClick={() => setOpen(true)} aria-label={lang === 'bn' ? L('মেনু খুলুন') : 'Open menu'}>
             <Menu className="h-5 w-5" />
           </button>
           <div className="min-w-0 flex-1 truncate text-sm font-medium text-slate-500">
             {current ? t(current.key, current.labelBn, current.labelEn) : ''}
           </div>
+          <ThemeToggle />
           <LanguageToggle />
           <LogoutButton redirectTo={logoutRedirect} />
         </header>
 
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
+        <main key={pathname} className="animate-fade-up mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          {children}
+        </main>
       </div>
     </div>
   );

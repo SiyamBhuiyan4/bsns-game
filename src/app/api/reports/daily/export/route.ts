@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { makeTranslator } from '@/lib/i18n/translate';
+import { readLangFromRequest } from '@/lib/i18n/request-lang';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { getDhakaDateString, parseDateOnly } from '@/lib/date';
@@ -11,6 +13,9 @@ import PDFDocument from 'pdfkit';
 
 export async function GET(req: NextRequest) {
   try {
+    // The document follows the language the admin is reading the app in.
+    const L = makeTranslator(readLangFromRequest(req));
+
     const session = await getSession();
     if (!session || session.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -147,7 +152,7 @@ export async function GET(req: NextRequest) {
 
       employeeRows.push({
         name: emp.name,
-        sections: sectionNames || 'কোনো সেকশন নেই',
+        sections: sectionNames || L('কোনো সেকশন নেই'),
         newLeads: newLeadsVal,
         confirmedOrders: confirmedOrdersVal,
         sales: metricMap.SALES_AMOUNT,
@@ -156,7 +161,7 @@ export async function GET(req: NextRequest) {
         b2bInquiries: b2bInquiriesVal,
         posts: metricMap.POSTS_DONE,
         score: scoreResult.totalScore,
-        status: scoreResult.isFailing ? 'উন্নতি প্রয়োজন (<৮০%)' : 'পাস (≥৮০%)',
+        status: scoreResult.isFailing ? L('উন্নতি প্রয়োজন (<৮০%)') : L('পাস (≥৮০%)'),
         mainIssue: empText?.main_issue || '-',
         nextPriorities: empText?.next_priorities || '-',
       });
@@ -179,12 +184,12 @@ export async function GET(req: NextRequest) {
     const mainIssuesList = dailyTexts
       .map((t) => t.main_issue?.trim())
       .filter((text): text is string => !!text && text.length > 0);
-    const mainIssuesText = mainIssuesList.length > 0 ? mainIssuesList.join(' | ') : 'কোনো প্রধান সমস্যা বা বাধা নেই';
+    const mainIssuesText = mainIssuesList.length > 0 ? mainIssuesList.join(' | ') : L('কোনো প্রধান সমস্যা বা বাধা নেই');
 
     const nextPrioritiesList = dailyTexts
       .map((t) => t.next_priorities?.trim())
       .filter((text): text is string => !!text && text.length > 0);
-    const nextPrioritiesText = nextPrioritiesList.length > 0 ? nextPrioritiesList.join(' | ') : 'কোনো বিশেষ অগ্রাধিকার উল্লেখ নেই';
+    const nextPrioritiesText = nextPrioritiesList.length > 0 ? nextPrioritiesList.join(' | ') : L('কোনো বিশেষ অগ্রাধিকার উল্লেখ নেই');
 
     const postsDoneCount = linkCompletions.length;
 
@@ -234,41 +239,41 @@ export async function GET(req: NextRequest) {
 
       // Title
       worksheet.mergeCells('A1:D1');
-      worksheet.getCell('A1').value = `দৈনিক পারফরম্যান্স রিপোর্ট - ${dateStr}`;
+      worksheet.getCell('A1').value = L(`দৈনিক পারফরম্যান্স রিপোর্ট - ${dateStr}`);
       worksheet.getCell('A1').font = { size: 15, bold: true, color: { argb: 'FF0F172A' } };
       worksheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
       worksheet.addRow([]);
 
       // Section Header: Required Bengali Order
-      const secHeaderRow = worksheet.addRow(['দৈনিক মূল মেট্রিক', 'মান / বিবরণ']);
+      const secHeaderRow = worksheet.addRow([L('দৈনিক মূল মেট্রিক'), L('মান / বিবরণ')]);
       secHeaderRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       secHeaderRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D9488' } };
 
-      worksheet.addRow(['নতুন লিড', totalNewLeads]);
-      worksheet.addRow(['নিশ্চিত অর্ডার', totalConfirmedOrders]);
-      worksheet.addRow(['মোট বিক্রি', `৳ ${totalSales.toLocaleString()}`]);
-      worksheet.addRow(['বিজ্ঞাপনের খরচ', `৳ ${totalAdSpend.toLocaleString()}`]);
-      worksheet.addRow(['ফলোআপ সম্পন্ন', totalFollowups]);
-      worksheet.addRow(['বড় B2B অনুসন্ধান', totalB2bInquiries]);
-      worksheet.addRow(['প্রধান সমস্যা', mainIssuesText]);
-      worksheet.addRow(['আগামী দিনের অগ্রাধিকার', nextPrioritiesText]);
+      worksheet.addRow([L('নতুন লিড'), totalNewLeads]);
+      worksheet.addRow([L('নিশ্চিত অর্ডার'), totalConfirmedOrders]);
+      worksheet.addRow([L('মোট বিক্রি'), L(`৳ ${totalSales.toLocaleString()}`)]);
+      worksheet.addRow([L('বিজ্ঞাপনের খরচ'), L(`৳ ${totalAdSpend.toLocaleString()}`)]);
+      worksheet.addRow([L('ফলোআপ সম্পন্ন'), totalFollowups]);
+      worksheet.addRow([L('বড় B2B অনুসন্ধান'), totalB2bInquiries]);
+      worksheet.addRow([L('প্রধান সমস্যা'), mainIssuesText]);
+      worksheet.addRow([L('আগামী দিনের অগ্রাধিকার'), nextPrioritiesText]);
       worksheet.addRow(['POSTS_DONE count', postsDoneCount]);
-      worksheet.addRow(['টিম গড় স্কোর', `${teamAvgScore}%`]);
+      worksheet.addRow([L('টিম গড় স্কোর'), `${teamAvgScore}%`]);
       worksheet.addRow([]);
 
       // Product Breakdown Table
       const prodHeaderRow = worksheet.addRow([
-        'পণ্য বিক্রয়ের বিবরণ (Product Breakdown)',
-        'ইংরেজি নাম',
-        'একক',
-        'পরিমাণ',
-        'মোট বিক্রয় (৳)',
+        L('পণ্য বিক্রয়ের বিবরণ (Product Breakdown)'),
+        L('ইংরেজি নাম'),
+        L('একক'),
+        L('পরিমাণ'),
+        L('মোট বিক্রয় (৳)'),
       ]);
       prodHeaderRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       prodHeaderRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0284C7' } };
 
       if (productRows.length === 0) {
-        worksheet.addRow(['(আজ কোনো পণ্য বিক্রয় রেকর্ড করা হয়নি)', '-', '-', 0, 0]);
+        worksheet.addRow([L('(আজ কোনো পণ্য বিক্রয় রেকর্ড করা হয়নি)'), '-', '-', 0, 0]);
       } else {
         for (const p of productRows) {
           worksheet.addRow([p.name_bn, p.name_en, p.unit, p.quantity, p.amount]);
@@ -278,19 +283,19 @@ export async function GET(req: NextRequest) {
 
       // Employee Breakdown Table
       const empHeaderRow = worksheet.addRow([
-        'মার্কেটার নাম',
-        'সেকশন',
-        'নতুন লিড',
-        'নিশ্চিত অর্ডার',
-        'মোট বিক্রি (৳)',
-        'বিজ্ঞাপনের খরচ (৳)',
-        'ফলোআপ সম্পন্ন',
-        'বড় B2B অনুসন্ধান',
-        'পোস্ট সংখ্যা',
-        'স্কোর (%)',
-        'স্ট্যাটাস',
-        'প্রধান সমস্যা',
-        'আগামী দিনের অগ্রাধিকার',
+        L('মার্কেটার নাম'),
+        L('সেকশন'),
+        L('নতুন লিড'),
+        L('নিশ্চিত অর্ডার'),
+        L('মোট বিক্রি (৳)'),
+        L('বিজ্ঞাপনের খরচ (৳)'),
+        L('ফলোআপ সম্পন্ন'),
+        L('বড় B2B অনুসন্ধান'),
+        L('পোস্ট সংখ্যা'),
+        L('স্কোর (%)'),
+        L('স্ট্যাটাস'),
+        L('প্রধান সমস্যা'),
+        L('আগামী দিনের অগ্রাধিকার'),
       ]);
       empHeaderRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       empHeaderRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF334155' } };
@@ -338,29 +343,29 @@ export async function GET(req: NextRequest) {
       doc.on('data', (chunk) => chunks.push(chunk));
 
       // Header
-      doc.fontSize(16).text('Daily Performance Report / দৈনিক পারফরম্যান্স রিপোর্ট', { align: 'center' });
+      doc.fontSize(16).text(L('Daily Performance Report / দৈনিক পারফরম্যান্স রিপোর্ট'), { align: 'center' });
       doc.fontSize(10).text(`Date: ${dateStr} (Dhaka Time)`, { align: 'center' });
       doc.moveDown(1);
 
       // Section 1: Required Bengali Order
-      doc.fontSize(12).text('1. Daily Key Metrics / দৈনিক মূল মেট্রিক (Required Order):', { underline: true });
+      doc.fontSize(12).text(L('1. Daily Key Metrics / দৈনিক মূল মেট্রিক (Required Order):'), { underline: true });
       doc.fontSize(10);
       doc.moveDown(0.4);
 
-      doc.text(`• নতুন লিড (New Leads): ${totalNewLeads}`);
-      doc.text(`• নিশ্চিত অর্ডার (Confirmed Orders): ${totalConfirmedOrders}`);
-      doc.text(`• মোট বিক্রি (Total Sales): Tk. ${totalSales.toLocaleString()}`);
-      doc.text(`• বিজ্ঞাপনের খরচ (Ad Spend): Tk. ${totalAdSpend.toLocaleString()}`);
-      doc.text(`• ফলোআপ সম্পন্ন (Followups Completed): ${totalFollowups}`);
-      doc.text(`• বড় B2B অনুসন্ধান (Major B2B Inquiries): ${totalB2bInquiries}`);
-      doc.text(`• প্রধান সমস্যা (Main Issue): ${mainIssuesText}`);
-      doc.text(`• আগামী দিনের অগ্রাধিকার (Next Day Priorities): ${nextPrioritiesText}`);
-      doc.text(`• POSTS_DONE count (সম্পন্ন পোস্ট): ${postsDoneCount}`);
+      doc.text(L(`• নতুন লিড (New Leads): ${totalNewLeads}`));
+      doc.text(L(`• নিশ্চিত অর্ডার (Confirmed Orders): ${totalConfirmedOrders}`));
+      doc.text(L(`• মোট বিক্রি (Total Sales): Tk. ${totalSales.toLocaleString()}`));
+      doc.text(L(`• বিজ্ঞাপনের খরচ (Ad Spend): Tk. ${totalAdSpend.toLocaleString()}`));
+      doc.text(L(`• ফলোআপ সম্পন্ন (Followups Completed): ${totalFollowups}`));
+      doc.text(L(`• বড় B2B অনুসন্ধান (Major B2B Inquiries): ${totalB2bInquiries}`));
+      doc.text(L(`• প্রধান সমস্যা (Main Issue): ${mainIssuesText}`));
+      doc.text(L(`• আগামী দিনের অগ্রাধিকার (Next Day Priorities): ${nextPrioritiesText}`));
+      doc.text(L(`• POSTS_DONE count (সম্পন্ন পোস্ট): ${postsDoneCount}`));
       doc.text(`• Team Average Score: ${teamAvgScore}%`);
       doc.moveDown(1);
 
       // Section 2: Product Breakdown Table
-      doc.fontSize(12).text('2. Product Breakdown Table / পণ্য বিক্রয়ের বিবরণ:', { underline: true });
+      doc.fontSize(12).text(L('2. Product Breakdown Table / পণ্য বিক্রয়ের বিবরণ:'), { underline: true });
       doc.moveDown(0.4);
       doc.fontSize(9);
 

@@ -338,7 +338,7 @@ export default function EmployeesPage() {
       {errorMessage && (
         <div className="alert alert-error">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span className="flex-1">{errorMessage}</span>
+          <span className="flex-1">{L(errorMessage)}</span>
           <button onClick={() => setErrorMessage(null)} className="btn-icon -my-1 h-6 w-6" aria-label={t('common.dismiss', 'বন্ধ করুন', 'Dismiss')}>
             <X className="h-4 w-4" />
           </button>
@@ -348,7 +348,7 @@ export default function EmployeesPage() {
       {successMessage && (
         <div className="alert alert-success">
           <CheckCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span className="flex-1">{successMessage}</span>
+          <span className="flex-1">{L(successMessage)}</span>
           <button onClick={() => setSuccessMessage(null)} className="btn-icon -my-1 h-6 w-6" aria-label={t('common.dismiss', 'বন্ধ করুন', 'Dismiss')}>
             <X className="h-4 w-4" />
           </button>

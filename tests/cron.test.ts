@@ -13,6 +13,7 @@ import { NextRequest } from 'next/server';
 import { parseDateOnly } from '../src/lib/date';
 import { WEEKLY_FIXED_QUESTIONS } from '../src/lib/reports';
 import { ReportStatus } from '@prisma/client';
+import { getCronSecret } from '@/lib/env';
 
 describe('Scheduled Jobs / Cron Engine (Section 1 and Acceptance Test 18)', () => {
   let testAdminUser: any;
@@ -209,7 +210,7 @@ describe('Scheduled Jobs / Cron Engine (Section 1 and Acceptance Test 18)', () =
   });
 
   describe('API Endpoints & CRON_SECRET Authorization Security', () => {
-    const validSecret = process.env.CRON_SECRET || 'cron-secret-key';
+    const validSecret = getCronSecret();
 
     describe('GET & POST /api/cron/daily-lock', () => {
       it('should reject unauthorized requests without Authorization header (401)', async () => {
