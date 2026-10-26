@@ -234,3 +234,86 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'টাস্ক কিউ লোড করা যায়নি' }, { status: 500 });
   }
 }
+
+export async function POST(request: NextRequest) {
+  const session = await getSession();
+  if (!session || session.role !== 'EMPLOYEE') {
+    return NextResponse.json({ error: 'অনুমতি নেই / Unauthorized' }, { status: 403 });
+  }
+
+  try {
+    const body = await request.json();
+    const { url, title, section_id } = body;
+
+    if (!url || typeof url !== 'string' || !url.trim()) {
+      return NextResponse.json({ error: 'লিংক URL প্রদান করুন' }, { status: 400 });
+    }
+    if (!section_id || typeof section_id !== 'string') {
+      return NextResponse.json({ error: 'সেকশন নির্বাচন করুন' }, { status: 400 });
+    }
+
+    // Verify employee assignment to section
+    const assignment = await prisma.assignment.findUnique({
+      where: {
+        employee_id_section_id: {
+          employee_id: session.userId,
+          section_id,
+        },
+      },
+      include: {
+        section: true,
+      },
+    });
+
+    if (!assignment || !assignment.section.is_active) {
+      return NextResponse.json({ error: 'এই সেকশনে আপনার কাজের অনুমতি নেই' }, { status: 403 });
+    }
+
+    // Find or create group link
+    let link = await prisma.groupLink.findFirst({
+      where: {
+        url: url.trim(),
+        section_id,
+      },
+    });
+
+    if (!link) {
+      link = await prisma.groupLink.create({
+        data: {
+          url: url.trim(),
+          title: title?.trim() || 'অতিরিক্ত কাজ / Extra Post',
+          section_id,
+          is_active: true,
+        },
+      });
+    }
+
+    // Create completion record
+    const completion = await prisma.linkCompletion.create({
+      data: {
+        group_link_id: link.id,
+        employee_id: session.userId,
+        completed_at: new Date(),
+        undone_at: null,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      isExtraWork: true,
+      bonusXp: 50,
+      link: {
+        id: link.id,
+        url: link.url,
+        title: link.title,
+        section_id: link.section_id,
+        section_name: assignment.section.name,
+      },
+      completionId: completion.id,
+      completedAt: completion.completed_at,
+    });
+  } catch (error) {
+    console.error('Error logging extra work:', error);
+    return NextResponse.json({ error: 'অতিরিক্ত কাজ সংরক্ষণ ব্যর্থ হয়েছে' }, { status: 500 });
+  }
+}

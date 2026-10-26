@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Calendar,
   Lock,
@@ -66,6 +67,11 @@ interface ProductSaleResponse {
 }
 
 export default function EmployeeDailyEntryPage() {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace('/employee/my-work?tab=daily_entry');
+  }, [router]);
+
   const { lang } = useLanguage();
   const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
   const [selectedDate, setSelectedDate] = useState(() => getDhakaDateString());

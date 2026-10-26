@@ -1,29 +1,27 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   CheckSquare,
   ExternalLink,
   CheckCircle2,
   RotateCcw,
   Search,
-  Layers,
   Sparkles,
   AlertCircle,
   Loader2,
   Save,
-  Trophy,
   Flame,
   Swords,
   Coins,
   ShoppingBag,
-  Users,
-  MessageSquare,
-  Calendar,
   Zap,
-  TrendingUp,
+  PlusCircle,
+  X,
+  Target,
+  FileSpreadsheet,
 } from 'lucide-react';
-import PageHeader from '@/components/ui/PageHeader';
 import { useLanguage } from '@/components/LanguageContext';
 import EmptyState from '@/components/ui/EmptyState';
 import { formatTaka, getDhakaDateString } from '@/lib/date';
@@ -47,6 +45,7 @@ interface CompletedLink {
   section_name: string;
   completion_id: string;
   completed_at: string;
+  is_extra_work?: boolean;
 }
 
 interface AssignedSection {
@@ -81,12 +80,20 @@ interface ProductSaleRow {
   amount: number;
 }
 
-export default function EmployeeMyWorkPage() {
+function EmployeeMyWorkContent() {
   const { lang } = useLanguage();
   const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
+  const searchParams = useSearchParams();
 
   // Active view tab: 'links' (Task 1) | 'daily_entry' (Task 2) | 'completed'
   const [activeTab, setActiveTab] = useState<'links' | 'daily_entry' | 'completed'>('links');
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'daily_entry' || tabParam === 'links' || tabParam === 'completed') {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   // --- Task 1: Links State ---
   const [todoLinks, setTodoLinks] = useState<TodoLink[]>([]);
@@ -102,6 +109,13 @@ export default function EmployeeMyWorkPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSection, setSelectedSection] = useState('');
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  // --- Add Extra Work Modal State ---
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [extraUrl, setExtraUrl] = useState('');
+  const [extraTitle, setExtraTitle] = useState('');
+  const [extraSectionId, setExtraSectionId] = useState('');
+  const [savingExtra, setSavingExtra] = useState(false);
 
   // --- Task 2: Daily Entry State ---
   const [selectedDate, setSelectedDate] = useState(() => getDhakaDateString());
@@ -140,6 +154,9 @@ export default function EmployeeMyWorkPage() {
         setAssignedSections(data.assignedSections || []);
         setProgress(data.progress || { completedToday: 0, totalAssigned: 0, percentage: 0 });
         setUndoEnabled(data.undoEnabled !== false);
+        if (!extraSectionId && data.assignedSections && data.assignedSections.length > 0) {
+          setExtraSectionId(data.assignedSections[0].id);
+        }
       } else {
         setErrorMessage(data.error || 'টাস্ক কিউ লোড করা যায়নি');
       }
@@ -148,7 +165,7 @@ export default function EmployeeMyWorkPage() {
     } finally {
       setLoadingLinks(false);
     }
-  }, [searchQuery, selectedSection]);
+  }, [searchQuery, selectedSection, extraSectionId]);
 
   useEffect(() => {
     fetchWorkQueue();
@@ -186,7 +203,6 @@ export default function EmployeeMyWorkPage() {
 
         if (Array.isArray(data.products)) {
           setProducts(data.products);
-          // populate product sales if exist
           const existingSales = data.product_sales || [];
           const initialRows = data.products.map((p: Product) => {
             const found = existingSales.find((es: any) => es.product_id === p.id);
@@ -220,22 +236,14 @@ export default function EmployeeMyWorkPage() {
     setTimeout(() => {
       setSuccessToast(null);
       setXpReward(null);
-    }, 3500);
+    }, 4000);
   };
 
-  // Handle Mark Link Done
-  const handleMarkDone = async (link: TodoLink) => {
+  // Handle Mark Link Done (supports normal & extra/bonus work)
+  const handleMarkDone = async (link: TodoLink, allowExtra = false) => {
     if (actionLoadingId === link.id) return;
 
-    if (link.is_limit_reached) {
-      setErrorMessage(
-        L(
-          `"${link.section_name}" এ আজকের নির্ধারিত পোস্ট সীমা (${link.section_post_limit}টি) পূরণ হয়ে গেছে।`,
-          `Daily post quota (${link.section_post_limit}) reached for "${link.section_name}".`
-        )
-      );
-      return;
-    }
+    const isExtra = allowExtra || Boolean(link.is_limit_reached);
 
     setActionLoadingId(link.id);
     setErrorMessage(null);
@@ -248,6 +256,7 @@ export default function EmployeeMyWorkPage() {
       ...link,
       completion_id: 'temp-' + Date.now(),
       completed_at: new Date().toISOString(),
+      is_extra_work: isExtra,
     };
 
     setTodoLinks((prev) => prev.filter((item) => item.id !== link.id));
@@ -261,10 +270,16 @@ export default function EmployeeMyWorkPage() {
       };
     });
 
-    triggerReward(25, L('মিশন সফল! লিঙ্ক পোস্ট সম্পন্ন হয়েছে (+২৫ XP)', 'Quest Complete! Link post verified (+25 XP)'));
+    triggerReward(
+      isExtra ? 50 : 25,
+      isExtra
+        ? L('🚀 বোনাস সম্পন্ন! অতিরিক্ত পোস্ট সফলভাবে জমা হয়েছে (+৫০ XP)', 'Bonus Complete! Extra post verified (+50 XP)')
+        : L('মিশন সফল! লিঙ্ক পোস্ট সম্পন্ন হয়েছে (+২৫ XP)', 'Quest Complete! Link post verified (+25 XP)')
+    );
 
     try {
-      const res = await fetch(`/api/employee/work/${link.id}/done`, {
+      const url = `/api/employee/work/${link.id}/done${isExtra ? '?allowExtra=true' : ''}`;
+      const res = await fetch(url, {
         method: 'POST',
       });
       const data = await res.json();
@@ -278,7 +293,12 @@ export default function EmployeeMyWorkPage() {
         setCompletedLinks((prev) =>
           prev.map((item) =>
             item.id === link.id
-              ? { ...item, completion_id: data.completionId, completed_at: data.completedAt }
+              ? {
+                  ...item,
+                  completion_id: data.completionId,
+                  completed_at: data.completedAt,
+                  is_extra_work: data.isExtraWork,
+                }
               : item
           )
         );
@@ -349,11 +369,55 @@ export default function EmployeeMyWorkPage() {
     }
   };
 
+  // Handle Add Custom Extra Task
+  const handleAddExtraSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!extraUrl.trim()) {
+      setErrorMessage(L('অনুগ্রহ করে লিংক বা পোস্টের URL দিন', 'Please enter a valid URL'));
+      return;
+    }
+    const secId = extraSectionId || assignedSections[0]?.id;
+    if (!secId) {
+      setErrorMessage(L('অনুগ্রহ করে সেকশন নির্বাচন করুন', 'Please select a section'));
+      return;
+    }
+
+    setSavingExtra(true);
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch('/api/employee/work', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: extraUrl.trim(),
+          title: extraTitle.trim() || L('অতিরিক্ত বোনাস পোস্ট', 'Bonus Post'),
+          section_id: secId,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMessage(data.error || 'অতিরিক্ত কাজ সংরক্ষণ ব্যর্থ হয়েছে');
+      } else {
+        triggerReward(50, L('🎉 দুর্দান্ত! আপনার অতিরিক্ত পোস্ট যুক্ত ও সম্পন্ন হয়েছে (+৫০ XP)', 'Awesome! Extra bonus post logged successfully (+50 XP)'));
+        setShowAddModal(false);
+        setExtraUrl('');
+        setExtraTitle('');
+        fetchWorkQueue();
+      }
+    } catch {
+      setErrorMessage('নেটওয়ার্ক ত্রুটি');
+    } finally {
+      setSavingExtra(false);
+    }
+  };
+
   // Handle Save Daily Entry
   const handleSaveDailyEntry = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEdit || isLocked) {
-      setErrorMessage('এই তারিখের এন্ট্রি সম্পাদনা করা যাবে না।');
+      setErrorMessage(L('এই তারিখের এন্ট্রি সম্পাদনা করা যাবে না।', 'This date entry is locked and cannot be edited.'));
       return;
     }
 
@@ -398,7 +462,7 @@ export default function EmployeeMyWorkPage() {
       if (!res.ok) {
         setErrorMessage(data.error || 'দৈনিক এন্ট্রি সেভ ব্যর্থ হয়েছে');
       } else {
-        triggerReward(50, L('🎉 দুর্দান্ত! আজকের দৈনিক কাজের মিশন সফলভাবে সেভ হয়েছে (+৫০ XP)', 'Awesome! Today daily work logged successfully (+50 XP)'));
+        triggerReward(50, L('🎉 দুর্দান্ত! আজকের দৈনিক কাজের হিসাব সফলভাবে সেভ হয়েছে (+৫০ XP)', 'Awesome! Today daily work logged successfully (+50 XP)'));
         fetchDailyEntry(selectedDate);
       }
     } catch {
@@ -430,47 +494,62 @@ export default function EmployeeMyWorkPage() {
 
   return (
     <div className="space-y-6">
-      {/* ARENA HERO HUD (Gaming Atmosphere) */}
+      {/* ARENA HERO HUD (Gaming Arena Atmosphere) */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 p-6 text-white shadow-xl border border-indigo-500/20">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
-        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex flex-wrap items-center gap-2 mb-1.5">
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 <Swords className="w-3.5 h-3.5" />
                 {L('মার্কেটার এরিনা', 'Marketer Battle Arena')}
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                 <Flame className="w-3.5 h-3.5 text-amber-400" />
-                {L('দৈনিক স্ট্রাইক অন', 'Daily Streak On')}
+                {L('দৈনিক স্ট্রাইক সক্রিয়', 'Daily Streak Active')}
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                <Zap className="w-3.5 h-3.5 text-blue-400" />
+                {L('সীমাহীন অতিরিক্ত কাজ উন্মুক্ত', 'Unlimited Extra Work Enabled')}
               </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-              {L('আমার কাজ ও টু-ডু মিশন', 'My Work & Arena Quests')}
+              {L('আমার কাজ ও দৈনিক এন্ট্রি', 'My Work & Daily Entry')}
             </h1>
-            <p className="text-xs md:text-sm text-slate-300 mt-1">
-              {L('আজকের নির্ধারিত পোস্ট ও দৈনিক বিক্রয় এন্ট্রি এক জায়গায় সম্পন্ন করুন।', 'Complete assigned group posts and log daily performance in one arena.')}
+            <p className="text-xs md:text-sm text-slate-300 mt-1 max-w-2xl">
+              {L(
+                'অ্যাডমিনের নির্ধারিত কাজ, নিজের উদ্যোগে অতিরিক্ত পোস্ট ও দৈনিক বিক্রয়ের হিসাব — সব এক জায়গায় সহজে সম্পন্ন করুন।',
+                'Assigned group quotas, self-initiated extra posts & daily sales results — all unified in one arena.'
+              )}
             </p>
           </div>
 
-          {/* Gamified Mission Progress Gauge */}
-          <div className="w-full md:w-auto bg-slate-800/80 backdrop-blur-md rounded-xl p-3.5 border border-slate-700/60 flex items-center gap-4">
-            <div className="relative flex items-center justify-center">
-              <div className="w-12 h-12 rounded-full border-4 border-slate-700 border-t-emerald-400 flex items-center justify-center font-bold text-sm text-emerald-400">
-                {questPercent}%
+          {/* Gamified Mission Progress & Extra Work Action */}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="btn btn-sm gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-bold shadow-lg shadow-amber-500/20 border-0"
+            >
+              <Zap className="w-4 h-4 fill-current" />
+              <span>{L('অতিরিক্ত কাজ যোগ করুন', 'Add Extra Work')}</span>
+            </button>
+
+            <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-3 border border-slate-700/60 flex items-center gap-3">
+              <div className="relative flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full border-3 border-slate-700 border-t-emerald-400 flex items-center justify-center font-bold text-xs text-emerald-400">
+                  {questPercent}%
+                </div>
               </div>
-            </div>
-            <div>
-              <div className="text-xs text-slate-400 font-medium">
-                {L('আজকের মিশন অগ্রগতি', "Today's Quest Progress")}
-              </div>
-              <div className="text-sm font-bold text-white flex items-center gap-1.5">
-                <span>{questsCompleted} / {questsTotal} {L('সম্পন্ন', 'Done')}</span>
-                {questPercent === 100 && (
-                  <span className="text-emerald-400 text-xs">⭐ {L('পূর্ণ মিশন!', 'All Cleared!')}</span>
-                )}
+              <div>
+                <div className="text-[11px] text-slate-400 font-medium">
+                  {L('মিশন অগ্রগতি', 'Quest Progress')}
+                </div>
+                <div className="text-xs font-bold text-white flex items-center gap-1">
+                  <span>{questsCompleted} / {questsTotal} {L('সম্পন্ন', 'Done')}</span>
+                  {questPercent === 100 && <span className="text-emerald-400">⭐</span>}
+                </div>
               </div>
             </div>
           </div>
@@ -487,7 +566,7 @@ export default function EmployeeMyWorkPage() {
             }`}
           >
             <CheckSquare className="w-4 h-4" />
-            <span>{L('টাস্ক ১: আজকের পোস্ট ও লিঙ্ক', 'Task 1: Group Links')}</span>
+            <span>{L('টাস্ক ১: পোস্ট ও কাজের তালিকা', 'Task 1: Group Posts & Tasks')}</span>
             <span className="ml-1 px-1.5 py-0.2 rounded-md bg-black/20 text-xs font-mono">
               {todoLinks.length}
             </span>
@@ -502,7 +581,7 @@ export default function EmployeeMyWorkPage() {
             }`}
           >
             <Coins className="w-4 h-4" />
-            <span>{L('টাস্ক ২: দৈনিক বিক্রয় ও কাজের এন্ট্রি', 'Task 2: Daily Sales & Log')}</span>
+            <span>{L('টাস্ক ২: দৈনিক বিক্রয় ও মেট্রিক্স এন্ট্রি', 'Task 2: Daily Sales & Log')}</span>
             <span className="ml-1 px-1.5 py-0.2 rounded-md bg-black/20 text-xs font-mono">
               ৳ {formatTaka(Number(salesAmount))}
             </span>
@@ -517,7 +596,7 @@ export default function EmployeeMyWorkPage() {
             }`}
           >
             <CheckCircle2 className="w-4 h-4" />
-            <span>{L('সম্পন্ন লিঙ্কসমূহ', 'Completed Links')}</span>
+            <span>{L('সম্পন্ন কাজ ও বোনাস লগ', 'Completed & Bonus Log')}</span>
             <span className="ml-1 px-1.5 py-0.2 rounded-md bg-black/20 text-xs font-mono">
               {completedLinks.length}
             </span>
@@ -525,12 +604,12 @@ export default function EmployeeMyWorkPage() {
         </div>
       </div>
 
-      {/* Rewards / Alerts */}
+      {/* Rewards Toast */}
       {successToast && (
         <div className="flex items-center justify-between rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-emerald-800 dark:text-emerald-300 shadow-sm animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-2.5">
             <Sparkles className="h-5 w-5 text-emerald-600 dark:text-emerald-400 animate-bounce" />
-            <span className="font-semibold">{successToast}</span>
+            <span className="font-semibold text-sm">{successToast}</span>
             {xpReward && (
               <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white text-xs font-bold">
                 +{xpReward} XP
@@ -539,31 +618,32 @@ export default function EmployeeMyWorkPage() {
           </div>
           <button
             onClick={() => setSuccessToast(null)}
-            className="text-emerald-700 hover:text-emerald-900 font-bold"
+            className="text-emerald-700 hover:text-emerald-900 font-bold ml-2"
           >
             ×
           </button>
         </div>
       )}
 
+      {/* Error Alert */}
       {errorMessage && (
         <div className="flex items-center justify-between rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-red-800 dark:text-red-300 shadow-sm">
           <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-red-600" />
-            <span>{errorMessage}</span>
+            <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
+            <span className="text-sm font-medium">{errorMessage}</span>
           </div>
-          <button onClick={() => setErrorMessage(null)} className="text-red-700 font-bold">
+          <button onClick={() => setErrorMessage(null)} className="text-red-700 font-bold ml-2">
             ×
           </button>
         </div>
       )}
 
       {/* ========================================================
-          TAB 1: TASK 1 - TODAY'S GROUP POSTS & LINKS
+          TAB 1: TASK 1 - TODAY'S GROUP POSTS & EXTRA TASKS
       ======================================================== */}
       {activeTab === 'links' && (
         <div className="space-y-4">
-          {/* Section limits indicator cards */}
+          {/* Section Quota & Bonus Indicator Cards */}
           {assignedSections.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {assignedSections.map((sec) => (
@@ -571,19 +651,20 @@ export default function EmployeeMyWorkPage() {
                   key={sec.id}
                   className={`p-3.5 rounded-xl border transition-all ${
                     sec.isLimitReached
-                      ? 'bg-amber-500/5 border-amber-500/30'
+                      ? 'bg-amber-500/10 border-amber-500/40 shadow-sm'
                       : 'bg-card border-slate-200 dark:border-slate-800'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-sm truncate">{sec.name}</span>
                     {sec.isLimitReached ? (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 font-bold">
-                        {L('কোটা পূর্ণ', 'Quota Full')}
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-bold flex items-center gap-1">
+                        <Zap className="w-3 h-3 fill-current" />
+                        {L('কোটা পূর্ণ (বোনাস উন্মুক্ত)', 'Quota Full (Bonus Open)')}
                       </span>
                     ) : (
                       <span className="text-xs text-slate-500">
-                        {L('দৈনিক লিমিট', 'Daily Limit')}: {sec.postLimit ?? '∞'}
+                        {L('দৈনিক লক্ষ্য', 'Target')}: {sec.postLimit ?? '∞'}
                       </span>
                     )}
                   </div>
@@ -613,7 +694,7 @@ export default function EmployeeMyWorkPage() {
             </div>
           )}
 
-          {/* Search & Section Filter */}
+          {/* Search, Filter & Quick Add Row */}
           <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-card p-3 rounded-xl border border-slate-200 dark:border-slate-800">
             <div className="relative w-full sm:max-w-xs">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
@@ -626,20 +707,30 @@ export default function EmployeeMyWorkPage() {
               />
             </div>
 
-            {assignedSections.length > 1 && (
-              <select
-                value={selectedSection}
-                onChange={(e) => setSelectedSection(e.target.value)}
-                className="select select-sm w-full sm:w-auto"
+            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+              {assignedSections.length > 1 && (
+                <select
+                  value={selectedSection}
+                  onChange={(e) => setSelectedSection(e.target.value)}
+                  className="select select-sm w-full sm:w-auto"
+                >
+                  <option value="">{L('সকল গ্রুপ ও সেকশন', 'All Groups & Sections')}</option>
+                  {assignedSections.map((sec) => (
+                    <option key={sec.id} value={sec.id}>
+                      {sec.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="btn btn-sm btn-secondary gap-1.5 border-dashed border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
               >
-                <option value="">{L('সকল গ্রুপ ও সেকশন', 'All Groups & Sections')}</option>
-                {assignedSections.map((sec) => (
-                  <option key={sec.id} value={sec.id}>
-                    {sec.name}
-                  </option>
-                ))}
-              </select>
-            )}
+                <PlusCircle className="w-4 h-4 text-amber-500" />
+                <span>{L('অতিরিক্ত কাজ যোগ করুন', 'Add Extra Work')}</span>
+              </button>
+            </div>
           </div>
 
           {/* Links Queue */}
@@ -648,26 +739,49 @@ export default function EmployeeMyWorkPage() {
               <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
             </div>
           ) : todoLinks.length === 0 ? (
-            <EmptyState
-              icon={<CheckSquare className="h-8 w-8 text-emerald-500" />}
-              title={L('আজকের কোনো লিংক বাকি নেই!', 'No pending links today!')}
-              description={L('দারুণ কাজ! আজকের সকল গ্রুপ পোস্ট সম্পন্ন হয়েছে।', 'Great job! You have cleared all assigned group posts.')}
-            />
+            <div className="bg-card rounded-2xl border border-slate-200 dark:border-slate-800 p-8 text-center space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                <CheckCircle2 className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  {L('আজকের নির্ধারিত কাজ সম্পন্ন!', 'Assigned Quota Complete!')}
+                </h3>
+                <p className="text-xs md:text-sm text-slate-500 max-w-md mx-auto mt-1">
+                  {L(
+                    'অ্যাডমিন নির্ধারিত সকল কাজ সম্পন্ন হয়েছে। আরও পয়েন্ট অর্জন ও লিডারবোর্ডে এগিয়ে থাকতে অতিরিক্ত কাজ যোগ করতে পারেন!',
+                    'All assigned tasks cleared. Feel free to log extra posts or tasks to earn bonus score & boost your ranking!'
+                  )}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="btn btn-primary gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-bold border-0 shadow-md"
+              >
+                <Zap className="w-4 h-4 fill-current" />
+                <span>{L('⚡ অতিরিক্ত কাজ যোগ করুন (+৫০ XP)', '⚡ Add Extra Work (+50 XP)')}</span>
+              </button>
+            </div>
           ) : (
             <div className="grid grid-cols-1 gap-3">
               {todoLinks.map((link) => (
                 <div
                   key={link.id}
-                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-card rounded-xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500/50 hover:shadow-sm transition-all"
+                  className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-card rounded-xl border transition-all ${
+                    link.is_limit_reached
+                      ? 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/60'
+                      : 'border-slate-200 dark:border-slate-800 hover:border-emerald-500/50'
+                  }`}
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
                       <span className="px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                         {link.section_name}
                       </span>
                       {link.is_limit_reached && (
-                        <span className="px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800">
-                          {L('কোটা পূর্ণ', 'Quota Reached')}
+                        <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                          <Zap className="w-3 h-3 fill-current" />
+                          {L('কোটা পূর্ণ — বোনাস কাজ সক্রিয়', 'Quota Full — Bonus Active')}
                         </span>
                       )}
                     </div>
@@ -688,18 +802,37 @@ export default function EmployeeMyWorkPage() {
                       <span>{L('গ্রুপে যান', 'Visit')}</span>
                     </a>
 
-                    <button
-                      onClick={() => handleMarkDone(link)}
-                      disabled={actionLoadingId === link.id || link.is_limit_reached}
-                      className="btn btn-primary btn-sm gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
-                    >
-                      {actionLoadingId === link.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                      )}
-                      <span>{L('সম্পন্ন (+২৫ XP)', 'Mark Done (+25 XP)')}</span>
-                    </button>
+                    {link.is_limit_reached ? (
+                      <button
+                        onClick={() => handleMarkDone(link, true)}
+                        disabled={actionLoadingId === link.id}
+                        className="btn btn-sm gap-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md shadow-amber-500/20"
+                        title={L(
+                          'কোটা পূর্ণ হলেও অতিরিক্ত পোস্ট করে বোনাস স্কোর (+৫০ XP) অর্জন করতে পারেন',
+                          'Post extra to earn bonus XP (+50 XP)'
+                        )}
+                      >
+                        {actionLoadingId === link.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Zap className="h-3.5 w-3.5 fill-current" />
+                        )}
+                        <span>{L('⚡ অতিরিক্ত পোস্ট (+৫০ XP)', '⚡ Bonus Post (+50 XP)')}</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleMarkDone(link, false)}
+                        disabled={actionLoadingId === link.id}
+                        className="btn btn-primary btn-sm gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+                      >
+                        {actionLoadingId === link.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        )}
+                        <span>{L('সম্পন্ন (+২৫ XP)', 'Done (+25 XP)')}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -716,12 +849,17 @@ export default function EmployeeMyWorkPage() {
           {/* Header & Date Selector */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
             <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <Coins className="w-5 h-5 text-blue-500" />
-                <span>{L('আজকের বিক্রয়, অর্ডার ও কাজের হিসাব', "Today's Sales, Orders & Work Log")}</span>
-              </h2>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                  {L('আজকের বিক্রয়, অর্ডার ও কাজের হিসাব', "Today's Sales, Orders & Work Log")}
+                </h2>
+              </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                {L('দৈনিক তথ্য সাবমিট করলে আপনার পারফরম্যান্স স্কোর ও লিডারবোর্ড অবিলম্বে আপডেট হবে।', 'Submitting updates your score & leaderboard ranking immediately.')}
+                {L(
+                  'টু-ডু ও দৈনিক এন্ট্রি এখন একসাথে সংযুক্ত — তথ্য সাবমিট করলে আপনার পারফরম্যান্স স্কোর ও লিডারবোর্ড সাথে সাথে আপডেট হবে।',
+                  'To-Do & Daily Entry are unified here — submitting updates your score & ranking immediately.'
+                )}
               </p>
             </div>
 
@@ -768,7 +906,7 @@ export default function EmployeeMyWorkPage() {
 
                 <div>
                   <label className="label font-semibold text-xs">
-                    {L('লাভ (৳)', 'Net Profit (৳)')} *
+                    {L('অবদানমূলক লাভ (৳)', 'Net Profit (৳)')} *
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-2.5 text-slate-400 font-bold">৳</span>
@@ -838,7 +976,7 @@ export default function EmployeeMyWorkPage() {
                 </div>
               </div>
 
-              {/* Product-wise Sales Breakdown (if products configured) */}
+              {/* Product-wise Sales Breakdown */}
               {products.length > 0 && (
                 <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
                   <div className="flex items-center justify-between">
@@ -889,7 +1027,7 @@ export default function EmployeeMyWorkPage() {
                   rows={2}
                   value={dailyNote}
                   onChange={(e) => setDailyNote(e.target.value)}
-                  placeholder={L('আজকের বিশেষ কোনো সমস্যা বা আগামী দিনের কাজের নোট...', 'Any roadblocks or notes for tomorrow...')}
+                  placeholder={L('আজকের বিশেষ কোনো সমস্যা বা আগামী দিনের কাজের নোট...', 'Roadblocks or priorities for tomorrow...')}
                   className="textarea w-full text-sm"
                 />
               </div>
@@ -915,15 +1053,15 @@ export default function EmployeeMyWorkPage() {
       )}
 
       {/* ========================================================
-          TAB 3: COMPLETED LINKS
+          TAB 3: COMPLETED LINKS & BONUS LOG
       ======================================================== */}
       {activeTab === 'completed' && (
         <div className="space-y-4">
           {completedLinks.length === 0 ? (
             <EmptyState
               icon={<CheckCircle2 className="h-8 w-8 text-slate-400" />}
-              title={L('এখনো কোনো লিংক সম্পন্ন করেননি', 'No completed links yet')}
-              description={L('টাস্ক ১ থেকে লিঙ্ক পোস্ট করুন এবং সম্পন্ন হিসেবে চিহ্নিত করুন।', 'Post links in Task 1 and mark them done.')}
+              title={L('এখনো কোনো কাজ সম্পন্ন করেননি', 'No completed tasks yet')}
+              description={L('টাস্ক ১ থেকে লিঙ্ক পোস্ট করুন বা অতিরিক্ত কাজ যোগ করুন।', 'Post links in Task 1 or log extra tasks to see them here.')}
             />
           ) : (
             <div className="grid grid-cols-1 gap-3">
@@ -933,10 +1071,16 @@ export default function EmployeeMyWorkPage() {
                   className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-card rounded-xl border border-slate-200 dark:border-slate-800 opacity-90"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
                       <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800">
                         ✓ {L('সম্পন্ন', 'Done')}
                       </span>
+                      {link.is_extra_work && (
+                        <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800 flex items-center gap-1">
+                          <Zap className="w-3 h-3 fill-current" />
+                          {L('অতিরিক্ত বোনাস পোস্ট (+৫০ XP)', 'Extra Bonus Post (+50 XP)')}
+                        </span>
+                      )}
                       <span className="text-xs text-slate-500">{link.section_name}</span>
                     </div>
                     <div className="font-semibold text-slate-900 dark:text-slate-100 truncate text-base line-through text-slate-500">
@@ -961,6 +1105,119 @@ export default function EmployeeMyWorkPage() {
           )}
         </div>
       )}
+
+      {/* ========================================================
+          MODAL: ADD EXTRA WORK / BONUS TASK
+      ======================================================== */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                <Zap className="w-5 h-5 fill-current" />
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  {L('অতিরিক্ত কাজ / বোনাস পোস্ট যোগ করুন', 'Add Extra Work / Bonus Post')}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              {L(
+                'অ্যাডমিনের নির্ধারিত কোটার বাইরে আপনি যেসব গ্রুপ পোস্ট বা কাজ করেছেন, তা এখানে যুক্ত করুন। সাথে সাথে আপনার পয়েন্ট যোগ হবে (+৫০ XP)।',
+                'Log self-initiated extra posts beyond assigned quota to claim bonus score (+50 XP).'
+              )}
+            </p>
+
+            <form onSubmit={handleAddExtraSubmit} className="space-y-4">
+              <div>
+                <label className="label font-semibold text-xs">
+                  {L('কাজের / পোস্টের লিংক (URL)', 'Work / Post URL')} *
+                </label>
+                <input
+                  type="url"
+                  required
+                  placeholder="https://facebook.com/groups/..."
+                  value={extraUrl}
+                  onChange={(e) => setExtraUrl(e.target.value)}
+                  className="input w-full text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="label font-semibold text-xs">
+                  {L('শিরোনাম / বিবরণ (ঐচ্ছিক)', 'Title / Description (Optional)')}
+                </label>
+                <input
+                  type="text"
+                  placeholder={L('যেমন: কৃষি ফোরামে নতুন পোস্ট', 'e.g. Extra post in agri group')}
+                  value={extraTitle}
+                  onChange={(e) => setExtraTitle(e.target.value)}
+                  className="input w-full text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="label font-semibold text-xs">
+                  {L('সেকশন নির্বাচন করুন', 'Select Section')} *
+                </label>
+                <select
+                  value={extraSectionId}
+                  onChange={(e) => setExtraSectionId(e.target.value)}
+                  className="select w-full text-sm"
+                >
+                  {assignedSections.map((sec) => (
+                    <option key={sec.id} value={sec.id}>
+                      {sec.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="btn btn-secondary btn-sm"
+                >
+                  {L('বাতিল', 'Cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingExtra || !extraUrl.trim()}
+                  className="btn btn-primary btn-sm gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-bold border-0"
+                >
+                  {savingExtra ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Zap className="w-4 h-4 fill-current" />
+                  )}
+                  <span>{L('বোনাস কাজ সাবমিট করুন (+৫০ XP)', 'Submit Bonus Task (+50 XP)')}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+export default function EmployeeMyWorkPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+        </div>
+      }
+    >
+      <EmployeeMyWorkContent />
+    </Suspense>
   );
 }

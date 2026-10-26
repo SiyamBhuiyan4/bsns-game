@@ -61,6 +61,11 @@ export async function POST(
     }
 
     // 2.5. Check section post limit for this employee
+    const allowExtra =
+      _request.nextUrl.searchParams.get('allowExtra') === 'true' ||
+      _request.nextUrl.searchParams.get('extra') === 'true';
+
+    let isExtraWork = false;
     const assignment = link.section?.assignments?.[0];
     let postLimit = assignment?.post_limit ?? null;
 
@@ -96,15 +101,19 @@ export async function POST(
       });
 
       if (sectionCompletions >= postLimit) {
-        return NextResponse.json(
-          {
-            error: `"${link.section.name}" এ আপনার আজকের পোস্ট সীমা (${postLimit}টি) পূরণ হয়ে গেছে। আর পোস্ট করা যাবে না।`,
-            limitReached: true,
-            postLimit,
-            completedToday: sectionCompletions,
-          },
-          { status: 400 }
-        );
+        if (!allowExtra) {
+          return NextResponse.json(
+            {
+              error: `"${link.section.name}" এ আপনার আজকের পোস্ট সীমা (${postLimit}টি) পূরণ হয়ে গেছে। অতিরিক্ত পোস্ট করতে বোনাস অনুমোদন সক্রিয় করুন।`,
+              limitReached: true,
+              postLimit,
+              completedToday: sectionCompletions,
+              canDoExtra: true,
+            },
+            { status: 400 }
+          );
+        }
+        isExtraWork = true;
       }
     }
 
@@ -123,6 +132,8 @@ export async function POST(
       alreadyDone: false,
       completionId: completion.id,
       completedAt: completion.completed_at,
+      isExtraWork,
+      bonusXp: isExtraWork ? 50 : 25,
     });
   } catch (error) {
     console.error('Error marking link done:', error);
