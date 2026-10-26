@@ -532,10 +532,6 @@ export default function AdminLeadsPage() {
             <div className="segmented whitespace-nowrap" role="tablist">
               {[
                 { key: 'ALL', label: L('সব', 'All') },
-                { key: 'NEW', label: L('নতুন', 'New') },
-                { key: 'CONTACTED', label: L('যোগাযোগ', 'Contacted') },
-                { key: 'QUALIFIED', label: L('যোগ্য', 'Qualified') },
-                { key: 'ORDERED', label: L('অর্ডার', 'Ordered') },
                 { key: 'LOST', label: L('বাতিল', 'Lost') },
               ].map((tab) => (
                 <button

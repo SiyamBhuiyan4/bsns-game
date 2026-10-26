@@ -432,10 +432,6 @@ export default function EmployeeLeadsPage() {
           <div className="segmented">
             {[
               { key: 'ALL', label: L('সকল', 'All') },
-              { key: 'NEW', label: L('নতুন', 'New') },
-              { key: 'CONTACTED', label: L('যোগাযোগ', 'Contacted') },
-              { key: 'QUALIFIED', label: L('যোগ্য', 'Qualified') },
-              { key: 'ORDERED', label: L('অর্ডার', 'Ordered') },
               { key: 'LOST', label: L('বাতিল', 'Lost') },
             ].map((tab) => (
               <button
