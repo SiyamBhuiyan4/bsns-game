@@ -54,6 +54,21 @@ export async function GET(req: NextRequest) {
     // Effective targets for the date range
     const effectiveTargets = calculateEffectiveTargetsForRange(targets, startDate, endDate);
 
+    // Fallback & exact quota assignment logic:
+    // If admin set assignment post_limit, use exact daily post limit for daily view
+    const totalAssignedDailyPosts = assignments.reduce((sum, a) => sum + (a.post_limit || 0), 0);
+    if (totalAssignedDailyPosts > 0) {
+      if (period === 'daily') {
+        effectiveTargets[MetricType.POSTS_DONE] = totalAssignedDailyPosts;
+      } else if (!effectiveTargets[MetricType.POSTS_DONE] || effectiveTargets[MetricType.POSTS_DONE] === 0) {
+        if (period === 'weekly') {
+          effectiveTargets[MetricType.POSTS_DONE] = totalAssignedDailyPosts * 7;
+        } else {
+          effectiveTargets[MetricType.POSTS_DONE] = totalAssignedDailyPosts * 30;
+        }
+      }
+    }
+
     // 3. Aggregate employee achievements over the range
     // A. Posts done
     const startUtc = new Date(`${format(startDate, 'yyyy-MM-dd')}T00:00:00+06:00`);

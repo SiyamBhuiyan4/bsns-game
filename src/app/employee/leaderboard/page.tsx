@@ -9,6 +9,11 @@ import {
   Flame,
   AlertCircle,
   ArrowUp,
+  Crown,
+  Swords,
+  Sparkles,
+  Zap,
+  Award,
 } from 'lucide-react';
 import { toBengaliDigits } from '@/lib/date';
 import PageHeader from '@/components/ui/PageHeader';
@@ -36,17 +41,17 @@ interface LeaderboardItem {
 
 type PeriodType = 'thisMonth' | 'today' | 'yesterday' | 'last7days';
 
-const PERIOD_OPTIONS: { id: PeriodType; label: string; sub: string }[] = [
-  { id: 'thisMonth', label: 'এই মাস', sub: 'Current Month' },
-  { id: 'today', label: 'আজ', sub: 'Today' },
-  { id: 'yesterday', label: 'গতকাল', sub: 'Yesterday' },
-  { id: 'last7days', label: 'গত ৭ দিন', sub: 'Last 7 Days' },
+const PERIOD_OPTIONS: { id: PeriodType; label: string; sub: string; icon: string }[] = [
+  { id: 'today', label: 'আজকের যুদ্ধ', sub: "Today's Clash", icon: '🔥' },
+  { id: 'yesterday', label: 'গতকাল', sub: 'Yesterday', icon: '🛡️' },
+  { id: 'last7days', label: 'গত ৭ দিন', sub: 'Last 7 Days', icon: '⚔️' },
+  { id: 'thisMonth', label: 'চলতি মৌসুম (মাস)', sub: 'Current Season', icon: '🏆' },
 ];
 
 export default function EmployeeLeaderboardPage() {
   const { lang } = useLanguage();
   const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
-  const [period, setPeriod] = useState<PeriodType>('thisMonth');
+  const [period, setPeriod] = useState<PeriodType>('today');
   const [loading, setLoading] = useState(true);
   const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
   const [errorMsg, setErrorMsg] = useState('');
@@ -75,136 +80,200 @@ export default function EmployeeLeaderboardPage() {
 
   const currentEmployee = leaderboard.find((item) => item.is_current_user);
 
-  const renderRankBadge = (rank: number) => {
-    if (rank === 1) {
-      return (
-        <span className="badge badge-amber">
-          <Trophy className="h-3 w-3" />
-          ১ম
-        </span>
-      );
-    }
-    if (rank === 2) {
-      return (
-        <span className="badge badge-gray">
-          <Medal className="h-3 w-3" />
-          ২য়
-        </span>
-      );
-    }
-    if (rank === 3) {
-      return (
-        <span className="badge badge-amber">
-          <Medal className="h-3 w-3" />
-          ৩য়
-        </span>
-      );
-    }
-    return (
-      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs font-medium text-slate-600">
-        {toBengaliDigits(rank)}
-      </span>
-    );
-  };
-
   const SECTION_COLS: { key: keyof SectionScores; bn: string; en: string; pt: string }[] = [
-    { key: 'sales_profit', bn: 'বিক্রি ও লাভ', en: 'Sales', pt: '৩০' },
-    { key: 'content', bn: 'কনটেন্ট', en: 'Content', pt: '২০' },
-    { key: 'new_buyers_b2b', bn: 'নতুন ক্রেতা/B2B', en: 'New/B2B', pt: '২০' },
-    { key: 'retention', bn: 'রিটেনশন', en: 'Retention', pt: '১৫' },
-    { key: 'inbox_followup', bn: 'ইনবক্স ও ফলোআপ', en: 'Follow-up', pt: '১৫' },
+    { key: 'sales_profit', bn: 'বিক্রি ও লাভ', en: 'Sales & Profit', pt: '৩০' },
+    { key: 'content', bn: 'পোস্ট ও কনটেন্ট', en: 'Content Raids', pt: '২০' },
+    { key: 'new_buyers_b2b', bn: 'নতুন ক্রেতা/B2B', en: 'New Buyers/B2B', pt: '২০' },
+    { key: 'retention', bn: 'রিটেনশন', en: 'Retention Shield', pt: '১৫' },
+    { key: 'inbox_followup', bn: 'ফলোআপ স্ট্রাইক', en: 'Follow-up Blitz', pt: '১৫' },
   ];
 
-  const podium = [
-    { item: leaderboard[1], place: '২য়', height: 'h-16 sm:h-20', icon: <Medal className="h-5 w-5 text-slate-500" /> },
-    { item: leaderboard[0], place: '১ম', height: 'h-24 sm:h-28', icon: <Trophy className="h-5 w-5 text-amber-500" /> },
-    { item: leaderboard[2], place: '৩য়', height: 'h-12 sm:h-14', icon: <Medal className="h-5 w-5 text-amber-700" /> },
-  ];
+  const first = leaderboard[0];
+  const second = leaderboard[1];
+  const third = leaderboard[2];
+
+  // Arena league calculation
+  const getLeagueTier = (rank: number, score: number) => {
+    if (rank === 1) return { title: 'CHAMPION 👑', color: 'from-amber-400 to-yellow-500 text-amber-950' };
+    if (rank === 2) return { title: 'CHALLENGER ⚔️', color: 'from-slate-200 to-slate-400 text-slate-900' };
+    if (rank === 3) return { title: 'GLADIATOR 🛡️', color: 'from-amber-600 to-amber-700 text-white' };
+    return { title: 'WARRIOR ⚡', color: 'from-blue-600 to-indigo-600 text-white' };
+  };
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        icon={<Trophy className="h-5 w-5" />}
-        title={L('লিডারবোর্ড', 'Leaderboard')}
-        subtitle={L('টিমের পয়েন্ট র‍্যাঙ্কিং; শুধু পয়েন্ট দেখানো হয়।', 'Team ranking by points only.')}
-        actions={
-          <div className="segmented">
-              {PERIOD_OPTIONS.map((opt) => (
-                <button
-                  key={opt.id}
-                  data-active={period === opt.id}
-                  onClick={() => setPeriod(opt.id)}
-                  className="whitespace-nowrap"
-                  title={opt.sub}
-                >
-                  {L(opt.label, opt.sub)}
-                </button>
-              ))}
-          </div>
-        }
-      />
+      {/* ARENA STADIUM HEADER */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 text-white shadow-2xl border border-indigo-500/25">
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 h-72 w-72 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-72 w-72 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none" />
 
-      {/* Current employee standing */}
-      {currentEmployee && (
-        <div className="card card-body flex flex-col gap-4 border-brand-200 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-base font-semibold text-brand-700 ring-1 ring-brand-600/10">
-              #{toBengaliDigits(currentEmployee.rank)}
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                <Crown className="w-3.5 h-3.5 text-amber-400" />
+                {L('মার্কেটার এরিনা সিজন ২০২৬', 'Marketer Arena Season 2026')}
+              </span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                <Flame className="w-3.5 h-3.5 text-emerald-400" />
+                {L('লাইভ কম্পিটিশন', 'Live Combat')}
+              </span>
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="truncate text-[15px] font-semibold text-slate-900">{currentEmployee.name}</span>
-                <span className="badge badge-green">{L('আপনি', 'You')}</span>
-              </div>
-              <div className="mt-0.5 text-sm text-slate-500">
-                {L('মোট পয়েন্ট', 'Points')}:{' '}
-                <span className="font-semibold text-slate-900 tabular-nums">
-                  {toBengaliDigits(currentEmployee.total_score.toFixed(2))}
-                </span>{' '}
-                / ১০০
-              </div>
-            </div>
+            <h1 className="text-2xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-amber-200 via-white to-indigo-200 bg-clip-text text-transparent">
+              {L('বিজনেস গেম এরিনা লিডারবোর্ড', 'Business Game Arena Leaderboard')}
+            </h1>
+            <p className="text-xs md:text-sm text-slate-300 mt-1 max-w-xl">
+              {L('টার্গেট পূরণ করে পয়েন্ট অর্জন করুন, লিডারবোর্ডের শীর্ষে পৌঁছান এবং চ্যাম্পিয়ন খেতাব অর্জন করুন!', 'Complete quests, crush targets, gain XP, and climb to the top of the battle arena!')}
+            </p>
           </div>
 
-          <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
-            <ArrowUp className="h-4 w-4 shrink-0 text-brand-600" />
-            <span>
-              {currentEmployee.gap_text ||
-                `আপনার পরের র্যাঙ্ক থেকে ব্যবধান: ${toBengaliDigits(
-                  (currentEmployee.gap_to_next ?? 0).toFixed(2)
-                )} পয়েন্ট`}
-            </span>
+          {/* Period selector buttons */}
+          <div className="flex flex-wrap gap-1.5 bg-slate-900/80 p-1.5 rounded-xl border border-slate-700/80 backdrop-blur-md">
+            {PERIOD_OPTIONS.map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => setPeriod(opt.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
+                  period === opt.id
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md font-extrabold'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                }`}
+              >
+                <span>{opt.icon}</span>
+                <span>{L(opt.label, opt.sub)}</span>
+              </button>
+            ))}
           </div>
         </div>
-      )}
 
-      {/* Podium */}
-      {leaderboard.length > 0 && !loading && (
-        <div className="card">
-          <div className="card-header">
-            <h2 className="card-title">{L('সেরা ৩', 'Top 3')}</h2>
+        {/* Current Employee HUD Card */}
+        {currentEmployee && (
+          <div className="relative z-10 mt-6 rounded-xl bg-slate-800/90 border border-slate-700/80 p-4 backdrop-blur-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
+              <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 text-xl font-black text-white shadow-lg ring-2 ring-indigo-400/30">
+                #{toBengaliDigits(currentEmployee.rank)}
+                {currentEmployee.rank === 1 && (
+                  <Crown className="absolute -top-2 -right-2 h-5 w-5 text-amber-400 filter drop-shadow" />
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-white">{currentEmployee.name}</span>
+                  <span className="px-2 py-0.5 rounded-md text-[11px] font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+                    {L('আপনি (YOU)', 'YOU')}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-md text-[11px] font-extrabold bg-gradient-to-r ${getLeagueTier(currentEmployee.rank, currentEmployee.total_score).color}`}>
+                    {getLeagueTier(currentEmployee.rank, currentEmployee.total_score).title}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-400 mt-0.5">
+                  {L('মোট স্কোর / XP', 'Arena Points / XP')}:{' '}
+                  <span className="font-extrabold text-amber-400 text-sm tabular-nums">
+                    {toBengaliDigits(currentEmployee.total_score.toFixed(2))}
+                  </span>{' '}
+                  <span className="text-slate-500">/ ১০০ পয়েন্ট</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-xl bg-indigo-950/60 border border-indigo-500/30 px-3.5 py-2 text-xs text-indigo-200">
+              <ArrowUp className="h-4 w-4 shrink-0 text-amber-400 animate-pulse" />
+              <span>
+                {currentEmployee.gap_text ||
+                  `পরবর্তী স্থান দখলের ব্যবধান: ${toBengaliDigits(
+                    (currentEmployee.gap_to_next ?? 0).toFixed(2)
+                  )} পয়েন্ট`}
+              </span>
+            </div>
           </div>
-          <div className="card-body">
-            <div className="mx-auto grid max-w-lg grid-cols-3 items-end gap-2 sm:gap-4">
-              {podium.map(({ item, place, height, icon }) =>
-                item ? (
-                  <div key={place} className="flex min-w-0 flex-col items-center text-center">
-                    <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-slate-50 ring-1 ring-slate-200">
-                      {icon}
-                    </div>
-                    <div className="w-full truncate text-xs font-medium text-slate-900 sm:text-sm">{item.name}</div>
-                    <div className="mt-0.5 text-xs font-semibold text-brand-700 tabular-nums">
-                      {toBengaliDigits(item.total_score.toFixed(2))} <span className="font-normal text-slate-400">pt</span>
-                    </div>
-                    <div
-                      className={`mt-2 flex w-full items-center justify-center rounded-t-lg border border-b-0 border-slate-200 bg-slate-50 text-sm font-semibold text-slate-600 ${height}`}
-                    >
-                      {place}
+        )}
+      </div>
+
+      {/* TOP 3 ARENA PODIUM */}
+      {leaderboard.length > 0 && !loading && (
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-gradient-to-b from-card to-slate-50/50 dark:to-slate-900/50 p-6 shadow-sm">
+          <div className="text-center mb-6">
+            <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center justify-center gap-2">
+              <Crown className="w-5 h-5 text-amber-500" />
+              <span>{L('শীর্ষ ৩ অ্যারেনা চ্যাম্পিয়ন', 'Top 3 Arena Champions')}</span>
+              <Crown className="w-5 h-5 text-amber-500" />
+            </h2>
+          </div>
+
+          <div className="mx-auto grid max-w-xl grid-cols-3 items-end gap-3 sm:gap-6 pt-4">
+            {/* 2nd Place: Silver Challenger */}
+            <div className="flex flex-col items-center text-center">
+              {second ? (
+                <>
+                  <div className="relative mb-2">
+                    <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-b from-slate-200 to-slate-400 shadow-lg text-slate-900 font-extrabold text-xl ring-4 ring-slate-300">
+                      🥈
                     </div>
                   </div>
-                ) : (
-                  <div key={place} />
-                )
+                  <div className="w-full truncate text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
+                    {second.name}
+                  </div>
+                  <div className="mt-0.5 text-xs font-black text-slate-600 dark:text-slate-300 tabular-nums">
+                    {toBengaliDigits(second.total_score.toFixed(2))} <span className="text-[10px] text-slate-400">XP</span>
+                  </div>
+                  <div className="mt-3 flex w-full h-24 sm:h-28 flex-col items-center justify-center rounded-t-2xl border-t-4 border-slate-400 bg-gradient-to-b from-slate-200/50 to-slate-300/30 dark:from-slate-800 dark:to-slate-900 shadow-inner">
+                    <span className="text-lg font-black text-slate-600 dark:text-slate-300">#২</span>
+                    <span className="text-[10px] font-bold uppercase text-slate-500">Challenger</span>
+                  </div>
+                </>
+              ) : (
+                <div className="h-24 w-full" />
+              )}
+            </div>
+
+            {/* 1st Place: Gold Champion (Towering Podium) */}
+            <div className="flex flex-col items-center text-center -mt-6">
+              {first ? (
+                <>
+                  <div className="relative mb-2">
+                    <Crown className="absolute -top-5 left-1/2 -translate-x-1/2 h-7 w-7 text-amber-400 filter drop-shadow animate-bounce" />
+                    <div className="flex h-18 w-18 sm:h-20 sm:w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-amber-300 via-amber-400 to-yellow-500 shadow-xl shadow-amber-500/20 text-amber-950 font-black text-2xl ring-4 ring-amber-300">
+                      🥇
+                    </div>
+                  </div>
+                  <div className="w-full truncate text-sm sm:text-base font-extrabold text-slate-900 dark:text-slate-100">
+                    {first.name}
+                  </div>
+                  <div className="mt-0.5 text-sm font-black text-amber-600 dark:text-amber-400 tabular-nums">
+                    {toBengaliDigits(first.total_score.toFixed(2))} <span className="text-xs text-slate-400">XP</span>
+                  </div>
+                  <div className="mt-3 flex w-full h-32 sm:h-36 flex-col items-center justify-center rounded-t-2xl border-t-4 border-amber-400 bg-gradient-to-b from-amber-400/20 via-amber-300/10 to-transparent dark:from-amber-950/40 dark:to-slate-900 shadow-lg">
+                    <span className="text-2xl font-black text-amber-600 dark:text-amber-400">#১</span>
+                    <span className="text-xs font-extrabold uppercase text-amber-700 dark:text-amber-300">Champion</span>
+                  </div>
+                </>
+              ) : (
+                <div className="h-32 w-full" />
+              )}
+            </div>
+
+            {/* 3rd Place: Bronze Gladiator */}
+            <div className="flex flex-col items-center text-center">
+              {third ? (
+                <>
+                  <div className="relative mb-2">
+                    <div className="flex h-14 w-14 sm:h-16 sm:w-16 items-center justify-center rounded-2xl bg-gradient-to-b from-amber-600 to-amber-800 shadow-md text-amber-100 font-extrabold text-xl ring-4 ring-amber-700">
+                      🥉
+                    </div>
+                  </div>
+                  <div className="w-full truncate text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
+                    {third.name}
+                  </div>
+                  <div className="mt-0.5 text-xs font-black text-amber-700 dark:text-amber-500 tabular-nums">
+                    {toBengaliDigits(third.total_score.toFixed(2))} <span className="text-[10px] text-slate-400">XP</span>
+                  </div>
+                  <div className="mt-3 flex w-full h-20 sm:h-22 flex-col items-center justify-center rounded-t-2xl border-t-4 border-amber-700 bg-gradient-to-b from-amber-700/20 to-amber-900/10 dark:from-slate-800 dark:to-slate-900 shadow-inner">
+                    <span className="text-base font-black text-amber-700 dark:text-amber-500">#৩</span>
+                    <span className="text-[10px] font-bold uppercase text-amber-700 dark:text-amber-500">Gladiator</span>
+                  </div>
+                </>
+              ) : (
+                <div className="h-20 w-full" />
               )}
             </div>
           </div>
@@ -218,142 +287,110 @@ export default function EmployeeLeaderboardPage() {
         </div>
       )}
 
-      {/* Ranking list */}
-      <div className="card overflow-hidden">
-        <div className="card-header">
-          <div className="flex items-center gap-2">
-            <Flame className="h-4 w-4 text-slate-400" />
-            <h2 className="card-title">{L('র‍্যাঙ্কিং', 'Ranking')}</h2>
+      {/* FULL LEADERBOARD TABLE & CARDS */}
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-card overflow-hidden shadow-sm">
+        <div className="card-header border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Swords className="h-5 w-5 text-indigo-500" />
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">
+              {L('সকল প্রতিযোগী ও স্কোরবোর্ড', 'All Arena Competitors')}
+            </h2>
           </div>
-          <span className="card-subtitle">
-            {L('সদস্য', 'Members')}: {toBengaliDigits(leaderboard.length)}
+          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+            {L('মোট যোদ্ধা', 'Total Fighters')}: {toBengaliDigits(leaderboard.length)}
           </span>
         </div>
 
         {loading ? (
-          <div className="flex h-64 flex-col items-center justify-center gap-2 text-slate-500">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
-            <span className="text-sm">{L('লোড হচ্ছে...', 'Loading...')}</span>
+          <div className="flex h-48 flex-col items-center justify-center gap-2 text-slate-500">
+            <div className="h-8 w-8 animate-spin rounded-full border-3 border-amber-500 border-t-transparent" />
+            <span className="text-sm font-semibold">{L('এরিনা ডাটা লোড হচ্ছে...', 'Loading Arena Standings...')}</span>
           </div>
         ) : leaderboard.length === 0 ? (
           <EmptyState
-            icon={<Trophy className="h-5 w-5" />}
-            title={L('কোনো তথ্য নেই', 'No data')}
-            description={L('এই সময়কালের লিডারবোর্ড পাওয়া যায়নি', 'No leaderboard for this period')}
+            icon={<Trophy className="h-8 w-8 text-amber-500" />}
+            title={L('কোনো প্রতিযোগী পাওয়া যায়নি', 'No competitors found')}
+            description={L('এই সময়কালের জন্য কোনো স্কোর রেকর্ড পাওয়া যায়নি।', 'No leaderboard scores recorded for this period.')}
           />
         ) : (
-          <>
-            {/* Phone: stacked rows */}
-            <ul className="divide-y divide-slate-100 md:hidden">
-              {leaderboard.map((emp) => {
-                const isCurrent = !!emp.is_current_user;
-                return (
-                  <li
-                    key={emp.employee_id}
-                    className={`px-4 py-3 ${isCurrent ? 'bg-brand-50/60 shadow-[inset_3px_0_0_var(--color-brand-600)]' : ''}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="shrink-0">{renderRankBadge(emp.rank)}</div>
-                      <div className="flex min-w-0 flex-1 items-center gap-2">
-                        <span className="truncate text-sm font-medium text-slate-900">{emp.name}</span>
-                        {isCurrent && <span className="badge badge-green">আপনি</span>}
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <span className="text-sm font-semibold text-slate-900 tabular-nums">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
+                <tr>
+                  <th className="px-4 py-3.5 text-center w-16">র‍্যাঙ্ক</th>
+                  <th className="px-4 py-3.5">মার্কেটার যোদ্ধা</th>
+                  {SECTION_COLS.map((c) => (
+                    <th key={c.key} className="px-3 py-3.5 text-center hidden md:table-cell">
+                      {c.bn}
+                      <span className="block text-[10px] font-normal lowercase text-slate-400">({c.pt} pt)</span>
+                    </th>
+                  ))}
+                  <th className="px-4 py-3.5 text-right font-black text-amber-600 dark:text-amber-400">
+                    মোট স্কোর
+                    <span className="block text-[10px] font-normal lowercase text-slate-400">(/১০০ pt)</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
+                {leaderboard.map((emp) => {
+                  const isCurrent = !!emp.is_current_user;
+                  return (
+                    <tr
+                      key={emp.employee_id}
+                      className={`transition-colors ${
+                        isCurrent
+                          ? 'bg-amber-500/10 font-bold border-l-4 border-l-amber-500'
+                          : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/40'
+                      }`}
+                    >
+                      <td className="px-4 py-4 text-center">
+                        <span
+                          className={`inline-flex h-7 w-7 items-center justify-center rounded-lg text-xs font-extrabold ${
+                            emp.rank === 1
+                              ? 'bg-amber-400 text-amber-950 ring-2 ring-amber-300'
+                              : emp.rank === 2
+                              ? 'bg-slate-300 text-slate-900 ring-2 ring-slate-200'
+                              : emp.rank === 3
+                              ? 'bg-amber-700 text-amber-100 ring-2 ring-amber-600'
+                              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                          }`}
+                        >
+                          #{toBengaliDigits(emp.rank)}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-4 font-sans">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900 dark:text-slate-100">
+                            {emp.name}
+                          </span>
+                          {isCurrent && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500 text-white shadow-sm">
+                              {L('আপনি', 'YOU')}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {SECTION_COLS.map((c) => (
+                        <td key={c.key} className="px-3 py-4 text-center hidden md:table-cell text-slate-700 dark:text-slate-300 text-xs">
+                          {toBengaliDigits(emp.section_scores[c.key].toFixed(1))}
+                        </td>
+                      ))}
+
+                      <td className="px-4 py-4 text-right">
+                        <span className="text-base font-black text-amber-600 dark:text-amber-400">
                           {toBengaliDigits(emp.total_score.toFixed(2))}
                         </span>
-                        <span className="text-xs text-slate-400"> / ১০০</span>
-                      </div>
-                    </div>
-                    <dl className="mt-2 grid grid-cols-5 gap-1 text-center text-[11px]">
-                      {SECTION_COLS.map((c) => (
-                        <div key={c.key} className="min-w-0 rounded-md bg-slate-50 px-1 py-1">
-                          <dt className="truncate text-slate-400">{c.en}</dt>
-                          <dd className="font-medium text-slate-700 tabular-nums">
-                            {toBengaliDigits(emp.section_scores[c.key].toFixed(2))}
-                          </dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </li>
-                );
-              })}
-            </ul>
-
-            {/* Desktop: table */}
-            <div className="hidden overflow-x-auto md:block">
-              <table className="table-pro">
-                <thead>
-                  <tr>
-                    <th scope="col">র‍্যাঙ্ক</th>
-                    <th scope="col">মার্কেটার</th>
-                    {SECTION_COLS.map((c) => (
-                      <th key={c.key} scope="col" className="text-center">
-                        {c.bn}
-                        <span className="block text-[10px] font-normal normal-case text-slate-400">({c.pt} pt)</span>
-                      </th>
-                    ))}
-                    <th scope="col" className="text-right">
-                      মোট
-                      <span className="block text-[10px] font-normal normal-case text-slate-400">(/১০০ pt)</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="tabular-nums">
-                  {leaderboard.map((emp) => {
-                    const isCurrent = !!emp.is_current_user;
-                    return (
-                      <tr
-                        key={emp.employee_id}
-                        className={isCurrent ? 'bg-brand-50/60 [&>td:first-child]:shadow-[inset_3px_0_0_var(--color-brand-600)]' : ''}
-                      >
-                        <td className="whitespace-nowrap">{renderRankBadge(emp.rank)}</td>
-                        <td className="whitespace-nowrap font-medium text-slate-900">
-                          <div className="flex items-center gap-2">
-                            <span>{emp.name}</span>
-                            {isCurrent && <span className="badge badge-green">{L('আপনি', 'You')}</span>}
-                          </div>
-                        </td>
-                        {SECTION_COLS.map((c) => (
-                          <td key={c.key} className="whitespace-nowrap text-center">
-                            {toBengaliDigits(emp.section_scores[c.key].toFixed(2))}
-                          </td>
-                        ))}
-                        <td className="whitespace-nowrap text-right">
-                          <span className="font-semibold text-slate-900">{toBengaliDigits(emp.total_score.toFixed(2))}</span>
-                          <span className="text-xs text-slate-400"> / ১০০</span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </>
+                        <span className="text-xs text-slate-400 font-sans ml-1">XP</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
-      </div>
-
-      {/* How it works */}
-      <div className="card card-body">
-        <h2 className="card-title mb-3">{L('কীভাবে কাজ করে', 'How it works')}</h2>
-        <ul className="grid grid-cols-1 gap-4 text-sm text-slate-600 md:grid-cols-3">
-          <li className="flex gap-2.5">
-            <Trophy className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-            <span>
-              টার্গেট বনাম অর্জন থেকে পয়েন্ট হিসাব হয়; টার্গেট না থাকলে বাকি মেট্রিক ১০০-তে পুনর্গণনা হয়।
-            </span>
-          </li>
-          <li className="flex gap-2.5">
-            <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-            <span>
-              ১ নম্বর দেখেন কত পয়েন্টে এগিয়ে; অন্যরা দেখেন উপরের র্যাঙ্কে যেতে কত পয়েন্ট লাগবে।
-            </span>
-          </li>
-          <li className="flex gap-2.5">
-            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
-            <span>শুধু পয়েন্ট দেখানো হয়; কারো বিক্রি বা ক্লায়েন্টের তথ্য নয়।</span>
-          </li>
-        </ul>
       </div>
     </div>
   );

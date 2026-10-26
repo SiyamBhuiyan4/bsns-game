@@ -60,7 +60,7 @@ const PIE_COLORS = ['#059669', '#0284c7', '#d97706', '#8b5cf6', '#ec4899'];
 export default function EmployeePerformancePage() {
   const { lang } = useLanguage();
   const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
-  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('monthly');
+  const [period, setPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<PerformanceResponse | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
