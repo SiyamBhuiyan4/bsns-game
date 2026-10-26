@@ -33,6 +33,18 @@ patterns.sort((a, b) => b.re.source.length - a.re.source.length);
 
 const trailing = /[\s:·•]+$/;
 
+const BENGALI_DIGITS = '০১২৩৪৫৬৭৮৯';
+
+/**
+ * Bangla numerals -> ASCII, for values captured out of a Bangla template.
+ *
+ * A number formatted before the switch to English still carries ০-৯, and
+ * "৫ selected" reads worse than either language alone.
+ */
+function asciiDigits(value: string): string {
+  return value.replace(/[০-৯]/g, (d) => String(BENGALI_DIGITS.indexOf(d)));
+}
+
 /**
  * Bangla text -> the current language.
  *
@@ -58,7 +70,7 @@ export function translate(text: string | null | undefined, lang: Lang): string {
     const m = key.match(p.re);
     if (!m) continue;
     let out = p.en;
-    for (let i = 0; i < p.slots; i++) out = out.split('{' + i + '}').join(m[i + 1] ?? '');
+    for (let i = 0; i < p.slots; i++) out = out.split('{' + i + '}').join(asciiDigits(m[i + 1] ?? ''));
     return out;
   }
 
