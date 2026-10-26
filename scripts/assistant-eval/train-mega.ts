@@ -1142,6 +1142,284 @@ export function synthesizeSentence(intent: MegaIntent): string {
 }
 
 // ---------------------------------------------------------------------------
+// 3b. Specialized Real-World Permutation Generators
+// (Employee Creation, Credentials, Sections, Permissions, Sales & Expenses)
+// ---------------------------------------------------------------------------
+
+export const EMPLOYEE_NAMES_EN = [
+  'Akkas', 'Tanvir', 'Sumaiya', 'Rafiq', 'Hasan', 'Mahmud', 'Arif', 'Habib', 'Sultana',
+  'Nasrin', 'Jahid', 'Siyam', 'Kamal', 'Jamal', 'Faruk', 'Nayeem', 'Rashed', 'Shamim',
+  'Mehedi', 'Sohan', 'Rubel', 'Shahid', 'Imran', 'Saif', 'Monir', 'Shakil',
+];
+
+export const EMPLOYEE_NAMES_BN = [
+  'আক্কাস', 'তানভীর', 'সুমাইয়া', 'রফিক', 'হাসান', 'মাহমুদ', 'আরিফ', 'হাবিব', 'সুলতানা',
+  'নাসরিন', 'জাহিদ', 'সিয়াম', 'কামাল', 'জামাল', 'ফারুক', 'নাঈম', 'রাশেদ', 'শামীম',
+  'মেহেদী', 'সোহান', 'রুবেল', 'শহীদ', 'ইমরান', 'সাইফ', 'মনির', 'শাকিল',
+];
+
+export const SECTION_NAMES_EN = [
+  'Dhaka Farmers', 'Agro BD', 'Mushroom Lovers', 'Chittagong Agro', 'Green Field',
+  'Organic BD', 'Sylhet Mushroom', 'Bogura Agro', 'Farm Fresh', 'Mushroom Valley',
+];
+
+export const SECTION_NAMES_BN = [
+  'ঢাকা কৃষক', 'এগ্রো বিডি', 'মাশরুম লাভার্স', 'সবুজ খামার', 'চট্টগ্রাম এগ্রো',
+  'সিলেট মাশরুম', 'বগুড়া এগ্রো', 'অর্গানিক বিডি',
+];
+
+export const PASSWORDS = [
+  '123456', '654321', '000000', '112233', 'pass123', 'secret12', 'pass@2026',
+  'admin123', 'staff123', '888888', '777777', '987654', 'password', 'pass2025',
+];
+
+export const PHONES = [
+  '01711223344', '01812345678', '01987654321', '01600112233', '01511223344',
+  '+8801712345678', '01700998877', '01311224455',
+];
+
+export const PRODUCTS_EN = [
+  'Oyster Mushroom', 'Milky Mushroom', 'Dried Mushroom', 'Mushroom Spawn',
+  'spawn packet', 'dry mushroom 200g', 'fresh oyster 1kg',
+];
+
+export const PRODUCTS_BN = [
+  'ঝিনুক মাশরুম', 'দুধ মাশরুম', 'শুকনো মাশরুম', 'মাশরুম স্পন',
+  'স্পন প্যাকেট', 'ড্রাই মাশরুম', 'তাজা মাশরুম',
+];
+
+export const EXPENSES_EN = [
+  'rickshaw fare', 'facebook boost spend', 'packaging poly', 'tea and snacks',
+  'delivery courier', 'delivery rider charge', 'printing flyers',
+];
+
+export const EXPENSES_BN = [
+  'রিকশা ভাড়া', 'ফেসবুক বুস্টিং খরচ', 'প্যাকেজিং পলি', 'চা নাস্তা',
+  'ডেলিভারি খরচ', 'কুরিয়ার চার্জ', 'প্রিন্টিং খরচ',
+];
+
+function randomEmail(name: string): string {
+  const clean = name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'staff';
+  const domain = pick(['gmail.com', 'company.com', 'yahoo.com', 'outlook.com']);
+  const suffix = rand() < 0.3 ? String(Math.floor(rand() * 900) + 100) : '';
+  return `${clean}${suffix}@${domain}`;
+}
+
+export function synthesizeEmployeePattern(): { text: string; label: string } {
+  const nameEn = pick(EMPLOYEE_NAMES_EN);
+  const nameBn = pick(EMPLOYEE_NAMES_BN);
+  const pass = pick(PASSWORDS);
+  const phone = pick(PHONES);
+  const email = randomEmail(nameEn);
+
+  const templates = [
+    // Banglish single-line
+    `${nameEn} nam er employee profile banao email ${email} password ${pass}`,
+    `${nameEn} nam er employee profile banao ${email} ${pass}`,
+    `${nameEn} er employee id banao password ${pass} email ${email}`,
+    `${nameEn} er employee id banao pass ${pass} email ${email}`,
+    `${nameEn} namer employee profile banao email ${email} pass ${pass}`,
+    `${nameEn} er jonno employee account banao email ${email} pass ${pass}`,
+    `${nameEn} er employee profile banao pass ${pass} email ${email}`,
+    `${nameEn} er kormi profile banao pass ${pass} mail ${email}`,
+    `${nameEn} namer kormi id banao password ${pass} email ${email}`,
+    `${nameEn} er kormi id banao pass ${pass}`,
+    `${nameEn} er employee id banao`,
+    `notun employee banao nam ${nameEn} pass ${pass} email ${email}`,
+    `notun kormi account banao nam ${nameEn} pass ${pass} email ${email}`,
+    `notun kormi profile banao ${nameEn} pass ${pass} mail ${email}`,
+    `create employee profile ${nameEn} email ${email} pass ${pass}`,
+    `add employee ${nameEn} phone ${phone} pass ${pass}`,
+    `kormi profile create koro name: ${nameEn} email: ${email} pass: ${pass}`,
+    `notun staff register koro nam ${nameEn} pass ${pass}`,
+
+    // Banglish multiline
+    `${nameEn} nam er employee profile banao\n${email}\n${pass}`,
+    `${nameEn} nam er employee profile banao\n${email}\n${phone}`,
+    `${nameEn} er employee id banao\npassword ${pass}\nemail ${email}`,
+    `${nameEn} namer employee profile banao\nemail: ${email}\npass: ${pass}`,
+    `${nameEn} er kormi profile banao\n${email}\n${pass}`,
+    `${nameEn} er employee id banao\n${pass}\n${email}`,
+    `notun kormi banao\nnam: ${nameEn}\nmail: ${email}\npass: ${pass}`,
+    `create employee profile for ${nameEn}\n${email}\n${pass}`,
+
+    // Plain multiline credentials (critical permutation!)
+    `${nameEn}\n${email}\n${pass}`,
+    `${nameEn}\n${phone}\n${pass}`,
+    `${nameEn}\n${pass}\n${email}`,
+    `${nameBn}\n${email}\n${pass}`,
+    `${nameBn}\n${phone}\n${pass}`,
+    `name: ${nameEn}\nemail: ${email}\npassword: ${pass}`,
+    `nam: ${nameEn}\nemail: ${email}\npass: ${pass}`,
+    `নাম: ${nameBn}\nইমেইল: ${email}\nপাসওয়ার্ড: ${pass}`,
+    `নাম: ${nameBn}\nফোন: ${phone}\nপাসওয়ার্ড: ${pass}`,
+    `Name: ${nameEn}\nPass: ${pass}\nMail: ${email}`,
+    `employee:\nname: ${nameEn}\nmail: ${email}\npass: ${pass}`,
+
+    // Bangla single-line & multiline
+    `${nameBn} নামের কর্মী প্রোফাইল বানাও ইমেইল ${email} পাসওয়ার্ড ${pass}`,
+    `${nameBn} নামের কর্মী প্রোফাইল বানাও ${email} ${pass}`,
+    `${nameBn} এর কর্মী আইডি বানাও পাসওয়ার্ড ${pass} ইমেইল ${email}`,
+    `${nameBn} নামের নতুন কর্মী যুক্ত করো পাসওয়ার্ড ${pass}`,
+    `${nameBn} এর জন্য কর্মী অ্যাকাউন্ট তৈরি করো ইমেইল ${email} পাসওয়ার্ড ${pass}`,
+    `নতুন কর্মীর অ্যাকাউন্ট খোলো নাম ${nameBn} পাসওয়ার্ড ${pass}`,
+    `কর্মী প্রোফাইল তৈরি করো নাম: ${nameBn} পাসওয়ার্ড: ${pass} ইমেইল: ${email}`,
+    `${nameBn} নামের কর্মী প্রোফাইল বানাও\n${email}\n${pass}`,
+    `${nameBn} এর কর্মী আইডি বানাও\nপাসওয়ার্ড: ${pass}\nইমেইল: ${email}`,
+    `নতুন কর্মী প্রোফাইল তৈরি করো:\nনাম: ${nameBn}\nইমেইল: ${email}\nপাসওয়ার্ড: ${pass}`,
+
+    // Questions / How-to variations (critical for queries like "kormi add korbo kivabe")
+    `kormi add korbo kivabe`,
+    `kivabe kormi add korbo`,
+    `kormi kivabe jog korbo`,
+    `notun kormi kivabe add korbo`,
+    `kivabe notun employee account khulbo`,
+    `employee profile kivabe banabo`,
+    `kormi add korte chai kivabe korbo`,
+    `employee kivabe register korbo`,
+    `kivabe employee list dekhte pabo`,
+    `kormi kothay add korbo`,
+    `notun staff kothay add kore`,
+    `কর্মী কীভাবে যোগ করব`,
+    `কর্মী যোগ করব কিভাবে`,
+    `নতুন কর্মী যোগ করব কিভাবে`,
+    `নতুন কর্মী যোগ করব কিভাবে?`,
+    `কীভাবে নতুন কর্মী যুক্ত করব`,
+    `নতুন কর্মীর অ্যাকাউন্ট কীভাবে খুলব`,
+    `কর্মী প্রোফাইল কীভাবে তৈরি করব`,
+    `নতুন কর্মী কোথায় যোগ করব`,
+    `how do i add an employee`,
+    `how to add new employee`,
+    `how can i create employee profile`,
+    `where do i register new staff`,
+    `where can i manage employees`,
+    `where do i add new employee`,
+
+    // English single-line & multiline
+    `create employee profile for ${nameEn} with email ${email} and password ${pass}`,
+    `make employee id for ${nameEn} password ${pass} email ${email}`,
+    `add new employee named ${nameEn} email ${email} password ${pass}`,
+    `register staff member ${nameEn} password ${pass} email ${email}`,
+    `create an employee account name: ${nameEn} pass: ${pass} email: ${email}`,
+    `create employee profile for ${nameEn}\n${email}\n${pass}`,
+    `add employee:\nname: ${nameEn}\nemail: ${email}\npassword: ${pass}`,
+  ];
+
+  let text = pick(templates);
+  if (rand() < 0.25 && !text.includes('\n')) {
+    const lang = pick<Lang>(['en', 'bn', 'bl']);
+    text = pick(WRAPPERS[lang]).replace('{S}', text);
+  }
+  if (rand() < 0.2) text = applyTypo(text);
+  return { text, label: '/admin/employees' };
+}
+
+export function synthesizeAssignmentAndPermissionPattern(): { text: string; label: string } {
+  const nameEn = pick(EMPLOYEE_NAMES_EN);
+  const nameBn = pick(EMPLOYEE_NAMES_BN);
+  const secEn = pick(SECTION_NAMES_EN);
+  const secBn = pick(SECTION_NAMES_BN);
+
+  const templates = [
+    // Section assignment
+    `${nameEn} ke ${secEn} section e assign koro`,
+    `${nameEn} ke ${secEn} group e diye dao`,
+    `${nameEn} ke ${secEn} section assign korte chai`,
+    `${nameBn} কে ${secBn} সেকশনে যুক্ত করো`,
+    `${nameBn}-কে ${secBn} গ্রুপ বরাদ্দ দাও`,
+    `assign ${nameEn} to ${secEn} section`,
+    `allocate ${secEn} group to employee ${nameEn}`,
+    `assign section ${secEn} to ${nameEn}`,
+
+    // Permissions (Full customer view toggle)
+    `${nameEn} ke sob customer dekhar access dao`,
+    `${nameEn} ke sob lead dekhar permission dao`,
+    `${nameEn} ke full customer database access dao`,
+    `${nameEn} er customer view permission on koro`,
+    `${nameEn} er sob customer access bondho koro`,
+    `${nameEn} er customer permission off koro`,
+    `${nameBn} কে সম্পূর্ণ কাস্টমার ডেটাবেস দেখার অনুমতি দাও`,
+    `${nameBn} এর কাস্টমার দেখার পারমিশন বন্ধ করো`,
+    `grant ${nameEn} permission to view all customers`,
+    `allow ${nameEn} full access to customer leads`,
+    `revoke customer access for ${nameEn}`,
+    `disable full customer view for ${nameEn}`,
+    `turn off customer database access for ${nameEn}`,
+  ];
+
+  let text = pick(templates);
+  if (rand() < 0.2) text = applyTypo(text);
+  return { text, label: '/admin/employees' };
+}
+
+export function synthesizeDailySalesExpensePattern(): { text: string; label: string } {
+  const prodEn = pick(PRODUCTS_EN);
+  const prodBn = pick(PRODUCTS_BN);
+  const expEn = pick(EXPENSES_EN);
+  const expBn = pick(EXPENSES_BN);
+  const amount1 = Math.floor(rand() * 90 + 10) * 100;
+  const amount2 = Math.floor(rand() * 20 + 5) * 50;
+  const qty = Math.floor(rand() * 15 + 1);
+
+  const isEmployeeEntry = rand() < 0.65;
+  if (isEmployeeEntry) {
+    const templates = [
+      `Ajker bikri:\n${prodEn} ${qty} ta ${amount1} tk\nKhoroch:\n${expEn} ${amount2} taka`,
+      `Daily entry:\nSold ${qty} packets of ${prodEn} for ${amount1} BDT\nAd spend: ${amount2} tk`,
+      `আজকের দৈনিক এন্ট্রি:\n${prodBn} ${qty} টি বিক্রি ${amount1} টাকা\nখরচ: ${expBn} ${amount2} টাকা`,
+      `bikri o khoroch entry:\nsales ${amount1} tk, cost ${amount2} tk`,
+      `daily sales entry:\n${prodEn} ${amount1} taka`,
+      `ajker sale entry dao:\n${prodEn} ${qty} piece ${amount1} tk`,
+      `khoroch entry:\n${expEn} ${amount2} tk`,
+      `expense log:\n${expEn} ${amount2} taka`,
+      `ajke ${qty} packet ${prodEn} sell korlam ${amount1} taka`,
+      `ajker bikri entry:\n${amount1} taka bikri\n${amount2} taka khoroch`,
+    ];
+    let text = pick(templates);
+    if (rand() < 0.2) text = applyTypo(text);
+    return { text, label: '/employee/daily-entry' };
+  } else {
+    const templates = [
+      `ajker total sales koto holo`,
+      `ajker mot bikri o khoroch koto`,
+      `today daily sales and revenue report`,
+      `show today daily report with employee wise sales`,
+      `আজকের মোট বিক্রি এবং খরচ কত হয়েছে দেখাও`,
+      `দৈনিক সেলস এবং খরচের সারসংক্ষেপ দেখতে চাই`,
+      `kalker sales report dekhao`,
+      `yesterday total daily sales`,
+      `daily report page kholo`,
+      `আজকের বিক্রি ও খরচের হিসাব দেখাও`,
+    ];
+    let text = pick(templates);
+    if (rand() < 0.2) text = applyTypo(text);
+    return { text, label: '/admin/reports/daily' };
+  }
+}
+
+export function synthesizeSectionAndLinksPattern(): { text: string; label: string } {
+  const secEn = pick(SECTION_NAMES_EN);
+  const secBn = pick(SECTION_NAMES_BN);
+  const id1 = Math.floor(rand() * 899999 + 100000);
+  const id2 = Math.floor(rand() * 899999 + 100000);
+
+  const templates = [
+    `notun section banao ${secEn}`,
+    `create new section named ${secEn}`,
+    `নতুন সেকশন তৈরি করো ${secBn}`,
+    `ekta facebook group section kholo ${secEn}`,
+    `add links to ${secEn}:\nhttps://facebook.com/groups/${id1}\nhttps://facebook.com/groups/${id2}`,
+    `${secEn} e link add koro:\nhttps://facebook.com/groups/${id1}\nhttps://facebook.com/groups/${id2}`,
+    `লিংক যোগ করো ${secBn} সেকশনে:\nhttps://facebook.com/groups/${id1}\nhttps://facebook.com/groups/${id2}`,
+    `bulk upload links to ${secEn}:\nhttps://facebook.com/groups/${id1}`,
+  ];
+
+  let text = pick(templates);
+  if (rand() < 0.2) text = applyTypo(text);
+  return { text, label: '/admin/sections' };
+}
+
+// ---------------------------------------------------------------------------
 // 4. Memory-Efficient Streaming Trainer
 // ---------------------------------------------------------------------------
 
@@ -1266,9 +1544,44 @@ export async function trainMega(options: TrainMegaOptions) {
   const intentsLen = MEGA_INTENTS.length;
 
   for (let i = 1; i <= totalCount; i++) {
-    const intent = MEGA_INTENTS[Math.floor(rand() * intentsLen)];
-    const text = synthesizeSentence(intent);
-    const c = idx.get(intent.label)!;
+    // Uniformly sample across all system classes to maintain balanced likelihood denominators
+    const intent = MEGA_INTENTS[i % intentsLen];
+    const label = intent.label;
+    let text = '';
+
+    if (label === '/admin/employees') {
+      const r = rand();
+      if (r < 0.55) {
+        text = synthesizeEmployeePattern().text;
+      } else if (r < 0.80) {
+        text = synthesizeAssignmentAndPermissionPattern().text;
+      } else {
+        text = synthesizeSentence(intent);
+      }
+    } else if (label === '/employee/daily-entry') {
+      if (rand() < 0.60) {
+        text = synthesizeDailySalesExpensePattern().text;
+      } else {
+        text = synthesizeSentence(intent);
+      }
+    } else if (label === '/admin/reports/daily') {
+      if (rand() < 0.40) {
+        text = synthesizeDailySalesExpensePattern().text;
+      } else {
+        text = synthesizeSentence(intent);
+      }
+    } else if (label === '/admin/sections') {
+      if (rand() < 0.50) {
+        text = synthesizeSectionAndLinksPattern().text;
+      } else {
+        text = synthesizeSentence(intent);
+      }
+    } else {
+      text = synthesizeSentence(intent);
+    }
+
+    const c = idx.get(label)!;
+    if (c === undefined) continue;
 
     docCount[c] += 1;
 

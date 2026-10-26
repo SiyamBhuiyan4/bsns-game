@@ -310,6 +310,8 @@ const FIELD_ALIASES: Record<string, 'name' | 'email' | 'password' | 'phone'> = {
 function parseEmployeeFields(tokens: string[]): Record<string, string> {
   const fields: Record<string, string[]> = {};
   let current: string | null = null;
+  const unassigned: string[] = [];
+
   for (const token of tokens) {
     const match = /^([^=:]+)[=:](.*)$/u.exec(token);
     const key = match ? FIELD_ALIASES[match[1].toLowerCase()] : undefined;
@@ -318,10 +320,44 @@ function parseEmployeeFields(tokens: string[]): Record<string, string> {
       fields[key] = match[2] ? [match[2]] : [];
     } else if (current) {
       fields[current].push(token);
+    } else {
+      unassigned.push(token);
     }
   }
+
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(fields)) out[k] = v.join(' ').trim();
+
+  // Positional fallback for unassigned tokens
+  if (unassigned.length > 0) {
+    for (const t of unassigned) {
+      if (!out.email && t.includes('@')) {
+        out.email = t;
+      } else if (!out.phone && /(?:\+?880|0)?1[3-9]\d{8}\b/.test(t)) {
+        out.phone = t;
+      } else if (!out.password && /^\d{6,}$/.test(t)) {
+        out.password = t;
+      }
+    }
+    const remaining = unassigned.filter(
+      (t) => t !== out.email && t !== out.phone && t !== out.password
+    );
+    if (remaining.length > 0) {
+      if (!out.name) {
+        if (!out.password && remaining.length >= 2) {
+          const passIdx = remaining.findIndex((r) => /^\d{6,}$/.test(r) || r.length >= 6);
+          if (passIdx !== -1) {
+            out.password = remaining[passIdx];
+            remaining.splice(passIdx, 1);
+          }
+        }
+        out.name = remaining.join(' ').trim();
+      } else if (!out.password) {
+        out.password = remaining[0];
+      }
+    }
+  }
+
   return out;
 }
 
@@ -426,7 +462,6 @@ const teamCommand: AgentCommand = {
 const assignCommand: AgentCommand = {
   name: 'assign',
   aliases: ['অ্যাসাইন', 'বরাদ্দ'],
-  descBn: 'কর্মীকে সেকশনে যুক্ত করা (ইমেইল দিয়ে)',
   descBn: 'কর্মীকে সেকশনে যুক্ত করা (নাম বা ইমেইল দিয়ে)',
   descEn: 'Assign an employee (by name or email) to a section',
   usage: '#assign <name/email> to <section name>',
