@@ -7,7 +7,15 @@ import prisma from '@/lib/prisma';
 import { normalizeText } from './router';
 import { predict } from './classifier';
 import { ACTION_WORDS, FILLER, OFF_TOPIC, PAGES, TOPICS, WEAK, type Action, type Topic } from './knowledge';
-import { extractDateFromQuery, getDhakaDateString, formatTaka } from '@/lib/date';
+import {
+  extractDateFromQuery,
+  extractMonthFromQuery,
+  getDhakaDateString,
+  formatTaka,
+  BN_MONTHS,
+  EN_MONTHS,
+  toBengaliDigits,
+} from '@/lib/date';
 import { getDailyReportSummary } from '@/lib/reports';
 
 export type NavLink = { href: string; labelBn: string; labelEn: string };
@@ -271,6 +279,7 @@ export function classify(message: string): Classification {
 
   // Period + number-type word ("আজকের স্কোর", "monthly score", "mon to sun summary", "kalker report") -> that report
   const queryDate = extractDateFromQuery(message);
+  const queryMonth = extractMonthFromQuery(message);
   const isCustomerWord = hasAny(['customer', 'customers', 'lead', 'leads', 'client', 'clients', 'কাস্টমার', 'ক্রেতা', 'গ্রাহক', 'লিড']);
 
   if (queryDate && isCustomerWord) {
@@ -279,6 +288,7 @@ export function classify(message: string): Classification {
 
   const dated = /\d{1,2}\s*(january|february|march|april|may|june|july|august|september|october|november|december|জানুয়ারি|ফেব্রুয়ারি|মার্চ|এপ্রিল|মে|জুন|জুলাই|আগস্ট|সেপ্টেম্বর|অক্টোবর|নভেম্বর|ডিসেম্বর)/.test(lower);
   if ((hasAny(METRIC) || hasAny(['report', 'রিপোর্ট', 'সারসংক্ষেপ', 'summary', 'hishab', 'হিসাব', 'কাজ', 'kaj'])) && !hasAny(NOT_REPORT) && !isWhoChanged(words)) {
+    if (queryMonth) return pick('report_monthly');
     if (queryDate || dated || hasAny(DAY)) return pick('report_daily');
     if (hasAny(WEEK) || /mon to sun|শনি থেকে শুক্র|shoni theke/.test(lower)) return pick('report_weekly');
     if (hasAny(MONTH) || /full month|গত মাস|last month/.test(lower)) return pick('report_monthly');
@@ -337,13 +347,232 @@ export async function navigate(message: string): Promise<NavResult> {
   // 2. Understand the message.
   const c = classify(message);
   const actions = c.actions;
+
+  // 2.05 Ambiguous Generic Report Clarification
+  const isGenericReportQuery =
+    /(?:^|[^\p{L}\p{N}])(?:report|reports|রিপোর্ট|হিসাব|সারসংক্ষেপ|hishab|hisab|summary)(?:[^\p{L}\p{N}]|$)/iu.test(lower) &&
+    !extractDateFromQuery(message) &&
+    !extractMonthFromQuery(message) &&
+    !/(?:daily|dainik|আজকের|গতকালকের|kal|aj|গতকাল|week|weekly|সাপ্তাহিক|shoptahik|month|monthly|মাসিক|masik|মাসের)/iu.test(lower) &&
+    !actions.has('add') &&
+    !actions.has('edit');
+
+  if (isGenericReportQuery) {
+    return {
+      reply: bn
+        ? `📊 **আপনি কোন ধরনের রিপোর্ট দেখতে চান?**\n` +
+          `অনুগ্রহ করে নিশ্চিত করুন আপনি দৈনিক (Daily), সাপ্তাহিক (Weekly) নাকি মাসিক (Monthly) রিপোর্ট দেখতে চান। নিচের অপশন থেকেও সরাসরি বেছে নিতে পারেন:`
+        : `📊 **Which type of report would you like to view?**\n` +
+          `Please confirm whether you want the Daily, Weekly, or Monthly report. You can also pick from the options below:`,
+      suggestions: [
+        { href: '/admin/reports/daily', labelBn: 'দৈনিক রিপোর্ট (Daily Report)', labelEn: 'Daily Report' },
+        { href: '/admin/reports/weekly', labelBn: 'সাপ্তাহিক রিপোর্ট (Weekly Report)', labelEn: 'Weekly Report' },
+        { href: '/admin/reports/monthly', labelBn: 'মাসিক রিপোর্ট (Monthly Report)', labelEn: 'Monthly Report' },
+      ],
+      navigate: false,
+    };
+  }
+
+  // 2.1 Live Website Data Queries (Products, Campaigns, Employees, Sections, Scoring, Customer Rules, Action Plan)
+  // Products Inquiry
+  const isProductInquiry =
+    /(?:product|products|পণ্য|প্রোডাক্ট)/i.test(lower) &&
+    /(?:what|list|available|our|have|কী|কি|তালিকা|লিস্ট|গুলো|কত|আছে|সব|আমাদের)/i.test(lower) &&
+    !actions.has('add') &&
+    !actions.has('edit') &&
+    !actions.has('delete');
+
+  if (isProductInquiry) {
+    const prods = await prisma.product.findMany({ where: { is_active: true }, orderBy: { name_bn: 'asc' }, take: 15 });
+    if (prods.length > 0) {
+      const listBn = prods.map((p) => `• 🍄 **${p.name_bn || p.name_en}**: ৳ ${p.selling_price} / ${p.unit}`).join('\n');
+      const listEn = prods.map((p) => `• 🍄 **${p.name_en || p.name_bn}**: ৳ ${p.selling_price} / ${p.unit}`).join('\n');
+      return {
+        reply: bn
+          ? `📦 **আমাদের সক্রিয় পণ্যসমূহ (Active Products)**:\n${listBn}\n\nপণ্য তালিকা দেখতে বা নতুন পণ্য যোগ করতে পণ্য পেজে নিয়ে যাচ্ছি...`
+          : `📦 **Our Active Products**:\n${listEn}\n\nOpening the products page...`,
+        link: { href: '/admin/products', labelBn: 'পণ্য পেজ', labelEn: 'Products Page' },
+        navigate: true,
+      };
+    }
+  }
+
+  // Campaigns Inquiry
+  const isCampaignInquiry =
+    /(?:campaign|campaigns|ক্যাম্পেইন|বিজ্ঞাপন)/i.test(lower) &&
+    /(?:what|list|active|running|our|কী|কি|তালিকা|লিস্ট|গুলো|আছে|চলমান|আমাদের)/i.test(lower) &&
+    !actions.has('add') &&
+    !actions.has('edit');
+
+  if (isCampaignInquiry) {
+    const camps = await prisma.campaign.findMany({ where: { status: 'ACTIVE' }, take: 10 });
+    if (camps.length > 0) {
+      const listBn = camps.map((cp) => `• 📢 **${cp.name}** (${cp.channel}): বাজেট ৳ ${cp.budget_amount}`).join('\n');
+      const listEn = camps.map((cp) => `• 📢 **${cp.name}** (${cp.channel}): Budget ৳ ${cp.budget_amount}`).join('\n');
+      return {
+        reply: bn
+          ? `📢 **আমাদের চলমান ক্যাম্পেইনসমূহ (Active Campaigns)**:\n${listBn}\n\nক্যাম্পেইন পেজে নিয়ে যাচ্ছি...`
+          : `📢 **Our Active Campaigns**:\n${listEn}\n\nOpening campaigns page...`,
+        link: { href: '/admin/campaigns', labelBn: 'ক্যাম্পেইন পেজ', labelEn: 'Campaigns Page' },
+        navigate: true,
+      };
+    }
+  }
+
+  // Employees Inquiry
+  const isEmployeeInquiry =
+    /(?:employee|employees|staff|worker|workers|কর্মী|কর্মচারী|কর্মীরা)/i.test(lower) &&
+    /(?:who|list|all|active|our|কারা|তালিকা|লিস্ট|কে কে|সব|আমাদের|কয়জন)/i.test(lower) &&
+    !actions.has('add') &&
+    !actions.has('edit') &&
+    !actions.has('delete');
+
+  if (isEmployeeInquiry) {
+    const emps = await prisma.user.findMany({
+      where: { role: 'EMPLOYEE', is_active: true },
+      include: { assignments_as_employee: { include: { section: true } } },
+      take: 15,
+    });
+    if (emps.length > 0) {
+      const listBn = emps
+        .map(
+          (e) =>
+            `• 👤 **${e.name}** (${e.email || e.phone || 'কর্মী'}) - সেকশন: ${
+              e.assignments_as_employee.map((a: any) => a.section?.name).join(', ') || 'কোনো সেকশন অ্যাসাইন নেই'
+            }`
+        )
+        .join('\n');
+      const listEn = emps
+        .map(
+          (e) =>
+            `• 👤 **${e.name}** (${e.email || e.phone || 'Employee'}) - Sections: ${
+              e.assignments_as_employee.map((a: any) => a.section?.name).join(', ') || 'None assigned'
+            }`
+        )
+        .join('\n');
+      return {
+        reply: bn
+          ? `👥 **আমাদের সক্রিয় কর্মীবৃন্দ (${emps.length} জন)**:\n${listBn}\n\nকর্মী ব্যবস্থাপনা পেজে নিয়ে যাচ্ছি...`
+          : `👥 **Active Employees (${emps.length})**:\n${listEn}\n\nOpening employees page...`,
+        link: { href: '/admin/employees', labelBn: 'কর্মচারী পেজ', labelEn: 'Employees Page' },
+        navigate: true,
+      };
+    }
+  }
+
+  // Sections Inquiry
+  const isSectionInquiry =
+    /(?:section|sections|group|groups|সেকশন|গ্রুপ)/i.test(lower) &&
+    /(?:what|list|all|active|our|কী|কি|তালিকা|লিস্ট|কয়টা|সব|আমাদের)/i.test(lower) &&
+    !actions.has('add') &&
+    !actions.has('edit') &&
+    !actions.has('delete');
+
+  if (isSectionInquiry) {
+    const secs = await prisma.groupSection.findMany({ include: { _count: { select: { links: true } } }, take: 15 });
+    if (secs.length > 0) {
+      const listBn = secs.map((s) => `• 📁 **${s.name}** (${s._count.links} টি লিংক)`).join('\n');
+      const listEn = secs.map((s) => `• 📁 **${s.name}** (${s._count.links} links)`).join('\n');
+      return {
+        reply: bn
+          ? `📁 **আমাদের গ্রুপ ও সেকশনসমূহ (${secs.length} টি)**:\n${listBn}\n\nগ্রুপ ও লিংক পেজে নিয়ে যাচ্ছি...`
+          : `📁 **Our Group Sections (${secs.length})**:\n${listEn}\n\nOpening groups page...`,
+        link: { href: '/admin/sections', labelBn: 'গ্রুপ ও লিংক', labelEn: 'Groups & Links' },
+        navigate: true,
+      };
+    }
+  }
+
+  // Scoring Explanation Query
+  if (
+    /(?:how\s+does\s+scoring\s+work|scoring\s+system|score\s+formula|pass\s+mark|স্কোরিং\s+কীভাবে|স্কোর\s+পদ্ধতি|পাস\s+মার্ক|scoring\s+kivabe\s+kaj\s+kore|score\s+kemne\s+hoy|স্কোরিং\s+নিয়ম)/iu.test(
+      lower
+    )
+  ) {
+    return {
+      reply: bn
+        ? `📊 **আমাদের পারফরম্যান্স স্কোরিং সিস্টেম (Scoring System)**:\n` +
+          `• 🎯 ৭টি প্রধান মেট্রিক ট্র্যাক করা হয়: পোস্ট সম্পন্ন, বিক্রি (৳), লাভ (৳), নতুন ক্রেতা, B2B অর্ডার, রিটেনশন ও ফলো-আপ।\n` +
+          `• 🏆 পাস মার্ক: ৮০% (৮০/১০০)। ৮০ বা তার বেশি পেলে পাস, কম পেলে উন্নতি প্রয়োজন।\n` +
+          `• 🛡️ অ্যাচিভমেন্ট ক্যাপ: ডিফল্ট ১০০% (১.০)। টার্গেটের অতিরিক্ত কাজ হলেও সর্বোচ্চ ক্যাপ প্রযোজ্য।\n` +
+          `• ⚙️ স্কোরিং সেটিংস ও ওয়েট বদলাতে সেটিংস পেজে যান।`
+        : `📊 **Performance Scoring System**:\n` +
+          `• 🎯 7 Core Metrics: Posts Done, Sales (৳), Profit (৳), New Clients, B2B Orders, Retention & Follow-ups.\n` +
+          `• 🏆 Passing Threshold: 80% (80/100). Scores of 80+ pass; below 80 need improvement.\n` +
+          `• 🛡️ Achievement Cap: Default 100% (1.0) to prevent single-metric distortion.\n` +
+          `• ⚙️ Manage weights and thresholds in Settings.`,
+      link: { href: '/admin/settings', labelBn: 'স্কোরিং সেটিংস', labelEn: 'Scoring Settings' },
+      navigate: false,
+    };
+  }
+
+  // Customer Rules / Duplicate Prevention Query
+  if (
+    /(?:duplicate\s+customer|phone\s+unique|phone\s+validation|ডুপ্লিকেট\s+কাস্টমার|ফোন\s+নম্বর\s+ইউনিক|duplicate\s+check\s+kivabe|notun\s+customer\s+check|কাস্টমার\s+নিয়ম)/iu.test(
+      lower
+    )
+  ) {
+    return {
+      reply: bn
+        ? `🛡️ **কাস্টমার ব্যবস্থাপনা ও ডুপ্লিকেট রোধের নিয়ম**:\n` +
+          `• 📱 মোবাইল নম্বর বাধ্যতামূলকভাবে ইউনিক: একটি মোবাইল নম্বর ডেটাবেসে থাকলে দ্বিতীয়বার ডুপ্লিকেট হিসেবে যোগ করা যাবে না।\n` +
+          `• 🔴 রিয়েলটাইম চেক: নম্বর টাইপ করার সাথে সাথে লাল (পুরাতন কাস্টমার - ব্লকড) বা সবুজ (নতুন কাস্টমার - অনুমোদিত) স্ট্যাটাস দেখায়।\n` +
+          `• ⏰ বাংলাদেশ সময় (BST UTC+6): প্রতিটি কাস্টমার এন্ট্রিতে স্বয়ংক্রিয়ভাবে সঠিক BST তারিখ ও সময় সংরক্ষিত হয়।\n` +
+          `• 🔒 পারমিশন স্কোপিং: সাধারণ কর্মীরা কেবল নিজের কাস্টমার দেখতে পায়; অ্যাডমিন অনুমতি দিলে ("Full Leads Access") তারা সব দেখতে পারে।`
+        : `🛡️ **Customer Management & Duplicate Protection Rules**:\n` +
+          `• 📱 Strict Unique Phone Numbers: Duplicate phone numbers are strictly prohibited across the entire company database.\n` +
+          `• 🔴 Live Validation: Instant visual feedback (Red for existing customer / Green for new approved customer).\n` +
+          `• ⏰ Bangladesh Standard Time (BST UTC+6): Automatic timestamps for every customer registration.\n` +
+          `• 🔒 Scoped Access: Standard employees only see their own customer leads unless granted full database access by Admin.`,
+      link: { href: '/admin/leads', labelBn: 'কাস্টমার ও লিড', labelEn: 'Customers & Leads' },
+      navigate: false,
+    };
+  }
+
+  // Action Plan / 90-Day Plan Query
+  if (
+    /(?:action\s+plan\s+(?:ki|kivabe|details)|what\s+is\s+action\s+plan|৯০\s+দিনের\s+প্ল্যান\s+কী|marketing\s+action\s+plan|action\s+plan\s+details|প্ল্যানের\s+ধাপ)/iu.test(
+      lower
+    )
+  ) {
+    return {
+      reply: bn
+        ? `📋 **বিস্তারিত মার্কেটিং কর্মপরিকল্পনা (90-Day Action Plan)**:\n` +
+          `• 🔹 ফেজ ১: সেটআপ ও প্রাথমিক প্রস্তুতি (১-৩০ দিন) - গ্রুপ ও পেজ অপটিমাইজেশন, পণ্য তালিকা প্রস্তুত।\n` +
+          `• 🔹 ফেজ ২: প্রচারণা ও গ্রাহক বৃদ্ধি (৩১-৬০ দিন) - সক্রিয় সোশ্যাল গ্রুপ পোস্টিং, পেইড বিজ্ঞাপন ও বিটুবি রিচআউট।\n` +
+          `• 🔹 ফেজ ৩: বিক্রি স্কেলিং ও রিটেনশন (৬১-৯০ দিন) - বাল্ক অর্ডার ক্লোজিং, ডিলারশিপ ও কাস্টমার রিটেনশন।\n` +
+          `অ্যাকশন প্ল্যান পেজে প্রতিটি টাস্ক, মাইলস্টোন ও নির্দেশিকা সরাসরি দেখতে বা এডিট করতে পারেন।`
+        : `📋 **Marketing Action Plan (90-Day Plan)**:\n` +
+          `• 🔹 Phase 1: Setup & Groundwork (Days 1-30) - Asset preparation, product listings, group optimization.\n` +
+          `• 🔹 Phase 2: Execution & Outreach (Days 31-60) - Organic group posting, targeted paid campaigns, B2B lead generation.\n` +
+          `• 🔹 Phase 3: Scaling & Retention (Days 61-90) - Wholesale closing, dealer distribution, customer repeat retention.\n` +
+          `Manage and track all tasks, phases, and guidelines on the Action Plan page.`,
+      link: { href: '/admin/plan', labelBn: 'কর্মপরিকল্পনা', labelEn: 'Action Plan' },
+      navigate: false,
+    };
+  }
+
   if (c.kind === 'capability') {
     return {
       reply: say(
-        'আমি এই অ্যাডমিন প্যানেলের সহকারী। কোন কাজ কীভাবে করবেন বলে দিই এবং সঠিক পেজ খুলে দিই। যেমন লিখুন: "নতুন কর্মী যোগ করব কীভাবে?", "গ্রুপে লিংক যোগ", "আজকের রিপোর্ট দেখাও"।',
-        'I am the assistant for this admin panel. I explain how to do things and open the right page. Try: "how do I add an employee?", "add links to a group", "show today\'s report".'
+        '🤖 **আমি এই সিস্টেমের রিমোট এআই অ্যাসিস্ট্যান্ট (Website AI Assistant)**!\n' +
+          'আমি এই প্ল্যাটফর্মের সকল কাজ স্বয়ংক্রিয়ভাবে করতে ও প্রশ্নের উত্তর দিতে পারি:\n\n' +
+          '1. 👤 **কর্মী অ্যাকাউন্ট খোলা**: লিখুন `create an employee acount name: Rafiq pass: 123456`\n' +
+          '2. 🔑 **পাসওয়ার্ড রিসেট**: লিখুন `set password of Rafiq to 654321`\n' +
+          '3. 📅 **তারিখভিত্তিক রিপোর্ট**: লিখুন `kalker report`, `ajker report`, `25 tarikh er report`\n' +
+          '4. 👥 **কাস্টমার ফিল্টারিং**: লিখুন `kalker customer`, `last 7 days leads`\n' +
+          '5. 📊 **ওয়েবসাইট ডেটা অনুসন্ধান**: জিজ্ঞেস করুন "আমাদের পণ্য কী কী?", "ক্যাম্পেইন তালিকা", "কর্মীরা কারা", "স্কোরিং কীভাবে কাজ করে"\n' +
+          '6. 🚀 **অটো-নেভিগেশন**: ড্যাশবোর্ড, টার্গেট বণ্টন, অ্যাকশন প্ল্যান ইত্যাদি যেকোনো পেজে সরাসরি নিয়ে যাওয়া।',
+        '🤖 **I am your Remote AI Assistant for this platform**!\n' +
+          'I can execute actions, answer operational questions, and navigate anywhere:\n\n' +
+          '1. 👤 **Create Employee Account**: e.g. `create an employee acount name: Rafiq pass: 123456`\n' +
+          '2. 🔑 **Reset Passwords**: e.g. `set password of Rafiq to 654321`\n' +
+          '3. 📅 **Date-Based Reports**: e.g. `yesterday report`, `today report`, `report of 25th`\n' +
+          '4. 👥 **Customer Filtering**: e.g. `yesterday leads`, `last 7 days customers`\n' +
+          '5. 📊 **Live Platform Q&A**: Ask "what products do we have?", "active campaigns", "who are our employees", "how does scoring work"\n' +
+          '6. 🚀 **Direct Navigation**: Auto-navigate to any page (Dashboard, Targets, Action Plan, etc.).'
       ),
-      suggestions: PAGES.filter((p) => ['team', 'groups', 'leads', 'manual'].includes(p.id)),
+      suggestions: PAGES.filter((p) => ['team', 'groups', 'leads', 'manual', 'products', 'campaigns'].includes(p.id)),
     };
   }
   if (c.kind === 'greeting') {
@@ -372,9 +601,14 @@ export async function navigate(message: string): Promise<NavResult> {
     }
     return {
       reply: say(
-        'দুঃখিত, এটা আমি জানি না। আমার জ্ঞান শুধু এই অ্যাডমিন প্যানেল নিয়ে, তাই এর উত্তর দিতে পারছি না। প্যানেলের কোনো কাজ নিয়ে জিজ্ঞেস করুন, যেমন "কর্মী যোগ করব কীভাবে?"',
-        "Sorry, I don't know about that. I have limited knowledge (only this admin panel), so I'm not sure how to answer it. Ask me about something in the panel, for example \"how do I add an employee?\""
+        '🤖 **আমি শুধুমাত্র এই বিজনেস ম্যানেজমেন্ট প্ল্যাটফর্মের রিমোট এআই সহকারী (Website AI Assistant)**।\n' +
+          'আমি আবহাওয়া, রান্না, খেলাধুলা বা বাইরের কোনো সাধারণ বিষয়ের উত্তর দিই না।\n\n' +
+          '💡 তবে এই প্ল্যাটফর্মের **পণ্য**, **কর্মী**, **ক্যাম্পেইন**, **দৈনিক/মাসিক রিপোর্ট**, **টার্গেট**, **স্কোরিং** বা **কাস্টমার ডেটাবেস** সংক্রান্ত যেকোনো কাজ বা তথ্যের জন্য আমাকে জিজ্ঞেস করতে পারেন!',
+        '🤖 **I am the dedicated remote AI assistant for this business management platform**.\n' +
+          'I do not answer general non-website queries like weather, cooking, or sports.\n\n' +
+          '💡 However, I can help you with anything regarding our **products**, **employees**, **campaigns**, **daily/monthly reports**, **targets**, **scoring rules**, and **customer database**!'
       ),
+      suggestions: PAGES.filter((p) => ['team', 'groups', 'leads', 'manual', 'products', 'campaigns'].includes(p.id)),
     };
   }
 
@@ -436,6 +670,105 @@ export async function navigate(message: string): Promise<NavResult> {
         `• 👥 Active Employees: ${summary.active_employees_count}\n` +
         `• 📊 Team Avg Score: ${summary.team_avg_score}/100 (${summary.passing_count} passed, ${summary.failing_count} needs improvement)\n\n` +
         `Opening ${dateTitleEn} full report page...`;
+  }
+
+  // Month-Aware Monthly Report Routing & Question-Back Clarification
+  if (topic.id === 'report_monthly') {
+    const monthInfo = extractMonthFromQuery(message);
+    if (!monthInfo) {
+      const todayStr = getDhakaDateString();
+      const [curY, curM] = todayStr.split('-').map(Number);
+      const curMonthStr = `${curY}-${String(curM).padStart(2, '0')}`;
+      let prevM = curM - 1;
+      let prevY = curY;
+      if (prevM < 1) {
+        prevM = 12;
+        prevY -= 1;
+      }
+      const prevMonthStr = `${prevY}-${String(prevM).padStart(2, '0')}`;
+      let twoM = curM - 2;
+      let twoY = curY;
+      if (twoM < 1) {
+        twoM += 12;
+        twoY -= 1;
+      }
+      const twoMonthStr = `${twoY}-${String(twoM).padStart(2, '0')}`;
+
+      return {
+        reply: bn
+          ? `📅 **আপনি কোন মাস ও কোন বছরের মাসিক রিপোর্ট দেখতে চান?**\n` +
+            `যেমন লিখুন: "October 2026", "অক্টোবর ২০২৬" বা "গত মাস"।\n\n` +
+            `নিচের অপশনগুলো থেকেও সরাসরি বেছে নিতে পারেন:`
+          : `📅 **Which month and year's report would you like to view?**\n` +
+            `For example, type: "October 2026", "last month", or "2026-09".\n\n` +
+            `You can also pick from the quick options below:`,
+        suggestions: [
+          {
+            href: `/admin/reports/monthly?month=${curMonthStr}`,
+            labelBn: `${BN_MONTHS[curM - 1]} ${toBengaliDigits(curY)} (চলতি মাস)`,
+            labelEn: `${EN_MONTHS[curM - 1]} ${curY} (Current Month)`,
+          },
+          {
+            href: `/admin/reports/monthly?month=${prevMonthStr}`,
+            labelBn: `${BN_MONTHS[prevM - 1]} ${toBengaliDigits(prevY)} (গত মাস)`,
+            labelEn: `${EN_MONTHS[prevM - 1]} ${prevY} (Last Month)`,
+          },
+          {
+            href: `/admin/reports/monthly?month=${twoMonthStr}`,
+            labelBn: `${BN_MONTHS[twoM - 1]} ${toBengaliDigits(twoY)} (২ মাস আগে)`,
+            labelEn: `${EN_MONTHS[twoM - 1]} ${twoY} (2 Months Ago)`,
+          },
+        ],
+        navigate: false,
+      };
+    }
+
+    link = {
+      href: `/admin/reports/monthly?month=${monthInfo.monthStr}`,
+      labelBn: `${monthInfo.labelBn} রিপোর্ট`,
+      labelEn: `${monthInfo.labelEn} Report`,
+    };
+    lead = bn
+      ? `📅 **${monthInfo.labelBn} মাসিক রিপোর্ট পেজ খুলছি...**`
+      : `📅 **Opening ${monthInfo.labelEn} monthly report page...**`;
+  }
+
+  // Clarification Question-Back for Employee Creation
+  if (topic.id === 'add_employee' || (topic.id === 'team' && actions.has('add'))) {
+    const hasNameOrPass = /(?:name|nam|নাম|pass|password|পাসওয়ার্ড|পাসওয়ার্ড)\s*[:=]/i.test(lower);
+    if (!hasNameOrPass && !explainOnly) {
+      return {
+        reply: bn
+          ? `👤 **নতুন কর্মী অ্যাকাউন্ট তৈরি করতে কিছু তথ্য প্রয়োজন:**\n` +
+            `অনুগ্রহ করে কর্মীর নাম এবং একটি প্রাথমিক পাসওয়ার্ড দিন।\n\n` +
+            `💡 যেমন লিখুন: \`create an employee acount name: Hasan pass: 123456\` অথবা \`কর্মী বানাও নাম: রফিক পাস: 123456\`\n\n` +
+            `অথবা সরাসরি কর্মী ব্যবস্থাপনা পেজে গিয়ে ফর্ম পূরণ করতে পারেন:`
+          : `👤 **To create a new employee account, more details are needed:**\n` +
+            `Please provide the employee's name and temporary password.\n\n` +
+            `💡 For example, type: \`create an employee acount name: Hasan pass: 123456\`\n\n` +
+            `Or you can directly fill out the form on the employee management page:`,
+        link: { href: '/admin/employees?add=1', labelBn: 'কর্মী ব্যবস্থাপনা পেজ', labelEn: 'Employee Management Page' },
+        navigate: false,
+      };
+    }
+  }
+
+  // Clarification Question-Back for Password Reset
+  if (topic.id === 'team_password' || (topic.id === 'team' && /(?:password|pass|পাসওয়ার্ড)/i.test(lower))) {
+    const hasDetails = /(?:of|for|to|এর|দাও)\s+[^\s:]+/i.test(lower);
+    if (!hasDetails && !explainOnly) {
+      return {
+        reply: bn
+          ? `🔑 **পাসওয়ার্ড পরিবর্তন করতে কর্মীর নাম ও নতুন পাসওয়ার্ড উল্লেখ করুন:**\n\n` +
+            `💡 যেমন লিখুন: \`set password of Rafiq to 654321\` অথবা \`রফিকের পাসওয়ার্ড দাও 123456\`\n\n` +
+            `অথবা কর্মী পেজে গিয়ে যেকোনো কর্মীর পাশে রিসেট পাসওয়ার্ড চাপুন:`
+          : `🔑 **To reset an employee's password, please specify the details:**\n\n` +
+            `💡 For example, type: \`set password of Rafiq to 654321\`\n\n` +
+            `Or navigate to the employees page and click reset password next to their name:`,
+        link: { href: '/admin/employees', labelBn: 'কর্মী তালিকা', labelEn: 'Employee List' },
+        navigate: false,
+      };
+    }
   }
 
   // Date-Aware Customer / Leads Routing

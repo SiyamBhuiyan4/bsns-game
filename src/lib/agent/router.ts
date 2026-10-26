@@ -36,34 +36,80 @@ export function parseNaturalAction(text: string): { command: string; args: strin
   // 1. Employee Account Creation Action (Run before password reset to avoid collision with "name: X pass: Y")
   // Examples:
   // "create an employee acount name: John Doe pass: secret123 email: john@example.com"
+  // "akkas nam er employee profile banao\nakkas@gmail.com\n000000"
   // "create an employee acount name : this pass that"
   // "creat employe acnt name: John pass: 123456"
   // "notun kormy account banao nam: Rahim pass: 123456"
   // "add employee name: Arif pass: 123456"
   const isEmployeeCreate =
-    /(?:create|creat|crate|add|ad|make|register|ragister|open|new|notun|nutun|notn|নতুন|যুক্ত|যোগ|বানাও)\s+(?:an?\s+)?(?:employee|employe|emplyee|emploee|emploe|empl|staff|kormi|kormy|কর্মী|কর্মচারী)/i.test(lower) ||
-    /(?:employee|employe|emplyee|kormi|kormy|কর্মী)\s*(?:account|acount|acnt|আইডি)?\s*(?:create|creat|add|make|banao|খোলো|তৈরি|বানাও)/i.test(lower);
+    /(?:create|creat|crate|add|ad|make|register|ragister|open|new|notun|nutun|notn|নতুন|যুক্ত|যোগ|বানাও|খোল|খোলো)\s+(?:an?\s+)?(?:employee|employe|emplyee|emploee|emploe|empl|staff|kormi|kormy|কর্মী|কর্মচারী)/i.test(lower) ||
+    /(?:employee|employe|emplyee|kormi|kormy|কর্মী|কর্মচারী|staff)\s*(?:account|acount|acnt|profile|প্রোফাইল|আইডি|id)?\s*(?:create|creat|add|make|banao|খোল|খোলো|তৈরি|বানাও|khulo)/i.test(lower) ||
+    /(?:nam\s*er|namer|নামের|নামে|er\s*jonno|এর\s*জন্য)\s+(?:employee|employe|kormi|কর্মী|কর্মচারী)\s*(?:account|acount|acnt|profile|প্রোফাইল)?\s*(?:banao|banaw|banau|বানাও|তৈরি|create|add)/i.test(lower);
 
-  const hasNameToken = /(?:name|nam|নাম)\s*[:=]/i.test(lower);
-  const hasPassToken = /(?:pass|password|pasword|passwrd|পাসওয়ার্ড|পাসওয়ার্ড)\s*[:=]?/i.test(lower);
+  if (isEmployeeCreate) {
+    // Extract email
+    const emailMatch = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/.exec(text);
+    const email = emailMatch ? emailMatch[1].trim() : '';
 
-  if (isEmployeeCreate && (hasNameToken || hasPassToken)) {
-    // Extract key-values: name, pass, email, phone
-    const nameMatch = /(?:name|nam|নাম)\s*[:=]\s*([^:=]+?)(?=\s+(?:pass|password|pasword|passwrd|email|mail|phone|মোবাইল|পাসওয়ার্ড|পাসওয়ার্ড|ইমেইল)\b|$)/i.exec(text);
-    const passMatch = /(?:pass|password|pasword|passwrd|পাসওয়ার্ড|পাসওয়ার্ড)\s*[:=]?\s*([^\s:=]+)(?=\s+(?:name|nam|email|mail|phone|মোবাইল|নাম|ইমেইল)\b|$)/i.exec(text);
-    const emailMatch = /(?:email|mail|ইমেইল)\s*[:=]?\s*([^\s:=]+)(?=\s+(?:name|nam|pass|password|phone|মোবাইল|নাম|পাসওয়ার্ড)\b|$)/i.exec(text);
-    const phoneMatch = /(?:phone|mobile|ফোন|মোবাইল)\s*[:=]?\s*([^\s:=]+)(?=\s+(?:name|nam|pass|password|email|ইমেইল|নাম|পাসওয়ার্ড)\b|$)/i.exec(text);
+    // Extract phone
+    const phoneMatch = /(?:\+?880|0)?1[3-9]\d{8}\b/.exec(text);
+    const phone = phoneMatch ? phoneMatch[0].trim() : '';
 
-    if (nameMatch && passMatch) {
-      const name = nameMatch[1].trim();
-      const pass = passMatch[1].trim();
-      const email = emailMatch ? emailMatch[1].trim() : '';
-      const phone = phoneMatch ? phoneMatch[1].trim() : '';
+    // Extract name
+    let name = '';
+    const explicitName = /(?:name|nam|নাম)\s*[:=]?\s*([^:=\n]+?)(?=\s+(?:pass|password|pasword|email|phone|মোবাইল|পাসওয়ার্ড)\b|\n|$)/i.exec(text);
+    if (explicitName && !/^(?:banao|banaw|বানাও|koro|করো|add|create)$/i.test(explicitName[1].trim())) {
+      name = explicitName[1].trim();
+    } else {
+      const patternName1 = /([A-Za-z\u0980-\u09ff]+)\s+(?:nam\s*er|namer|নামের|নামে)\s+(?:employee|employe|kormi|কর্মী)/i.exec(text);
+      if (patternName1 && !/^(?:banao|banaw|বানাও|koro|করো|add|create|notun|নতুন)$/i.test(patternName1[1].trim())) {
+        name = patternName1[1].trim();
+      } else {
+        const patternName2 = /([A-Za-z\u0980-\u09ff]+)\s*(?:er|এর)\s+(?:jonno\s+)?(?:employee|employe|kormi|কর্মী)/i.exec(text);
+        if (patternName2 && !/^(?:banao|banaw|বানাও|koro|করো|add|create|notun|নতুন)$/i.test(patternName2[1].trim())) {
+          name = patternName2[1].trim();
+        } else {
+          const patternName3 = /(?:create|add|make|notun|নতুন|বানাও)\s+(?:employee|employe|kormi|কর্মী)\s*(?:banao|banaw|বানাও|খোলো|খোল|profile|account|প্রোফাইল)?\s*([A-Za-z\u0980-\u09ff]+)/i.exec(text);
+          if (patternName3 && !/^(?:banao|banaw|বানাও|koro|করো|add|create|pass|password|email|phone)$/i.test(patternName3[1].trim())) {
+            name = patternName3[1].trim();
+          }
+        }
+      }
+    }
 
+    // Extract password
+    let pass = '';
+    const explicitPass = /(?:pass|password|pasword|passwrd|পাসওয়ার্ড|পাসওয়ার্ড)\s*[:=]?\s*([^\s:=]+)(?=\s+(?:name|nam|email|mail|phone|মোবাইল|নাম|ইমেইল)\b|\n|$)/i.exec(text);
+    if (explicitPass) {
+      pass = explicitPass[1].trim();
+    } else {
+      // Check if there is a standalone token or line that looks like a password (e.g. 000000, 123456, etc.)
+      const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+      for (const line of lines) {
+        if (line !== email && line !== phone && !line.includes(' ') && line.length >= 4 && line.length <= 32) {
+          if (!/^(?:employee|kormi|profile|banao|create|account|staff|profile)$/i.test(line)) {
+            pass = line;
+            break;
+          }
+        }
+      }
+      if (!pass) {
+        const words = text.split(/\s+/).filter(Boolean);
+        for (const w of words) {
+          if (w !== name && w !== email && w !== phone && w.length >= 4 && /^[A-Za-z0-9@#$%^&*_!-]+$/.test(w)) {
+            if (!/^(?:employee|employe|profile|banao|create|account|staff|kormi|namer|nam|gmail|yahoo|hotmail)$/i.test(w)) {
+              pass = w;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    if (name && pass) {
       const args = ['add', `name=${name}`, `password=${pass}`];
       if (email) args.push(`email=${email}`);
       if (phone) args.push(`phone=${phone}`);
-
       return { command: 'team', args };
     }
   }

@@ -166,6 +166,11 @@ export const BN_MONTHS = [
   'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
 ];
 
+export const EN_MONTHS = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
 /**
  * Returns a date string in Asia/Dhaka timezone offset by a number of days.
  * E.g. daysAgo = 1 returns yesterday's YYYY-MM-DD in Dhaka.
@@ -186,19 +191,29 @@ export interface ExtractedDateInfo {
   daysAgo?: number;
 }
 
+export interface ExtractedMonthInfo {
+  monthStr: string; // "YYYY-MM"
+  labelBn: string;
+  labelEn: string;
+  year: number;
+  month: number;
+  isCurrentMonth: boolean;
+  isLastMonth: boolean;
+}
+
 const MONTH_MAP: Record<string, string> = {
-  jan: '01', january: '01', 'জানুয়ারি': '01',
-  feb: '02', february: '02', 'ফেব্রুয়ারি': '02',
+  jan: '01', january: '01', januari: '01', 'জানুয়ারি': '01', 'জানুয়ারি': '01',
+  feb: '02', february: '02', februari: '02', 'ফেব্রুয়ারি': '02', 'ফেব্রুয়ারি': '02',
   mar: '03', march: '03', 'মার্চ': '03',
   apr: '04', april: '04', 'এপ্রিল': '04',
   may: '05', 'মে': '05',
   jun: '06', june: '06', 'জুন': '06',
   jul: '07', july: '07', 'জুলাই': '07',
-  aug: '08', august: '08', 'আগস্ট': '08',
+  aug: '08', august: '08', 'আগস্ট': '08', 'আগষ্ট': '08',
   sep: '09', sept: '09', september: '09', 'সেপ্টেম্বর': '09',
-  oct: '10', october: '10', 'অক্টোবর': '10',
-  nov: '11', november: '11', 'নভেম্বর': '11',
-  dec: '12', december: '12', 'ডিসেম্বর': '12',
+  oct: '10', october: '10', aktober: '10', 'অক্টোবর': '10',
+  nov: '11', november: '11', nobembor: '11', nobember: '11', 'নভেম্বর': '11',
+  dec: '12', december: '12', disembor: '12', disember: '12', 'ডিসেম্বর': '12',
 };
 
 /**
@@ -340,6 +355,127 @@ export function extractDateFromQuery(query: string): ExtractedDateInfo | null {
       isYesterday: dateStr === getDhakaOffsetDateString(1),
       isToday: dateStr === todayStr,
     };
+  }
+
+  return null;
+}
+
+/**
+ * Parses natural language month references (English, Bengali, and Banglish) from a query.
+ * Supports: this month / চলতি মাস, last month / গত মাস, 2 months ago / ২ মাস আগে,
+ * ISO YYYY-MM (e.g. 2026-10), and month name + year (e.g. October 2026, অক্টোবর ২০২৬).
+ * Returns null if no specific month/year was identified (e.g. generic "monthly report").
+ */
+export function extractMonthFromQuery(query: string): ExtractedMonthInfo | null {
+  if (!query) return null;
+  const text = query.replace(/[০-৯]/g, (d) => String(d.charCodeAt(0) - 0x09e6));
+  const lower = text.toLowerCase();
+
+  const todayStr = getDhakaDateString(new Date());
+  const [currentYear, currentMonth] = todayStr.split('-').map(Number);
+
+  // 1. Relative: this month / current month / চলতি মাস / এই মাস / ei mash
+  if (
+    /(?:^|[^\p{L}\p{N}])(?:this\s*month|current\s*month|চলতি\s*মাস|চলতি\s*মাসের|এই\s*মাস|এই\s*মাসের|ei\s*mash|ei\s*masher|ai\s*mash|ai\s*masher|present\s*month)(?:[^\p{L}\p{N}]|$)/iu.test(
+      lower
+    )
+  ) {
+    const monthStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
+    return {
+      monthStr,
+      labelBn: `${BN_MONTHS[currentMonth - 1]} ${toBengaliDigits(currentYear)} (চলতি মাস)`,
+      labelEn: `${EN_MONTHS[currentMonth - 1]} ${currentYear} (Current Month)`,
+      year: currentYear,
+      month: currentMonth,
+      isCurrentMonth: true,
+      isLastMonth: false,
+    };
+  }
+
+  // 2. Relative: last month / previous month / গত মাস / goto mash
+  if (
+    /(?:^|[^\p{L}\p{N}])(?:last\s*month|previous\s*month|prev\s*month|গত\s*মাস|গত\s*মাসের|goto\s*mash|goto\s*masher|ager\s*mash|ager\s*masher|past\s*month)(?:[^\p{L}\p{N}]|$)/iu.test(
+      lower
+    )
+  ) {
+    let lastM = currentMonth - 1;
+    let lastY = currentYear;
+    if (lastM < 1) {
+      lastM = 12;
+      lastY -= 1;
+    }
+    const monthStr = `${lastY}-${String(lastM).padStart(2, '0')}`;
+    return {
+      monthStr,
+      labelBn: `${BN_MONTHS[lastM - 1]} ${toBengaliDigits(lastY)} (গত মাস)`,
+      labelEn: `${EN_MONTHS[lastM - 1]} ${lastY} (Last Month)`,
+      year: lastY,
+      month: lastM,
+      isCurrentMonth: false,
+      isLastMonth: true,
+    };
+  }
+
+  // 3. Relative: 2 months ago / dui mash age / ২ মাস আগে
+  if (
+    /(?:^|[^\p{L}\p{N}])(?:2\s*months?\s*ago|two\s*months?\s*ago|২\s*মাস\s*আগে|dui\s*mash\s*age)(?:[^\p{L}\p{N}]|$)/iu.test(
+      lower
+    )
+  ) {
+    let targetM = currentMonth - 2;
+    let targetY = currentYear;
+    if (targetM < 1) {
+      targetM += 12;
+      targetY -= 1;
+    }
+    const monthStr = `${targetY}-${String(targetM).padStart(2, '0')}`;
+    return {
+      monthStr,
+      labelBn: `${BN_MONTHS[targetM - 1]} ${toBengaliDigits(targetY)}`,
+      labelEn: `${EN_MONTHS[targetM - 1]} ${targetY}`,
+      year: targetY,
+      month: targetM,
+      isCurrentMonth: false,
+      isLastMonth: false,
+    };
+  }
+
+  // 4. ISO YYYY-MM (e.g. 2026-10 or 2026-09)
+  const isoMatch = /(?:^|[^\p{L}\p{N}])(202\d)-(0[1-9]|1[0-2])(?:[^\p{L}\p{N}]|$)/u.exec(lower);
+  if (isoMatch) {
+    const y = Number(isoMatch[1]);
+    const m = Number(isoMatch[2]);
+    const monthStr = `${y}-${String(m).padStart(2, '0')}`;
+    return {
+      monthStr,
+      labelBn: `${BN_MONTHS[m - 1]} ${toBengaliDigits(y)}`,
+      labelEn: `${EN_MONTHS[m - 1]} ${y}`,
+      year: y,
+      month: m,
+      isCurrentMonth: y === currentYear && m === currentMonth,
+      isLastMonth: currentMonth === 1 ? y === currentYear - 1 && m === 12 : y === currentYear && m === currentMonth - 1,
+    };
+  }
+
+  // 5. Month name + Optional Year (e.g. "October 2026", "অক্টোবর ২০২৬", "September", "সেপ্টেম্বর")
+  const monthNameMatch = /(?:^|[^\p{L}\p{N}])(jan(?:uary|uari)?|feb(?:ruary|ruari)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|aktober|nov(?:ember)?|nobembor|nobember|dec(?:ember)?|disembor|disember|জানুয়ারি|জানুয়ারি|ফেব্রুয়ারি|ফেব্রুয়ারি|মার্চ|এপ্রিল|মে|জুন|জুলাই|আগস্ট|আগষ্ট|সেপ্টেম্বর|অক্টোবর|নভেম্বর|ডিসেম্বর)\s*(202\d)?(?:[^\p{L}\p{N}]|$)/iu.exec(lower);
+  if (monthNameMatch) {
+    const rawName = monthNameMatch[1].toLowerCase();
+    const mNumStr = MONTH_MAP[rawName];
+    if (mNumStr) {
+      const m = Number(mNumStr);
+      const y = monthNameMatch[2] ? Number(monthNameMatch[2]) : currentYear;
+      const monthStr = `${y}-${String(m).padStart(2, '0')}`;
+      return {
+        monthStr,
+        labelBn: `${BN_MONTHS[m - 1]} ${toBengaliDigits(y)}`,
+        labelEn: `${EN_MONTHS[m - 1]} ${y}`,
+        year: y,
+        month: m,
+        isCurrentMonth: y === currentYear && m === currentMonth,
+        isLastMonth: currentMonth === 1 ? y === currentYear - 1 && m === 12 : y === currentYear && m === currentMonth - 1,
+      };
+    }
   }
 
   return null;

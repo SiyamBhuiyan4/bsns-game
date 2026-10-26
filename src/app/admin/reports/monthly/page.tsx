@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Calendar,
   Download,
@@ -61,11 +62,30 @@ interface HistoryItem {
 
 const COLORS = ['#059669', '#0EA5E9', '#F59E0B', '#8B5CF6', '#94A3B8', '#64748B'];
 
-export default function MonthlyReportPage() {
+function getOffsetMonth(offsetMonths: number): string {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() - offsetMonths, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function MonthlyReportContent() {
+  const searchParams = useSearchParams();
+  const monthParam = searchParams.get('month');
+
   const [currentMonth, setCurrentMonth] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search).get('month');
+      if (p && /^\d{4}-\d{2}$/.test(p)) return p;
+    }
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+
+  useEffect(() => {
+    if (monthParam && /^\d{4}-\d{2}$/.test(monthParam) && monthParam !== currentMonth) {
+      setCurrentMonth(monthParam);
+    }
+  }, [monthParam, currentMonth]);
 
   const [report, setReport] = useState<MonthlyReportData | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -227,7 +247,42 @@ export default function MonthlyReportPage() {
         }
         subtitle="বিক্রয়, মুনাফা, পোস্ট, সেকশন অর্জন ও বাজেট"
         actions={
-          <>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-0.5 text-xs font-medium">
+              <button
+                type="button"
+                onClick={() => setCurrentMonth(getOffsetMonth(0))}
+                className={`px-2.5 py-1 rounded-md transition-colors ${
+                  currentMonth === getOffsetMonth(0)
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                চলতি মাস
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentMonth(getOffsetMonth(1))}
+                className={`px-2.5 py-1 rounded-md transition-colors ${
+                  currentMonth === getOffsetMonth(1)
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                গত মাস
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentMonth(getOffsetMonth(2))}
+                className={`px-2.5 py-1 rounded-md transition-colors ${
+                  currentMonth === getOffsetMonth(2)
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                ২ মাস আগে
+              </button>
+            </div>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => handleMonthStep(-1)}
@@ -272,7 +327,7 @@ export default function MonthlyReportPage() {
               <Download className="h-4 w-4" />
               PDF
             </a>
-          </>
+          </div>
         }
       />
 
@@ -765,5 +820,19 @@ export default function MonthlyReportPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function MonthlyReportPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+        </div>
+      }
+    >
+      <MonthlyReportContent />
+    </Suspense>
   );
 }
