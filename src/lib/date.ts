@@ -115,3 +115,30 @@ export function formatTaka(
   const result = `৳ ${formatted}`;
   return useBnDigits ? toBengaliDigits(result) : result;
 }
+
+const BN_MONTHS = [
+  'জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন',
+  'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'
+];
+
+/**
+ * Formats a date cleanly in Bengali or English without leaking raw ISO timestamps.
+ * e.g. "২৬ অক্টোবর, ২০২৬" (bn) or "26 Oct, 2026" (en).
+ */
+export function formatDisplayDate(
+  dateInput: string | Date | null | undefined,
+  lang: 'bn' | 'en' = 'bn'
+): string {
+  if (!dateInput) return '';
+  const d = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  if (isNaN(d.getTime())) return '';
+
+  if (lang === 'en') {
+    return format(d, 'dd MMMM, yyyy');
+  }
+
+  const day = toBengaliDigits(d.getDate());
+  const month = BN_MONTHS[d.getMonth()];
+  const year = toBengaliDigits(d.getFullYear());
+  return `${day} ${month}, ${year}`;
+}

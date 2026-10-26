@@ -81,7 +81,15 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
       </span>
       <span className="min-w-0">
         <span className="block truncate text-sm font-semibold text-slate-900">{lang === 'bn' ? brandBn : brandEn}</span>
-        <span className="block text-[11px] font-medium uppercase tracking-wider text-slate-400">{roleLabel}</span>
+        <span className="block text-[11px] font-medium uppercase tracking-wider text-slate-400">
+          {lang === 'bn'
+            ? roleLabel.toLowerCase().includes('marketer')
+              ? 'মার্কেটার'
+              : roleLabel.toLowerCase().includes('admin')
+              ? 'অ্যাডমিন'
+              : roleLabel
+            : roleLabel}
+        </span>
       </span>
     </Link>
   );

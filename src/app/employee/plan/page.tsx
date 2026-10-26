@@ -17,7 +17,7 @@ import {
   RefreshCw,
   AlertCircle,
 } from 'lucide-react';
-import { toBengaliDigits, getDhakaDateString } from '@/lib/date';
+import { toBengaliDigits, getDhakaDateString, formatDisplayDate } from '@/lib/date';
 import { format, parseISO } from 'date-fns';
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
@@ -97,7 +97,20 @@ interface CurrentUser {
 
 export default function EmployeePlanPage() {
   const { lang } = useLanguage();
-  const L = (bn: string, en: string) => (lang === 'en' ? en : bn);
+  const isEn = lang === 'en';
+  const L = (bn: string, en: string) => (isEn ? en : bn);
+  const fmtNum = (val: number | string | undefined | null) => {
+    if (val === undefined || val === null) return '';
+    return isEn ? String(val) : toBengaliDigits(val);
+  };
+  const getCleanPlanTitle = (name: string) => {
+    if (!name) return isEn ? 'Marketing Action Plan' : 'মার্কেটিং কর্মপরিকল্পনা';
+    const match = name.match(/^(.*?)\s*\((.*?)\)$/);
+    if (match) {
+      return isEn ? match[2].trim() : match[1].trim();
+    }
+    return name;
+  };
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [stats, setStats] = useState<PlanStats | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
@@ -186,23 +199,25 @@ export default function EmployeePlanPage() {
     <div className="space-y-6">
       <PageHeader
         icon={<CalendarCheck className="h-5 w-5" />}
-        title={plan.name}
+        title={getCleanPlanTitle(plan.name)}
         subtitle={
           <span className="inline-flex items-center gap-1.5">
             <Calendar className="h-3.5 w-3.5 text-slate-400" />
-            {L('শুরু', 'Start')}: {format(parseISO(plan.start_date), 'dd MMMM, yyyy')} ({toBengaliDigits(plan.start_date)})
+            {isEn ? 'Start' : 'শুরু'}: {formatDisplayDate(plan.start_date, lang)}
           </span>
         }
         actions={
           <>
             <span className="badge badge-blue">
               <Clock className="h-3 w-3" />
-              দিন {toBengaliDigits(stats?.current_day || 1)} / {toBengaliDigits(totalPlanDays)} · ফেজ {toBengaliDigits(stats?.current_phase_order || 1)}
+              {isEn
+                ? `Day ${stats?.current_day || 1} / ${totalPlanDays} · Phase ${stats?.current_phase_order || 1}`
+                : `দিন ${fmtNum(stats?.current_day || 1)} / ${fmtNum(totalPlanDays)} · ফেজ ${fmtNum(stats?.current_phase_order || 1)}`}
             </span>
             {stats && stats.overdue_tasks > 0 ? (
               <span className="badge badge-red">
                 <AlertTriangle className="h-3 w-3" />
-                {lang === 'en' ? `${stats.overdue_tasks} overdue` : `${toBengaliDigits(stats.overdue_tasks)}টি বিলম্বিত`}
+                {isEn ? `${stats.overdue_tasks} overdue` : `${fmtNum(stats.overdue_tasks)}টি বিলম্বিত`}
               </span>
             ) : (
               <span className="badge badge-gray">
@@ -223,10 +238,10 @@ export default function EmployeePlanPage() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
-                {L('অ্যাডমিনের দিকনির্দেশনা ও লক্ষ্য', "Admin's Guidance & Phase Goal")}
+                {L('অ্যাডমিনের দিকনির্দেশনা ও লক্ষ্য', "ADMIN'S GUIDANCE & PHASE GOAL")}
               </span>
-              <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-white/10 text-slate-200">
-                {activePhase?.name_bn}
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-slate-200">
+                {isEn ? (activePhase?.name_en || activePhase?.name_bn) : activePhase?.name_bn}
               </span>
             </div>
             <p className="text-sm font-semibold text-slate-100 mt-1">
@@ -238,7 +253,7 @@ export default function EmployeePlanPage() {
             </p>
             <p className="text-xs text-slate-400 mt-1">
               {L(
-                'টাস্ক পরিবর্তন বা নতুন অ্যাসাইনমেন্টের জন্য হেড অব মার্কেটিংয়ের সাথে যোগাযোগ করুন।',
+                'শুধু কর্মীদের দেখার জন্য; টাস্ক পরিবর্তনের জন্য হেড অব মার্কেটিংয়ের সাথে যোগাযোগ করুন।',
                 'Read-only view for employees. Contact Head of Marketing for task re-assignments.'
               )}
             </p>
@@ -251,10 +266,10 @@ export default function EmployeePlanPage() {
         <div className="flex items-center justify-between text-sm">
           <span className="flex items-center gap-1.5 font-medium text-slate-700">
             <TrendingUp className="h-4 w-4 text-slate-400" />
-            {L('সার্বিক অগ্রগতি', 'Overall progress')}
+            {L('সার্বিক অগ্রগতি', 'Overall Progress')}
           </span>
           <span className="text-lg font-semibold text-brand-700 tabular-nums">
-            {toBengaliDigits(stats?.overall_progress || 0)}%
+            {fmtNum(stats?.overall_progress || 0)}%
           </span>
         </div>
         <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
@@ -264,8 +279,8 @@ export default function EmployeePlanPage() {
           ></div>
         </div>
         <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-          <span>{L('মোট টাস্ক', 'Total')}: {toBengaliDigits(stats?.total_tasks || 0)}</span>
-          <span>{L('সম্পন্ন', 'Done')}: {toBengaliDigits(stats?.completed_tasks || 0)}</span>
+          <span>{L('মোট টাস্ক', 'Total Tasks')}: {fmtNum(stats?.total_tasks || 0)}</span>
+          <span>{L('সম্পন্ন', 'Completed')}: {fmtNum(stats?.completed_tasks || 0)}</span>
         </div>
       </div>
 
@@ -291,7 +306,9 @@ export default function EmployeePlanPage() {
             >
               <div className="flex w-full items-center justify-between gap-2">
                 <span className="badge badge-gray">
-                  দিন {toBengaliDigits(phase.day_start)}–{toBengaliDigits(phase.day_end)}
+                  {isEn
+                    ? `Days ${phase.day_start}–${phase.day_end}`
+                    : `দিন ${fmtNum(phase.day_start)}–${fmtNum(phase.day_end)}`}
                 </span>
                 {isSystemCurrentPhase && (
                   <span className="badge badge-green">
@@ -302,20 +319,23 @@ export default function EmployeePlanPage() {
               </div>
 
               <div className="mt-3">
-                <div className="text-[15px] font-semibold text-slate-900">{phase.name_bn}</div>
-                <div className="mt-0.5 text-xs text-slate-500">{phase.name_en}</div>
+                <div className="text-[15px] font-semibold text-slate-900">
+                  {isEn ? (phase.name_en || phase.name_bn) : phase.name_bn}
+                </div>
               </div>
 
               <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
                 <span className="text-slate-500">
                   <span className="font-medium text-slate-700 tabular-nums">
-                    {toBengaliDigits(phaseCompleted)}/{toBengaliDigits(phaseTotal)}
+                    {fmtNum(phaseCompleted)}/{fmtNum(phaseTotal)}
                   </span>
                   {myTasksInPhase > 0 && (
-                    <span className="ml-1 text-brand-700">({toBengaliDigits(myTasksInPhase)}টি আপনার)</span>
+                    <span className="ml-1 text-brand-700">
+                      ({isEn ? `${myTasksInPhase} yours` : `${fmtNum(myTasksInPhase)}টি আপনার`})
+                    </span>
                   )}
                 </span>
-                <span className="font-medium text-brand-700 tabular-nums">{toBengaliDigits(phasePct)}%</span>
+                <span className="font-medium text-brand-700 tabular-nums">{fmtNum(phasePct)}%</span>
               </div>
             </button>
           );
@@ -332,8 +352,8 @@ export default function EmployeePlanPage() {
                   <Award className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="card-subtitle">{L('ফেজ', 'Phase')} {toBengaliDigits(activePhase.order_no)} {L('মাইলস্টোন', 'Milestone')}</p>
-                  <h3 className="card-title">{activeMilestone?.title_bn || 'মাইলস্টোন বিবরণ'}</h3>
+                  <p className="card-subtitle">{L('ফেজ', 'Phase')} {fmtNum(activePhase.order_no)} {L('মাইলস্টোন', 'Milestone')}</p>
+                  <h3 className="card-title">{activeMilestone?.title_bn || L('মাইলস্টোন বিবরণ', 'Milestone Details')}</h3>
                 </div>
               </div>
               <span className={`badge ${milestoneBadge}`}>
@@ -345,12 +365,12 @@ export default function EmployeePlanPage() {
             </div>
             <div className="card-body space-y-3 text-sm">
               <div>
-                <div className="text-xs font-medium text-slate-500">{L('প্রত্যাশিত ফলাফল', 'Expected')}</div>
+                <div className="text-xs font-medium text-slate-500">{L('প্রত্যাশিত ফলাফল', 'Expected Result')}</div>
                 <div className="mt-0.5 text-slate-800">{activeMilestone?.expected_result}</div>
               </div>
               {activeMilestone?.achieved_result && (
                 <div className="border-t border-slate-100 pt-3">
-                  <div className="text-xs font-medium text-slate-500">{L('অর্জিত অগ্রগতি', 'Achieved')}</div>
+                  <div className="text-xs font-medium text-slate-500">{L('অর্জিত ফলাফল', 'Achieved Result')}</div>
                   <div className="mt-0.5 text-slate-800">{activeMilestone.achieved_result}</div>
                 </div>
               )}
@@ -362,8 +382,10 @@ export default function EmployeePlanPage() {
             <div className="card-header">
               <div className="min-w-0">
                 <h2 className="card-title flex items-center gap-2">
-                  <span className="truncate">{activePhase.name_bn} · টাস্ক</span>
-                  <span className="badge badge-gray tabular-nums">{toBengaliDigits(displayTasks.length)}</span>
+                  <span className="truncate">
+                    {isEn ? (activePhase.name_en || activePhase.name_bn) : activePhase.name_bn} · {L('টাস্ক', 'Tasks')}
+                  </span>
+                  <span className="badge badge-gray tabular-nums">{fmtNum(displayTasks.length)}</span>
                 </h2>
                 <p className="card-subtitle">{L('এই ফেজের কাজ ও দায়িত্ব', 'Tasks in this phase')}</p>
               </div>
@@ -376,8 +398,8 @@ export default function EmployeePlanPage() {
                 >
                   <Filter className="h-3.5 w-3.5" />
                   {filterOnlyMyTasks
-                    ? L('সকল টাস্ক', 'All tasks')
-                    : `${L('শুধু আমার', 'Mine')} (${toBengaliDigits(myAssignedCountInCurrentPhase)})`}
+                    ? L('সকল টাস্ক', 'All Tasks')
+                    : `${L('শুধু আমার', 'Mine')} (${fmtNum(myAssignedCountInCurrentPhase)})`}
                 </button>
               )}
             </div>
@@ -437,13 +459,14 @@ export default function EmployeePlanPage() {
                             )}
                             <span className="inline-flex items-center gap-1 text-xs text-slate-500 tabular-nums">
                               <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                              {task.due_date ? format(new Date(task.due_date), 'dd MMM, yyyy') : 'তারিখ নেই'}
+                              {task.due_date ? formatDisplayDate(task.due_date, lang) : L('তারিখ নেই', 'No date')}
                             </span>
                           </div>
 
                           <div>
-                            <h4 className="text-sm font-medium leading-snug text-slate-900">{task.title_bn}</h4>
-                            <p className="mt-0.5 text-xs text-slate-500">{task.title_en}</p>
+                            <h4 className="text-sm font-medium leading-snug text-slate-900">
+                              {isEn ? (task.title_en || task.title_bn) : task.title_bn}
+                            </h4>
                             {task.description && <p className="mt-1 text-sm text-slate-600">{task.description}</p>}
                           </div>
 
@@ -459,15 +482,15 @@ export default function EmployeePlanPage() {
                           <div className="min-w-0 text-xs sm:min-w-32">
                             <span className="mb-0.5 block text-[11px] text-slate-500">{L('দায়িত্বপ্রাপ্ত', 'Owner')}</span>
                             <div className="truncate font-medium text-slate-800">
-                              {task.owner ? task.owner.name : <span className="italic text-slate-400">অবণ্টিত</span>}
+                              {task.owner ? task.owner.name : <span className="italic text-slate-400">{L('অবণ্টিত', 'Unassigned')}</span>}
                             </div>
                           </div>
 
                           <div className="sm:w-36">
                             <div className="mb-1 flex items-center justify-between text-[11px] text-slate-500">
-                              <span>অগ্রগতি</span>
+                              <span>{L('অগ্রগতি', 'Progress')}</span>
                               <span className="font-medium text-brand-700 tabular-nums">
-                                {toBengaliDigits(task.progress_percent)}%
+                                {fmtNum(task.progress_percent)}%
                               </span>
                             </div>
                             <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">

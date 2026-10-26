@@ -19,11 +19,12 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { toBengaliDigits, getDhakaDateString } from '@/lib/date';
+import { toBengaliDigits, getDhakaDateString, formatDisplayDate } from '@/lib/date';
 import { format, parseISO } from 'date-fns';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
+import { useLanguage } from '@/components/LanguageContext';
 
 interface Owner {
   id: string;
@@ -99,6 +100,21 @@ function getErrorMessage(err: unknown, fallback: string = 'ত্রুটি �
 }
 
 export default function AdminPlanPage() {
+  const { lang } = useLanguage();
+  const isEn = lang === 'en';
+  const L = (bn: string, en: string) => (isEn ? en : bn);
+  const fmtNum = (val: number | string | undefined | null) => {
+    if (val === undefined || val === null) return '';
+    return isEn ? String(val) : toBengaliDigits(val);
+  };
+  const getCleanPlanTitle = (name: string) => {
+    if (!name) return isEn ? 'Marketing Action Plan' : 'মার্কেটিং কর্মপরিকল্পনা';
+    const match = name.match(/^(.*?)\s*\((.*?)\)$/);
+    if (match) {
+      return isEn ? match[2].trim() : match[1].trim();
+    }
+    return name;
+  };
   const [plan, setPlan] = useState<PlanData | null>(null);
   const [stats, setStats] = useState<PlanStats | null>(null);
   const [employees, setEmployees] = useState<Owner[]>([]);
@@ -527,6 +543,8 @@ export default function AdminPlanPage() {
     );
   }
 
+  const totalPlanDays = plan?.phases.reduce((max, p) => Math.max(max, p.day_end), 90) || 90;
+
   return (
     <div className="space-y-6">
       {toastMessage && (
@@ -549,13 +567,13 @@ export default function AdminPlanPage() {
         icon={<CalendarCheck className="h-5 w-5" />}
         title={
           <span className="flex flex-wrap items-center gap-2">
-            {plan.name}
+            {getCleanPlanTitle(plan.name)}
             {!isEditingPlan && (
               <button
                 onClick={() => setIsEditingPlan(true)}
                 className="btn-icon"
-                title="নাম ও শুরুর তারিখ পরিবর্তন"
-                aria-label="নাম ও শুরুর তারিখ পরিবর্তন"
+                title={L('নাম ও শুরুর তারিখ পরিবর্তন', 'Edit name & start date')}
+                aria-label={L('নাম ও শুরুর তারিখ পরিবর্তন', 'Edit name & start date')}
               >
                 <Edit2 className="h-4 w-4" />
               </button>
@@ -564,19 +582,21 @@ export default function AdminPlanPage() {
         }
         subtitle={
           <span className="inline-flex items-center gap-1.5">
-            <Calendar className="h-3.5 w-3.5" />
-            ৯০ দিনের প্ল্যান · শুরু {format(parseISO(plan.start_date), 'dd MMM yyyy')}
+            <Calendar className="h-3.5 w-3.5 text-slate-400" />
+            {isEn
+              ? `${totalPlanDays} Days Plan · Start: ${formatDisplayDate(plan.start_date, 'en')}`
+              : `${fmtNum(totalPlanDays)} দিনের প্ল্যান · শুরু: ${formatDisplayDate(plan.start_date, 'bn')}`}
           </span>
         }
         actions={
           <>
             <button type="button" onClick={expandAllPhases} className="btn btn-secondary btn-sm">
               <ChevronDown className="h-3.5 w-3.5" />
-              সব খুলুন
+              {L('সব খুলুন', 'Expand All')}
             </button>
             <button type="button" onClick={collapseAllPhases} className="btn btn-secondary btn-sm">
               <ChevronUp className="h-3.5 w-3.5" />
-              সব বন্ধ
+              {L('সব বন্ধ', 'Collapse All')}
             </button>
           </>
         }
@@ -611,11 +631,11 @@ export default function AdminPlanPage() {
           </div>
           <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-3">
             <button onClick={() => setIsEditingPlan(false)} className="btn btn-secondary btn-sm">
-              বাতিল
+              {L('বাতিল', 'Cancel')}
             </button>
             <button disabled={submitting} onClick={handleUpdatePlanHeader} className="btn btn-primary btn-sm">
               {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              সংরক্ষণ
+              {L('সংরক্ষণ করুন', 'Save')}
             </button>
           </div>
         </div>
@@ -623,15 +643,15 @@ export default function AdminPlanPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="চলমান দিন"
-          value={`${toBengaliDigits(stats?.current_day || 1)} / ৯০`}
-          note={`ফেজ ${toBengaliDigits(stats?.current_phase_order || 1)} সক্রিয়`}
+          label={L('চলমান দিন', 'Current Day')}
+          value={isEn ? `${stats?.current_day || 1} / ${totalPlanDays}` : `${fmtNum(stats?.current_day || 1)} / ${fmtNum(totalPlanDays)}`}
+          note={isEn ? `Phase ${stats?.current_phase_order || 1} active` : `ফেজ ${fmtNum(stats?.current_phase_order || 1)} সক্রিয়`}
           icon={<Clock className="h-4 w-4" />}
           tone="blue"
         />
         <StatCard
-          label="সার্বিক অগ্রগতি"
-          value={`${toBengaliDigits(stats?.overall_progress || 0)}%`}
+          label={L('সার্বিক অগ্রগতি', 'Overall Progress')}
+          value={`${fmtNum(stats?.overall_progress || 0)}%`}
           note={
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
               <div
@@ -644,15 +664,15 @@ export default function AdminPlanPage() {
           tone="brand"
         />
         <StatCard
-          label="সম্পন্ন টাস্ক"
-          value={`${toBengaliDigits(stats?.completed_tasks || 0)} / ${toBengaliDigits(stats?.total_tasks || 0)}`}
+          label={L('সম্পন্ন টাস্ক', 'Completed Tasks')}
+          value={isEn ? `${stats?.completed_tasks || 0} / ${stats?.total_tasks || 0}` : `${fmtNum(stats?.completed_tasks || 0)} / ${fmtNum(stats?.total_tasks || 0)}`}
           icon={<CheckCircle2 className="h-4 w-4" />}
           tone="violet"
         />
         <StatCard
-          label="বিলম্বিত টাস্ক"
-          value={toBengaliDigits(stats?.overdue_tasks || 0)}
-          note={stats && stats.overdue_tasks > 0 ? 'দ্রুত ব্যবস্থা নিন' : 'কোনো বিলম্ব নেই'}
+          label={L('বিলম্বিত টাস্ক', 'Overdue Tasks')}
+          value={fmtNum(stats?.overdue_tasks || 0)}
+          note={stats && stats.overdue_tasks > 0 ? L('দ্রুত ব্যবস্থা নিন', 'Requires action') : L('কোনো বিলম্ব নেই', 'None overdue')}
           icon={<AlertTriangle className="h-4 w-4" />}
           tone={stats && stats.overdue_tasks > 0 ? 'red' : 'gray'}
         />
@@ -683,15 +703,19 @@ export default function AdminPlanPage() {
               >
                 <div className="flex min-w-0 items-start gap-3">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-semibold text-slate-700">
-                    {toBengaliDigits(phase.order_no)}
+                    {fmtNum(phase.order_no)}
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-[15px] font-semibold text-slate-900">{phase.name_bn}</h3>
-                      {isSystemCurrentPhase && <span className="badge badge-green">চলমান</span>}
+                      <h3 className="text-[15px] font-semibold text-slate-900">
+                        {isEn ? (phase.name_en || phase.name_bn) : phase.name_bn}
+                      </h3>
+                      {isSystemCurrentPhase && <span className="badge badge-green">{L('চলমান', 'Current')}</span>}
                     </div>
                     <p className="mt-0.5 text-xs text-slate-500">
-                      {phase.name_en} · দিন {toBengaliDigits(phase.day_start)}–{toBengaliDigits(phase.day_end)}
+                      {isEn
+                        ? `Days ${phase.day_start}–${phase.day_end}`
+                        : `দিন ${fmtNum(phase.day_start)}–${fmtNum(phase.day_end)}`}
                     </p>
                   </div>
                 </div>
@@ -699,8 +723,8 @@ export default function AdminPlanPage() {
                 <div className="flex shrink-0 items-center justify-between gap-4 md:justify-end">
                   <div className="text-right">
                     <div className="text-xs text-slate-500">
-                      টাস্ক {toBengaliDigits(phaseCompleted)}/{toBengaliDigits(phaseTotal)}
-                      <span className="ml-2 font-semibold text-slate-900">{toBengaliDigits(phasePct)}%</span>
+                      {L('টাস্ক', 'Tasks')} {fmtNum(phaseCompleted)}/{fmtNum(phaseTotal)}
+                      <span className="ml-2 font-semibold text-slate-900">{fmtNum(phasePct)}%</span>
                     </div>
                     <div className="mt-1.5 h-1.5 w-28 overflow-hidden rounded-full bg-slate-100">
                       <div
@@ -722,19 +746,19 @@ export default function AdminPlanPage() {
                     <div className="min-w-0 flex-1 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
                         <Award className="h-4 w-4 text-slate-400" />
-                        <span className="text-xs font-medium text-slate-500">মাইলস্টোন</span>
+                        <span className="text-xs font-medium text-slate-500">{L('মাইলস্টোন', 'Milestone')}</span>
                         {milestoneBadge(phaseMilestone?.status)}
                       </div>
                       <h4 className="text-sm font-semibold text-slate-900">
-                        {phaseMilestone?.title_bn || 'মাইলস্টোন'}
+                        {phaseMilestone?.title_bn || L('মাইলস্টোন', 'Milestone')}
                       </h4>
                       <p className="text-sm text-slate-600">
-                        <span className="text-slate-500">প্রত্যাশিত: </span>
+                        <span className="text-slate-500">{L('প্রত্যাশিত:', 'Expected:')} </span>
                         {phaseMilestone?.expected_result}
                       </p>
                       {phaseMilestone?.achieved_result && (
                         <p className="text-sm text-slate-700">
-                          <span className="text-slate-500">অর্জিত: </span>
+                          <span className="text-slate-500">{L('অর্জিত:', 'Achieved:')} </span>
                           {phaseMilestone.achieved_result}
                         </p>
                       )}
