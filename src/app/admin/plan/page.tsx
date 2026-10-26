@@ -16,7 +16,6 @@ import {
   FileText,
   AlertCircle,
   Loader2,
-  RefreshCw,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
@@ -502,8 +501,25 @@ export default function AdminPlanPage() {
           title="প্ল্যান ডাটা পাওয়া যায়নি"
           description="সার্ভারের সাথে সংযোগ হয়নি। আবার চেষ্টা করুন।"
           action={
-            <button onClick={fetchPlanData} className="btn btn-primary">
-              <RefreshCw className="h-4 w-4" /> আবার চেষ্টা করুন
+            <button
+              onClick={async () => {
+                setLoading(true);
+                try {
+                  await fetch('/api/plan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      name: 'বিস্তারিত মার্কেটিং কর্মপরিকল্পনা (Marketing Action Plan)',
+                    }),
+                  });
+                  fetchPlanData();
+                } catch {
+                  fetchPlanData();
+                }
+              }}
+              className="btn btn-primary"
+            >
+              <Plus className="h-4 w-4" /> কর্মপরিকল্পনা তৈরি করুন (Create Action Plan)
             </button>
           }
         />

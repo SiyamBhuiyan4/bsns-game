@@ -114,20 +114,20 @@ describe('Scheduled Jobs / Cron Engine (Section 1 and Acceptance Test 18)', () =
 
       const answers = savedReport!.answers;
       expect(answers[0].question_no).toBe(1);
-      expect(answers[0].question_text).toBe('চলতি সপ্তাহের সবচেয়ে বড় সাফল্য কি ছিল?');
+      expect(answers[0].question_text).toBe('কোন পণ্য সবচেয়ে বেশি বিক্রি হয়েছে?');
       expect(answers[0].answer_text).toBe('');
 
       expect(answers[1].question_no).toBe(2);
-      expect(answers[1].question_text).toBe('কোথায় সবচেয়ে বেশি চ্যালেঞ্জ বা বাধা এসেছে?');
+      expect(answers[1].question_text).toBe('কোন বিজ্ঞাপন থেকে সবচেয়ে ভালো মানের ক্রেতা এসেছে?');
 
       expect(answers[2].question_no).toBe(3);
-      expect(answers[2].question_text).toBe('কোন চ্যানেল বা পণ্যে বাজেটের অপচয় মনে হয়েছে?');
+      expect(answers[2].question_text).toBe('কোন সম্ভাব্য ক্রেতার অর্ডার এখনো সম্পন্ন হয়নি?');
 
       expect(answers[3].question_no).toBe(4);
-      expect(answers[3].question_text).toBe('পরবর্তী সপ্তাহের প্রধান ৩টি অগ্রাধিকার কি কি?');
+      expect(answers[3].question_text).toBe('কোন পণ্যের স্টক, মূল্য, সরবরাহ বা গ্রাহকসেবার সমস্যা বিক্রিতে বাধা দিচ্ছে?');
 
       expect(answers[4].question_no).toBe(5);
-      expect(answers[4].question_text).toBe('টিমের কোনো সদস্যের বিশেষ সহায়তা বা দিকনির্দেশনা প্রয়োজন কি?');
+      expect(answers[4].question_text).toBe('পরবর্তী সপ্তাহে কোন তিনটি কাজ বিক্রি ও লাভ বৃদ্ধিতে সবচেয়ে বেশি সাহায্য করবে?');
 
       // Also ensure match with WEEKLY_FIXED_QUESTIONS
       WEEKLY_FIXED_QUESTIONS.forEach((q, idx) => {

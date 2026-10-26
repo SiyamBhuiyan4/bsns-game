@@ -2,11 +2,11 @@
 
 import type { ReactNode } from 'react';
 import {
-  BarChart3, Users, Layers, Target, FileText, Sprout,
+  BarChart3, Users, Layers, Target, FileText, CalendarCheck, Sprout,
 } from 'lucide-react';
 import AppShell, { type NavGroup } from '@/components/AppShell';
 
-// Restructured clean admin navigation: Dashboard, Employees, Groups, Target, Reports
+// Restructured clean admin navigation: Dashboard, Employees, Groups, Target, Reports, Action Plan
 const navGroups: NavGroup[] = [
   {
     key: 'core',
@@ -18,6 +18,7 @@ const navGroups: NavGroup[] = [
       { href: '/admin/sections', key: 'admin_nav.groups', labelBn: 'গ্রুপ ও লিংক', labelEn: 'Groups & Links', icon: Layers },
       { href: '/admin/targets', key: 'admin_nav.targets', labelBn: 'টার্গেট বণ্টন', labelEn: 'Targets', icon: Target },
       { href: '/admin/reports/daily', key: 'admin_nav.reports', labelBn: 'রিপোর্ট', labelEn: 'Reports', icon: FileText },
+      { href: '/admin/plan', key: 'admin_nav.plan', labelBn: 'কর্মপরিকল্পনা', labelEn: 'Action Plan', icon: CalendarCheck },
     ],
   },
 ];

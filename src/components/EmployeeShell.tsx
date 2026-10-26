@@ -25,7 +25,7 @@ const navGroups: NavGroup[] = [
       { href: '/employee/daily-entry', key: 'emp_nav.daily_entry', labelBn: 'দৈনিক এন্ট্রি', labelEn: 'Daily Entry', icon: FileSpreadsheet },
       { href: '/employee/performance', key: 'emp_nav.performance', labelBn: 'পারফরম্যান্স', labelEn: 'Performance', icon: TrendingUp },
       { href: '/employee/leaderboard', key: 'emp_nav.leaderboard', labelBn: 'লিডারবোর্ড', labelEn: 'Leaderboard', icon: Trophy },
-      { href: '/employee/plan', key: 'emp_nav.plan', labelBn: '৯০ দিনের প্ল্যান', labelEn: '90-Day Plan', icon: CalendarCheck },
+      { href: '/employee/plan', key: 'emp_nav.plan', labelBn: 'কর্মপরিকল্পনা', labelEn: 'Action Plan', icon: CalendarCheck },
     ],
   },
 ];

@@ -332,7 +332,7 @@ export function computePlanMetrics(
  * and computed stats.
  */
 export async function getActivePlan(currentDate: Date = new Date()) {
-  const plan = await prisma.plan.findFirst({
+  let plan = await prisma.plan.findFirst({
     where: { status: PlanStatus.ACTIVE },
     orderBy: { created_at: 'desc' },
     include: {
@@ -386,6 +386,78 @@ export async function getActivePlan(currentDate: Date = new Date()) {
       },
     },
   });
+
+  if (!plan) {
+    try {
+      const admin = await prisma.user.findFirst({
+        where: { role: UserRole.ADMIN, is_active: true },
+        orderBy: { created_at: 'asc' },
+      });
+      if (admin) {
+        await createDefaultPlan(
+          admin.id,
+          undefined,
+          'বিস্তারিত মার্কেটিং কর্মপরিকল্পনা (Marketing Action Plan)'
+        );
+        plan = await prisma.plan.findFirst({
+          where: { status: PlanStatus.ACTIVE },
+          orderBy: { created_at: 'desc' },
+          include: {
+            creator: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                role: true,
+              },
+            },
+            phases: {
+              orderBy: { order_no: 'asc' },
+              include: {
+                tasks: {
+                  orderBy: [{ due_date: 'asc' }, { created_at: 'asc' }],
+                  include: {
+                    owner: {
+                      select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        phone: true,
+                        role: true,
+                      },
+                    },
+                  },
+                },
+                milestones: {
+                  orderBy: { title_bn: 'asc' },
+                },
+              },
+            },
+            tasks: {
+              orderBy: [{ due_date: 'asc' }, { created_at: 'asc' }],
+              include: {
+                owner: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    phone: true,
+                    role: true,
+                  },
+                },
+              },
+            },
+            milestones: {
+              orderBy: { title_bn: 'asc' },
+            },
+          },
+        });
+      }
+    } catch (err) {
+      console.error('Error auto-initializing plan in getActivePlan:', err);
+    }
+  }
 
   if (!plan) {
     return null;

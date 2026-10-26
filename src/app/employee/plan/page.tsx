@@ -180,6 +180,8 @@ export default function EmployeePlanPage() {
   const taskBadge = (s: PlanTask['status']) =>
     s === 'DONE' ? 'badge-green' : s === 'IN_PROGRESS' ? 'badge-blue' : s === 'BLOCKED' ? 'badge-red' : 'badge-gray';
 
+  const totalPlanDays = plan.phases.reduce((max, p) => Math.max(max, p.day_end), 90);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -195,7 +197,7 @@ export default function EmployeePlanPage() {
           <>
             <span className="badge badge-blue">
               <Clock className="h-3 w-3" />
-              দিন {toBengaliDigits(stats?.current_day || 1)} / ৯০ · ফেজ {toBengaliDigits(stats?.current_phase_order || 1)}
+              দিন {toBengaliDigits(stats?.current_day || 1)} / {toBengaliDigits(totalPlanDays)} · ফেজ {toBengaliDigits(stats?.current_phase_order || 1)}
             </span>
             {stats && stats.overdue_tasks > 0 ? (
               <span className="badge badge-red">
@@ -212,11 +214,36 @@ export default function EmployeePlanPage() {
         }
       />
 
-      <div className="alert alert-info">
-        <Info className="mt-0.5 h-4 w-4 shrink-0" />
-        <span>
-          {L('শুধু দেখার জন্য; টাস্ক বদলাতে হেড অব মার্কেটিংয়ের সাথে যোগাযোগ করুন।', 'Read-only — contact the Head of Marketing to update tasks.')}
-        </span>
+      {/* Admin's Strategic Guidance & Objectives Callout */}
+      <div className="rounded-2xl border border-indigo-500/20 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 text-white shadow-md">
+        <div className="flex items-start gap-3">
+          <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 shrink-0 mt-0.5">
+            <Award className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                {L('অ্যাডমিনের দিকনির্দেশনা ও লক্ষ্য', "Admin's Guidance & Phase Goal")}
+              </span>
+              <span className="px-2 py-0.2 rounded-full text-[10px] font-semibold bg-white/10 text-slate-200">
+                {activePhase?.name_bn}
+              </span>
+            </div>
+            <p className="text-sm font-semibold text-slate-100 mt-1">
+              {activeMilestone?.expected_result ||
+                L(
+                  'নির্ধারিত সময়সীমার মধ্যে সকল টাস্ক সম্পন্ন করে ব্যবসার বেসলাইন ও লক্ষ্য অর্জন করুন।',
+                  'Complete all assigned milestone tasks within deadline to achieve the targeted business growth.'
+                )}
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              {L(
+                'টাস্ক পরিবর্তন বা নতুন অ্যাসাইনমেন্টের জন্য হেড অব মার্কেটিংয়ের সাথে যোগাযোগ করুন।',
+                'Read-only view for employees. Contact Head of Marketing for task re-assignments.'
+              )}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Overall progress */}

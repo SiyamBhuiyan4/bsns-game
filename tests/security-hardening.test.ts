@@ -295,14 +295,14 @@ describe('Section 11: Security & Rate Limiting Hardening Tests', () => {
       expect(res.status).toBe(200);
     });
 
-    it('should redirect unauthenticated users visiting /admin page routes to /login', async () => {
+    it('should redirect unauthenticated users visiting /admin page routes to /admin-login', async () => {
       const req = new NextRequest('http://localhost:3000/admin/dashboard');
       const res = await middleware(req);
       expect(res.status).toBe(307);
-      expect(res.headers.get('location')).toContain('/login');
+      expect(res.headers.get('location')).toContain('/admin-login');
     });
 
-    it('should redirect Employee visiting /admin page routes to /employee/my-work', async () => {
+    it('should redirect Employee visiting /admin page routes to /employee/dashboard', async () => {
       const req = new NextRequest('http://localhost:3000/admin/dashboard', {
         headers: {
           cookie: `auth_token=${employeeTokenA}`,
@@ -310,7 +310,7 @@ describe('Section 11: Security & Rate Limiting Hardening Tests', () => {
       });
       const res = await middleware(req);
       expect(res.status).toBe(307);
-      expect(res.headers.get('location')).toContain('/employee/my-work');
+      expect(res.headers.get('location')).toContain('/employee/dashboard');
     });
   });
 

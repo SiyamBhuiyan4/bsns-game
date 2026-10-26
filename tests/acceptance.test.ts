@@ -24,7 +24,7 @@ import {
 } from '../src/lib/reports';
 import { createAuditLog } from '../src/lib/audit';
 import { normalizePhone, isValidBdPhone } from '../src/lib/phone';
-import { isTaskOverdue, getOverdueTasks } from '../src/lib/plan';
+import { isTaskOverdue, getOverdueTasks, getActivePlan } from '../src/lib/plan';
 import {
   MetricType,
   PeriodType,
@@ -807,16 +807,8 @@ not-a-valid-http-url,Invalid URL Row`;
     });
 
     if (!activePlan) {
-      activePlan = await prisma.plan.findFirst({
-        where: { status: PlanStatus.ACTIVE },
-        orderBy: { created_at: 'desc' },
-        include: {
-          phases: {
-            orderBy: { order_no: 'asc' },
-            include: { tasks: true },
-          },
-        },
-      });
+      const activeRes = await getActivePlan();
+      activePlan = (activeRes?.plan ?? null) as any;
     }
 
     expect(activePlan).toBeDefined();

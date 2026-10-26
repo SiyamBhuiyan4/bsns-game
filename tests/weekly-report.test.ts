@@ -209,32 +209,40 @@ describe('Step 7: Weekly Report & Fixed Questions Unit Tests', () => {
     expect(questionNumbers).toEqual([1, 2, 3, 4, 5]);
 
     // Strategic review question definitions
-    expect(WEEKLY_FIXED_QUESTIONS[0].text).toBe('চলতি সপ্তাহের সবচেয়ে বড় সাফল্য কি ছিল?');
-    expect(WEEKLY_FIXED_QUESTIONS[1].text).toBe('কোথায় সবচেয়ে বেশি চ্যালেঞ্জ বা বাধা এসেছে?');
-    expect(WEEKLY_FIXED_QUESTIONS[2].text).toBe('কোন চ্যানেল বা পণ্যে বাজেটের অপচয় মনে হয়েছে?');
-    expect(WEEKLY_FIXED_QUESTIONS[3].text).toBe('পরবর্তী সপ্তাহের প্রধান ৩টি অগ্রাধিকার কি কি?');
-    expect(WEEKLY_FIXED_QUESTIONS[4].text).toBe('টিমের কোনো সদস্যের বিশেষ সহায়তা বা দিকনির্দেশনা প্রয়োজন কি?');
+    expect(WEEKLY_FIXED_QUESTIONS[0].text).toBe('কোন পণ্য সবচেয়ে বেশি বিক্রি হয়েছে?');
+    expect(WEEKLY_FIXED_QUESTIONS[1].text).toBe('কোন বিজ্ঞাপন থেকে সবচেয়ে ভালো মানের ক্রেতা এসেছে?');
+    expect(WEEKLY_FIXED_QUESTIONS[2].text).toBe('কোন সম্ভাব্য ক্রেতার অর্ডার এখনো সম্পন্ন হয়নি?');
+    expect(WEEKLY_FIXED_QUESTIONS[3].text).toBe('কোন পণ্যের স্টক, মূল্য, সরবরাহ বা গ্রাহকসেবার সমস্যা বিক্রিতে বাধা দিচ্ছে?');
+    expect(WEEKLY_FIXED_QUESTIONS[4].text).toBe('পরবর্তী সপ্তাহে কোন তিনটি কাজ বিক্রি ও লাভ বৃদ্ধিতে সবচেয়ে বেশি সাহায্য করবে?');
   });
 
   it('should create weekly report draft with 5 fixed questions and allow answers save & publish', async () => {
     // 1. Create Report in DRAFT
     const autoData = await computeWeeklyAutoData(weekStart, weekEnd);
-    const report = await prisma.weeklyReport.create({
+    const initialReport = await prisma.weeklyReport.create({
       data: {
         week_start: weekStart,
         week_end: weekEnd,
         status: ReportStatus.DRAFT,
         auto_data: autoData as any,
         created_by: adminUser.id,
-        answers: {
-          create: WEEKLY_FIXED_QUESTIONS.map((q) => ({
-            question_no: q.no,
-            question_text: q.text,
-            answer_text: `উত্তর ${q.no}: тестовый উত্তর / কৌশলগত পর্যালোচনা`,
-            updated_by: adminUser.id,
-          })),
-        },
       },
+    });
+
+    for (const q of WEEKLY_FIXED_QUESTIONS) {
+      await prisma.weeklyReportAnswer.create({
+        data: {
+          weekly_report_id: initialReport.id,
+          question_no: q.no,
+          question_text: q.text,
+          answer_text: `উত্তর ${q.no}: কৌশলগত পর্যালোচনা`,
+          updated_by: adminUser.id,
+        },
+      });
+    }
+
+    const report = await prisma.weeklyReport.findUnique({
+      where: { id: initialReport.id },
       include: {
         answers: {
           orderBy: { question_no: 'asc' },

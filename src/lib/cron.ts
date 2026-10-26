@@ -207,15 +207,23 @@ export async function executeWeeklyReportDraft(options?: {
       status: ReportStatus.DRAFT,
       auto_data: autoData as unknown as Prisma.InputJsonValue,
       created_by: creatorId,
-      answers: {
-        create: WEEKLY_FIXED_QUESTIONS.map((q) => ({
-          question_no: q.no,
-          question_text: q.text,
-          answer_text: '',
-          updated_by: creatorId!,
-        })),
-      },
     },
+  });
+
+  for (const q of WEEKLY_FIXED_QUESTIONS) {
+    await prisma.weeklyReportAnswer.create({
+      data: {
+        weekly_report_id: report.id,
+        question_no: q.no,
+        question_text: q.text,
+        answer_text: '',
+        updated_by: creatorId,
+      },
+    });
+  }
+
+  const completeReport = await prisma.weeklyReport.findUnique({
+    where: { id: report.id },
     include: {
       answers: {
         orderBy: { question_no: 'asc' },
@@ -234,7 +242,7 @@ export async function executeWeeklyReportDraft(options?: {
       week_start: weekStartStr,
       week_end: weekEndStr,
       status: ReportStatus.DRAFT,
-      questions_initialized: report.answers.length,
+      questions_initialized: completeReport?.answers.length ?? 5,
       triggered_at: refDate.toISOString(),
     },
   });
@@ -247,8 +255,8 @@ export async function executeWeeklyReportDraft(options?: {
     status: report.status,
     week_start: weekStartStr,
     week_end: weekEndStr,
-    questions_count: report.answers.length,
+    questions_count: completeReport?.answers.length ?? 5,
     auditLogId: auditLog?.id || null,
-    report,
+    report: completeReport || report,
   };
 }
