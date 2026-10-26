@@ -2,11 +2,11 @@
 
 import type { ReactNode } from 'react';
 import {
-  BarChart3, Users, Layers, Target, FileText, CalendarCheck, Sprout,
+  BarChart3, Users, Layers, Target, FileText, CalendarCheck, Sprout, UserPlus,
 } from 'lucide-react';
 import AppShell, { type NavGroup } from '@/components/AppShell';
 
-// Restructured clean admin navigation: Dashboard, Employees, Groups, Target, Reports, Action Plan
+// Restructured clean admin navigation: Dashboard, Employees, Customers, Groups, Target, Reports, Action Plan
 const navGroups: NavGroup[] = [
   {
     key: 'core',
@@ -14,7 +14,8 @@ const navGroups: NavGroup[] = [
     labelEn: 'Main Menu',
     items: [
       { href: '/admin/dashboard', key: 'admin_nav.dashboard', labelBn: 'ড্যাশবোর্ড', labelEn: 'Dashboard', icon: BarChart3 },
-      { href: '/admin/employees', key: 'admin_nav.team', labelBn: 'কর্মচারী (টিম)', labelEn: 'Employees', icon: Users },
+      { href: '/admin/employees', key: 'admin_nav.team', labelBn: 'কর্মচারী', labelEn: 'Employees', icon: Users },
+      { href: '/admin/leads', key: 'admin_nav.leads', labelBn: 'কাস্টমার ও লিড', labelEn: 'Customers & Leads', icon: UserPlus },
       { href: '/admin/sections', key: 'admin_nav.groups', labelBn: 'গ্রুপ ও লিংক', labelEn: 'Groups & Links', icon: Layers },
       { href: '/admin/targets', key: 'admin_nav.targets', labelBn: 'টার্গেট বণ্টন', labelEn: 'Targets', icon: Target },
       { href: '/admin/reports/daily', key: 'admin_nav.reports', labelBn: 'রিপোর্ট', labelEn: 'Reports', icon: FileText },
