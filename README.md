@@ -63,10 +63,13 @@ Configure the following environment variables:
 | Variable | Description | Example Value |
 |---|---|---|
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:password@localhost:5432/marketing_performance` |
-| `JWT_SECRET` | Secure 32+ character random secret for JWT signing | `super-secret-jwt-key-for-marketing-system-2026-secure-random` |
-| `ADMIN_PASSWORD` | Default password used when seeding initial Admin user | `AdminPassword123!` |
+| `JWT_SECRET` | **Required in production.** 32+ character random secret for JWT signing. Generate one with `openssl rand -base64 48`; never copy an example. | *(generate your own)* |
+| `ADMIN_PASSWORD` | Default password used when seeding the initial Admin user | `AdminPassword123!` |
+| `ADMIN_PASSCODE` | Passcode for the `/admin-login` page | *(generate your own)* |
 | `NEXT_PUBLIC_APP_TIMEZONE` | Business timezone for daily locks and date math | `Asia/Dhaka` |
-| `CRON_SECRET` | *(Optional)* Secret token required to trigger Cron endpoints | `secure-cron-secret-token` |
+| `CRON_SECRET` | **Required in production.** Bearer token the `/api/cron/*` endpoints demand. Without it those endpoints refuse every request. | *(generate your own)* |
+
+> The app refuses to start in production if `JWT_SECRET` is missing or still set to a development placeholder: an unset signing secret would let anyone mint an admin session. The same applies to `CRON_SECRET` when a cron endpoint is called.
 
 ---
 
@@ -192,7 +195,7 @@ The system provides automated background cron endpoints to maintain data locks a
 - **Timezone Standardization**: All business day roll-overs, lock windows, and weekly intervals are pinned to `Asia/Dhaka` (UTC+6) irrespective of host server location.
 
 ### Production Deployment Checklist
-1. Set strong values for `JWT_SECRET`, `ADMIN_PASSWORD`, and `CRON_SECRET`.
+1. Set strong, freshly generated values for `JWT_SECRET`, `CRON_SECRET`, `ADMIN_PASSCODE` and `ADMIN_PASSWORD` — the app refuses to boot without the first, and the cron endpoints refuse to run without the second.
 2. Configure a managed PostgreSQL database with automatic backups and connection pooling.
 3. Set `NODE_ENV=production` and build Next.js using `npm run build`.
 4. Deploy behind a secure reverse proxy (Nginx, Caddy, Vercel, or AWS ECS/App Runner) with TLS/SSL enabled.
