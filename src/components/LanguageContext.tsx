@@ -6,6 +6,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   ReactNode,
 } from 'react';
 import {
@@ -14,15 +15,22 @@ import {
   DecimalLike,
   FormatterOptions,
 } from '@/lib/formatter';
+import { makeTranslator, translate } from '@/lib/i18n/translate';
 
 export type Language = 'bn' | 'en';
 export type DigitStyle = 'bn' | 'en';
+export type Theme = 'light' | 'dark';
 
 export interface LanguageContextType {
   lang: Language;
   setLang: (lang: Language) => void;
   digitStyle: DigitStyle;
   setDigitStyle: (style: DigitStyle) => void;
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  toggleTheme: () => void;
+  /** Bangla text -> the current language. A second argument overrides the dictionary. */
+  L: (bn: string, en?: string) => string;
   t: (key: string, defaultTextBn?: string, textEn?: string) => string;
   formatMoney: (
     val: DecimalLike | null | undefined,
@@ -34,8 +42,9 @@ export interface LanguageContextType {
   ) => string;
 }
 
-const COOKIE_LANG_KEY = 'app_lang';
-const COOKIE_DIGIT_KEY = 'app_digit_style';
+export const COOKIE_LANG_KEY = 'app_lang';
+export const COOKIE_DIGIT_KEY = 'app_digit_style';
+export const COOKIE_THEME_KEY = 'app_theme';
 
 const dictionary: Record<Language, Record<string, string>> = {
   bn: {
@@ -81,6 +90,8 @@ const dictionary: Record<Language, Record<string, string>> = {
     'common.revenue': 'রাজস্ব',
     'common.profit': 'লাভ',
     'common.roas': 'আরওএএস (ROAS)',
+    'common.dark_mode': 'ডার্ক মোড',
+    'common.light_mode': 'লাইট মোড',
   },
   en: {
     'nav.dashboard': 'Dashboard',
@@ -125,14 +136,10 @@ const dictionary: Record<Language, Record<string, string>> = {
     'common.revenue': 'Revenue',
     'common.profit': 'Profit',
     'common.roas': 'ROAS',
+    'common.dark_mode': 'Dark mode',
+    'common.light_mode': 'Light mode',
   },
 };
-
-function getCookie(name: string): string | undefined {
-  if (typeof document === 'undefined') return undefined;
-  const match = document.cookie.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]*)'));
-  return match ? decodeURIComponent(match[1]) : undefined;
-}
 
 function setCookie(name: string, value: string) {
   if (typeof document === 'undefined') return;
@@ -145,61 +152,65 @@ export function LanguageProvider({
   children,
   initialLang = 'bn',
   initialDigitStyle = 'bn',
+  initialTheme = 'light',
 }: {
   children: ReactNode;
   initialLang?: Language;
   initialDigitStyle?: DigitStyle;
+  initialTheme?: Theme;
 }) {
   const [lang, setLangState] = useState<Language>(initialLang);
   const [digitStyle, setDigitStyleState] = useState<DigitStyle>(initialDigitStyle);
+  const [theme, setThemeState] = useState<Theme>(initialTheme);
 
-  // Sync from localStorage / cookies on client mount
+  // The server already rendered with the cookie values; mirror them into
+  // localStorage so a cookie-less visit (private mode) still remembers.
   useEffect(() => {
     try {
-      const storedLang =
-        (localStorage.getItem(COOKIE_LANG_KEY) as Language | null) ||
-        (getCookie(COOKIE_LANG_KEY) as Language | undefined);
-      if (storedLang === 'bn' || storedLang === 'en') {
-        setLangState(storedLang);
-        document.documentElement.lang = storedLang;
-      }
-
-      const storedDigits =
-        (localStorage.getItem(COOKIE_DIGIT_KEY) as DigitStyle | null) ||
-        (getCookie(COOKIE_DIGIT_KEY) as DigitStyle | undefined);
-      if (storedDigits === 'bn' || storedDigits === 'en') {
-        setDigitStyleState(storedDigits);
-      }
+      localStorage.setItem(COOKIE_LANG_KEY, lang);
+      localStorage.setItem(COOKIE_DIGIT_KEY, digitStyle);
+      localStorage.setItem(COOKIE_THEME_KEY, theme);
     } catch {
-      // Ignore localStorage access restrictions
+      // Storage can be blocked; the cookie is the source of truth anyway.
     }
-  }, []);
+  }, [lang, digitStyle, theme]);
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dataset.lang = lang;
+  }, [lang]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+  }, [theme]);
 
   const setLang = useCallback((newLang: Language) => {
     setLangState(newLang);
     setDigitStyleState(newLang);
-    try {
-      localStorage.setItem(COOKIE_LANG_KEY, newLang);
-      localStorage.setItem(COOKIE_DIGIT_KEY, newLang);
-      setCookie(COOKIE_LANG_KEY, newLang);
-      setCookie(COOKIE_DIGIT_KEY, newLang);
-      if (typeof document !== 'undefined') {
-        document.documentElement.lang = newLang;
-      }
-    } catch {
-      // Ignore storage errors
-    }
+    setCookie(COOKIE_LANG_KEY, newLang);
+    setCookie(COOKIE_DIGIT_KEY, newLang);
   }, []);
 
   const setDigitStyle = useCallback((newStyle: DigitStyle) => {
     setDigitStyleState(newStyle);
-    try {
-      localStorage.setItem(COOKIE_DIGIT_KEY, newStyle);
-      setCookie(COOKIE_DIGIT_KEY, newStyle);
-    } catch {
-      // Ignore storage errors
-    }
+    setCookie(COOKIE_DIGIT_KEY, newStyle);
   }, []);
+
+  const setTheme = useCallback((next: Theme) => {
+    setThemeState(next);
+    setCookie(COOKIE_THEME_KEY, next);
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setThemeState((prev) => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      setCookie(COOKIE_THEME_KEY, next);
+      return next;
+    });
+  }, []);
+
+  const L = useMemo(() => makeTranslator(lang), [lang]);
 
   const t = useCallback(
     (key: string, defaultTextBn?: string, textEn?: string): string => {
@@ -208,7 +219,7 @@ export function LanguageProvider({
         return langDict[key];
       }
       if (lang === 'en') {
-        return textEn ?? defaultTextBn ?? key;
+        return textEn ?? translate(defaultTextBn, 'en') ?? key;
       }
       return defaultTextBn ?? textEn ?? key;
     },
@@ -242,6 +253,10 @@ export function LanguageProvider({
         setLang,
         digitStyle,
         setDigitStyle,
+        theme,
+        setTheme,
+        toggleTheme,
+        L,
         t,
         formatMoney,
         formatNum,

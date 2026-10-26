@@ -1,7 +1,16 @@
 import type { Metadata, Viewport } from 'next';
+import { cookies } from 'next/headers';
 import { Hind_Siliguri, Noto_Sans_Bengali, Inter } from 'next/font/google';
 import './globals.css';
-import { LanguageProvider } from '@/components/LanguageContext';
+import {
+  LanguageProvider,
+  COOKIE_LANG_KEY,
+  COOKIE_DIGIT_KEY,
+  COOKIE_THEME_KEY,
+  type Language,
+  type DigitStyle,
+  type Theme,
+} from '@/components/LanguageContext';
 
 const hindSiliguri = Hind_Siliguri({
   weight: ['300', '400', '500', '600', '700'],
@@ -34,18 +43,28 @@ export const metadata: Metadata = {
   description: 'Digital Marketing Performance & Reporting System for Agri & Food Business',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Read the preferences on the server so the first paint is already in the
+  // right language and theme — no flash of Bangla before hydration.
+  const cookieStore = await cookies();
+  const lang: Language = cookieStore.get(COOKIE_LANG_KEY)?.value === 'en' ? 'en' : 'bn';
+  const digitStyle: DigitStyle = cookieStore.get(COOKIE_DIGIT_KEY)?.value === 'en' ? 'en' : 'bn';
+  const theme: Theme = cookieStore.get(COOKIE_THEME_KEY)?.value === 'dark' ? 'dark' : 'light';
+
   return (
     <html
-      lang="bn"
+      lang={lang}
+      data-lang={lang}
+      data-theme={theme}
+      style={{ colorScheme: theme }}
       className={`${hindSiliguri.variable} ${notoSansBengali.variable} ${inter.variable} scroll-smooth`}
     >
-      <body className="min-h-screen bg-slate-50 text-slate-900 antialiased overflow-x-hidden max-w-full font-bengali">
-        <LanguageProvider>
+      <body className="min-h-screen bg-canvas text-ink antialiased overflow-x-hidden max-w-full font-bengali">
+        <LanguageProvider initialLang={lang} initialDigitStyle={digitStyle} initialTheme={theme}>
           {children}
         </LanguageProvider>
       </body>
