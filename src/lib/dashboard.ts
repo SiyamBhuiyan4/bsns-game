@@ -448,15 +448,20 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
       where: {
         completed_at: { gte: rangeStartDateTime, lte: rangeEndDateTime },
         undone_at: null,
+        ...(filter.employeeId ? { employee_id: filter.employeeId } : {}),
       },
     }),
     prisma.dailyEntry.findMany({
-      where: { entry_date: { gte: startUtcDate, lte: endUtcDate } },
+      where: {
+        entry_date: { gte: startUtcDate, lte: endUtcDate },
+        ...(filter.employeeId ? { employee_id: filter.employeeId } : {}),
+      },
     }),
     prisma.linkCompletion.findMany({
       where: {
         completed_at: { gte: rangeStartDateTime, lte: rangeEndDateTime },
         undone_at: null,
+        ...(filter.employeeId ? { employee_id: filter.employeeId } : {}),
       },
       select: {
         id: true,
@@ -467,7 +472,10 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
       orderBy: { completed_at: 'desc' },
     }),
     prisma.dailyText.findMany({
-      where: { entry_date: { gte: startUtcDate, lte: endUtcDate } },
+      where: {
+        entry_date: { gte: startUtcDate, lte: endUtcDate },
+        ...(filter.employeeId ? { employee_id: filter.employeeId } : {}),
+      },
       select: { employee_id: true, entry_date: true, main_issue: true, next_priorities: true },
     }),
   ]);
@@ -507,6 +515,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     prisma.lead.findMany({
       where: {
         created_at: { gte: rangeStartDateTime, lte: rangeEndDateTime },
+        ...(filter.employeeId ? { owner_id: filter.employeeId } : {}),
       },
       select: {
         id: true,
@@ -909,6 +918,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     startUtcDate,
     endUtcDate,
     filterSectionKey: filter.sectionKey,
+    filterEmployeeId: filter.employeeId,
   });
 
   const groupSectionsOverview = computeGroupSectionsOverview({
@@ -920,6 +930,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     allTargets,
     startUtcDate,
     endUtcDate,
+    filterEmployeeId: filter.employeeId,
   });
 
   const employeeWorkSummary = computeEmployeeWorkSummary({
@@ -1002,6 +1013,7 @@ export function computeSectionsOverview(params: {
   startUtcDate: Date;
   endUtcDate: Date;
   filterSectionKey?: string;
+  filterEmployeeId?: string;
 }): SectionOverviewItem[] {
   const {
     activeEmployees,
@@ -1014,7 +1026,12 @@ export function computeSectionsOverview(params: {
     startUtcDate,
     endUtcDate,
     filterSectionKey,
+    filterEmployeeId,
   } = params;
+
+  const scopedEmployees = filterEmployeeId
+    ? activeEmployees.filter((e) => e.id === filterEmployeeId)
+    : activeEmployees;
 
   const employeeMap = new Map<string, { id: string; name: string; email: string }>();
   for (const emp of activeEmployees) {
@@ -1148,14 +1165,17 @@ export function computeSectionsOverview(params: {
       }
     }
 
-    // Order logs by date descending
-    historyLogs.sort((a, b) => b.date.localeCompare(a.date));
+    // Order logs by date descending and filter by employee if scoped
+    const effectiveHistoryLogs = filterEmployeeId
+      ? historyLogs.filter((log) => log.employeeId === filterEmployeeId)
+      : historyLogs;
+    effectiveHistoryLogs.sort((a, b) => b.date.localeCompare(a.date));
 
     // Calculate employee breakdown
     const employeeBreakdown: EmployeeSectionBreakdown[] = [];
     const overallMetricTarget = Math.round(effectiveTargets[metricType] || 0);
 
-    for (const emp of activeEmployees) {
+    for (const emp of scopedEmployees) {
       const empTotal = empTotals.get(emp.id) || 0;
 
       // Check direct targets for this employee
@@ -1243,7 +1263,7 @@ export function computeSectionsOverview(params: {
       assignedEmployeesCount: assignedEmployees.length,
       averagePercentage,
       employeeBreakdown,
-      historyLogs,
+      historyLogs: effectiveHistoryLogs,
     });
   }
 
@@ -1267,6 +1287,7 @@ export function computeGroupSectionsOverview(params: {
   allTargets?: any[];
   startUtcDate?: Date;
   endUtcDate?: Date;
+  filterEmployeeId?: string;
 }): GroupSectionOverviewItem[] {
   const {
     allGroupSections,
@@ -1277,7 +1298,12 @@ export function computeGroupSectionsOverview(params: {
     allTargets = [],
     startUtcDate,
     endUtcDate,
+    filterEmployeeId,
   } = params;
+
+  const scopedEmployees = filterEmployeeId
+    ? activeEmployees.filter((e) => e.id === filterEmployeeId)
+    : activeEmployees;
 
   const employeeMap = new Map<string, { id: string; name: string; email: string }>();
   for (const emp of activeEmployees) {
@@ -1294,7 +1320,9 @@ export function computeGroupSectionsOverview(params: {
     const secLinkIdSet = new Set(secLinks.map((l) => l.id));
 
     // Completions belonging to links in this section
-    const secCompletions = periodLinkCompletions.filter((c) => secLinkIdSet.has(c.group_link_id));
+    const secCompletions = periodLinkCompletions.filter(
+      (c) => secLinkIdSet.has(c.group_link_id) && (!filterEmployeeId || c.employee_id === filterEmployeeId)
+    );
 
     const empCompletionCount = new Map<string, number>();
     for (const c of secCompletions) {
@@ -1316,10 +1344,10 @@ export function computeGroupSectionsOverview(params: {
     // Sort completions history by date descending
     completionsHistory.sort((a, b) => b.date.localeCompare(a.date));
 
-    // Build employee breakdown for all active employees
+    // Build employee breakdown for scoped employees
     const employeeBreakdown: EmployeeSectionBreakdown[] = [];
 
-    for (const emp of activeEmployees) {
+    for (const emp of scopedEmployees) {
       const empTotal = empCompletionCount.get(emp.id) || 0;
 
       // Check if employee is assigned to this group section

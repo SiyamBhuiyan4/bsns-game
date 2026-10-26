@@ -12,5 +12,5 @@ export default async function HomePage() {
     redirect('/admin/dashboard');
   }
 
-  redirect('/employee/my-work');
+  redirect('/employee/dashboard');
 }

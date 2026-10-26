@@ -67,7 +67,7 @@ export async function middleware(request: NextRequest) {
     if (user.role === 'ADMIN') {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }
-    return NextResponse.redirect(new URL('/employee/my-work', request.url));
+    return NextResponse.redirect(new URL('/employee/dashboard', request.url));
   }
 
   // Login page access
@@ -76,7 +76,7 @@ export async function middleware(request: NextRequest) {
       if (user.role === 'ADMIN') {
         return NextResponse.redirect(new URL('/admin/dashboard', request.url));
       }
-      return NextResponse.redirect(new URL('/employee/my-work', request.url));
+      return NextResponse.redirect(new URL('/employee/dashboard', request.url));
     }
     return NextResponse.next();
   }
@@ -98,7 +98,7 @@ export async function middleware(request: NextRequest) {
     }
     if (user.role !== 'ADMIN') {
       // Forbidden: redirect employee away from admin pages
-      return NextResponse.redirect(new URL('/employee/my-work', request.url));
+      return NextResponse.redirect(new URL('/employee/dashboard', request.url));
     }
     return NextResponse.next();
   }

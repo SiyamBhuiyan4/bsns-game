@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       payload: { email: user.email, role: user.role, ip },
     });
 
-    const redirectUrl = '/employee/my-work';
+    const redirectUrl = '/employee/dashboard';
 
     return NextResponse.json({
       success: true,

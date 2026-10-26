@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Clock,
   LayoutDashboard,
+  Award,
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
@@ -17,23 +18,27 @@ import { toBengaliDigits } from '@/lib/formatter';
 interface DashboardHeaderStatsProps {
   adminName: string;
   todayStr: string;
-  activeEmployeesCount: number;
+  activeEmployeesCount?: number;
   postsCompletedCount: number;
   ordersConfirmedCount: number;
   messagesRepliedCount: number;
   periodLabel: string;
   periodKey?: string;
+  isEmployeeView?: boolean;
+  employeeScore?: number;
 }
 
 export default function DashboardHeaderStats({
   adminName,
   todayStr,
-  activeEmployeesCount,
+  activeEmployeesCount = 0,
   postsCompletedCount,
   ordersConfirmedCount,
   messagesRepliedCount,
   periodLabel,
   periodKey,
+  isEmployeeView,
+  employeeScore,
 }: DashboardHeaderStatsProps) {
   const { lang, digitStyle, formatNum } = useLanguage();
   const L = (bn: string, en: string) => (lang === 'bn' ? bn : en);
@@ -56,10 +61,11 @@ export default function DashboardHeaderStats({
       <PageHeader
         icon={<LayoutDashboard className="h-5 w-5" />}
         title={L(`স্বাগতম, ${adminName}`, `Welcome, ${adminName}`)}
-        subtitle={L(
-          'কর্মী পারফরম্যান্স ও সেকশন কাজের সার্বিক ড্যাশবোর্ড',
-          'Employee Performance & Section Overview Dashboard'
-        )}
+        subtitle={
+          isEmployeeView
+            ? L('আপনার ব্যক্তিগত কাজের অগ্রগতি, টার্গেট ও সেকশন ড্যাশবোর্ড', 'Your personal work progress, targets and section dashboard')
+            : L('কর্মী পারফরম্যান্স ও সেকশন কাজের সার্বিক ড্যাশবোর্ড', 'Employee Performance & Section Overview Dashboard')
+        }
         actions={
           <span className="badge badge-gray py-1 font-mono">
             <Clock className="h-3.5 w-3.5" />
@@ -70,20 +76,37 @@ export default function DashboardHeaderStats({
 
       {/* Core Top Quick Stats bar */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label={L('সক্রিয় কর্মী', 'Active Employees')}
-          icon={<Users className="h-4 w-4" />}
-          tone="brand"
-          value={
-            <>
-              {formatNum(activeEmployeesCount)}{' '}
-              <span className="text-sm font-normal text-slate-500">
-                {L('জন কর্মী', 'employees')}
-              </span>
-            </>
-          }
-          note={L('দায়িত্বপ্রাপ্ত সক্রিয় কর্মী', 'Assigned active employees')}
-        />
+        {isEmployeeView ? (
+          <StatCard
+            label={L('আমার স্কোর', 'My Score')}
+            icon={<Award className="h-4 w-4" />}
+            tone="brand"
+            value={
+              <>
+                {formatNum(employeeScore ?? 100)}{' '}
+                <span className="text-sm font-normal text-slate-500">
+                  / {formatNum(100)}
+                </span>
+              </>
+            }
+            note={L('চলতি পারফরম্যান্স রেটিং', 'Current performance rating')}
+          />
+        ) : (
+          <StatCard
+            label={L('সক্রিয় কর্মী', 'Active Employees')}
+            icon={<Users className="h-4 w-4" />}
+            tone="brand"
+            value={
+              <>
+                {formatNum(activeEmployeesCount)}{' '}
+                <span className="text-sm font-normal text-slate-500">
+                  {L('জন কর্মী', 'employees')}
+                </span>
+              </>
+            }
+            note={L('দায়িত্বপ্রাপ্ত সক্রিয় কর্মী', 'Assigned active employees')}
+          />
+        )}
 
         <StatCard
           label={L('পোস্ট সম্পন্ন', 'Posts Completed')}
