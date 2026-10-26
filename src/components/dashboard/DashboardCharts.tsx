@@ -40,8 +40,9 @@ const PALETTE = ['#059669', '#0EA5E9', '#F59E0B', '#8B5CF6', '#64748B'];
 const PIE_COLORS = PALETTE;
 const LINE_COLORS = PALETTE;
 
-const GRID = '#EEF2F6';
-const AXIS = '#94A3B8';
+// CSS variables, so the charts follow the light/dark theme.
+const GRID = 'var(--color-slate-200)';
+const AXIS = 'var(--color-slate-400)';
 const TARGET = '#CBD5E1';
 
 function EmptyChartState({ message = 'এই সময়ে কোনো তথ্য নেই' }: { message?: string }) {
@@ -386,7 +387,7 @@ export default function DashboardCharts({
                   type="monotone"
                   dataKey="total"
                   name={L("টিম মোট")}
-                  stroke="#334155"
+                  stroke="var(--color-slate-600)"
                   strokeWidth={2}
                   strokeDasharray="4 4"
                   dot={false}

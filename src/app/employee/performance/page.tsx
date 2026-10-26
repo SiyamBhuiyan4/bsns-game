@@ -127,8 +127,9 @@ export default function EmployeePerformancePage() {
   }));
 
   const tooltipStyle = {
-    backgroundColor: '#ffffff',
-    borderColor: '#e2e8f0',
+    backgroundColor: 'var(--color-white)',
+    borderColor: 'var(--color-slate-200)',
+    color: 'var(--color-slate-900)',
     borderRadius: '8px',
     fontSize: '11px',
   };
@@ -269,7 +270,7 @@ export default function EmployeePerformancePage() {
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={trend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-slate-200)" />
                     <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#64748b' }} />
                     <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#64748b' }} width={32} />
                     <Tooltip contentStyle={tooltipStyle} />
@@ -306,12 +307,12 @@ export default function EmployeePerformancePage() {
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={componentChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-slate-200)" />
                   <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#64748b' }} interval={0} />
                   <YAxis domain={[0, 'auto']} tick={{ fontSize: 10, fill: '#64748b' }} width={32} />
                   <Tooltip contentStyle={tooltipStyle} />
                   <Bar dataKey="score" name={L("অর্জিত স্কোর")} fill="#059669" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="weight" name={L("সর্বোচ্চ ওয়েট")} fill="#e2e8f0" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="weight" name={L("সর্বোচ্চ ওয়েট")} fill="var(--color-slate-200)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

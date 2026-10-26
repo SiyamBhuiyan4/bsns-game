@@ -261,7 +261,7 @@ export default function ThreeDPieChart({
                     rx={rx}
                     ry={ry}
                     fill={`url(#topGrad-${slice.id})`}
-                    stroke="#ffffff"
+                    stroke="var(--color-white)"
                     strokeWidth={isHovered ? '2.5' : '1.5'}
                     className="transition-all duration-200 cursor-pointer drop-shadow-xs"
                     onMouseEnter={() => setHoveredId(slice.id)}
@@ -298,7 +298,7 @@ export default function ThreeDPieChart({
                   <path
                     d={pathD}
                     fill={`url(#topGrad-${slice.id})`}
-                    stroke="#ffffff"
+                    stroke="var(--color-white)"
                     strokeWidth={isHovered ? '2.5' : '1.5'}
                     className="cursor-pointer transition-all duration-200 hover:brightness-105"
                     onMouseEnter={() => setHoveredId(slice.id)}
@@ -311,7 +311,7 @@ export default function ThreeDPieChart({
                       x={lx}
                       y={ly + 4}
                       textAnchor="middle"
-                      fill="#ffffff"
+                      fill="var(--color-white)"
                       fontSize={slice.percent >= 15 ? '12px' : '10px'}
                       fontWeight="bold"
                       className="pointer-events-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] select-none"
@@ -340,12 +340,12 @@ export default function ThreeDPieChart({
                   rx="10"
                   fill="#0f172a"
                   fillOpacity="0.92"
-                  stroke="#334155"
+                  stroke="var(--color-slate-600)"
                   strokeWidth="1"
                   filter="drop-shadow(0 4px 6px rgba(0,0,0,0.25))"
                 />
                 <circle cx="30" cy="30" r="5" fill={active.color} />
-                <text x="42" y="34" fill="#ffffff" fontSize="12px" fontWeight="bold">
+                <text x="42" y="34" fill="var(--color-white)" fontSize="12px" fontWeight="bold">
                   {active.name.length > 18 ? active.name.slice(0, 16) + '...' : active.name}
                 </text>
                 <text x="30" y="55" fill="#94a3b8" fontSize="11px">
