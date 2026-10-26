@@ -16,7 +16,7 @@ export const STOP_WORDS = new Set([
   'employee', 'employe', 'emplyee', 'emploee', 'emploe', 'empl', 'staff', 'kormi', 'kormy', 'কর্মী', 'কর্মচারী',
   'account', 'acount', 'acnt', 'profile', 'profaile', 'profail', 'প্রোফাইল', 'আইডি', 'id', 'একাউন্ট', 'অ্যাকাউন্ট',
   'banao', 'banaw', 'banau', 'বানাও', 'খোল', 'খোলো', 'খুলুন', 'তৈরি', 'toiri', 'koro', 'করো', 'korun', 'করুন', 'dao', 'দাও', 'khulo', 'khulun', 'khol',
-  'name', 'nam', 'namer', 'নাম', 'নামের', 'নামে', 'er', 'এর', 'ের', 'ke', 'কে', 'jonno', 'জন্য', 'hisebe', 'হিসেবে',
+  'name', 'nam', 'namer', 'নাম', 'নামের', 'নামে', 'er', 'এর', 'ের', 'ke', 'কে', 'jonno', 'জন্য', 'hisebe', 'হিসেবে', 'for',
   'pass', 'password', 'pasword', 'passwrd', 'pswd', 'পাসওয়ার্ড', 'পাসওয়ার্ড', 'পাস',
   'email', 'mail', 'ইমেইল', 'phone', 'mobile', 'ফোন', 'মোবাইল', 'gmail', 'yahoo', 'hotmail', 'outlook',
   'kivabe', 'kibhabe', 'kemne', 'কিভাবে', 'কীভাবে', 'কেমনে', 'how', 'where', 'kothay', 'koi', 'কই', 'কোথায়', 'কোথায়', 'korbo', 'করব', 'করবো', 'chai', 'চাই'
@@ -50,14 +50,17 @@ export function normalizeText(input: string): string {
 
 function cleanCandidateName(cand: string, pass: string, email: string): string {
   let cleaned = cand.replace(/^[,;:\s]+|[,;:\s]+$/g, '').trim();
-  cleaned = cleaned.replace(/^(?:create|creat|add|make|notun|nutun|নতুন|বানাও|যোগ|খোল|খোলো)\s+/i, '').trim();
+  cleaned = cleaned.replace(/^(?:create|creat|add|make|notun|nutun|নতুন|বানাও|যোগ|খোল|খোলো|kholo|khol|khulo|khulun|for)\s+/i, '').trim();
   const tokens = cleaned.split(/\s+/).filter(Boolean);
   const validTokens: string[] = [];
   for (const t of tokens) {
     const cleanT = t.replace(/^[,;:]+|[,;:]+$/g, '');
     if (!cleanT) continue;
     if (cleanT === pass || cleanT === email || /^\d+$/.test(cleanT)) break;
-    if (STOP_WORDS.has(cleanT.toLowerCase())) break;
+    if (STOP_WORDS.has(cleanT.toLowerCase())) {
+      if (validTokens.length === 0) continue; // skip leading stop words/prepositions
+      break;
+    }
     validTokens.push(cleanT);
   }
   const result = validTokens.join(' ').trim();
@@ -85,7 +88,7 @@ export function parseNaturalAction(text: string, raw?: string): { command: strin
   const isEmployeeCreate =
     /(?:create|creat|crate|add|ad|make|register|ragister|open|new|notun|nutun|notn|নতুন|যুক্ত|যোগ|বানাও|খোল|খোলো|খুলুন|তৈরি)\s*(?::\s*)?(?:an?\s+)?(?:employee|employe|emplyee|emploee|emploe|empl|staff|kormi|kormy|কর্মী|কর্মচারী)/i.test(lower) ||
     /(?:employee|employe|emplyee|kormi|kormy|কর্মী|কর্মচারী|staff)\s*(?:account|acount|acnt|profile|প্রোফাইল|আইডি|id|একাউন্ট|অ্যাকাউন্ট)?\s*(?:create|creat|add|make|banao|খোল|খোলো|খুলুন|তৈরি|বানাও|khulo)/i.test(lower) ||
-    /(?:nam\s*er|namer|নামের|নামে|er\s*jonno|এর\s*জন্য|er|এর|ের)\s+(?:employee|employe|kormi|কর্মী|কর্মচারী|staff)\s*(?:account|acount|acnt|profile|প্রোফাইল|আইডি|id|একাউন্ট|অ্যাকাউন্ট)?\s*(?:banao|banaw|banau|বানাও|তৈরি|খোল|খোলো|খুলুন|create|add)/i.test(lower);
+    /(?:nam\s*er|namer|নামের|নামে|er\s*jonno|এর\s*জন্য|er|এর|ের)\s+(?:employee|employe|kormi|কর্মী|কর্মচারী|staff|profile|account|প্রোফাইল|আইডি|id|একাউন্ট|অ্যাকাউন্ট)?\s*(?:account|acount|acnt|profile|প্রোফাইল|আইডি|id|একাউন্ট|অ্যাকাউন্ট)?\s*(?:banao|banaw|banau|বানাও|তৈরি|খোল|খোলো|খুলুন|create|add)/i.test(lower);
 
   if (isEmployeeCreate) {
     const isQuestion = /(?:how|kivabe|kibhabe|kemne|কিভাবে|কীভাবে|কেমনে|kothay|where|কই|কোথায়|কোথায়)/i.test(lower);
@@ -186,9 +189,9 @@ export function parseNaturalAction(text: string, raw?: string): { command: strin
       }
     }
 
-    // Priority C: Grammar pattern 2: <Name> (er|এর) (jonno|জন্য)? (employee|kormi|কর্মী)
+    // Priority C: Grammar pattern 2: <Name> (er|এর) (jonno|জন্য)? (employee|kormi|কর্মী|profile|account)
     if (!name) {
-      const m = /(?:^|[\n,;])\s*(?:(?:create|creat|add|make|notun|nutun|নতুন|বানাও|যোগ|খোল|খোলো)\s+)?([A-Za-z\u0980-\u09ff\s.'-]+?)(?:\s*(?:er|এর)|ের)\s+(?:jonno\s+|জন্য\s+)?(?:employee|employe|kormi|কর্মী|কর্মচারী|staff)/iu.exec(text);
+      const m = /(?:^|[\n,;])\s*(?:(?:create|creat|add|make|notun|nutun|নতুন|বানাও|যোগ|খোল|খোলো)\s+)?([A-Za-z\u0980-\u09ff\s.'-]+?)(?:\s*(?:er|এর)|ের)\s+(?:jonno\s+|জন্য\s+)?(?:employee|employe|kormi|কর্মী|কর্মচারী|staff|profile|account|প্রোফাইল|আইডি|id|একাউন্ট|অ্যাকাউন্ট)/iu.exec(text);
       if (m) {
         const cand = cleanCandidateName(m[1], pass, email);
         if (cand) name = cand;
@@ -199,7 +202,7 @@ export function parseNaturalAction(text: string, raw?: string): { command: strin
     // e.g. "create employee akkas pass 000000 email akkas@gmail.com"
     // e.g. "notun kormi banao rofik password 123456"
     if (!name) {
-      const m = /(?:create|creat|crate|add|ad|make|notun|nutun|নতুন|বানাও|যুক্ত\s*করো)\s*(?::\s*)?(?:an?\s+)?(?:employee|employe|kormi|কর্মী|কর্মচারী|staff)\s*(?::\s*)?(?:banao|banaw|বানাও|খোলো|খোল|profile|account|প্রোফাইল)?\s*(?::\s*)?([A-Za-z\u0980-\u09ff\s.'-]+?)(?=$|[\n,;]|(?:\s+(?:(?:\b(?:pass|password|pasword|passwrd|pswd|email|mail|phone)\b|\d+|[a-zA-Z0-9._%+-]+@|মোবাইল|পাসওয়ার্ড|পাসওয়ার্ড|পাস)\b)))/iu.exec(text);
+      const m = /(?:create|creat|crate|add|ad|make|notun|nutun|নতুন|বানাও|যুক্ত\s*করো)\s*(?::\s*)?(?:an?\s+)?(?:employee|employe|kormi|কর্মী|কর্মচারী|staff)\s*(?::\s*)?(?:banao|banaw|বানাও|খোলো|খোল|kholo|khol|khulo|khulun|profile|account|প্রোফাইল|id|for)?\s*(?::\s*)?([A-Za-z\u0980-\u09ff\s.'-]+?)(?=$|[\n,;]|(?:\s+(?:(?:\b(?:pass|password|pasword|passwrd|pswd|email|mail|phone)\b|\d+|[a-zA-Z0-9._%+-]+@|মোবাইল|পাসওয়ার্ড|পাসওয়ার্ড|পাস)\b)))/iu.exec(text);
       if (m) {
         const cand = cleanCandidateName(m[1], pass, email);
         if (cand) name = cand;
