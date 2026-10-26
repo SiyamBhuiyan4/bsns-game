@@ -29,25 +29,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ exists: false, valid: true });
     }
 
-    // Specification Privacy Rule:
-    // "Duplicate phone check: warn if the phone already exists (with the owner name shown only to admin)."
-    if (session.role === 'ADMIN') {
-      return NextResponse.json({
-        exists: true,
-        valid: true,
-        leadName: existing.name,
-        ownerName: existing.owner.name,
-        ownerEmail: existing.owner.email,
-        status: existing.status,
-      });
-    }
-
-    // For employee: hide owner's identity
     return NextResponse.json({
       exists: true,
       valid: true,
-      isOwnLead: existing.owner_id === session.userId,
+      leadId: existing.id,
       leadName: existing.name,
+      ownerName: existing.owner?.name || 'সিস্টেম',
+      ownerEmail: session.role === 'ADMIN' ? existing.owner?.email : undefined,
+      status: existing.status,
+      isOwnLead: existing.owner_id === session.userId,
+      createdAt: existing.created_at,
     });
   } catch (error) {
     console.error('Phone check error:', error);

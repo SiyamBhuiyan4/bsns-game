@@ -9,6 +9,7 @@ const updateEmployeeSchema = z.object({
   phone: z.string().optional().nullable(),
   email: z.string().email().optional(),
   is_active: z.boolean().optional(),
+  can_view_all_customers: z.boolean().optional(),
 });
 
 export async function PUT(
@@ -34,7 +35,7 @@ export async function PUT(
       return NextResponse.json({ error: 'কর্মী পাওয়া যায়নি' }, { status: 404 });
     }
 
-    const { name, phone, email, is_active } = parse.data;
+    const { name, phone, email, is_active, can_view_all_customers } = parse.data;
 
     if (email && email.toLowerCase() !== current.email.toLowerCase()) {
       const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
@@ -50,6 +51,7 @@ export async function PUT(
         ...(phone !== undefined ? { phone: phone?.trim() || null } : {}),
         ...(email ? { email: email.toLowerCase().trim() } : {}),
         ...(is_active !== undefined ? { is_active } : {}),
+        ...(can_view_all_customers !== undefined ? { can_view_all_customers } : {}),
       },
     });
 
@@ -59,8 +61,8 @@ export async function PUT(
       entity: 'User',
       entityId: id,
       payload: {
-        old: { name: current.name, is_active: current.is_active, phone: current.phone },
-        new: { name: updated.name, is_active: updated.is_active, phone: updated.phone },
+        old: { name: current.name, is_active: current.is_active, phone: current.phone, can_view_all_customers: current.can_view_all_customers },
+        new: { name: updated.name, is_active: updated.is_active, phone: updated.phone, can_view_all_customers: updated.can_view_all_customers },
       },
     });
 

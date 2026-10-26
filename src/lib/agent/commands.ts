@@ -284,24 +284,34 @@ const employeeInputSchema = z.object({
   name: z.string().trim().min(2, 'নাম কমপক্ষে ২ অক্ষরের হতে হবে (Name must be at least 2 chars)').max(100),
   email: z.string().trim().email('সঠিক ইমেইল ঠিকানা দিন (Valid email required)'),
   password: z.string().min(6, 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে (Password must be at least 6 chars)').max(100),
+  phone: z.string().optional().nullable(),
 });
 
-const FIELD_ALIASES: Record<string, 'name' | 'email' | 'password'> = {
+const FIELD_ALIASES: Record<string, 'name' | 'email' | 'password' | 'phone'> = {
   name: 'name',
   নাম: 'name',
+  nam: 'name',
   email: 'email',
   ইমেইল: 'email',
+  mail: 'email',
   password: 'password',
   pass: 'password',
   পাসওয়ার্ড: 'password',
+  passwrd: 'password',
+  pasword: 'password',
+  pswd: 'password',
+  phone: 'phone',
+  ফোন: 'phone',
+  mobile: 'phone',
+  মোবাইল: 'phone',
 };
 
-/** Parses "email=a@b.com name=Rahim Uddin password=secret1" (values may contain spaces). */
+/** Parses "email=a@b.com name=Rahim Uddin password=secret1" or "name: John pass: secret1 email: john@gm.com" */
 function parseEmployeeFields(tokens: string[]): Record<string, string> {
   const fields: Record<string, string[]> = {};
   let current: string | null = null;
   for (const token of tokens) {
-    const match = /^([^=]+)=(.*)$/u.exec(token);
+    const match = /^([^=:]+)[=:](.*)$/u.exec(token);
     const key = match ? FIELD_ALIASES[match[1].toLowerCase()] : undefined;
     if (match && key) {
       current = key;
@@ -311,7 +321,7 @@ function parseEmployeeFields(tokens: string[]): Record<string, string> {
     }
   }
   const out: Record<string, string> = {};
-  for (const [k, v] of Object.entries(fields)) out[k] = v.join(' ');
+  for (const [k, v] of Object.entries(fields)) out[k] = v.join(' ').trim();
   return out;
 }
 
@@ -345,22 +355,30 @@ const teamCommand: AgentCommand = {
     }
 
     const fields = parseEmployeeFields(CREATE_WORDS.has(args[0].toLowerCase()) ? args.slice(1) : args);
+    let resolvedEmail = fields.email ?? '';
+    if (!resolvedEmail && fields.name) {
+      const cleanSlug = fields.name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'staff';
+      resolvedEmail = `${cleanSlug}@company.com`;
+    }
+
     const parsed = employeeInputSchema.safeParse({
       name: fields.name ?? '',
-      email: fields.email ?? '',
+      email: resolvedEmail,
       password: fields.password ?? '',
+      phone: fields.phone ?? null,
     });
     if (!parsed.success) {
       return {
         reply: ask(
-          'তথ্য অসম্পূর্ণ: email=, name=, password= সবগুলো দিন।',
-          `Missing or invalid fields: ${parsed.error.issues[0]?.message ?? 'check email, name, password'}`
+          'তথ্য অসম্পূর্ণ: নাম (name) এবং পাসওয়ার্ড (password) দিন।',
+          `Missing or invalid fields: ${parsed.error.issues[0]?.message ?? 'check name and password'}`
         ),
       };
     }
 
     const name = parsed.data.name.replace(/\s+/g, ' ');
     const email = parsed.data.email.toLowerCase();
+    const phone = parsed.data.phone || null;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -371,8 +389,8 @@ const teamCommand: AgentCommand = {
       // Never echo the password back, not even masked.
       return {
         reply: ask(
-          `আমি কর্মী "${name}" (${email}) তৈরি করব। পাসওয়ার্ড সেট হবে (দেখানো হবে না)। ${CONFIRM_BN}`,
-          `I will create employee "${name}" (${email}) with the password set (hidden). ${CONFIRM_EN}`
+          `আমি কর্মী "${name}" (${email}${phone ? ', ফোন: ' + phone : ''}) তৈরি করব। পাসওয়ার্ড সেট হবে (দেখানো হবে না)। ${CONFIRM_BN}`,
+          `I will create employee "${name}" (${email}${phone ? ', phone: ' + phone : ''}) with the password set (hidden). ${CONFIRM_EN}`
         ),
         needsConfirmation: true,
         pending: { command: 'team', args },
@@ -384,7 +402,7 @@ const teamCommand: AgentCommand = {
       data: {
         name,
         email,
-        phone: null,
+        phone,
         password_hash,
         role: 'EMPLOYEE',
         is_active: true,
@@ -511,9 +529,100 @@ const statusCommand: AgentCommand = {
   },
 };
 
+// ---------- #password (reset/set password) ----------
+
+const passwordCommand: AgentCommand = {
+  name: 'password',
+  aliases: ['reset-password', 'set-password', 'resetpass', 'pass', 'পাসওয়ার্ড', 'রিসেট-পাসওয়ার্ড', 'পাসওয়ার্ড-রিসেট'],
+  descBn: 'কর্মীর পাসওয়ার্ড সেট বা রিসেট করা',
+  descEn: 'Set or reset an employee password',
+  usage: '#password <email or name> <new-password>',
+  write: true,
+  run: async (args, ctx) => {
+    let target = '';
+    let newPassword = '';
+    if (args.some((a) => a.includes('=') || a.includes(':'))) {
+      const kv = parseEmployeeFields(args);
+      target = kv.email || kv.name || '';
+      newPassword = kv.password || '';
+    } else if (args.length >= 2) {
+      target = args.slice(0, -1).join(' ').trim();
+      newPassword = args[args.length - 1].trim();
+    }
+
+    if (!target || !newPassword) {
+      return {
+        reply: ask(
+          'কর্মীর নাম/ইমেইল এবং নতুন পাসওয়ার্ড দিন: #password <name/email> <new-password>',
+          'Provide employee name/email and new password: #password <name/email> <new-password>'
+        ),
+      };
+    }
+
+    if (newPassword.length < 6) {
+      return {
+        reply: ask(
+          'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।',
+          'Password must be at least 6 characters long.'
+        ),
+      };
+    }
+
+    const allEmployees = await prisma.user.findMany({ where: { role: 'EMPLOYEE' } });
+    const targetLower = target.toLowerCase();
+    const employee = allEmployees.find(
+      (e: any) =>
+        e.email.toLowerCase() === targetLower ||
+        e.name.toLowerCase() === targetLower ||
+        e.name.toLowerCase().includes(targetLower)
+    );
+
+    if (!employee) {
+      return {
+        reply: ask(
+          `কর্মী "${target}" খুঁজে পাওয়া যায়নি। #team লিখে তালিকা দেখুন।`,
+          `Employee "${target}" not found. Type #team to see the employee list.`
+        ),
+      };
+    }
+
+    if (!ctx.confirm) {
+      return {
+        reply: ask(
+          `আমি কর্মী "${employee.name}" (${employee.email})-এর পাসওয়ার্ড পরিবর্তন করব। পাসওয়ার্ড সেট হবে (দেখানো হবে না)। ${CONFIRM_BN}`,
+          `I will change the password for employee "${employee.name}" (${employee.email}) (hidden). ${CONFIRM_EN}`
+        ),
+        needsConfirmation: true,
+        pending: { command: 'password', args: [employee.email, newPassword] },
+      };
+    }
+
+    const password_hash = await hashPassword(newPassword);
+    await prisma.user.update({
+      where: { id: employee.id },
+      data: { password_hash },
+    });
+
+    await createAuditLog({
+      actorId: ctx.actorId,
+      action: 'UPDATE',
+      entity: 'User',
+      entityId: employee.id,
+      payload: { action: 'PASSWORD_RESET', name: employee.name, email: employee.email, role: 'EMPLOYEE', via: 'agent' },
+    });
+
+    return {
+      reply: ask(
+        `কর্মী "${employee.name}" (${employee.email})-এর পাসওয়ার্ড সফলভাবে পরিবর্তন করা হয়েছে।`,
+        `Password updated successfully for employee "${employee.name}" (${employee.email}).`
+      ),
+    };
+  },
+};
+
 // ---------- registry ----------
 
-export const COMMANDS: AgentCommand[] = [helpCommand, groupsCommand, linksCommand, teamCommand, assignCommand, statusCommand];
+export const COMMANDS: AgentCommand[] = [helpCommand, groupsCommand, linksCommand, teamCommand, assignCommand, statusCommand, passwordCommand];
 
 export function findCommand(name: string): AgentCommand | null {
   const key = name.trim().toLowerCase();

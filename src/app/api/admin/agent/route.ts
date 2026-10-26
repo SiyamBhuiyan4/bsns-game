@@ -84,6 +84,11 @@ export async function POST(request: NextRequest) {
     const parsed = parseMessage(message);
     if (parsed.command !== null) {
       result = await executeCommand(parsed.command, parsed.args, ctx);
+      if (parsed.command === 'team' || parsed.command === 'password') {
+        result.link = { href: '/admin/employees', labelBn: 'টিম পেজে দেখুন', labelEn: 'View in Team page' };
+      } else if (parsed.command === 'groups' || parsed.command === 'links') {
+        result.link = { href: '/admin/sections', labelBn: 'গ্রুপ পেজে দেখুন', labelEn: 'View in Groups page' };
+      }
     } else {
       // Plain text never executes anything: it only points the admin to the right page.
       result = await navigate(message);

@@ -41,6 +41,7 @@ interface EmployeeItem {
   email: string;
   phone: string | null;
   is_active: boolean;
+  can_view_all_customers?: boolean;
   created_at: string;
   sections: SectionRef[];
   total_completed_links: number;
@@ -82,6 +83,7 @@ export default function EmployeesPage() {
   const [editPhone, setEditPhone] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editActive, setEditActive] = useState(true);
+  const [editCanViewAllCustomers, setEditCanViewAllCustomers] = useState(false);
   const [editSubmitting, setEditSubmitting] = useState(false);
 
   // Assign Sections Modal
@@ -218,6 +220,7 @@ export default function EmployeesPage() {
           phone: editPhone,
           email: editEmail,
           is_active: editActive,
+          can_view_all_customers: editCanViewAllCustomers,
         }),
       });
 
@@ -451,11 +454,21 @@ export default function EmployeesPage() {
                     <td className="text-right tabular-nums font-medium text-slate-900">{emp.total_completed_links}</td>
 
                     <td>
-                      {emp.is_active ? (
-                        <span className="badge badge-green">{t('emp.active', 'সক্রিয়', 'Active')}</span>
-                      ) : (
-                        <span className="badge badge-gray">{t('emp.inactive', 'নিষ্ক্রিয়', 'Inactive')}</span>
-                      )}
+                      <div className="flex flex-col gap-1 items-start">
+                        {emp.is_active ? (
+                          <span className="badge badge-green">{t('emp.active', 'সক্রিয়', 'Active')}</span>
+                        ) : (
+                          <span className="badge badge-gray">{t('emp.inactive', 'নিষ্ক্রিয়', 'Inactive')}</span>
+                        )}
+                        {emp.can_view_all_customers && (
+                          <span
+                            className="inline-flex items-center gap-1 rounded border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700"
+                            title={t('emp.has_cust_access', 'সম্পূর্ণ কাস্টমার ডেটাবেস দেখার অনুমতি রয়েছে', 'Has full customer database access')}
+                          >
+                            {t('emp.all_cust_badge', 'পূর্ণ কাস্টমার এক্সেস', 'Full Leads Access')}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     <td className="whitespace-nowrap text-right">
@@ -512,6 +525,7 @@ export default function EmployeesPage() {
                             setEditPhone(emp.phone || '');
                             setEditEmail(emp.email);
                             setEditActive(emp.is_active);
+                            setEditCanViewAllCustomers(!!emp.can_view_all_customers);
                             setErrorMessage(null);
                           }}
                           className="btn-icon"
@@ -687,6 +701,35 @@ export default function EmployeesPage() {
                     className="h-4 w-4 rounded border-slate-300 accent-brand-600"
                   />
                   {t('emp.f_active', 'অ্যাকাউন্ট সক্রিয়', 'Account active')}
+                </label>
+
+                <label
+                  htmlFor="edit_emp_can_view_all_customers"
+                  className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-indigo-200 bg-indigo-50/60 p-3 text-sm text-slate-800 transition hover:bg-indigo-50"
+                >
+                  <input
+                    type="checkbox"
+                    id="edit_emp_can_view_all_customers"
+                    checked={editCanViewAllCustomers}
+                    onChange={(e) => setEditCanViewAllCustomers(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-indigo-600"
+                  />
+                  <div>
+                    <span className="font-semibold text-slate-900">
+                      {t(
+                        'emp.grant_customer_db_access',
+                        'সম্পূর্ণ কাস্টমার ডেটাবেস দেখার অনুমতি দিন',
+                        'Grant Full Customer Database Access'
+                      )}
+                    </span>
+                    <p className="mt-0.5 text-xs text-slate-600">
+                      {t(
+                        'emp.grant_customer_db_desc',
+                        'অনুমোদন দিলে এই কর্মী নিজের ও অন্যান্য সকল কর্মীর যুক্ত করা কাস্টমার তালিকা দেখতে পারবেন',
+                        'When granted, this employee can view all customers across the company database'
+                      )}
+                    </p>
+                  </div>
                 </label>
               </div>
 

@@ -15,11 +15,16 @@ import {
   DollarSign,
   ChevronRight,
   Send,
+  Calendar,
+  Clock,
+  ShieldCheck,
+  Lock,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import PageHeader from '@/components/ui/PageHeader';
 import { useLanguage } from '@/components/LanguageContext';
 import EmptyState from '@/components/ui/EmptyState';
+import { formatBstDateTime } from '@/lib/date';
 
 interface ProductRef {
   id: string;
@@ -49,6 +54,7 @@ interface LeadItem {
   next_followup_date: string | null;
   notes_count: number;
   created_at: string;
+  created_at_bst?: string;
   updated_at: string;
   days_since_update: number;
   is_unfinished: boolean;
@@ -93,8 +99,21 @@ export default function EmployeeLeadsPage() {
   const [addNote, setAddNote] = useState('');
   const [addSubmitting, setAddSubmitting] = useState(false);
 
-  // Phone Duplicate Check Warning State (Acceptance Test 14)
+  // Permissions & Calendar Date Presets
+  const [canViewAllCustomers, setCanViewAllCustomers] = useState(false);
+  const [datePreset, setDatePreset] = useState<'1d' | '3d' | '7d' | '30d' | 'all' | 'custom'>('all');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+
+  // Phone Duplicate Check State (Requirement 1)
   const [phoneWarning, setPhoneWarning] = useState<string | null>(null);
+  const [phoneCheckResult, setPhoneCheckResult] = useState<{
+    checked: boolean;
+    isExisting: boolean;
+    leadName?: string;
+    ownerName?: string;
+    message?: string;
+  } | null>(null);
   const [checkingPhone, setCheckingPhone] = useState(false);
 
   // Status Change Modal (Acceptance Test 13)
@@ -121,17 +140,26 @@ export default function EmployeeLeadsPage() {
       if (showUnfinishedOnly) {
         url += `&unfinished=true`;
       }
+      if (datePreset === 'custom') {
+        if (customStartDate) url += `&startDate=${customStartDate}`;
+        if (customEndDate) url += `&endDate=${customEndDate}`;
+      } else if (datePreset !== 'all') {
+        url += `&period=${datePreset}`;
+      }
       const res = await fetch(url);
       const data = await res.json();
       if (res.ok) {
         setLeads(data.leads || []);
+        if (typeof data.can_view_all_customers === 'boolean') {
+          setCanViewAllCustomers(data.can_view_all_customers);
+        }
       }
     } catch {
       setErrorMessage('লিড লোড করা যায়নি');
     } finally {
       setLoading(false);
     }
-  }, [activeTab, showUnfinishedOnly, searchQuery]);
+  }, [activeTab, showUnfinishedOnly, searchQuery, datePreset, customStartDate, customEndDate]);
 
   const fetchMetadata = async () => {
     try {
@@ -153,7 +181,7 @@ export default function EmployeeLeadsPage() {
     fetchMetadata();
   }, [fetchLeads]);
 
-  // Live Phone Duplicate Check (Acceptance Test 14)
+  // Live Phone Duplicate Check (Requirement 1)
   const handlePhoneChange = async (val: string) => {
     setAddPhone(val);
     const cleaned = val.replace(/[\s-]/g, '');
@@ -163,13 +191,26 @@ export default function EmployeeLeadsPage() {
         const res = await fetch(`/api/leads/check-phone?phone=${encodeURIComponent(cleaned)}`);
         const data = await res.json();
         if (data.exists) {
-          if (data.isOwnLead) {
-            setPhoneWarning('সতর্কবার্তা: এই মোবাইল নম্বরটি ইতিমধ্যে আপনার নিজস্ব তালিকায় লিড হিসেবে যুক্ত রয়েছে');
-          } else {
-            setPhoneWarning('সতর্কবার্তা: এই মোবাইল নম্বরটি ইতিমধ্যে সিস্টেমে অন্য লিড হিসেবে যুক্ত রয়েছে (অন্য কর্মীর নাম গোপন রাখা হয়েছে)');
-          }
+          const ownerDisplay = data.ownerName || 'অন্য কর্মী';
+          const msg = `পুরাতন কাস্টমার (Old Customer: ${data.leadName || 'বিদ্যমান'}, যোগ করেছেন: ${ownerDisplay})`;
+          setPhoneWarning(`এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার: ${data.leadName || ''}, যোগ করেছেন: ${ownerDisplay})। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।`);
+          setPhoneCheckResult({
+            checked: true,
+            isExisting: true,
+            leadName: data.leadName,
+            ownerName: ownerDisplay,
+            message: msg,
+          });
+        } else if (data.valid) {
+          setPhoneWarning(null);
+          setPhoneCheckResult({
+            checked: true,
+            isExisting: false,
+            message: 'নতুন কাস্টমার (New Customer)',
+          });
         } else {
           setPhoneWarning(null);
+          setPhoneCheckResult(null);
         }
       } catch {
         // ignore
@@ -178,11 +219,16 @@ export default function EmployeeLeadsPage() {
       }
     } else {
       setPhoneWarning(null);
+      setPhoneCheckResult(null);
     }
   };
 
   const handleAddLead = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (phoneCheckResult?.isExisting) {
+      setErrorMessage('এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার)। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।');
+      return;
+    }
     setAddSubmitting(true);
     setErrorMessage(null);
 
@@ -214,9 +260,10 @@ export default function EmployeeLeadsPage() {
         setAddExpectedValue('');
         setAddNote('');
         setPhoneWarning(null);
+        setPhoneCheckResult(null);
         fetchLeads();
       } else {
-        setErrorMessage(data.error || 'লিড তৈরি ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || 'এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার)। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।');
       }
     } catch {
       setErrorMessage('নেটওয়ার্ক ত্রুটি');
@@ -426,6 +473,71 @@ export default function EmployeeLeadsPage() {
         </div>
       )}
 
+      {/* Permission Indicator */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          {canViewAllCustomers ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 shadow-xs">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+              {L('সম্পূর্ণ কাস্টমার ডেটাবেস দেখার অনুমতি সক্রিয় (Full Access)', 'Full Customer Database Access Granted')}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+              <Lock className="h-3.5 w-3.5 text-slate-500" />
+              {L('নিজস্ব কাস্টমার তালিকা (Own Customers Only)', 'Viewing Own Customers Only')}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Date Filter Presets & Calendar Range */}
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/80 bg-white p-2.5 shadow-xs">
+        <span className="flex items-center gap-1 text-xs font-semibold text-slate-600 mr-1">
+          <Calendar className="h-3.5 w-3.5 text-brand-600" />
+          {L('সময়কাল:', 'Period:')}
+        </span>
+        {[
+          { id: '1d', label: L('১ দিন (আজ)', '1 Day (Today)') },
+          { id: '3d', label: L('৩ দিন', '3 Days') },
+          { id: '7d', label: L('৭ দিন', '7 Days') },
+          { id: '30d', label: L('৩০ দিন', '30 Days') },
+          { id: 'all', label: L('সকল সময়', 'All Time') },
+          { id: 'custom', label: L('কাস্টম ক্যালেন্ডার', 'Custom Range') },
+        ].map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            onClick={() => setDatePreset(p.id as any)}
+            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+              datePreset === p.id
+                ? 'bg-brand-600 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
+        {datePreset === 'custom' && (
+          <div className="flex items-center gap-1.5 ml-auto">
+            <input
+              type="date"
+              value={customStartDate}
+              onChange={(e) => setCustomStartDate(e.target.value)}
+              className="input h-8 px-2 py-0.5 text-xs"
+              title={L('শুরুর তারিখ', 'Start date')}
+            />
+            <span className="text-xs text-slate-400">—</span>
+            <input
+              type="date"
+              value={customEndDate}
+              onChange={(e) => setCustomEndDate(e.target.value)}
+              className="input h-8 px-2 py-0.5 text-xs"
+              title={L('শেষ তারিখ', 'End date')}
+            />
+          </div>
+        )}
+      </div>
+
       {/* Stage tabs + search */}
       <div className="space-y-3">
         <div className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
@@ -510,6 +622,13 @@ export default function EmployeeLeadsPage() {
                       <span className="badge badge-amber">{l.days_since_update} {L('দিন অপেক্ষমাণ', 'days waiting')}</span>
                     )}
                   </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+                    <Clock className="h-3 w-3 text-slate-400" />
+                    <span>{formatBstDateTime(l.created_at, lang)}</span>
+                    {canViewAllCustomers && l.owner_name && (
+                      <span className="font-medium text-slate-700">({L('যোগ করেছেন:', 'By:')} {l.owner_name})</span>
+                    )}
+                  </div>
                   <div className="mt-1 text-sm tabular-nums">{renderValue(l)}</div>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <button onClick={() => openStatus(l)} className="btn btn-secondary min-h-10">
@@ -531,6 +650,7 @@ export default function EmployeeLeadsPage() {
                 <thead>
                   <tr>
                     <th>{L('ক্রেতা', 'Customer')}</th>
+                    <th>{L('যোগ করার সময় (BST)', 'Added (BST)')}</th>
                     <th>{L('ধরন', 'Type')}</th>
                     <th>{L('পণ্য', 'Product')}</th>
                     <th>{L('স্টেজ', 'Stage')}</th>
@@ -559,6 +679,17 @@ export default function EmployeeLeadsPage() {
                           <Phone className="h-3 w-3 text-slate-400" />
                           <span>{l.masked_phone}</span>
                         </div>
+                      </td>
+                      <td className="text-xs text-slate-600 whitespace-nowrap">
+                        <div className="flex items-center gap-1 font-mono text-[11px]">
+                          <Clock className="h-3 w-3 text-slate-400" />
+                          <span>{formatBstDateTime(l.created_at, lang)}</span>
+                        </div>
+                        {canViewAllCustomers && l.owner_name && (
+                          <div className="mt-0.5 text-[10px] text-slate-500">
+                            {L('যোগ করেছেন:', 'By:')} <span className="font-semibold text-slate-800">{l.owner_name}</span>
+                          </div>
+                        )}
                       </td>
                       <td className="text-xs">{getBuyerTypeLabel(l.buyer_type)}</td>
                       <td className="text-xs">{l.product ? l.product.name_bn : '—'}</td>
@@ -619,7 +750,7 @@ export default function EmployeeLeadsPage() {
 
               <div>
                 <label htmlFor="add-phone" className="label">
-                  {L('মোবাইল (১১ ডিজিট) *', 'Phone *')}
+                  {L('মোবাইল নম্বর * (অদ্বিতীয় / Unique)', 'Phone * (Unique in DB)')}
                 </label>
                 <div className="relative">
                   <input
@@ -629,16 +760,39 @@ export default function EmployeeLeadsPage() {
                     placeholder="017XXXXXXXX"
                     value={addPhone}
                     onChange={(e) => handlePhoneChange(e.target.value)}
-                    className="input pr-9 font-mono"
+                    className={`input pr-9 font-mono ${
+                      phoneCheckResult?.isExisting
+                        ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-rose-200'
+                        : phoneCheckResult?.checked
+                        ? 'border-emerald-400 bg-emerald-50/20 focus:border-emerald-500 focus:ring-emerald-200'
+                        : ''
+                    }`}
                   />
                   {checkingPhone && (
                     <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />
                   )}
                 </div>
-                {phoneWarning && (
-                  <div className="alert alert-warning mt-2 py-2 text-xs">
-                    <AlertTriangle className="h-4 w-4 shrink-0" />
-                    <span>{phoneWarning}</span>
+
+                {/* Live Feedback Status (Requirement 1) */}
+                {phoneCheckResult?.checked && !phoneCheckResult.isExisting && (
+                  <div className="mt-2 flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-800">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                    <span>{L('নতুন কাস্টমার (New Customer)', 'New Customer')}</span>
+                  </div>
+                )}
+
+                {phoneCheckResult?.checked && phoneCheckResult.isExisting && (
+                  <div className="mt-2 rounded-md border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-800 space-y-1">
+                    <div className="flex items-center gap-1.5 font-bold text-rose-700">
+                      <XCircle className="h-4 w-4 shrink-0 text-rose-600" />
+                      <span>{phoneCheckResult.message}</span>
+                    </div>
+                    <p className="text-[11px] text-rose-600">
+                      {L(
+                        'এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার)। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।',
+                        'This mobile number already exists in the database (Old Customer). Duplicate customers cannot be added.'
+                      )}
+                    </p>
                   </div>
                 )}
               </div>
@@ -777,7 +931,11 @@ export default function EmployeeLeadsPage() {
                 <button type="button" onClick={() => setIsAddOpen(false)} className="btn btn-secondary min-h-10">
                   {L('বাতিল', 'Cancel')}
                 </button>
-                <button type="submit" disabled={addSubmitting} className="btn btn-primary min-h-10">
+                <button
+                  type="submit"
+                  disabled={addSubmitting || !!phoneCheckResult?.isExisting}
+                  className="btn btn-primary min-h-10"
+                >
                   {addSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   {L('সংরক্ষণ', 'Save')}
                 </button>

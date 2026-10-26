@@ -18,10 +18,14 @@ import {
   Star,
   RotateCcw,
   X,
+  XCircle,
+  Clock,
+  Calendar,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
+import { formatBstDateTime } from '@/lib/date';
 
 type LeadStatus = 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'ORDERED' | 'LOST';
 type BuyerType = 'RETAIL' | 'FARMER' | 'WHOLESALER' | 'RESTAURANT' | 'DEALER' | 'OTHER';
@@ -46,6 +50,7 @@ interface LeadItem {
   next_followup_date: string | null;
   notes_count: number;
   created_at: string;
+  created_at_bst?: string;
   updated_at: string;
   days_since_update: number;
   days_waiting?: number;
@@ -81,6 +86,7 @@ export default function AdminLeadsPage() {
   const [selectedMarketer, setSelectedMarketer] = useState<string>('ALL');
   const [selectedChannel, setSelectedChannel] = useState<string>('ALL');
   const [selectedBuyerType, setSelectedBuyerType] = useState<string>('ALL');
+  const [datePreset, setDatePreset] = useState<'1d' | '3d' | '7d' | '30d' | 'all' | 'custom'>('all');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
   const [showUnfinishedOnly, setShowUnfinishedOnly] = useState(false);
@@ -110,8 +116,15 @@ export default function AdminLeadsPage() {
     if (new URLSearchParams(window.location.search).get('add') === '1') setIsAddOpen(true);
   }, []);
 
-  // Phone Duplicate Check Warning State (Admin reveals existing owner name)
+  // Phone Duplicate Check Warning State (Requirement 1)
   const [phoneWarning, setPhoneWarning] = useState<string | null>(null);
+  const [phoneCheckResult, setPhoneCheckResult] = useState<{
+    checked: boolean;
+    isExisting: boolean;
+    leadName?: string;
+    ownerName?: string;
+    message?: string;
+  } | null>(null);
   const [checkingPhone, setCheckingPhone] = useState(false);
 
   // Status Change Modal State
@@ -141,8 +154,12 @@ export default function AdminLeadsPage() {
       if (selectedMarketer !== 'ALL') params.append('marketerId', selectedMarketer);
       if (selectedChannel !== 'ALL') params.append('channel', selectedChannel);
       if (selectedBuyerType !== 'ALL') params.append('buyerType', selectedBuyerType);
-      if (startDate) params.append('startDate', startDate);
-      if (endDate) params.append('endDate', endDate);
+      if (datePreset === 'custom') {
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+      } else if (datePreset !== 'all') {
+        params.append('period', datePreset);
+      }
 
       const res = await fetch(`/api/leads?${params.toString()}`);
       const data = await res.json();
@@ -161,6 +178,7 @@ export default function AdminLeadsPage() {
     selectedMarketer,
     selectedChannel,
     selectedBuyerType,
+    datePreset,
     startDate,
     endDate,
   ]);
@@ -210,15 +228,27 @@ export default function AdminLeadsPage() {
         const res = await fetch(`/api/leads/check-phone?phone=${encodeURIComponent(cleaned)}`);
         const data = await res.json();
         if (data.exists) {
-          if (data.ownerName) {
-            setPhoneWarning(
-              `এই নম্বরটি আগে থেকেই লিড হিসেবে আছে। মালিক: ${data.ownerName} (${data.ownerEmail || 'Email'}) - স্ট্যাটাস: ${data.status}`
-            );
-          } else {
-            setPhoneWarning('এই নম্বরটি আগে থেকেই লিড হিসেবে আছে।');
-          }
+          const ownerDisplay = data.ownerName || 'অন্য কর্মী';
+          setPhoneCheckResult({
+            checked: true,
+            isExisting: true,
+            leadName: data.leadName,
+            ownerName: ownerDisplay,
+            message: `পুরাতন কাস্টমার (Old Customer: ${data.leadName || 'বিদ্যমান'}, যোগ করেছেন: ${ownerDisplay})`,
+          });
+          setPhoneWarning(
+            `এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার: ${data.leadName || ''}, যোগ করেছেন: ${ownerDisplay})। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।`
+          );
+        } else if (data.valid) {
+          setPhoneWarning(null);
+          setPhoneCheckResult({
+            checked: true,
+            isExisting: false,
+            message: 'নতুন কাস্টমার (New Customer)',
+          });
         } else {
           setPhoneWarning(null);
+          setPhoneCheckResult(null);
         }
       } catch {
         // ignore
@@ -227,11 +257,16 @@ export default function AdminLeadsPage() {
       }
     } else {
       setPhoneWarning(null);
+      setPhoneCheckResult(null);
     }
   };
 
   const handleAddLead = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (phoneCheckResult?.isExisting) {
+      setErrorMessage('এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার)। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।');
+      return;
+    }
     setAddSubmitting(true);
     setErrorMessage(null);
 
@@ -267,9 +302,10 @@ export default function AdminLeadsPage() {
         setAddQualityRating('');
         setAddNote('');
         setPhoneWarning(null);
+        setPhoneCheckResult(null);
         fetchLeads();
       } else {
-        setErrorMessage(data.error || 'লিড তৈরি ব্যর্থ হয়েছে');
+        setErrorMessage(data.error || 'এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার)। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।');
       }
     } catch {
       setErrorMessage('নেটওয়ার্ক ত্রুটি');
@@ -362,6 +398,7 @@ export default function AdminLeadsPage() {
     setSelectedMarketer('ALL');
     setSelectedChannel('ALL');
     setSelectedBuyerType('ALL');
+    setDatePreset('all');
     setStartDate('');
     setEndDate('');
     setShowUnfinishedOnly(false);
@@ -373,6 +410,7 @@ export default function AdminLeadsPage() {
     selectedMarketer !== 'ALL' ||
     selectedChannel !== 'ALL' ||
     selectedBuyerType !== 'ALL' ||
+    datePreset !== 'all' ||
     startDate !== '' ||
     endDate !== '' ||
     showUnfinishedOnly ||
@@ -571,6 +609,35 @@ export default function AdminLeadsPage() {
             />
           </div>
 
+          {/* Calendar & Date Filter Presets */}
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 p-2.5">
+            <span className="flex items-center gap-1 text-xs font-semibold text-slate-600 mr-1">
+              <Calendar className="h-3.5 w-3.5 text-brand-600" />
+              {L('সময়কাল:', 'Period:')}
+            </span>
+            {[
+              { id: '1d', label: L('১ দিন (আজকের নতুন)', '1 Day (Today)') },
+              { id: '3d', label: L('৩ দিন', '3 Days') },
+              { id: '7d', label: L('৭ দিন', '7 Days') },
+              { id: '30d', label: L('৩০ দিন', '30 Days') },
+              { id: 'all', label: L('সকল সময়', 'All Time') },
+              { id: 'custom', label: L('কাস্টম ক্যালেন্ডার', 'Custom Range') },
+            ].map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setDatePreset(p.id as any)}
+                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+                  datePreset === p.id
+                    ? 'bg-brand-600 text-white shadow-xs'
+                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div>
               <label className="label" htmlFor="f_marketer">{L('মার্কেটার', 'Marketer')}</label>
@@ -670,6 +737,7 @@ export default function AdminLeadsPage() {
               <thead>
                 <tr>
                   <th>{L('ক্রেতা', 'Customer')}</th>
+                  <th>{L('যোগ করার সময় (BST)', 'Added (BST)')}</th>
                   <th>{L('মার্কেটার', 'Owner')}</th>
                   <th>{L('ধরন', 'Type')}</th>
                   <th>পণ্য / চ্যানেল</th>
@@ -700,6 +768,13 @@ export default function AdminLeadsPage() {
                         <a href={`tel:${l.phone || l.masked_phone}`} className="tabular-nums hover:text-brand-700 hover:underline">
                           {l.phone || l.masked_phone}
                         </a>
+                      </div>
+                    </td>
+
+                    <td className="whitespace-nowrap text-xs text-slate-700">
+                      <div className="flex items-center gap-1.5 font-medium font-mono text-[11px]">
+                        <Clock className="h-3.5 w-3.5 text-slate-400" />
+                        <span>{formatBstDateTime(l.created_at, lang)}</span>
                       </div>
                     </td>
 
@@ -918,7 +993,7 @@ export default function AdminLeadsPage() {
                 </div>
 
                 <div>
-                  <label className="label" htmlFor="lead_phone">{L('মোবাইল', 'Phone *')}</label>
+                  <label className="label" htmlFor="lead_phone">{L('মোবাইল নম্বর * (অদ্বিতীয় / Unique)', 'Phone * (Unique in DB)')}</label>
                   <div className="relative">
                     <input
                       id="lead_phone"
@@ -927,19 +1002,39 @@ export default function AdminLeadsPage() {
                       placeholder="017XXXXXXXX"
                       value={addPhone}
                       onChange={(e) => handlePhoneChange(e.target.value)}
-                      className="input tabular-nums"
+                      className={`input tabular-nums ${
+                        phoneCheckResult?.isExisting
+                          ? 'border-rose-400 bg-rose-50/20 focus:border-rose-500 focus:ring-rose-200'
+                          : phoneCheckResult?.checked
+                          ? 'border-emerald-400 bg-emerald-50/20 focus:border-emerald-500 focus:ring-emerald-200'
+                          : ''
+                      }`}
                     />
                     {checkingPhone && (
                       <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />
                     )}
                   </div>
-                  {phoneWarning ? (
-                    <div className="alert alert-warning mt-2 text-xs">
-                      <AlertTriangle className="h-4 w-4 shrink-0" />
-                      <span>{phoneWarning}</span>
+
+                  {phoneCheckResult?.checked && !phoneCheckResult.isExisting && (
+                    <div className="mt-2 flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-800">
+                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                      <span>{L('নতুন কাস্টমার (New Customer)', 'New Customer')}</span>
                     </div>
-                  ) : (
-                    <p className="hint">11-digit BD number. Duplicates show the current owner.</p>
+                  )}
+
+                  {phoneCheckResult?.checked && phoneCheckResult.isExisting && (
+                    <div className="mt-2 rounded-md border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-800 space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-rose-700">
+                        <XCircle className="h-4 w-4 shrink-0 text-rose-600" />
+                        <span>{phoneCheckResult.message}</span>
+                      </div>
+                      <p className="text-[11px] text-rose-600">
+                        {L(
+                          'এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার)। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।',
+                          'This mobile number already exists in the database (Old Customer). Duplicate customers cannot be added.'
+                        )}
+                      </p>
+                    </div>
                   )}
                 </div>
 
@@ -1084,7 +1179,11 @@ export default function AdminLeadsPage() {
                 <button type="button" onClick={() => setIsAddOpen(false)} className="btn btn-secondary">
                   {L('বাতিল', 'Cancel')}
                 </button>
-                <button type="submit" disabled={addSubmitting} className="btn btn-primary">
+                <button
+                  type="submit"
+                  disabled={addSubmitting || !!phoneCheckResult?.isExisting}
+                  className="btn btn-primary"
+                >
                   {addSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   {L('সংরক্ষণ', 'Save lead')}
                 </button>

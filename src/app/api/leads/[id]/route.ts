@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { createAuditLog } from '@/lib/audit';
 import { normalizePhone, isValidBdPhone, maskPhone } from '@/lib/phone';
+import { formatBstDateTime } from '@/lib/date';
 import { BuyerType, LeadStatus } from '@prisma/client';
 import { z } from 'zod';
 
@@ -53,9 +54,15 @@ export async function GET(
       return NextResponse.json({ error: 'লিড পাওয়া যায়নি' }, { status: 404 });
     }
 
-    // Role check: Employee can only view own lead detail
+    // Role check: Employee can only view own lead detail unless granted can_view_all_customers
     if (session.role === 'EMPLOYEE' && lead.owner_id !== session.userId) {
-      return NextResponse.json({ error: 'এই লিডে আপনার অ্যাক্সেস নেই' }, { status: 403 });
+      const currentUser = await prisma.user.findUnique({
+        where: { id: session.userId },
+        select: { can_view_all_customers: true },
+      });
+      if (!currentUser?.can_view_all_customers) {
+        return NextResponse.json({ error: 'এই লিডে আপনার অ্যাক্সেস নেই' }, { status: 403 });
+      }
     }
 
     // Full unmasked phone is returned on single detail page for authorized user (Admin or Lead Owner)
@@ -67,6 +74,8 @@ export async function GET(
         order_amount: lead.order_amount ? Number(lead.order_amount) : null,
         expected_value: lead.expected_value ? Number(lead.expected_value) : null,
         masked_phone: maskPhone(lead.phone),
+        created_at_bst: formatBstDateTime(lead.created_at, 'bn'),
+        created_at_bst_en: formatBstDateTime(lead.created_at, 'en'),
       },
     });
   } catch (error) {

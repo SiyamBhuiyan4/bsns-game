@@ -385,7 +385,7 @@ export async function navigate(message: string): Promise<NavResult> {
   let lead = say(`${topic.pageBn} পেজ খুলছি।`, `Opening ${topic.pageEn}.`);
 
   // These pages open their add form from ?add=1.
-  if (!topic.deep && actions.has('add') && ['add_product', 'add_lead', 'add_campaign'].includes(topic.id)) {
+  if (!topic.deep && actions.has('add') && ['add_product', 'add_lead', 'add_campaign', 'plan_task'].includes(topic.id)) {
     link = { href: `${topic.href}?add=1`, labelBn: `${topic.pageBn}: নতুন`, labelEn: `${topic.pageEn}: Add` };
     lead = say('যোগ করার ফর্ম খুলছি।', 'Opening the add form.');
   }

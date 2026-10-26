@@ -330,6 +330,10 @@ export default function SectionDetailModal({
       setCustError(L('কাস্টমারের নাম এবং মোবাইল নম্বর পূরণ করা আবশ্যক', 'Name and phone are required'));
       return;
     }
+    if (phoneWarning) {
+      setCustError(L('এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার)। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।', 'This phone number already exists in database (Old customer). Duplicate customers cannot be added.'));
+      return;
+    }
     setCustSubmitting(true);
     setCustError(null);
 

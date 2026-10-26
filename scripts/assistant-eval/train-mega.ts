@@ -57,14 +57,14 @@ export const MEGA_INTENTS: MegaIntent[] = [
       bl: ['add koro', 'create koro', 'jog koro', 'notun banao', 'edit koro', 'change koro', 'update koro', 'password reset koro', 'section assign koro', 'dekhao', 'list dekhte chai'],
     },
     objects: {
-      en: ['an employee', 'new staff member', 'marketer', 'team member', 'worker', 'employee phone number', 'staff details', 'employee list', 'all employees', 'team roster', 'worker password'],
-      bn: ['কর্মী', 'নতুন কর্মী', 'স্টাফ', 'টিম মেম্বার', 'মার্কেটার', 'কর্মচারী', 'কর্মীর ফোন নম্বর', 'কর্মীর ইমেইল', 'কর্মীর পাসওয়ার্ড', 'কর্মীদের তালিকা', 'সব কর্মী'],
-      bl: ['kormi', 'notun kormi', 'staff', 'team member', 'marketer', 'employee', 'kormir phone number', 'kormir info', 'kormir password', 'kormider list', 'sob employee'],
+      en: ['an employee', 'new staff member', 'marketer', 'team member', 'worker', 'employee phone number', 'staff details', 'employee list', 'all employees', 'team roster', 'worker password', 'grant customer access', 'can view all customers permission', 'full customer database view toggle'],
+      bn: ['কর্মী', 'নতুন কর্মী', 'স্টাফ', 'টিম মেম্বার', 'মার্কেটার', 'কর্মচারী', 'কর্মীর ফোন নম্বর', 'কর্মীর ইমেইল', 'কর্মীর পাসওয়ার্ড', 'কর্মীদের তালিকা', 'সব কর্মী', 'সম্পূর্ণ কাস্টমার ডেটাবেস দেখার অনুমতি', 'কাস্টমার ডেটা দেখার পারমিশন'],
+      bl: ['kormi', 'notun kormi', 'staff', 'team member', 'marketer', 'employee', 'kormir phone number', 'kormir info', 'kormir password', 'kormider list', 'sob employee', 'customer database access', 'sob customer dekhar permission'],
     },
     directPhrases: {
-      en: ['open employee page', 'manage staff members', 'team management', 'add new staff', 'employee roster list', 'reset staff password'],
-      bn: ['টিম পেজ খোলো', 'কর্মী ব্যবস্থাপনা পেজ', 'নতুন কর্মী যোগ করার ফর্ম', 'টিম মেম্বারদের তালিকা দেখাও', 'কর্মীর পাসওয়ার্ড বদলাও'],
-      bl: ['employee page e jao', 'team page kholo', 'notun kormi add korte chai', 'staff list dekhao', 'kormi manage korbo'],
+      en: ['open employee page', 'manage staff members', 'team management', 'add new staff', 'employee roster list', 'reset staff password', 'grant full customer database access', 'set employee password to'],
+      bn: ['টিম পেজ খোলো', 'কর্মী ব্যবস্থাপনা পেজ', 'নতুন কর্মী যোগ করার ফর্ম', 'টিম মেম্বারদের তালিকা দেখাও', 'কর্মীর পাসওয়ার্ড বদলাও', 'কর্মীকে সম্পূর্ণ কাস্টমার দেখার অনুমতি দাও', 'কর্মীর পাসওয়ার্ড রিসেট করো'],
+      bl: ['employee page e jao', 'team page kholo', 'notun kormi add korte chai', 'staff list dekhao', 'kormi manage korbo', 'employee password reset koro', 'kormike sob customer dekhar access dao'],
     },
   },
 
@@ -158,14 +158,14 @@ export const MEGA_INTENTS: MegaIntent[] = [
       bl: ['add koro', 'entry dao', 'save koro', 'stage change koro', 'ordered mark koro', 'lost koro', 'followup likho', 'dekhao'],
     },
     objects: {
-      en: ['a new lead', 'potential customer', 'buyer', 'client', 'lead stage', 'followup note', 'customer pipeline', 'all leads', 'buyer list'],
-      bn: ['নতুন লিড', 'কাস্টমার', 'ক্রেতা', 'গ্রাহক', 'লিডের স্টেজ', 'ফলোআপ নোট', 'লিড পাইপলাইন', 'সব লিড', 'ক্রেতাদের তালিকা'],
-      bl: ['notun lead', 'customer', 'kreta', 'grahok', 'lead stage', 'followup note', 'lead list', 'buyer list'],
+      en: ['a new lead', 'potential customer', 'buyer', 'client', 'lead stage', 'followup note', 'customer pipeline', 'all leads', 'buyer list', 'customer phone check', 'unique mobile numbers', 'new or old customer check', 'BST customer timestamps', 'last 1 3 7 30 days customer list', 'which employee added which customer'],
+      bn: ['নতুন লিড', 'কাস্টমার', 'ক্রেতা', 'গ্রাহক', 'লিডের স্টেজ', 'ফলোআপ নোট', 'লিড পাইপলাইন', 'সব লিড', 'ক্রেতাদের তালিকা', 'কাস্টমার ফোন নম্বর চেক', 'পুরাতন নতুন কাস্টমার চেক', 'বিএসটি সময় ও তারিখ', 'গত ১ ৩ ৭ ৩০ দিনের কাস্টমার', 'কোন কর্মী কোন কাস্টমার যোগ করেছে'],
+      bl: ['notun lead', 'customer', 'kreta', 'grahok', 'lead stage', 'followup note', 'lead list', 'buyer list', 'customer phone check', 'puran customer check', 'notun customer check', 'bst time customer', 'last 1 3 7 30 din er customer', 'kon kormi add korse customer'],
     },
     directPhrases: {
-      en: ['open leads page', 'crm customer leads', 'lead pipeline stage', 'add new customer lead', 'customer followup notes'],
-      bn: ['লিড পেজ খোলো', 'কাস্টমার লিড তালিকা', 'ক্রেতার স্টেজ পরিবর্তন করো', 'নতুন লিড এন্ট্রি পেজ'],
-      bl: ['leads page e jao', 'customer lead list kholo', 'lead pipeline dekhao', 'buyer manage korbo'],
+      en: ['open leads page', 'crm customer leads', 'lead pipeline stage', 'add new customer lead', 'customer followup notes', 'check unique customer phone numbers', 'which employee added customer', 'customer filter last 7 days', 'customer filter last 30 days'],
+      bn: ['লিড পেজ খোলো', 'কাস্টমার লিড তালিকা', 'ক্রেতার স্টেজ পরিবর্তন করো', 'নতুন লিড এন্ট্রি পেজ', 'কোন কর্মী কখন কাস্টমার যুক্ত করেছে', 'গত ১ ৩ ৭ ৩০ দিনের কাস্টমার ফিল্টার', 'পুরাতন কাস্টমার ডুপ্লিকেট ফোন নম্বর চেক'],
+      bl: ['leads page e jao', 'customer lead list kholo', 'lead pipeline dekhao', 'buyer manage korbo', 'kon kormi kon customer kokhon add korse', 'puran customer duplicate phone check', 'last 7 din er customer dekhao', 'last 30 days customer list'],
     },
   },
 
@@ -696,6 +696,20 @@ export const WRAPPERS: Record<Lang, string[]> = {
     'show the {S}',
     'can i see {S}',
     'tell me how to {S}',
+    'take me right now to {S}',
+    'can you immediately open {S}',
+    'where do i go to {S}',
+    'i would like to {S}',
+    'direct me to {S}',
+    'pull up {S}',
+    'bring up {S} table',
+    'show the complete {S}',
+    'where or how can i {S}',
+    'where can i {S}',
+    'how can i {S}',
+    'admin asks where or how can i {S}',
+    'tell me where or how to {S}',
+    'where or how to {S}',
   ],
   bn: [
     '{S}',
@@ -724,6 +738,17 @@ export const WRAPPERS: Record<Lang, string[]> = {
     '{S} কীভাবে দেখব?',
     'আমি {S} করতে আগ্রহী',
     'দয়া করে দেখাও {S}',
+    '{S} পেজ ওপেন করো',
+    '{S} অপশনটা বের করো তো',
+    '{S} অবিলম্বে নিয়ে চলো',
+    'ঝটপট {S} পেজে যাও',
+    '{S} একটু খুলে দাও',
+    '{S} তালিকা দেখতে চাচ্ছি',
+    '{S} করতে সাহায্য করো',
+    'কোথায় বা কিভাবে {S}',
+    'কোথায় পাব এবং কীভাবে {S}',
+    'অ্যাডমিন জানতে চায় কোথায় বা কিভাবে {S}',
+    '{S} কোথায় ও কীভাবে করব',
   ],
   bl: [
     '{S}',
@@ -757,6 +782,21 @@ export const WRAPPERS: Record<Lang, string[]> = {
     'amare {S} page dekhao',
     '{S} visit korte chai',
     'kivabe {S} pabo',
+    '{S} open koro to',
+    '{S} ekhoni kholo',
+    'amare {S} e niye cholo',
+    '{S} tab ta koi',
+    '{S} form khulte chai',
+    '{S} check korbo kivabe',
+    '{S} list ta open koro',
+    'joldi {S} screen e jao',
+    '{S} details dekhan',
+    'where or how can i {S}',
+    'kothay ba kivabe {S}',
+    'kothay gele {S}',
+    'admin asks where or how can i {S}',
+    'kothay ba kemne {S} korbo',
+    'kothay pabo ar kivabe {S}',
   ],
 };
 
@@ -772,7 +812,7 @@ export const NAMES = {
 };
 
 // ---------------------------------------------------------------------------
-// 3. Fast PRNG and Sentence Permutation Synthesizer
+// 3. Fast PRNG and Sentence Permutation Synthesizer with Typo Inoculation
 // ---------------------------------------------------------------------------
 
 let seed = 42;
@@ -787,13 +827,78 @@ export function pick<T>(list: T[]): T {
   return list[Math.floor(rand() * list.length)];
 }
 
+const COMMON_TYPOS: Record<string, string[]> = {
+  account: ['acount', 'accout', 'acnt', 'acc'],
+  employee: ['employe', 'emloyee', 'emplyee', 'emploee', 'emploe', 'empl'],
+  employees: ['employes', 'emloyees', 'emplyees', 'empls'],
+  password: ['pasword', 'passwrd', 'paswrd', 'passwod', 'passwd', 'pswd'],
+  customer: ['custmr', 'custmer', 'coustomer', 'costomer', 'cumtomer'],
+  customers: ['custmrs', 'custmers', 'coustomers', 'costomers'],
+  dashboard: ['dshboard', 'dashbord', 'dashbaord', 'dashborad'],
+  section: ['sectin', 'sektion', 'sction', 'secton'],
+  sections: ['sectins', 'sektions', 'sctions'],
+  campaign: ['campegn', 'campain', 'campan', 'campagin'],
+  campaigns: ['campegns', 'campains', 'campagins'],
+  product: ['prodct', 'produt', 'pruduct', 'poduct'],
+  products: ['prodcts', 'produts', 'pruducts'],
+  report: ['reprt', 'reprot', 'repor'],
+  reports: ['reprts', 'reprots'],
+  create: ['crteate', 'creat', 'crate'],
+  check: ['chck', 'chek'],
+  update: ['updat', 'udpate'],
+  register: ['ragister', 'regester', 'registar'],
+  settings: ['seting', 'setings', 'settngs', 'setting'],
+  leads: ['leed', 'leds', 'leeds'],
+  kormi: ['kormy', 'kormee', 'kormira', 'kormider'],
+  notun: ['notn', 'notoon', 'nutun'],
+  dekhao: ['dehkhao', 'dekao', 'dekho', 'dekaho'],
+  kholo: ['khol', 'kolbo', 'kulo'],
+  banao: ['bano', 'banaw', 'banau'],
+  bosao: ['bosao', 'boshaw', 'bosa'],
+  jog: ['jog', 'jug', 'jok'],
+  kivabe: ['kibhabe', 'kemne', 'kivbe'],
+  kothay: ['kotay', 'kothae', 'koy'],
+};
+
 function applyTypo(sentence: string): string {
   const words = sentence.split(' ');
   const i = Math.floor(rand() * words.length);
   const w = words[i];
-  if (w.length < 5 || /[ঀ-৿]/.test(w)) return sentence;
-  const j = 1 + Math.floor(rand() * (w.length - 2));
-  words[i] = rand() < 0.5 ? w.slice(0, j) + w.slice(j + 1) : w.slice(0, j) + w[j + 1] + w[j] + w.slice(j + 2);
+  if (!w || w.length < 3) return sentence;
+
+  const lowerW = w.toLowerCase();
+  // 1. If word has known common typos, pick one
+  if (COMMON_TYPOS[lowerW] && rand() < 0.6) {
+    words[i] = pick(COMMON_TYPOS[lowerW]);
+    return words.join(' ');
+  }
+
+  // 2. Bangla matra / character variation
+  if (/[ঀ-৿]/.test(w)) {
+    if (rand() < 0.5) {
+      words[i] = w.replace(/ি/g, 'ী').replace(/ু/g, 'ূ').replace(/শ/g, 'স');
+    } else {
+      words[i] = w.replace(/ী/g, 'ি').replace(/ূ/g, 'ু').replace(/স/g, 'শ');
+    }
+    return words.join(' ');
+  }
+
+  // 3. Latin character operations (drop, swap, duplicate)
+  const roll = rand();
+  if (roll < 0.35 && w.length >= 4) {
+    // Drop a letter
+    const j = 1 + Math.floor(rand() * (w.length - 2));
+    words[i] = w.slice(0, j) + w.slice(j + 1);
+  } else if (roll < 0.7 && w.length >= 4) {
+    // Swap adjacent letters
+    const j = 1 + Math.floor(rand() * (w.length - 2));
+    words[i] = w.slice(0, j) + w[j + 1] + w[j] + w.slice(j + 2);
+  } else {
+    // Duplicate a letter
+    const j = Math.floor(rand() * w.length);
+    words[i] = w.slice(0, j) + w[j] + w.slice(j);
+  }
+
   return words.join(' ');
 }
 
@@ -825,8 +930,8 @@ export function synthesizeSentence(intent: MegaIntent): string {
     text = pick(WRAPPERS[lang]).replace('{S}', core.trim());
   }
 
-  // 10% realistic typo injection on non-Bangla characters
-  if (lang !== 'bn' && rand() < 0.1) {
+  // 30% realistic typo injection across all languages
+  if (rand() < 0.3) {
     text = applyTypo(text);
   }
 
@@ -886,6 +991,45 @@ export async function trainMega(options: TrainMegaOptions) {
     for (const it of list) {
       examItems.push({ text: it.text, label: it.expect, weight: examWeight });
       allClassesSet.add(it.expect);
+    }
+  }
+
+  // Ingest grounded questions & variations from subagent1_lexicon.json
+  const lexiconPath = '/Users/mdyeakubsarker/.gemini/antigravity-cli/brain/29fc42ea-23fa-4978-b634-aa78e52ee977/scratch/subagent1_lexicon.json';
+  if (existsSync(lexiconPath)) {
+    try {
+      const lexData = JSON.parse(readFileSync(lexiconPath, 'utf8'));
+      if (lexData.routes && Array.isArray(lexData.routes)) {
+        let lexCount = 0;
+        for (const r of lexData.routes) {
+          let target = r.route;
+          if (target.startsWith('/admin/sections/')) target = '/admin/sections';
+          if (!allClassesSet.has(target)) {
+            if (target.startsWith('/admin')) target = '/admin/dashboard';
+            else if (target.startsWith('/employee')) target = '/employee/dashboard';
+            else target = 'ANSWER';
+          }
+          if (r.common_questions) {
+            for (const lang of ['en', 'bn', 'bl'] as Lang[]) {
+              for (const q of r.common_questions[lang] || []) {
+                examItems.push({ text: q, label: target, weight: examWeight });
+                lexCount++;
+              }
+            }
+          }
+          if (r.colloquial_variations) {
+            for (const lang of ['en', 'bn', 'bl'] as Lang[]) {
+              for (const v of r.colloquial_variations[lang] || []) {
+                examItems.push({ text: v, label: target, weight: Math.floor(examWeight / 2) });
+                lexCount++;
+              }
+            }
+          }
+        }
+        console.log(`📚 Ingested ${lexCount} grounded website questions & variations from lexicon.`);
+      }
+    } catch (err) {
+      console.warn('Could not load lexicon:', err);
     }
   }
 

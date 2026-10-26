@@ -4,7 +4,7 @@ import { getSession } from '@/lib/session';
 import { createAuditLog } from '@/lib/audit';
 import { normalizePhone, isValidBdPhone, maskPhone } from '@/lib/phone';
 import { BuyerType, LeadStatus, MetricType, Prisma } from '@prisma/client';
-import { getDhakaDateString } from '@/lib/date';
+import { getDhakaDateString, getDhakaStartOfDay, getDhakaEndOfDay, formatBstDateTime } from '@/lib/date';
 import { parseISO } from 'date-fns';
 import { z } from 'zod';
 
@@ -41,13 +41,19 @@ export async function GET(request: NextRequest) {
   const endDate = searchParams.get('endDate') || null;
   const unfinishedOnly = searchParams.get('unfinished') === 'true';
   const searchQuery = searchParams.get('q')?.trim() || '';
+  const period = searchParams.get('period')?.trim().toLowerCase() || null;
 
   try {
     const conditions: Prisma.LeadWhereInput[] = [];
 
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { can_view_all_customers: true, role: true },
+    });
+
     // 1. Role-based scoping rule:
-    // "Employee sees only own leads. Admin sees all."
-    if (session.role === 'EMPLOYEE') {
+    // "Employee sees only own leads unless granted can_view_all_customers. Admin sees all."
+    if (session.role === 'EMPLOYEE' && !currentUser?.can_view_all_customers) {
       conditions.push({ owner_id: session.userId });
     } else if (marketerId && marketerId !== 'ALL') {
       conditions.push({ owner_id: marketerId });
@@ -65,13 +71,33 @@ export async function GET(request: NextRequest) {
       conditions.push({ source_channel: { contains: channel, mode: 'insensitive' } });
     }
 
-    if (startDate || endDate) {
+    // 2. Period presets & Date range filter in Asia/Dhaka BST
+    if (period && period !== 'all') {
+      const now = new Date();
+      if (period === '1d' || period === '1day' || period === 'today') {
+        conditions.push({
+          created_at: {
+            gte: getDhakaStartOfDay(now),
+            lte: getDhakaEndOfDay(now),
+          },
+        });
+      } else if (period === '3d' || period === '3days') {
+        const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+        conditions.push({ created_at: { gte: threeDaysAgo } });
+      } else if (period === '7d' || period === '7days') {
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        conditions.push({ created_at: { gte: sevenDaysAgo } });
+      } else if (period === '30d' || period === '30days') {
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        conditions.push({ created_at: { gte: thirtyDaysAgo } });
+      }
+    } else if (startDate || endDate) {
       const dateFilter: Prisma.DateTimeFilter = {};
       if (startDate) {
-        dateFilter.gte = new Date(`${startDate}T00:00:00.000Z`);
+        dateFilter.gte = startDate.length === 10 ? new Date(`${startDate}T00:00:00+06:00`) : new Date(startDate);
       }
       if (endDate) {
-        dateFilter.lte = new Date(`${endDate}T23:59:59.999Z`);
+        dateFilter.lte = endDate.length === 10 ? new Date(`${endDate}T23:59:59.999+06:00`) : new Date(endDate);
       }
       conditions.push({ created_at: dateFilter });
     }
@@ -147,6 +173,8 @@ export async function GET(request: NextRequest) {
         next_followup_date: l.next_followup_date,
         notes_count: l._count.notes,
         created_at: l.created_at,
+        created_at_bst: formatBstDateTime(l.created_at, 'bn'),
+        created_at_bst_en: formatBstDateTime(l.created_at, 'en'),
         updated_at: l.updated_at,
         days_since_update: daysSinceUpdate,
         days_waiting: daysWaiting,
@@ -154,7 +182,11 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({ leads: formatted });
+    return NextResponse.json({
+      leads: formatted,
+      can_view_all_customers: !!currentUser?.can_view_all_customers,
+      role: session.role,
+    });
   } catch (error) {
     console.error('Error fetching leads:', error);
     return NextResponse.json({ error: 'লিড তালিকা লোড করা যায়নি' }, { status: 500 });
@@ -180,6 +212,22 @@ export async function POST(request: NextRequest) {
     if (!isValidBdPhone(normalizedPhone)) {
       return NextResponse.json(
         { error: 'সঠিক ১১ ডিজিটের বাংলাদেশী মোবাইল নম্বর দিন (যেমন: 017XXXXXXXX)' },
+        { status: 400 }
+      );
+    }
+
+    // Phone Uniqueness: Check if customer with this mobile number already exists
+    const existingCustomer = await prisma.lead.findFirst({
+      where: { phone: normalizedPhone },
+      include: { owner: { select: { name: true } } },
+    });
+    if (existingCustomer) {
+      return NextResponse.json(
+        {
+          error: 'এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার)। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।',
+          leadName: existingCustomer.name,
+          ownerName: existingCustomer.owner?.name,
+        },
         { status: 400 }
       );
     }

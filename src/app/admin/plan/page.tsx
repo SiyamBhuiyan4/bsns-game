@@ -158,6 +158,14 @@ export default function AdminPlanPage() {
   // Add Task Modal State
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [selectedPhaseIdForAdd, setSelectedPhaseIdForAdd] = useState<string>('');
+  
+  // Deep link from the assistant: ?add=1 opens the add task form.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('add') === '1') {
+      setShowAddTaskModal(true);
+    }
+  }, []);
+
   const [taskForm, setTaskForm] = useState({
     title_bn: '',
     title_en: '',

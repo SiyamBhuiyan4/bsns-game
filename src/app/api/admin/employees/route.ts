@@ -30,6 +30,7 @@ export async function GET() {
         email: true,
         phone: true,
         is_active: true,
+        can_view_all_customers: true,
         created_at: true,
         assignments_as_employee: {
           select: {
@@ -57,6 +58,7 @@ export async function GET() {
       phone: emp.phone,
       masked_phone: emp.phone ? maskPhone(emp.phone) : null,
       is_active: emp.is_active,
+      can_view_all_customers: emp.can_view_all_customers,
       created_at: emp.created_at,
       sections: emp.assignments_as_employee.map((a: any) => ({
         id: a.section.id,

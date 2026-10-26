@@ -35,6 +35,51 @@ export function formatDhakaDateTime(date: Date | string = new Date()): string {
 }
 
 /**
+ * Returns formatted BST (Asia/Dhaka UTC+6) date and time display string.
+ * Example: "26 Oct 2026, 07:30 PM (BST)" or with Bengali digits.
+ */
+export function formatBstDateTime(
+  dateInput: Date | string | null | undefined,
+  lang: 'bn' | 'en' = 'bn'
+): string {
+  if (!dateInput) return '';
+  const d = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+  if (isNaN(d.getTime())) return '';
+
+  const options: Intl.DateTimeFormatOptions = {
+    timeZone: DHAKA_TIMEZONE,
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  };
+
+  const formatted = new Intl.DateTimeFormat('en-US', options).format(d);
+  if (lang === 'bn') {
+    return `${toBengaliDigits(formatted)} (BST)`;
+  }
+  return `${formatted} (BST)`;
+}
+
+/**
+ * Returns UTC Date object corresponding to start of day (00:00:00.000) in Asia/Dhaka.
+ */
+export function getDhakaStartOfDay(date: Date = new Date()): Date {
+  const dhakaDateStr = getDhakaDateString(date);
+  return new Date(`${dhakaDateStr}T00:00:00+06:00`);
+}
+
+/**
+ * Returns UTC Date object corresponding to end of day (23:59:59.999) in Asia/Dhaka.
+ */
+export function getDhakaEndOfDay(date: Date = new Date()): Date {
+  const dhakaDateStr = getDhakaDateString(date);
+  return new Date(`${dhakaDateStr}T23:59:59.999+06:00`);
+}
+
+/**
  * Returns a Date object anchored at 00:00:00 UTC for a given YYYY-MM-DD string.
  */
 export function parseDateOnly(dateStr: string): Date {
