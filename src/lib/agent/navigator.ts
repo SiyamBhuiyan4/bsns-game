@@ -185,7 +185,7 @@ function formatSteps(lines: string[]): string {
 
 const GREETING = ['hi', 'hello', 'hey', 'salam', 'assalamualaikum', 'হ্যালো', 'হাই', 'সালাম', 'আসসালামু'];
 const THANKS = ['thanks', 'thank', 'thx', 'ok', 'okay', 'great', 'nice', 'ধন্যবাদ', 'আচ্ছা', 'ওকে'];
-const CAPABILITY = ['what can you do', 'who are you', 'assistant help with', 'can this assistant', 'assistant diye ki', 'অ্যাসিস্ট্যান্ট দিয়ে কী', 'এই অ্যাসিস্ট্যান্ট', 'this assistant do', 'ki ki korte paro', 'ki korte paro', 'tumi ke', 'tumi ki paro', 'তুমি কে', 'কী করতে পারো', 'কি করতে পারো', 'কী কী পারো', 'কি কি পারো'];
+const CAPABILITY = ['what can you do', 'who are you', 'assistant help with', 'can this assistant', 'assistant diye ki', 'অ্যাসিস্ট্যান্ট দিয়ে কী', 'এই অ্যাসিস্ট্যান্ট', 'this assistant do', 'ki ki korte paro', 'ki korte paro', 'tumi ke', 'tumi ki paro', 'তুমি কে', 'কী করতে পারো', 'কি করতে পারো', 'কী কী পারো', 'কি কি পারো', 'কীভাবে সাহায্য', 'কিভাবে সাহায্য', 'সাহায্য করতে পার', 'sahajjo korte par'];
 
 const WHO = ['who', 'কে', 'ke', 'kara', 'কারা'];
 
@@ -194,26 +194,28 @@ const OFF_TOPIC_PHRASES = ['make a facebook group', 'create a facebook group', '
 
 const UPLOAD_WORDS = ['upload', 'uploads', 'uploaded', 'আপলোড', 'import', 'imported', 'imports', 'ইমপোর্ট', 'csv', 'সিএসভি', 'file', 'files', 'ফাইল'];
 /** Signs that the admin is asking about an upload that already happened. */
-const PAST_WORDS = ['uploaded', 'imported', 'did', 'was', 'last', 'yesterday', 'kal', 'গতকাল', 'before', 'আগে', 'porjonto', 'পর্যন্ত', 'far',
+const PAST_WORDS = ['did', 'was', 'last', 'yesterday', 'kal', 'গতকাল', 'before', 'আগে', 'porjonto', 'পর্যন্ত',
   'hoise', 'হইছে', 'হয়েছে', 'korsilam', 'করছিলাম', 'করেছিলাম', 'disilam', 'দিছিলাম', 'shesh', 'শেষবার', 'শেষ', 'list', 'লিস্ট', 'তালিকা', 'log',
   'history', 'itihas', 'ইতিহাস', 'through', 'thikmoto', 'ঠিকমতো', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
   'শনিবার', 'রবিবার', 'সোমবার', 'মঙ্গলবারের', 'মঙ্গলবার', 'বুধবার', 'বৃহস্পতিবার', 'শুক্রবার', 'mongolbar', 'record', 'records', 'রেকর্ড', 'duplicate', 'duplicates', 'ডুপ্লিকেট'];
 
 /** Report period words; with a number-type word they mean "open that report". */
 const DAY = ['today', 'todays', 'aj', 'ajke', 'ajker', 'আজ', 'আজকে', 'আজকের', 'daily', 'দৈনিক', 'yesterday', 'গতকাল', 'protidin', 'প্রতিদিন'];
-const WEEK = ['week', 'weekly', 'shoptahe', 'soptahe', 'saptahik', 'সপ্তাহে', 'সপ্তাহের', 'সাপ্তাহিক', 'সাপ্তাহিক'];
+const WEEK = ['week', 'weekly', 'shoptahe', 'soptahe', 'saptahik', 'সপ্তাহে', 'সপ্তাহের', 'সাপ্তাহিক'];
 const MONTH = ['month', 'monthly', 'mashe', 'maser', 'masik', 'মাসে', 'মাসের', 'মাসিক', 'মান্থলি'];
 const METRIC = ['score', 'স্কোর', 'profit', 'লাভ', 'মুনাফা', 'sales', 'sale', 'bikri', 'বিক্রি', 'post', 'posts', 'posted', 'পোস্ট', 'rank', 'ranking',
-  'র‍্যাংকিং', 'summary', 'numbers', 'hishab', 'হিসাব', 'report', 'রিপোর্ট', 'pdf', 'result', 'stats', 'performance', 'happened', 'dise', 'দিছে'];
+  'র‍্যাংকিং', 'summary', 'numbers', 'hishab', 'হিসাব', 'report', 'রিপোর্ট', 'pdf', 'result', 'stats', 'performance', 'happened', 'dise', 'দিছে', 'সংখ্যাগুলো'];
 /** If one of these is the subject, the period word is not about a report ("monthly target", "this month's budget"). */
 const NOT_REPORT = ['target', 'targets', 'টার্গেট', 'budget', 'বাজেট', 'plan', 'প্ল্যান', 'lead', 'leads', 'লিড', 'upload', 'আপলোড', 'campaign', 'ক্যাম্পেইন',
-  'ad', 'অ্যাড', 'task', 'কাজ', 'set', 'সেট', 'copy', 'কপি'];
+  'ad', 'অ্যাড', 'task', 'কাজ', 'set', 'সেট', 'copy', 'কপি', 'customer', 'customers', 'buyer', 'buyers', 'client', 'clients', 'ক্রেতা', 'গ্রাহক', 'কাস্টমার', 'lost', 'qualified', 'ordered', 'বাতিল', 'অর্ডার', 'schedule', 'সময়সূচি', 'shortcut', 'শর্টকাট', 'phrase', 'account', 'অ্যাকাউন্ট', 'join', 'joined', 'লগইন', 'login', 'password', 'পাসওয়ার্ড', 'worker', 'কর্মী', 'marketer', 'মার্কেটার', 'bill', 'বিল'];
 const GIVE = ['দাও', 'দিন', 'dao', 'deo', 'den'];
-const CHANGED = ['changed', 'deleted', 'removed', 'edited', 'updated', 'published', 'messed', 'এডিট', 'বদলাইছে', 'সরাই', 'সরিয়েছে', 'গন্ডগোল', 'soraye', 'মুছছে', 'বদলেছে', 'মুছেছে', 'মুছে', 'ডিলিট', 'পরিবর্তন', 'korse', 'korsilo', 'korechhe', 'koreche'];
+const CHANGED = ['changed', 'deleted', 'removed', 'edited', 'updated', 'published', 'messed', 'modify', 'modifying', 'এডিট', 'বদলাইছে', 'সরাই', 'সরিয়েছে', 'গন্ডগোল', 'soraye', 'মুছছে', 'বদলেছে', 'মুছেছে', 'মুছে', 'ডিলিট', 'পরিবর্তন', 'মডিফাই', 'korse', 'korsilo', 'korechhe', 'koreche'];
 
 function isWhoChanged(words: string[]): boolean {
   if (!words.some((w) => WHO.includes(w))) return false;
   if (words.some((w) => ['কাজ', 'kaj', 'work', 'worked'].includes(w))) return false;
+  if (words.some((w) => ['গতকাল', 'kal', 'yesterday', 'aj', 'আজ', 'today'].includes(w))) return false;
+  if (words.some((w) => ['customer', 'buyer', 'ক্রেতা', 'কাস্টমার', 'order', 'অর্ডার'].includes(w))) return false;
   return words.some((w) => CHANGED.some((k) => wordScore(w, k) >= 2));
 }
 
@@ -256,9 +258,10 @@ export function classify(message: string): Classification {
   };
 
   if (OFF_TOPIC_PHRASES.some((p) => lower.includes(p))) return { ...base, kind: 'none' };
+  if (words.some((w) => OFF_TOPIC.has(w)) && (!ranked.length || ranked[0].s < 10)) return { ...base, kind: 'none' };
 
   // "What did I upload last week?", "did tuesday's import go through?"  -> upload history
-  if (hasAny(UPLOAD_WORDS) && hasAny(PAST_WORDS) && !actions.has('how')) return pick('upload_history');
+  if (hasAny(UPLOAD_WORDS) && hasAny(PAST_WORDS) && !actions.has('how') && !actions.has('add')) return pick('upload_history');
 
   // "Sumaiya-কে Dhaka Farmers সেকশন দাও", "jamal ke Agro BD assign koro"  -> assign
   const toPerson = words.some((w) => (w.length > 3 && w.endsWith('কে')) || w === 'ke');
@@ -285,18 +288,21 @@ export function classify(message: string): Classification {
     const minP = Number(process.env.AGENT_MIN_P ?? 0.9);
     if (top && top.p >= minP) {
       if (top.label === 'DECLINE') return { ...base, kind: 'none' };
-      const onPage = (t: Topic) => (top.label === 'ANSWER' ? t.href === null : t.href === top.label);
-      const ruled = ranked.find((r) => onPage(r.t));
-      if (ruled) return pick(ruled.t.id);
-      const fallback =
-        TOPICS.find((t) => onPage(t) && t.actions.some((a) => actions.has(a))) ?? TOPICS.find((t) => onPage(t));
-      if (fallback) return pick(fallback.id);
+      // Prevent false classifier override on bulk CSV upload or settings undo
+      if (top.label === '/admin/csv/history' && (actions.has('add') || actions.has('how') || hasAny(['undo', 'আনডু']))) {
+        // preserve upload_csv / settings_undo
+      } else {
+        const onPage = (t: Topic) => (top.label === 'ANSWER' ? t.href === null : t.href === top.label);
+        const ruled = ranked.find((r) => onPage(r.t));
+        if (ruled) return pick(ruled.t.id);
+        const fallback =
+          TOPICS.find((t) => onPage(t) && t.actions.some((a) => actions.has(a))) ?? TOPICS.find((t) => onPage(t));
+        if (fallback) return pick(fallback.id);
+      }
     }
   }
 
   if (!ranked.length) return { ...base, kind: 'none' };
-  // Clearly outside the panel ("weekly football schedule", "dollar rate") unless the match is very strong.
-  if (words.some((w) => OFF_TOPIC.has(w)) && ranked[0].s < 10) return { ...base, kind: 'none' };
   const topic = ranked[0].t;
   return { kind: 'topic', topic, others: ranked.slice(1).map((r) => r.t), actions, name: extractName(message, topic) };
 }
