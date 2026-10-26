@@ -30,7 +30,7 @@ export function normalizeText(input: string): string {
  * Parses natural language requests that instruct the assistant to perform an action.
  * Returns command & args if an action is requested with parameters, otherwise null.
  */
-export function parseNaturalAction(text: string): { command: string; args: string[] } | null {
+export function parseNaturalAction(text: string, raw?: string): { command: string; args: string[] } | null {
   const lower = text.toLowerCase();
 
   // 1. Employee Account Creation Action (Run before password reset to avoid collision with "name: X pass: Y")
@@ -57,7 +57,7 @@ export function parseNaturalAction(text: string): { command: string; args: strin
 
     // Extract name
     let name = '';
-    const explicitName = /(?:name|nam|নাম)\s*[:=]?\s*([^:=\n]+?)(?=\s+(?:pass|password|pasword|email|phone|মোবাইল|পাসওয়ার্ড)\b|\n|$)/i.exec(text);
+    const explicitName = /(?:^|\s)(?:name|nam|নাম)\s*[:=]\s*([^:=\n]+?)(?=\s+(?:pass|password|pasword|email|phone|মোবাইল|পাসওয়ার্ড)\b|\n|$)/i.exec(text);
     if (explicitName && !/^(?:banao|banaw|বানাও|koro|করো|add|create)$/i.test(explicitName[1].trim())) {
       name = explicitName[1].trim();
     } else {
@@ -83,8 +83,8 @@ export function parseNaturalAction(text: string): { command: string; args: strin
     if (explicitPass) {
       pass = explicitPass[1].trim();
     } else {
-      // Check if there is a standalone token or line that looks like a password (e.g. 000000, 123456, etc.)
-      const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+      // Check if there is a standalone token or line that looks like a password in raw or text (e.g. 000000, 123456, etc.)
+      const lines = (raw || text).split('\n').map((l) => l.trim()).filter(Boolean);
       for (const line of lines) {
         if (line !== email && line !== phone && !line.includes(' ') && line.length >= 4 && line.length <= 32) {
           if (!/^(?:employee|kormi|profile|banao|create|account|staff|profile)$/i.test(line)) {
@@ -97,7 +97,7 @@ export function parseNaturalAction(text: string): { command: string; args: strin
         const words = text.split(/\s+/).filter(Boolean);
         for (const w of words) {
           if (w !== name && w !== email && w !== phone && w.length >= 4 && /^[A-Za-z0-9@#$%^&*_!-]+$/.test(w)) {
-            if (!/^(?:employee|employe|profile|banao|create|account|staff|kormi|namer|nam|gmail|yahoo|hotmail)$/i.test(w)) {
+            if (!/^(?:employee|employe|profile|banao|create|account|staff|kormi|namer|nam|er|gmail|yahoo|hotmail)$/i.test(w)) {
               pass = w;
               break;
             }
@@ -163,6 +163,40 @@ export function parseNaturalAction(text: string): { command: string; args: strin
     return { command: 'links', args: [secName, url] };
   }
 
+  // 5. Section Assignment Action
+  // "assign Sumaiya to Dhaka Farmers" / "Sumaiya ke Dhaka Farmers e assign koro"
+  const assignMatch =
+    /(?:assign|সেকশন\s*বরাদ্দ|যুক্ত\s*করো)\s+([^\s:]+)\s+(?:to|in|সেকশনে|এ)\s+([^\n,]+)/i.exec(text) ||
+    /([^\s:]+)(?:-?কে|\s+ke)\s+([^\n,]+?)(?:\s+সেকশন|\s+section)?(?:\s+এ|\s+e)?\s*(?:assign|বরাদ্দ|দাও|koro|করো)/iu.exec(text);
+
+  if (assignMatch && !/how|kivabe|কিভাবে|where|kothay/i.test(lower)) {
+    const empTarget = assignMatch[1].trim();
+    const secTarget = assignMatch[2].replace(/(?:সেকশন|section)\s*$/i, '').trim();
+    if (empTarget && secTarget && !/^(?:task|টাস্ক|link|লিংক|links)$/i.test(empTarget)) {
+      return { command: 'assign', args: [empTarget, 'to', secTarget] };
+    }
+  }
+
+  // 6. Customer Access Permission Toggle Action
+  // "give Arif access to all customers" / "Arif ke sob customer dekhar access dao"
+  // "Sumaiya er customer view permission bondho koro" / "Arif er customer access bondho koro"
+  const permGrantMatch =
+    /(?:give|grant|allow)\s+([^\s:]+)\s+(?:permission\s+to\s+view\s+all\s+customers|full\s+customer\s+access|access\s+to\s+all\s+customers|customer\s+access)/i.exec(text) ||
+    /([^\s:]+)(?:-?কে|-?ের|\s+ke|\s*er)\s+(?:(?:sob|সকল|সব)\s+)?(?:customer|কাস্টমার)\s*(?:dekhar\s+access|দেখার\s+অনুমতি|access)\s*(?:dao|দাও)/iu.exec(text);
+
+  const permRevokeMatch =
+    /(?:revoke|remove|disable|block)\s+(?:all\s+)?customer\s+(?:view\s+)?access\s+(?:for|from)\s+([^\s:]+)/i.exec(text) ||
+    /([^\s:]+)(?:-?ের|\s*er)\s+(?:(?:sob|সকল|সব)\s+)?(?:customer|কাস্টমার)\s*(?:view\s+)?(?:access|অনুমতি)\s*(?:bondho\s+koro|বন্ধ\s+করো)/iu.exec(text);
+
+  if (permGrantMatch) {
+    const emp = permGrantMatch[1].trim();
+    return { command: 'permission', args: [emp, 'grant'] };
+  }
+  if (permRevokeMatch) {
+    const emp = permRevokeMatch[1].trim();
+    return { command: 'permission', args: [emp, 'revoke'] };
+  }
+
   return null;
 }
 
@@ -178,7 +212,7 @@ export function parseMessage(input: string): ParsedMessage {
   }
 
   // Check for natural language action commands (remote agent actions)
-  const action = parseNaturalAction(text);
+  const action = parseNaturalAction(text, raw);
   if (action) {
     return { command: action.command, args: action.args, raw };
   }

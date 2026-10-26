@@ -651,6 +651,9 @@ export async function navigate(message: string): Promise<NavResult> {
       labelEn: `${dateTitleEn} Report`,
     };
 
+    const topEmpBn = summary.top_employee ? `• 🏆 সেরা পারফর্মার: ${summary.top_employee.name} (${summary.top_employee.score}/১০০)\n` : '';
+    const topEmpEn = summary.top_employee ? `• 🏆 Top Performer: ${summary.top_employee.name} (${summary.top_employee.score}/100)\n` : '';
+
     lead = bn
       ? `📅 **${dateTitleBn} রিপোর্ট সারসংক্ষেপ**:\n` +
         `• 💰 মোট বিক্রি: ${formatTaka(summary.total_sales)}\n` +
@@ -659,6 +662,7 @@ export async function navigate(message: string): Promise<NavResult> {
         `• 📦 নিশ্চিত অর্ডার: ${summary.confirmed_orders} টি\n` +
         `• 📝 গ্রুপ পোস্ট: ${summary.total_posts} টি\n` +
         `• 👥 সক্রিয় কর্মী: ${summary.active_employees_count} জন\n` +
+        topEmpBn +
         `• 📊 গড় স্কোর: ${summary.team_avg_score}/১০০ (${summary.passing_count} পাস, ${summary.failing_count} উন্নতি প্রয়োজন)\n\n` +
         `${dateTitleBn} বিস্তারিত রিপোর্ট পেজ খুলছি...`
       : `📅 **${dateTitleEn} Report Summary**:\n` +
@@ -668,6 +672,7 @@ export async function navigate(message: string): Promise<NavResult> {
         `• 📦 Confirmed Orders: ${summary.confirmed_orders}\n` +
         `• 📝 Group Posts: ${summary.total_posts}\n` +
         `• 👥 Active Employees: ${summary.active_employees_count}\n` +
+        topEmpEn +
         `• 📊 Team Avg Score: ${summary.team_avg_score}/100 (${summary.passing_count} passed, ${summary.failing_count} needs improvement)\n\n` +
         `Opening ${dateTitleEn} full report page...`;
   }

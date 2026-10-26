@@ -747,6 +747,7 @@ export interface DailyReportSummary {
   team_avg_score: number;
   passing_count: number;
   failing_count: number;
+  top_employee?: { name: string; score: number } | null;
 }
 
 /**
@@ -804,6 +805,7 @@ export async function getDailyReportSummary(dateStr: string): Promise<DailyRepor
   let totalScoreSum = 0;
   let passing_count = 0;
   let failing_count = 0;
+  let top_employee: { name: string; score: number } | null = null;
 
   for (const emp of employees) {
     const assignedSectionIds = emp.assignments_as_employee.map((a: any) => a.section_id);
@@ -844,6 +846,10 @@ export async function getDailyReportSummary(dateStr: string): Promise<DailyRepor
     totalScoreSum += scoreResult.totalScore;
     if (scoreResult.isFailing) failing_count++;
     else passing_count++;
+
+    if (!top_employee || scoreResult.totalScore > top_employee.score) {
+      top_employee = { name: emp.name, score: scoreResult.totalScore };
+    }
   }
 
   const team_avg_score = employees.length > 0 ? Number((totalScoreSum / employees.length).toFixed(2)) : 0;
@@ -859,5 +865,6 @@ export async function getDailyReportSummary(dateStr: string): Promise<DailyRepor
     team_avg_score,
     passing_count,
     failing_count,
+    top_employee,
   };
 }

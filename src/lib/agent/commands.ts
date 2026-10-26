@@ -427,32 +427,61 @@ const assignCommand: AgentCommand = {
   name: 'assign',
   aliases: ['অ্যাসাইন', 'বরাদ্দ'],
   descBn: 'কর্মীকে সেকশনে যুক্ত করা (ইমেইল দিয়ে)',
-  descEn: 'Assign an employee (by email) to a section',
-  usage: '#assign <email> to <section name>',
+  descBn: 'কর্মীকে সেকশনে যুক্ত করা (নাম বা ইমেইল দিয়ে)',
+  descEn: 'Assign an employee (by name or email) to a section',
+  usage: '#assign <name/email> to <section name>',
   write: true,
   run: async (args, ctx) => {
+    let employee = null;
+    let sectionName = '';
+
     const emailIndex = args.findIndex((a) => a.includes('@'));
-    if (emailIndex === -1) {
-      return { reply: ask('কর্মীর ইমেইল দিন: #assign <email> to <section>', 'Give the employee email: #assign <email> to <section>') };
-    }
-    const email = parseEmail(args[emailIndex]);
-    if (!email) {
-      return { reply: ask('সঠিক ইমেইল দিন।', 'Enter a valid email.') };
+    if (emailIndex !== -1) {
+      const email = parseEmail(args[emailIndex]);
+      if (!email) {
+        return { reply: ask('সঠিক ইমেইল দিন।', 'Enter a valid email.') };
+      }
+      employee = await prisma.user.findUnique({ where: { email } });
+      const rest = args.filter((_, i) => i !== emailIndex);
+      if (rest.length > 0 && ['to', 'কে', 'তে', 'section', 'সেকশনে', '-'].includes(rest[0].toLowerCase())) {
+        rest.shift();
+      }
+      sectionName = cleanName(rest.join(' '));
+    } else {
+      const sepIndex = args.findIndex((a) => ['to', 'কে', 'তে', 'in'].includes(a.toLowerCase()));
+      if (sepIndex > 0) {
+        const empName = cleanName(args.slice(0, sepIndex).join(' '));
+        sectionName = cleanName(
+          args
+            .slice(sepIndex + 1)
+            .filter((w) => !['section', 'সেকশন', 'সেকশনে'].includes(w.toLowerCase()))
+            .join(' ')
+        );
+        employee = await prisma.user.findFirst({
+          where: { role: 'EMPLOYEE', name: { contains: empName, mode: 'insensitive' } },
+        });
+      } else if (args.length >= 2) {
+        const empName = cleanName(args[0]);
+        sectionName = cleanName(
+          args
+            .slice(1)
+            .filter((w) => !['section', 'সেকশন', 'সেকশনে'].includes(w.toLowerCase()))
+            .join(' ')
+        );
+        employee = await prisma.user.findFirst({
+          where: { role: 'EMPLOYEE', name: { contains: empName, mode: 'insensitive' } },
+        });
+      }
     }
 
-    const rest = args.filter((_, i) => i !== emailIndex);
-    if (rest.length > 0 && ['to', 'কে', 'তে', 'section', 'সেকশনে', '-'].includes(rest[0].toLowerCase())) {
-      rest.shift();
+    if (!employee || employee.role !== 'EMPLOYEE') {
+      return { reply: ask('কর্মীকে পাওয়া যায়নি। নাম বা ইমেইল সঠিকভাবে দিন: #assign <name/email> to <section>', 'Employee not found. Please provide name or email: #assign <name/email> to <section>') };
     }
-    const sectionName = cleanName(rest.join(' '));
+
     if (!sectionName) {
       return { reply: ask('সেকশনের নাম দিন।', 'Give the section name.') };
     }
 
-    const employee = await prisma.user.findUnique({ where: { email } });
-    if (!employee || employee.role !== 'EMPLOYEE') {
-      return { reply: ask(`${email} ইমেইলের কর্মী পাওয়া যায়নি।`, `No employee found with ${email}.`) };
-    }
     const section = await findSectionByName(sectionName);
     if (!section) {
       return { reply: ask(`"${sectionName}" সেকশন পাওয়া যায়নি।`, `Section "${sectionName}" not found.`) };
@@ -473,8 +502,8 @@ const assignCommand: AgentCommand = {
     if (!ctx.confirm) {
       return {
         reply: ask(
-          `আমি ${employee.name} (${email}) কে সেকশন "${section.name}" এ যুক্ত করব। ${CONFIRM_BN}`,
-          `I will assign ${employee.name} (${email}) to section "${section.name}". ${CONFIRM_EN}`
+          `আমি ${employee.name} (${employee.email || employee.phone || 'কর্মী'}) কে সেকশন "${section.name}" এ যুক্ত করব। ${CONFIRM_BN}`,
+          `I will assign ${employee.name} (${employee.email || employee.phone || 'Employee'}) to section "${section.name}". ${CONFIRM_EN}`
         ),
         needsConfirmation: true,
         pending: { command: 'assign', args },
@@ -489,7 +518,7 @@ const assignCommand: AgentCommand = {
       action: 'ASSIGN',
       entity: 'Assignment',
       entityId: assignment.id,
-      payload: { employee: email, section: section.name, via: 'agent' },
+      payload: { employee: employee.name, section: section.name, via: 'agent' },
     });
 
     return {
@@ -620,9 +649,108 @@ const passwordCommand: AgentCommand = {
   },
 };
 
+const permissionCommand: AgentCommand = {
+  name: 'permission',
+  aliases: ['access', 'পারমিশন', 'অনুমতি'],
+  descBn: 'কর্মীকে সব কাস্টমার দেখার অনুমতি দেওয়া বা বন্ধ করা',
+  descEn: 'Grant or revoke full customer view permission for an employee',
+  usage: '#permission <name or email> <grant/revoke>',
+  write: true,
+  run: async (args, ctx) => {
+    if (!args.length) {
+      return {
+        reply: ask(
+          'কর্মীর নাম বা ইমেইল এবং অনুমতি উল্লেখ করুন: #permission <name/email> <grant/revoke>',
+          'Specify employee and action: #permission <name/email> <grant/revoke>'
+        ),
+      };
+    }
+    const isRevoke = args.some((a) =>
+      ['revoke', 'remove', 'off', 'disable', 'bondho', 'বন্ধ'].includes(a.toLowerCase())
+    );
+    const grant = !isRevoke;
+    const cleanArgs = args.filter(
+      (a) =>
+        ![
+          'grant',
+          'allow',
+          'on',
+          'enable',
+          'dao',
+          'দাও',
+          'revoke',
+          'remove',
+          'off',
+          'disable',
+          'bondho',
+          'বন্ধ',
+        ].includes(a.toLowerCase())
+    );
+    const target = cleanName(cleanArgs.join(' '));
+    if (!target) {
+      return { reply: ask('কর্মীর নাম বা ইমেইল দিন।', 'Enter employee name or email.') };
+    }
+
+    const employee = await prisma.user.findFirst({
+      where: {
+        role: 'EMPLOYEE',
+        OR: [{ email: target }, { name: { contains: target, mode: 'insensitive' } }],
+      },
+    });
+
+    if (!employee) {
+      return { reply: ask(`"${target}" নামের কর্মী পাওয়া যায়নি।`, `Employee "${target}" not found.`) };
+    }
+
+    if (!ctx.confirm) {
+      return {
+        reply: ask(
+          `আমি ${employee.name} (${employee.email || employee.phone || 'কর্মী'}) কে সম্পূর্ণ কাস্টমার ডেটাবেস দেখার অনুমতি ${
+            grant ? 'প্রদান' : 'বন্ধ'
+          } করব। ${CONFIRM_BN}`,
+          `I will ${grant ? 'grant' : 'revoke'} full customer database view access for ${employee.name}. ${CONFIRM_EN}`
+        ),
+        needsConfirmation: true,
+        pending: { command: 'permission', args },
+      };
+    }
+
+    await prisma.user.update({
+      where: { id: employee.id },
+      data: { can_view_all_customers: grant },
+    });
+
+    await createAuditLog({
+      actorId: ctx.actorId,
+      action: 'UPDATE',
+      entity: 'User',
+      entityId: employee.id,
+      payload: { name: employee.name, can_view_all_customers: grant, via: 'agent' },
+    });
+
+    return {
+      reply: ask(
+        `${employee.name} এর জন্য সম্পূর্ণ কাস্টমার ডেটাবেস দেখার অনুমতি ${
+          grant ? 'চালু' : 'বন্ধ'
+        } করা হয়েছে।`,
+        `Full customer database view access ${grant ? 'granted' : 'revoked'} for ${employee.name}.`
+      ),
+    };
+  },
+};
+
 // ---------- registry ----------
 
-export const COMMANDS: AgentCommand[] = [helpCommand, groupsCommand, linksCommand, teamCommand, assignCommand, statusCommand, passwordCommand];
+export const COMMANDS: AgentCommand[] = [
+  helpCommand,
+  groupsCommand,
+  linksCommand,
+  teamCommand,
+  assignCommand,
+  permissionCommand,
+  statusCommand,
+  passwordCommand,
+];
 
 export function findCommand(name: string): AgentCommand | null {
   const key = name.trim().toLowerCase();
