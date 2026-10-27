@@ -74,11 +74,11 @@ const SECTION_STYLES: Record<string, SectionStyleConfig> = {
     progressBarColor: 'bg-brand-600',
   },
   NEW_CLIENTS: {
-    bgLight: 'bg-teal-50',
-    textColor: 'text-teal-700',
-    borderColor: 'border-teal-200',
-    ringColor: 'ring-teal-600/20',
-    progressBarColor: 'bg-teal-600',
+    bgLight: 'bg-emerald-50',
+    textColor: 'text-emerald-700',
+    borderColor: 'border-emerald-200',
+    ringColor: 'ring-emerald-600/20',
+    progressBarColor: 'bg-emerald-600',
   },
   FOLLOWUPS_DONE: {
     bgLight: 'bg-violet-50',
@@ -95,18 +95,18 @@ const SECTION_STYLES: Record<string, SectionStyleConfig> = {
     progressBarColor: 'bg-violet-600',
   },
   PROFIT_AMOUNT: {
-    bgLight: 'bg-indigo-50',
-    textColor: 'text-indigo-800',
-    borderColor: 'border-indigo-200',
-    ringColor: 'ring-indigo-600/20',
-    progressBarColor: 'bg-indigo-600',
+    bgLight: 'bg-violet-50',
+    textColor: 'text-violet-800',
+    borderColor: 'border-violet-200',
+    ringColor: 'ring-violet-600/20',
+    progressBarColor: 'bg-violet-600',
   },
   GROUP_DEFAULT: {
-    bgLight: 'bg-blue-50',
-    textColor: 'text-blue-700',
-    borderColor: 'border-blue-200',
-    ringColor: 'ring-blue-600/20',
-    progressBarColor: 'bg-blue-600',
+    bgLight: 'bg-sky-50',
+    textColor: 'text-sky-700',
+    borderColor: 'border-sky-200',
+    ringColor: 'ring-sky-600/20',
+    progressBarColor: 'bg-sky-600',
   },
 };
 
@@ -275,7 +275,7 @@ export default function SectionOverviewCards({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* 1. Core Performance Sections */}
           {filteredCoreSections.map((sec) => {
             const styles = SECTION_STYLES[sec.key] || SECTION_STYLES.GROUP_DEFAULT;
@@ -293,7 +293,7 @@ export default function SectionOverviewCards({
               <div
                 key={sec.key}
                 onClick={() => setSelectedSection({ type: 'standard', section: sec })}
-                className="card group relative flex flex-col justify-between p-4.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300/90"
+                className="card hover-lift press group relative flex flex-col justify-between p-4.5 cursor-pointer hover:border-slate-300/90"
               >
                 <div>
                   {/* Top Header Row: Icon, Title, and Badge */}
@@ -380,7 +380,7 @@ export default function SectionOverviewCards({
                     <div className="mt-3 pt-2.5 border-t border-slate-100 space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-600 font-medium flex items-center gap-1.5">
-                          <Layers className="h-3.5 w-3.5 text-indigo-600" />
+                          <Layers className="h-3.5 w-3.5 text-violet-600" />
                           <span>{L('অন্তর্ভুক্ত সাব-গ্রুপসমূহ:', 'Included Sub-Groups:')}</span>
                         </span>
                         <span className="badge badge-violet text-[10px] font-semibold">
@@ -396,11 +396,11 @@ export default function SectionOverviewCards({
                               e.stopPropagation();
                               setSelectedSection({ type: 'group', section: g });
                             }}
-                            className="inline-flex items-center gap-1 rounded-md bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 px-2 py-0.5 text-[11px] font-medium transition-colors border border-indigo-200/60"
+                            className="inline-flex items-center gap-1 rounded-md bg-violet-50/80 hover:bg-violet-100 text-violet-700 px-2 py-0.5 text-[11px] font-medium transition-colors border border-violet-200/60"
                             title={L('ক্লিক করে এই সাব-গ্রুপের লিঙ্ক ও কাজ দেখুন', 'Click to view links and activity in this sub-group')}
                           >
                             <span className="truncate max-w-[85px]">{g.name}</span>
-                            <span className="text-[10px] text-indigo-500 font-semibold tabular-nums">
+                            <span className="text-[10px] text-violet-500 font-semibold tabular-nums">
                               ({formatNum(g.completedLinksCount)}/{formatNum(g.totalLinks)})
                             </span>
                           </button>
@@ -455,7 +455,7 @@ export default function SectionOverviewCards({
                   onClick={() =>
                     setSelectedSection({ type: 'group', section: groupSec })
                   }
-                  className="card group relative flex flex-col justify-between p-4.5 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300/90"
+                  className="card hover-lift press group relative flex flex-col justify-between p-4.5 cursor-pointer hover:border-slate-300/90"
                 >
                   <div>
                     {/* Top Header Row */}
@@ -467,7 +467,7 @@ export default function SectionOverviewCards({
                           <Layers className="h-5 w-5" />
                         </div>
                         <div className="min-w-0">
-                          <h3 className="font-semibold text-slate-900 truncate group-hover:text-indigo-700 transition-colors">
+                          <h3 className="font-semibold text-slate-900 truncate group-hover:text-violet-700 transition-colors">
                             {groupSec.name}
                           </h3>
                           <p className="text-[11px] text-slate-400">
@@ -530,7 +530,7 @@ export default function SectionOverviewCards({
                       </span>
                     </div>
 
-                    <span className="inline-flex items-center gap-1 font-medium text-indigo-600 group-hover:text-indigo-800 transition-colors">
+                    <span className="inline-flex items-center gap-1 font-medium text-violet-600 group-hover:text-violet-800 transition-colors">
                       {L('বিস্তারিত দেখুন', 'View Details')}
                       <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                     </span>
@@ -543,10 +543,10 @@ export default function SectionOverviewCards({
 
       {/* Collapsible Sub-Groups Tray in All View */}
       {filterType === 'all' && groupSectionsOverview.length > 0 && (
-        <div className="rounded-2xl border border-indigo-100 bg-linear-to-r from-indigo-50/40 via-sky-50/20 to-white p-4 transition-all">
+        <div className="rounded-2xl border border-violet-100 bg-linear-to-r from-violet-50/40 via-sky-50/20 to-white p-4 transition-all">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
                 <Layers className="h-4.5 w-4.5" />
               </div>
               <div>
@@ -568,7 +568,7 @@ export default function SectionOverviewCards({
             <button
               type="button"
               onClick={() => setIsSubgroupsExpanded(!isSubgroupsExpanded)}
-              className="btn btn-secondary btn-sm text-xs inline-flex items-center gap-1.5 font-medium text-indigo-700 hover:text-indigo-800"
+              className="btn btn-secondary btn-sm text-xs inline-flex items-center gap-1.5 font-medium text-violet-700 hover:text-violet-800"
             >
               <span>
                 {isSubgroupsExpanded
@@ -584,7 +584,7 @@ export default function SectionOverviewCards({
           </div>
 
           {isSubgroupsExpanded && (
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-3.5 border-t border-indigo-100/70 animate-in fade-in duration-200">
+            <div className="stagger animate-fade-in mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 pt-3.5 border-t border-violet-100/70">
               {groupSectionsOverview.map((groupSec) => {
                 const styles = SECTION_STYLES.GROUP_DEFAULT;
                 const total = groupSec.totalLinks || 1;
@@ -600,7 +600,7 @@ export default function SectionOverviewCards({
                     onClick={() =>
                       setSelectedSection({ type: 'group', section: groupSec })
                     }
-                    className="card group relative flex flex-col justify-between p-4 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-indigo-300 bg-white"
+                    className="card hover-lift press group relative flex flex-col justify-between p-4 cursor-pointer hover:border-violet-300 bg-white"
                   >
                     <div>
                       <div className="flex items-start justify-between gap-2">
@@ -611,7 +611,7 @@ export default function SectionOverviewCards({
                             <Layers className="h-4 w-4" />
                           </div>
                           <div className="min-w-0">
-                            <h5 className="font-semibold text-slate-900 truncate text-xs group-hover:text-indigo-700 transition-colors">
+                            <h5 className="font-semibold text-slate-900 truncate text-xs group-hover:text-violet-700 transition-colors">
                               {groupSec.name}
                             </h5>
                             <p className="text-[10px] text-slate-400">
@@ -643,7 +643,7 @@ export default function SectionOverviewCards({
 
                       <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                         <div
-                          className="h-full rounded-full bg-indigo-600 transition-all duration-300"
+                          className="h-full rounded-full bg-violet-600 transition-all duration-300"
                           style={{ width: `${percentage}%` }}
                         />
                       </div>
@@ -653,7 +653,7 @@ export default function SectionOverviewCards({
                       <span>
                         <strong>{formatNum(uniqueContributors)}</strong> {L('কর্মী', 'active')}
                       </span>
-                      <span className="font-medium text-indigo-600 group-hover:text-indigo-800 inline-flex items-center gap-0.5">
+                      <span className="font-medium text-violet-600 group-hover:text-violet-800 inline-flex items-center gap-0.5">
                         {L('বিস্তারিত', 'Details')}
                         <ArrowRight className="h-3 w-3" />
                       </span>

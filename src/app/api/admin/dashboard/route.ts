@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/session';
 import { getAdminDashboardData, DashboardPeriodKey } from '@/lib/dashboard';
+import { readLangFromRequest } from '@/lib/i18n/request-lang';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +15,15 @@ export async function GET(request: NextRequest) {
     const employeeId = searchParams.get('employeeId') || undefined;
     const sectionKey = searchParams.get('sectionKey') || undefined;
 
-    const data = await getAdminDashboardData({ period, from, to, employeeId, sectionKey });
+    // Display labels follow the language the admin is reading the app in.
+    const data = await getAdminDashboardData({
+      period,
+      from,
+      to,
+      employeeId,
+      sectionKey,
+      lang: readLangFromRequest(request),
+    });
     return NextResponse.json(data);
   } catch (error: unknown) {
     console.error('Error fetching admin dashboard data:', error);

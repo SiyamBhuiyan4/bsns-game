@@ -23,6 +23,7 @@ import {
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
+import { SkeletonStatCards, SkeletonTable } from '@/components/ui/Skeleton';
 import { useLanguage } from '@/components/LanguageContext';
 
 interface Section {
@@ -349,7 +350,10 @@ export default function SectionsPage() {
       )}
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {loading ? (
+        <SkeletonStatCards count={4} label={t('common.loading', 'লোড হচ্ছে...', 'Loading...')} />
+      ) : (
+      <div className="stagger grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label={t('sec.total', 'মোট সেকশন', 'Sections')} value={sections.length} icon={<Layers className="h-4 w-4" />} tone="gray" />
         <StatCard
           label={t('sec.active', 'সক্রিয় সেকশন', 'Active sections')}
@@ -370,6 +374,7 @@ export default function SectionsPage() {
           tone="violet"
         />
       </div>
+      )}
 
       {/* Sections Table */}
       <div className="card">
@@ -391,10 +396,7 @@ export default function SectionsPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {t('common.loading', 'লোড হচ্ছে...', 'Loading...')}
-          </div>
+          <SkeletonTable rows={6} cols={5} label={t('common.loading', 'লোড হচ্ছে...', 'Loading...')} />
         ) : filteredSections.length === 0 ? (
           <EmptyState
             icon={<Layers className="h-5 w-5" />}
@@ -745,9 +747,20 @@ export default function SectionsPage() {
               </p>
 
               {assignLoading ? (
-                <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-500">
-                  <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
-                  <span>{L("লোড হচ্ছে...")}</span>
+                <div role="status" aria-busy="true" className="space-y-2 rounded-lg border border-slate-200 p-2">
+                  <span className="sr-only">{L("লোড হচ্ছে...")}</span>
+                  {[0, 1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center justify-between gap-2.5 p-2">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <div aria-hidden className="skeleton h-7 w-7 rounded-full" />
+                        <div className="space-y-1.5">
+                          <div aria-hidden className="skeleton h-3.5 w-28" />
+                          <div aria-hidden className="skeleton h-2.5 w-36" />
+                        </div>
+                      </div>
+                      <div aria-hidden className="skeleton h-4 w-4 rounded" />
+                    </div>
+                  ))}
                 </div>
               ) : assignEmployeesList.length === 0 ? (
                 <div className="rounded-lg bg-slate-50 p-4 text-center text-xs text-slate-500">

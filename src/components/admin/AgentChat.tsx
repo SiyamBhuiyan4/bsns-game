@@ -172,7 +172,7 @@ export default function AgentChat() {
           aria-label={L("Open AI assistant / AI সহকারী খুলুন")}
           aria-expanded={open}
           aria-controls="agent-chat-panel"
-          className="fixed bottom-4 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg transition hover:bg-brand-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/40"
+          className="press fixed bottom-4 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg transition hover:bg-brand-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/40"
         >
           <Bot className="h-6 w-6" aria-hidden="true" />
         </button>
@@ -231,7 +231,7 @@ export default function AgentChat() {
                         type="button"
                         disabled={loading}
                         onClick={() => answerConfirmation(m.id, m.originalMessage!, true, m.pending)}
-                        className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+                        className="press rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
                       >
                         {L("Yes, do it / হ্যাঁ, করুন")}
                       </button>
@@ -316,7 +316,7 @@ export default function AgentChat() {
               onClick={send}
               disabled={loading || !input.trim()}
               aria-label={L("Send / পাঠান")}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+              className="press flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
             >
               <Send className="h-4 w-4" aria-hidden="true" />
             </button>

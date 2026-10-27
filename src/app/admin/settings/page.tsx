@@ -18,6 +18,7 @@ import {
 import { toBengaliDigits } from '@/lib/date';
 import PageHeader from '@/components/ui/PageHeader';
 import { useLanguage } from '@/components/LanguageContext';
+import { Skeleton, SkeletonStatCards } from '@/components/ui/Skeleton';
 
 interface SectionWeights {
   SALES_PROFIT: number;
@@ -246,10 +247,23 @@ export default function AdminSettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-7 w-7 animate-spin rounded-full border-2 border-brand-600 border-t-transparent" />
-          <p className="text-sm text-slate-500">{L("লোড হচ্ছে...")}</p>
+      <div className="space-y-6" role="status" aria-busy="true">
+        <span className="sr-only">{L("লোড হচ্ছে...")}</span>
+        <div className="flex items-start gap-3">
+          <Skeleton className="h-10 w-10 rounded-xl" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-3.5 w-64" />
+          </div>
+        </div>
+        <SkeletonStatCards count={3} className="grid grid-cols-1 gap-4 sm:grid-cols-3" />
+        <div className="card space-y-4 p-5">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-3 w-32" />
+              <Skeleton className="h-10 w-full rounded-xl" />
+            </div>
+          ))}
         </div>
       </div>
     );

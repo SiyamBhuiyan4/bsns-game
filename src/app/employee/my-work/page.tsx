@@ -494,23 +494,23 @@ function EmployeeMyWorkContent() {
   return (
     <div className="space-y-6">
       {/* ARENA HERO HUD (Gaming Arena Atmosphere) */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 p-6 text-white shadow-xl border border-indigo-500/20">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-xl border border-white/10">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-64 w-64 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-1.5">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-100 border border-emerald-500/30">
                 <Swords className="w-3.5 h-3.5" />
                 {L('মার্কেটার এরিনা', 'Marketer Battle Arena')}
               </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-100 border border-amber-500/30">
                 <Flame className="w-3.5 h-3.5 text-amber-400" />
                 {L('দৈনিক স্ট্রাইক সক্রিয়', 'Daily Streak Active')}
               </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                <Zap className="w-3.5 h-3.5 text-blue-400" />
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-500/20 text-sky-100 border border-sky-500/30">
+                <Zap className="w-3.5 h-3.5 text-sky-400" />
                 {L('সীমাহীন অতিরিক্ত কাজ উন্মুক্ত', 'Unlimited Extra Work Enabled')}
               </span>
             </div>
@@ -529,7 +529,7 @@ function EmployeeMyWorkContent() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => setShowAddModal(true)}
-              className="btn btn-sm gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-bold shadow-lg shadow-amber-500/20 border-0"
+              className="btn btn-sm gap-2 bg-gradient-to-r from-amber-500 to-amber-500 hover:from-amber-600 hover:to-amber-600 text-slate-950 font-bold shadow-lg shadow-amber-500/20 border-0"
             >
               <Zap className="w-4 h-4 fill-current" />
               <span>{L('অতিরিক্ত কাজ যোগ করুন', 'Add Extra Work')}</span>
@@ -558,7 +558,7 @@ function EmployeeMyWorkContent() {
         <div className="relative z-10 mt-6 flex flex-wrap gap-2 border-t border-slate-700/60 pt-4">
           <button
             onClick={() => setActiveTab('links')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+            className={`press flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
               activeTab === 'links'
                 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-400/40'
                 : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -566,29 +566,29 @@ function EmployeeMyWorkContent() {
           >
             <CheckSquare className="w-4 h-4" />
             <span>{L('টাস্ক ১: পোস্ট ও কাজের তালিকা', 'Task 1: Group Posts & Tasks')}</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-md bg-black/20 text-xs font-mono">
+            <span className="ml-1 px-1.5 py-0.2 rounded-md bg-white/20 text-xs font-mono">
               {todoLinks.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('daily_entry')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+            className={`press flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
               activeTab === 'daily_entry'
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25 ring-2 ring-blue-400/40'
+                ? 'bg-sky-600 text-white shadow-lg shadow-sky-500/25 ring-2 ring-sky-400/40'
                 : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800 hover:text-white'
             }`}
           >
             <Coins className="w-4 h-4" />
             <span>{L('টাস্ক ২: দৈনিক বিক্রয় ও মেট্রিক্স এন্ট্রি', 'Task 2: Daily Sales & Log')}</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-md bg-black/20 text-xs font-mono">
+            <span className="ml-1 px-1.5 py-0.2 rounded-md bg-white/20 text-xs font-mono">
               {L("৳")} {formatTaka(Number(salesAmount))}
             </span>
           </button>
 
           <button
             onClick={() => setActiveTab('completed')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+            className={`press flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
               activeTab === 'completed'
                 ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/25 ring-2 ring-amber-400/40'
                 : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800 hover:text-white'
@@ -596,7 +596,7 @@ function EmployeeMyWorkContent() {
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>{L('সম্পন্ন কাজ ও বোনাস লগ', 'Completed & Bonus Log')}</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-md bg-black/20 text-xs font-mono">
+            <span className="ml-1 px-1.5 py-0.2 rounded-md bg-white/20 text-xs font-mono">
               {completedLinks.length}
             </span>
           </button>
@@ -605,9 +605,9 @@ function EmployeeMyWorkContent() {
 
       {/* Rewards Toast */}
       {successToast && (
-        <div className="flex items-center justify-between rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-emerald-800 dark:text-emerald-300 shadow-sm animate-in fade-in slide-in-from-top-2">
+        <div className="flex items-center justify-between rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-emerald-800 shadow-sm animate-fade-up">
           <div className="flex items-center gap-2.5">
-            <Sparkles className="h-5 w-5 text-emerald-600 dark:text-emerald-400 animate-bounce" />
+            <Sparkles className="h-5 w-5 text-emerald-600 animate-bounce" />
             <span className="font-semibold text-sm">{successToast}</span>
             {xpReward && (
               <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white text-xs font-bold">
@@ -626,12 +626,12 @@ function EmployeeMyWorkContent() {
 
       {/* Error Alert */}
       {errorMessage && (
-        <div className="flex items-center justify-between rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-red-800 dark:text-red-300 shadow-sm">
+        <div className="flex items-center justify-between rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-rose-800 shadow-sm">
           <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
+            <AlertCircle className="h-5 w-5 text-rose-600 shrink-0" />
             <span className="text-sm font-medium">{L(errorMessage)}</span>
           </div>
-          <button onClick={() => setErrorMessage(null)} className="text-red-700 font-bold ml-2">
+          <button onClick={() => setErrorMessage(null)} className="text-rose-700 font-bold ml-2">
             ×
           </button>
         </div>
@@ -644,14 +644,14 @@ function EmployeeMyWorkContent() {
         <div className="space-y-4">
           {/* Section Quota & Bonus Indicator Cards */}
           {assignedSections.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="stagger grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {assignedSections.map((sec) => (
                 <div
                   key={sec.id}
                   className={`p-3.5 rounded-xl border transition-all ${
                     sec.isLimitReached
                       ? 'bg-amber-500/10 border-amber-500/40 shadow-sm'
-                      : 'bg-card border-slate-200 dark:border-slate-800'
+                      : 'bg-white border-slate-200'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -669,12 +669,12 @@ function EmployeeMyWorkContent() {
                   </div>
                   <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
                     <span>{L('আজ সম্পন্ন', 'Completed Today')}:</span>
-                    <span className="font-bold text-slate-900 dark:text-slate-100">
+                    <span className="font-bold text-slate-900">
                       {sec.completedToday || 0} / {sec.postLimit ?? '∞'}
                     </span>
                   </div>
                   {sec.postLimit && (
-                    <div className="mt-1.5 h-1.5 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                    <div className="mt-1.5 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all ${
                           sec.isLimitReached ? 'bg-amber-500' : 'bg-emerald-500'
@@ -694,7 +694,7 @@ function EmployeeMyWorkContent() {
           )}
 
           {/* Search, Filter & Quick Add Row */}
-          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-card p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-white p-3 rounded-xl border border-slate-200">
             <div className="relative w-full sm:max-w-xs">
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
               <input
@@ -724,7 +724,7 @@ function EmployeeMyWorkContent() {
 
               <button
                 onClick={() => setShowAddModal(true)}
-                className="btn btn-sm btn-secondary gap-1.5 border-dashed border-amber-500/50 text-amber-700 dark:text-amber-400 hover:bg-amber-500/10"
+                className="btn btn-sm btn-secondary gap-1.5 border-dashed border-amber-500/50 text-amber-700 hover:bg-amber-500/10"
               >
                 <PlusCircle className="w-4 h-4 text-amber-500" />
                 <span>{L('অতিরিক্ত কাজ যোগ করুন', 'Add Extra Work')}</span>
@@ -734,16 +734,32 @@ function EmployeeMyWorkContent() {
 
           {/* Links Queue */}
           {loadingLinks ? (
-            <div className="flex h-48 items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
+            <div role="status" aria-busy="true" className="grid grid-cols-1 gap-3">
+              <span className="sr-only">{L('লোড হচ্ছে...', 'Loading...')}</span>
+              {[0, 1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div aria-hidden className="skeleton h-3 w-24" />
+                    <div aria-hidden className="skeleton h-4 w-2/3" />
+                    <div aria-hidden className="skeleton h-3 w-1/3" />
+                  </div>
+                  <div className="flex gap-2">
+                    <div aria-hidden className="skeleton h-8 w-24 rounded-xl" />
+                    <div aria-hidden className="skeleton h-8 w-20 rounded-xl" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : todoLinks.length === 0 ? (
-            <div className="bg-card rounded-2xl border border-slate-200 dark:border-slate-800 p-8 text-center space-y-4">
+            <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-4">
               <div className="w-14 h-14 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                <h3 className="text-lg font-bold text-slate-900">
                   {L('আজকের নির্ধারিত কাজ সম্পন্ন!', 'Assigned Quota Complete!')}
                 </h3>
                 <p className="text-xs md:text-sm text-slate-500 max-w-md mx-auto mt-1">
@@ -755,36 +771,36 @@ function EmployeeMyWorkContent() {
               </div>
               <button
                 onClick={() => setShowAddModal(true)}
-                className="btn btn-primary gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-bold border-0 shadow-md"
+                className="btn btn-primary gap-2 bg-gradient-to-r from-amber-500 to-amber-500 hover:from-amber-600 hover:to-amber-600 text-slate-950 font-bold border-0 shadow-md"
               >
                 <Zap className="w-4 h-4 fill-current" />
                 <span>{L('⚡ অতিরিক্ত কাজ যোগ করুন (+৫০ XP)', '⚡ Add Extra Work (+50 XP)')}</span>
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-3">
+            <div className="stagger grid grid-cols-1 gap-3">
               {todoLinks.map((link) => (
                 <div
                   key={link.id}
-                  className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-card rounded-xl border transition-all ${
+                  className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-white rounded-xl border transition-all ${
                     link.is_limit_reached
                       ? 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/60'
-                      : 'border-slate-200 dark:border-slate-800 hover:border-emerald-500/50'
+                      : 'border-slate-200 hover:border-emerald-500/50'
                   }`}
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700">
                         {link.section_name}
                       </span>
                       {link.is_limit_reached && (
-                        <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 text-amber-700 flex items-center gap-1">
                           <Zap className="w-3 h-3 fill-current" />
                           {L('কোটা পূর্ণ — বোনাস কাজ সক্রিয়', 'Quota Full — Bonus Active')}
                         </span>
                       )}
                     </div>
-                    <div className="font-semibold text-slate-900 dark:text-slate-100 truncate text-base">
+                    <div className="font-semibold text-slate-900 truncate text-base">
                       {link.title || link.url}
                     </div>
                     <div className="text-xs text-slate-500 truncate mt-0.5">{link.url}</div>
@@ -844,13 +860,13 @@ function EmployeeMyWorkContent() {
           TAB 2: TASK 2 - DAILY SALES, ORDERS & WORK ENTRY
       ======================================================== */}
       {activeTab === 'daily_entry' && (
-        <form onSubmit={handleSaveDailyEntry} className="space-y-6 bg-card p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <form onSubmit={handleSaveDailyEntry} className="space-y-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
           {/* Header & Date Selector */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
             <div>
               <div className="flex items-center gap-2">
-                <Coins className="w-5 h-5 text-blue-500" />
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                <Coins className="w-5 h-5 text-sky-500" />
+                <h2 className="text-lg font-bold text-slate-900">
                   {L('আজকের বিক্রয়, অর্ডার ও কাজের হিসাব', "Today's Sales, Orders & Work Log")}
                 </h2>
               </div>
@@ -880,8 +896,25 @@ function EmployeeMyWorkContent() {
           </div>
 
           {loadingEntry ? (
-            <div className="flex h-48 items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+            <div role="status" aria-busy="true" className="space-y-6">
+              <span className="sr-only">{L('লোড হচ্ছে...', 'Loading...')}</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="space-y-2">
+                    <div aria-hidden className="skeleton h-3 w-28" />
+                    <div aria-hidden className="skeleton h-10 w-full rounded-xl" />
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="space-y-2">
+                    <div aria-hidden className="skeleton h-3 w-24" />
+                    <div aria-hidden className="skeleton h-10 w-full rounded-xl" />
+                  </div>
+                ))}
+              </div>
+              <div aria-hidden className="skeleton h-24 w-full rounded-xl" />
             </div>
           ) : (
             <>
@@ -977,9 +1010,9 @@ function EmployeeMyWorkContent() {
 
               {/* Product-wise Sales Breakdown */}
               {products.length > 0 && (
-                <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <div className="space-y-3 pt-4 border-t border-slate-200">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <h3 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
                       <ShoppingBag className="w-4 h-4 text-emerald-500" />
                       <span>{L('পণ্যভিত্তিক বিক্রির হিসাব', 'Product Sales Breakdown')}</span>
                     </h3>
@@ -992,7 +1025,7 @@ function EmployeeMyWorkContent() {
                     {productSales.map((ps) => (
                       <div
                         key={ps.product_id}
-                        className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40"
+                        className="p-3 rounded-xl border border-slate-200 bg-slate-50/50"
                       >
                         <div className="font-semibold text-sm truncate">{ps.product_name_bn}</div>
                         <div className="text-xs text-slate-500 mb-2">
@@ -1007,7 +1040,7 @@ function EmployeeMyWorkContent() {
                             onChange={(e) => handleProductQuantityChange(ps.product_id, e.target.value)}
                             className="input input-sm w-full font-semibold"
                           />
-                          <span className="text-xs font-mono shrink-0 font-bold text-slate-700 dark:text-slate-300">
+                          <span className="text-xs font-mono shrink-0 font-bold text-slate-700">
                             {L("৳")}{formatTaka(ps.amount)}
                           </span>
                         </div>
@@ -1036,7 +1069,7 @@ function EmployeeMyWorkContent() {
                 <button
                   type="submit"
                   disabled={savingEntry || !canEdit || isLocked}
-                  className="btn btn-primary gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-base shadow-md hover:shadow-lg transition-all"
+                  className="btn btn-primary gap-2 px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-base shadow-md hover:shadow-lg transition-all"
                 >
                   {savingEntry ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -1063,11 +1096,11 @@ function EmployeeMyWorkContent() {
               description={L('টাস্ক ১ থেকে লিঙ্ক পোস্ট করুন বা অতিরিক্ত কাজ যোগ করুন।', 'Post links in Task 1 or log extra tasks to see them here.')}
             />
           ) : (
-            <div className="grid grid-cols-1 gap-3">
+            <div className="stagger grid grid-cols-1 gap-3">
               {completedLinks.map((link) => (
                 <div
                   key={link.completion_id}
-                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-card rounded-xl border border-slate-200 dark:border-slate-800 opacity-90"
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-white rounded-xl border border-slate-200 opacity-90"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
@@ -1082,7 +1115,7 @@ function EmployeeMyWorkContent() {
                       )}
                       <span className="text-xs text-slate-500">{link.section_name}</span>
                     </div>
-                    <div className="font-semibold text-slate-900 dark:text-slate-100 truncate text-base line-through text-slate-500">
+                    <div className="font-semibold text-slate-900 truncate text-base line-through text-slate-500">
                       {link.title || link.url}
                     </div>
                     <div className="text-xs text-slate-400 truncate mt-0.5">{link.url}</div>
@@ -1109,18 +1142,18 @@ function EmployeeMyWorkContent() {
           MODAL: ADD EXTRA WORK / BONUS TASK
       ======================================================== */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-card w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+        <div className="modal-backdrop">
+          <div className="modal-panel space-y-4 p-6" role="dialog" aria-modal="true">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div className="flex items-center gap-2 text-amber-600">
                 <Zap className="w-5 h-5 fill-current" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                <h3 className="text-lg font-bold text-slate-900">
                   {L('অতিরিক্ত কাজ / বোনাস পোস্ট যোগ করুন', 'Add Extra Work / Bonus Post')}
                 </h3>
               </div>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                className="text-slate-400 hover:text-slate-600"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1178,7 +1211,7 @@ function EmployeeMyWorkContent() {
                 </select>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
@@ -1189,7 +1222,7 @@ function EmployeeMyWorkContent() {
                 <button
                   type="submit"
                   disabled={savingExtra || !extraUrl.trim()}
-                  className="btn btn-primary btn-sm gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 font-bold border-0"
+                  className="btn btn-primary btn-sm gap-2 bg-gradient-to-r from-amber-500 to-amber-500 hover:from-amber-600 hover:to-amber-600 text-slate-950 font-bold border-0"
                 >
                   {savingExtra ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1211,8 +1244,18 @@ export default function EmployeeMyWorkPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-64 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+        <div role="status" aria-busy="true" className="space-y-6">
+          <div aria-hidden className="skeleton h-40 w-full rounded-2xl" />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} aria-hidden className="skeleton h-20 w-full rounded-xl" />
+            ))}
+          </div>
+          <div className="space-y-3">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} aria-hidden className="skeleton h-20 w-full rounded-xl" />
+            ))}
+          </div>
         </div>
       }
     >

@@ -325,7 +325,7 @@ export default function PerformancePieCharts({
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Layers className="h-3.5 w-3.5 text-indigo-600" />
+            <Layers className="h-3.5 w-3.5 text-violet-600" />
             <span>{L('প্রতিটি পারফরম্যান্স', 'Each Performance')}</span>
           </button>
 
@@ -348,7 +348,7 @@ export default function PerformancePieCharts({
       {/* 1. OVERALL VIEW: 2 Side-by-Side 3D Pie Charts */}
       {/* ========================================================================= */}
       {viewCategory === 'OVERALL' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="stagger grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Chart 1A: Overall Metric Distribution */}
           <div className="p-5 rounded-2xl bg-gradient-to-b from-slate-50/70 to-white border border-slate-200/80 shadow-2xs space-y-4">
             <div className="flex items-center justify-between">
@@ -430,7 +430,7 @@ export default function PerformancePieCharts({
                       : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                   }`}
                 >
-                  <Icon className="h-4 w-4" style={{ color: isSelected ? '#ffffff' : METRIC_COLORS[item.key] }} />
+                  <Icon className="h-4 w-4" style={{ color: isSelected ? 'var(--color-white)' : METRIC_COLORS[item.key] }} />
                   <span>{item.label}</span>
                   <span
                     className={`ml-1 px-2 py-0.5 rounded-full text-[11px] font-mono ${
@@ -521,7 +521,7 @@ export default function PerformancePieCharts({
 
           {/* Individual Employee 3D Pie Chart & Quick Stats Grid */}
           {activeEmployee ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="stagger grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left 2 Cols: 3D Pie Chart */}
               <div className="lg:col-span-2 p-5 rounded-2xl bg-gradient-to-b from-slate-50/70 to-white border border-slate-200/90 shadow-xs space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
@@ -564,7 +564,7 @@ export default function PerformancePieCharts({
 
                 <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-1">
                   <div className="text-[11px] font-semibold text-slate-500">{L('মেসেজ রিপ্লাই', 'Messages Replied')}</div>
-                  <div className="text-xl font-bold font-mono text-indigo-700">
+                  <div className="text-xl font-bold font-mono text-violet-700">
                     {formatNum(activeEmployee.metrics.messages_replied)} <span className="text-xs font-normal text-slate-500">{L('টি', '')}</span>
                   </div>
                 </div>

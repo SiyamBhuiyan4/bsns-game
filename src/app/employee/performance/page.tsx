@@ -31,6 +31,7 @@ import {
   Cell,
   Legend,
 } from 'recharts';
+import { Skeleton, SkeletonStatCards } from '@/components/ui/Skeleton';
 
 interface PerformanceTrendDay {
   date: string;
@@ -96,8 +97,17 @@ export default function EmployeePerformancePage() {
 
   if (loading && !data) {
     return (
-      <div className="flex h-64 items-center justify-center text-sm text-slate-500">
-        {L('লোড হচ্ছে...', 'Loading...')}
+      <div className="space-y-6" role="status" aria-busy="true">
+        <span className="sr-only">{L('লোড হচ্ছে...', 'Loading...')}</span>
+        <SkeletonStatCards count={4} />
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {[0, 1].map((i) => (
+            <div key={i} className="card p-5">
+              <Skeleton className="mb-4 h-4 w-36" />
+              <Skeleton className="h-52 w-full" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -271,8 +281,8 @@ export default function EmployeePerformancePage() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={trend}>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-slate-200)" />
-                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#64748b' }} />
-                    <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: '#64748b' }} width={32} />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--color-slate-400)' }} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: 'var(--color-slate-400)' }} width={32} />
                     <Tooltip contentStyle={tooltipStyle} />
                     <ReferenceLine
                       y={threshold}
@@ -308,8 +318,8 @@ export default function EmployeePerformancePage() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={componentChartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-slate-200)" />
-                  <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#64748b' }} interval={0} />
-                  <YAxis domain={[0, 'auto']} tick={{ fontSize: 10, fill: '#64748b' }} width={32} />
+                  <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'var(--color-slate-400)' }} interval={0} />
+                  <YAxis domain={[0, 'auto']} tick={{ fontSize: 10, fill: 'var(--color-slate-400)' }} width={32} />
                   <Tooltip contentStyle={tooltipStyle} />
                   <Bar dataKey="score" name={L("অর্জিত স্কোর")} fill="#059669" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="weight" name={L("সর্বোচ্চ ওয়েট")} fill="var(--color-slate-200)" radius={[4, 4, 0, 0]} />

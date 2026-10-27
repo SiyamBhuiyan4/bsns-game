@@ -29,6 +29,7 @@ import {
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
+import { SkeletonStatCards, SkeletonTable } from '@/components/ui/Skeleton';
 
 interface Employee {
   id: string;
@@ -570,19 +571,22 @@ export default function AdminTargetsPage() {
       )}
 
       {/* Stats Summary Cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {loading ? (
+        <SkeletonStatCards count={4} label={L('টার্গেট তালিকা লোড হচ্ছে...', 'Loading targets...')} />
+      ) : (
+      <div className="stagger grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           icon={<Target className="h-5 w-5 text-emerald-600" />}
           label={L('মোট টার্গেট', 'Total Targets')}
           value={formatNum(stats.total)}
         />
         <StatCard
-          icon={<Users className="h-5 w-5 text-blue-600" />}
+          icon={<Users className="h-5 w-5 text-sky-600" />}
           label={L('টার্গেটপ্রাপ্ত কর্মী', 'Targeted Employees')}
           value={formatNum(stats.uniqueEmployees)}
         />
         <StatCard
-          icon={<TrendingUp className="h-5 w-5 text-indigo-600" />}
+          icon={<TrendingUp className="h-5 w-5 text-violet-600" />}
           label={L('গড় পূরণ হার', 'Avg Achievement')}
           value={`${formatNum(stats.avgRate)}%`}
         />
@@ -592,6 +596,7 @@ export default function AdminTargetsPage() {
           value={formatNum(stats.metCount)}
         />
       </div>
+      )}
 
       {/* Advanced Multi-Option Filter Toolbar */}
       <div className="card p-4 space-y-3.5">
@@ -807,7 +812,7 @@ export default function AdminTargetsPage() {
                 key={key}
                 type="button"
                 onClick={() => toggleMetricFilter(key)}
-                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                className={`press inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
                   isSelected
                     ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600/30'
                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200/80 border border-transparent'
@@ -830,10 +835,7 @@ export default function AdminTargetsPage() {
       {/* Targets Table / List */}
       <div className="card overflow-hidden">
         {loading ? (
-          <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
-            <Loader2 className="h-5 w-5 animate-spin text-brand-600" />
-            {L('টার্গেট তালিকা লোড হচ্ছে...', 'Loading targets...')}
-          </div>
+          <SkeletonTable rows={6} cols={6} label={L('টার্গেট তালিকা লোড হচ্ছে...', 'Loading targets...')} />
         ) : filteredTargets.length === 0 ? (
           <EmptyState
             icon={<Target className="h-6 w-6 text-slate-400" />}
@@ -956,7 +958,7 @@ export default function AdminTargetsPage() {
                                 isMet
                                   ? 'text-emerald-600'
                                   : percentage >= 50
-                                  ? 'text-blue-600'
+                                  ? 'text-sky-600'
                                   : 'text-amber-600'
                               }`}
                             >
@@ -969,7 +971,7 @@ export default function AdminTargetsPage() {
                                 isMet
                                   ? 'bg-emerald-500'
                                   : percentage >= 50
-                                  ? 'bg-blue-500'
+                                  ? 'bg-sky-500'
                                   : 'bg-amber-500'
                               }`}
                               style={{ width: `${percentage}%` }}
@@ -1192,7 +1194,7 @@ export default function AdminTargetsPage() {
                               {L(`কাজ #${idx + 1}`, `Job #${idx + 1}`)}: {L(cfg.bn, cfg.en)}
                             </span>
                             {job.id && (
-                              <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">
+                              <span className="text-[10px] bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded font-medium">
                                 {L('বিদ্যমান', 'Existing')}
                               </span>
                             )}

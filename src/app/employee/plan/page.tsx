@@ -11,7 +11,6 @@ import {
   TrendingUp,
   UserCheck,
   Info,
-  Loader2,
   FileText,
   Filter,
   RefreshCw,
@@ -22,6 +21,7 @@ import { format, parseISO } from 'date-fns';
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
 import { useLanguage } from '@/components/LanguageContext';
+import { Skeleton, SkeletonStatCards } from '@/components/ui/Skeleton';
 
 interface Owner {
   id: string;
@@ -149,9 +149,21 @@ export default function EmployeePlanPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
-        <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
-        <p className="text-sm text-slate-500">{L('লোড হচ্ছে...', 'Loading...')}</p>
+      <div className="space-y-6" role="status" aria-busy="true">
+        <span className="sr-only">{L('লোড হচ্ছে...', 'Loading...')}</span>
+        <div className="flex items-start gap-3">
+          <Skeleton className="h-10 w-10 rounded-xl" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-3.5 w-64" />
+          </div>
+        </div>
+        <SkeletonStatCards count={4} />
+        <div className="card space-y-3 p-5">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-6 w-full" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -234,7 +246,7 @@ export default function EmployeePlanPage() {
       />
 
       {/* Admin's Strategic Guidance & Objectives Callout */}
-      <div className="rounded-2xl border border-indigo-500/20 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 text-white shadow-md">
+      <div className="rounded-2xl border border-violet-500/20 bg-gradient-to-r from-slate-900 via-violet-950 to-slate-900 p-5 text-white shadow-md">
         <div className="flex items-start gap-3">
           <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 shrink-0 mt-0.5">
             <Award className="h-5 w-5" />

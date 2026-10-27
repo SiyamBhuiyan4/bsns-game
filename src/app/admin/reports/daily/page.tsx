@@ -21,6 +21,7 @@ import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
 import { formatTaka, getDhakaDateString, getDhakaOffsetDateString } from '@/lib/date';
 import { useLanguage } from '@/components/LanguageContext';
+import { SkeletonTable } from '@/components/ui/Skeleton';
 
 interface DailyEmployeeReport {
   employee_id: string;
@@ -352,7 +353,7 @@ function AdminDailyReportContent() {
         </div>
 
         {loading ? (
-          <div className="p-12 text-center text-sm text-slate-500">{L("লোড হচ্ছে...")}</div>
+          <SkeletonTable rows={6} cols={6} label={L("লোড হচ্ছে...")} />
         ) : employees.length === 0 ? (
           <EmptyState
             icon={<Users className="h-5 w-5" />}

@@ -1047,4 +1047,12 @@ export const EN: Record<string, string> = {
   'প্রতিদিন {0}, মোট {1}': 'Daily {0}, total {1}',
   'সতর্কবার্তা (৮০-১০০%)': 'Warning (80-100%)',
   'বাজেট অতিক্রান্ত (> ১০০%)': 'Over budget (> 100%)',
+  'লাভ': 'Profit',
+  'গ্রুপ পোস্ট / লিংক সম্পন্ন': 'Group links / posts done',
+  'নতুন লিড সংগ্রহ': 'New leads collected',
+  'কনফার্মড অর্ডার': 'Confirmed orders',
+  'ইনবক্স ফলো-আপ': 'Inbox follow-ups',
+  'কাস্টমার প্রোফাইল': 'Customer profile',
+  'ধরন': 'Type',
+  'তৈরি করেছেন': 'Created by',
 };

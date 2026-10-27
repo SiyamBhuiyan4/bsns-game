@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma';
 import { getDhakaDateString, parseDateOnly, formatDhakaDateTime } from '@/lib/date';
 import { calculateEffectiveTargetsForRange } from '@/lib/targets';
 import { calculateEmployeeScore } from '@/lib/scoring';
+import { makeTranslator, type Lang } from '@/lib/i18n/translate';
 import { MetricType, PlanStatus } from '@prisma/client';
 import { subDays, format, parseISO, differenceInCalendarDays, eachDayOfInterval, isValid } from 'date-fns';
 
@@ -13,6 +14,8 @@ export interface DashboardFilter {
   to?: string;
   employeeId?: string;
   sectionKey?: string;
+  /** Language for the display labels in the result. Defaults to Bangla. */
+  lang?: Lang;
 }
 
 export type SectionOverviewKey =
@@ -309,6 +312,7 @@ export function resolveDashboardPeriod(filter: DashboardFilter): {
   label: string;
   todayStr: string;
 } {
+  const L = makeTranslator(filter.lang ?? 'bn');
   const todayStr = getDhakaDateString();
   const period = (filter.period as DashboardPeriodKey) || 'thisMonth';
 
@@ -317,7 +321,7 @@ export function resolveDashboardPeriod(filter: DashboardFilter): {
       period: 'today',
       startDate: todayStr,
       endDate: todayStr,
-      label: `আজ (${todayStr})`,
+      label: L(`আজ (${todayStr})`),
       todayStr,
     };
   }
@@ -328,7 +332,7 @@ export function resolveDashboardPeriod(filter: DashboardFilter): {
       period: 'yesterday',
       startDate: yestStr,
       endDate: yestStr,
-      label: `গতকাল (${yestStr})`,
+      label: L(`গতকাল (${yestStr})`),
       todayStr,
     };
   }
@@ -339,7 +343,7 @@ export function resolveDashboardPeriod(filter: DashboardFilter): {
       period: 'last7days',
       startDate: start7,
       endDate: todayStr,
-      label: `গত ৭ দিন (${start7} হতে ${todayStr})`,
+      label: L(`গত ৭ দিন (${start7} হতে ${todayStr})`),
       todayStr,
     };
   }
@@ -357,7 +361,7 @@ export function resolveDashboardPeriod(filter: DashboardFilter): {
       period: 'custom',
       startDate,
       endDate,
-      label: `কাস্টম তারিখ (${startDate} হতে ${endDate})`,
+      label: L(`কাস্টম তারিখ (${startDate} হতে ${endDate})`),
       todayStr,
     };
   }
@@ -369,7 +373,7 @@ export function resolveDashboardPeriod(filter: DashboardFilter): {
     period: resolvedKey,
     startDate: monthStart,
     endDate: todayStr,
-    label: `এই মাস (${todayStr.slice(0, 7)})`,
+    label: L(`এই মাস (${todayStr.slice(0, 7)})`),
     todayStr,
   };
 }
@@ -378,6 +382,9 @@ export function resolveDashboardPeriod(filter: DashboardFilter): {
  * Fetches all necessary data from Prisma and computes Admin Dashboard metrics and charts.
  */
 export async function getAdminDashboardData(filter: DashboardFilter = {}): Promise<AdminDashboardData> {
+  // Display labels follow the caller's language; stored data is never translated.
+  const lang: Lang = filter.lang ?? 'bn';
+  const L = makeTranslator(lang);
   const periodInfo = resolveDashboardPeriod(filter);
   const { startDate, endDate, todayStr } = periodInfo;
 
@@ -727,7 +734,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
       id: c.id,
       name: c.name,
       channel: c.channel,
-      channelBn: CHANNEL_BN_MAP[c.channel] || c.channel,
+      channelBn: L(CHANNEL_BN_MAP[c.channel] || c.channel),
       budget,
       spend,
       usagePercent,
@@ -738,7 +745,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
   // -------------------------------------------------------------
   // 4. 90-Day Plan Widget
   // -------------------------------------------------------------
-  let currentPhaseName = 'ফেজ ১: প্রথম ৩০ দিন (বিশ্লেষণ)';
+  let currentPhaseName = L('ফেজ ১: প্রথম ৩০ দিন (বিশ্লেষণ)');
   let currentDay = 1;
   let overallProgress = 0;
   let totalTasksCount = 0;
@@ -766,11 +773,11 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     }).length;
 
     if (currentDay > 60) {
-      currentPhaseName = 'ফেজ ৩: দিন ৬১–৯০ (উন্নয়ন)';
+      currentPhaseName = L('ফেজ ৩: দিন ৬১–৯০ (উন্নয়ন)');
     } else if (currentDay > 30) {
-      currentPhaseName = 'ফেজ ২: দিন ৩১–৬০ (বাস্তবায়ন)';
+      currentPhaseName = L('ফেজ ২: দিন ৩১–৬০ (বাস্তবায়ন)');
     } else {
-      currentPhaseName = 'ফেজ ১: প্রথম ৩০ দিন (বিশ্লেষণ)';
+      currentPhaseName = L('ফেজ ১: প্রথম ৩০ দিন (বিশ্লেষণ)');
     }
   }
 
@@ -808,7 +815,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
   const sectionTargetsChart: SectionTargetChartItem[] = [
     {
       sectionKey: 'SALES_PROFIT',
-      name: 'বিক্রয় ও লাভ',
+      name: L('বিক্রয় ও লাভ'),
       target: salesProfitTarget,
       achieved: salesProfitAchieved,
       percent: salesProfitTarget > 0 ? Math.round((salesProfitAchieved / salesProfitTarget) * 100) : 0,
@@ -816,7 +823,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     },
     {
       sectionKey: 'CONTENT',
-      name: 'কনটেন্ট ও পোস্ট',
+      name: L('কনটেন্ট ও পোস্ট'),
       target: contentPostsTarget,
       achieved: contentPostsAchieved,
       percent: contentPostsTarget > 0 ? Math.round((contentPostsAchieved / contentPostsTarget) * 100) : 0,
@@ -824,7 +831,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     },
     {
       sectionKey: 'NEW_BUYERS_B2B',
-      name: 'নতুন ক্রেতা ও B2B',
+      name: L('নতুন ক্রেতা ও B2B'),
       target: newBuyersB2bTarget,
       achieved: newBuyersB2bAchieved,
       percent: newBuyersB2bTarget > 0 ? Math.round((newBuyersB2bAchieved / newBuyersB2bTarget) * 100) : 0,
@@ -832,7 +839,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     },
     {
       sectionKey: 'RETENTION',
-      name: 'রিটেনশন',
+      name: L('রিটেনশন'),
       target: retentionTarget,
       achieved: retentionAchieved,
       percent: retentionTarget > 0 ? Math.round((retentionAchieved / retentionTarget) * 100) : 0,
@@ -840,7 +847,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     },
     {
       sectionKey: 'INBOX_FOLLOWUP',
-      name: 'ইনবক্স ও ফলোআপ',
+      name: L('ইনবক্স ও ফলোআপ'),
       target: inboxFollowupTarget,
       achieved: inboxFollowupAchieved,
       percent: inboxFollowupTarget > 0 ? Math.round((inboxFollowupAchieved / inboxFollowupTarget) * 100) : 0,
@@ -898,7 +905,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
   const leadSourcesChart: LeadSourceItem[] = Array.from(channelCountMap.entries())
     .map(([channel, count]) => ({
       channel,
-      name: CHANNEL_BN_MAP[channel] || channel,
+      name: L(CHANNEL_BN_MAP[channel] || channel),
       count,
       percent: totalLeads > 0 ? Number(((count / totalLeads) * 100).toFixed(1)) : 0,
     }))
@@ -908,6 +915,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
   // 8. Work Sections Overview & Employee Drilldown
   // -------------------------------------------------------------
   const sectionsOverview = computeSectionsOverview({
+    lang,
     activeEmployees,
     allTargets,
     effectiveTargets,
@@ -968,7 +976,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     },
     planWidget: {
       hasPlan: !!plan,
-      name: plan?.name || '৯০ দিনের ডিজিটাল মার্কেটিং কর্মপরিকল্পনা',
+      name: plan?.name || L('৯০ দিনের ডিজিটাল মার্কেটিং কর্মপরিকল্পনা'),
       currentPhaseName,
       currentDay,
       overallProgress,
@@ -1003,6 +1011,8 @@ export function toDhakaDateKey(d: Date | string): string {
  * Computes sectionsOverview for the 5 primary work sections.
  */
 export function computeSectionsOverview(params: {
+  /** Language for the generated history notes. Defaults to Bangla. */
+  lang?: Lang;
   activeEmployees: Array<{ id: string; name: string; email: string }>;
   allTargets: any[];
   effectiveTargets: Record<MetricType, number>;
@@ -1016,6 +1026,7 @@ export function computeSectionsOverview(params: {
   filterEmployeeId?: string;
 }): SectionOverviewItem[] {
   const {
+    lang,
     activeEmployees,
     allTargets,
     effectiveTargets,
@@ -1028,6 +1039,7 @@ export function computeSectionsOverview(params: {
     filterSectionKey,
     filterEmployeeId,
   } = params;
+  const L = makeTranslator(lang ?? 'bn');
 
   const scopedEmployees = filterEmployeeId
     ? activeEmployees.filter((e) => e.id === filterEmployeeId)
@@ -1119,13 +1131,15 @@ export function computeSectionsOverview(params: {
         if (!lead.owner_id) continue;
         const dateStr = getDhakaDateString(new Date(lead.created_at));
         const emp = employeeMap.get(lead.owner_id);
-        const buyerTypeLabel = lead.buyer_type === 'B2B' ? 'পাইকারি (B2B)' : lead.buyer_type === 'DEALER' ? 'ডিলার' : 'খুচরা ক্রেতা';
+        const buyerTypeLabel = L(
+          lead.buyer_type === 'B2B' ? 'পাইকারি (B2B)' : lead.buyer_type === 'DEALER' ? 'ডিলার' : 'খুচরা ক্রেতা'
+        );
         historyLogs.push({
           date: dateStr,
           employeeId: lead.owner_id,
           employeeName: emp ? emp.name : 'Unknown',
           value: 1,
-          note: `কাস্টমার প্রোফাইল: ${lead.name} (${lead.phone})${lead.address ? ` • ${lead.address}` : ''} • ধরন: ${buyerTypeLabel} • তৈরি করেছেন: ${emp ? emp.name : 'Unknown'}`,
+          note: `${L('কাস্টমার প্রোফাইল')}: ${lead.name} (${lead.phone})${lead.address ? ` • ${lead.address}` : ''} • ${L('ধরন')}: ${buyerTypeLabel} • ${L('তৈরি করেছেন')}: ${emp ? emp.name : 'Unknown'}`,
         });
         leadsCountByEmp.set(lead.owner_id, (leadsCountByEmp.get(lead.owner_id) || 0) + 1);
       }

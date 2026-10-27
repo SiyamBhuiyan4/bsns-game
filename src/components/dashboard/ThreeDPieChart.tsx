@@ -173,7 +173,7 @@ export default function ThreeDPieChart({
               cy={cy + effectiveDepth + 12}
               rx={rx * 0.96}
               ry={ry * 0.82}
-              fill="#0f172a"
+              fill="var(--color-ink)"
               opacity="0.14"
               filter="blur(14px)"
             />
@@ -338,7 +338,7 @@ export default function ThreeDPieChart({
                   width="180"
                   height="58"
                   rx="10"
-                  fill="#0f172a"
+                  fill="var(--color-slate-900)"
                   fillOpacity="0.92"
                   stroke="var(--color-slate-600)"
                   strokeWidth="1"
@@ -348,8 +348,8 @@ export default function ThreeDPieChart({
                 <text x="42" y="34" fill="var(--color-white)" fontSize="12px" fontWeight="bold">
                   {active.name.length > 18 ? active.name.slice(0, 16) + '...' : active.name}
                 </text>
-                <text x="30" y="55" fill="#94a3b8" fontSize="11px">
-                  {L("পরিমাণ:")} <tspan fill="#38bdf8" fontWeight="bold">{valueFormatter(active.value)}</tspan> ({active.percent}%)
+                <text x="30" y="55" fill="var(--color-slate-400)" fontSize="11px">
+                  {L("পরিমাণ:")} <tspan fill="var(--color-sky-500)" fontWeight="bold">{valueFormatter(active.value)}</tspan> ({active.percent}%)
                 </text>
               </g>
             );

@@ -4,6 +4,8 @@ import { getSession } from '@/lib/session';
 import { getDhakaDateString, parseDateOnly } from '@/lib/date';
 import { calculateEffectiveTargetsForRange } from '@/lib/targets';
 import { calculateTotalScore, calculateSectionScore } from '@/lib/scoring';
+import { makeTranslator } from '@/lib/i18n/translate';
+import { readLangFromRequest } from '@/lib/i18n/request-lang';
 import { MetricType } from '@prisma/client';
 import { subDays, endOfMonth, parseISO, format } from 'date-fns';
 
@@ -28,6 +30,9 @@ export interface LeaderboardItem {
 
 export async function GET(req: NextRequest) {
   try {
+    // The gap label follows the language the user is reading the app in.
+    const L = makeTranslator(readLangFromRequest(req));
+
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -245,7 +250,7 @@ export async function GET(req: NextRequest) {
         gap = Number((items[idx - 1].total_score - item.total_score).toFixed(2));
       }
       item.gap_to_next = gap;
-      item.gap_text = `আপনার পরের র্যাঙ্ক থেকে ব্যবধান: ${gap.toFixed(2)} পয়েন্ট`;
+      item.gap_text = L(`আপনার পরের র্যাঙ্ক থেকে ব্যবধান: ${gap.toFixed(2)} পয়েন্ট`);
     });
 
     // Support both format=object and default array format

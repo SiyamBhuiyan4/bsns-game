@@ -25,6 +25,7 @@ import {
 import { format } from 'date-fns';
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
+import { SkeletonTable } from '@/components/ui/Skeleton';
 import { formatBstDateTime } from '@/lib/date';
 
 type LeadStatus = 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'ORDERED' | 'LOST';
@@ -635,7 +636,7 @@ export default function AdminLeadsPage() {
                 key={p.id}
                 type="button"
                 onClick={() => setDatePreset(p.id as any)}
-                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+                className={`press rounded-lg px-2.5 py-1 text-xs font-medium transition ${
                   datePreset === p.id
                     ? 'bg-brand-600 text-white shadow-xs'
                     : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
@@ -722,10 +723,7 @@ export default function AdminLeadsPage() {
 
         <div className="overflow-x-auto border-t border-slate-100">
           {loading ? (
-            <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {L('লোড হচ্ছে', 'Loading…')}
-            </div>
+            <SkeletonTable rows={7} cols={6} label={L('লোড হচ্ছে', 'Loading…')} />
           ) : leads.length === 0 ? (
             <EmptyState
               icon={<UserPlus className="h-5 w-5" />}
@@ -875,8 +873,25 @@ export default function AdminLeadsPage() {
 
             <div className="flex-1 overflow-y-auto p-5">
               {detailLoading || !leadDetail ? (
-                <div className="flex justify-center py-12 text-slate-400">
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                <div role="status" aria-busy="true" className="space-y-6">
+                  <span className="sr-only">{L('লোড হচ্ছে', 'Loading…')}</span>
+                  <div className="space-y-3">
+                    <div aria-hidden className="skeleton h-4 w-40" />
+                    <div aria-hidden className="skeleton h-3 w-28" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 rounded-lg border border-slate-200 p-3">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div key={i} className="space-y-1.5">
+                        <div aria-hidden className="skeleton h-2.5 w-16" />
+                        <div aria-hidden className="skeleton h-3.5 w-24" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-2.5">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} aria-hidden className="skeleton h-16 w-full rounded-xl" />
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-6 text-sm">

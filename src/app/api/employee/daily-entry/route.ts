@@ -4,6 +4,8 @@ import { getSession } from '@/lib/session';
 import { createAuditLog } from '@/lib/audit';
 import { getDhakaDateString, isDateWithinEditWindow, parseDateOnly } from '@/lib/date';
 import { LOCK_NOTICE, SAVE_SUCCESS_MESSAGE } from '@/lib/daily-entry';
+import { makeTranslator } from '@/lib/i18n/translate';
+import { readLangFromRequest } from '@/lib/i18n/request-lang';
 import { MetricType } from '@prisma/client';
 import { z } from 'zod';
 
@@ -39,6 +41,9 @@ const dailyEntrySubmitSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
+    // Notices follow the language the user is reading the app in.
+    const L = makeTranslator(readLangFromRequest(req));
+
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -161,7 +166,7 @@ export async function GET(req: NextRequest) {
       today: todayDhaka,
       oldest_allowed: oldestAllowedDhaka,
       is_locked: !isAllowed,
-      lock_notice: !isAllowed ? LOCK_NOTICE : null,
+      lock_notice: !isAllowed ? L(LOCK_NOTICE) : null,
       can_edit: isAllowed,
       metrics: metricsMap,
       product_sales: productSales.map((ps) => ({
@@ -184,6 +189,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    // Notices follow the language the user is reading the app in.
+    const L = makeTranslator(readLangFromRequest(req));
+
     const session = await getSession();
     // Admin Prohibition: Admin CANNOT open or submit employee daily entry form. API returns 403 if Admin tries to post.
     if (!session || session.role !== 'EMPLOYEE') {
@@ -217,7 +225,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: LOCK_NOTICE,
-          message: `এই তারিখের entry এখন বন্ধ (Locked)। অনুমোদিত সময়সীমা: ${oldestAllowedDhaka} থেকে ${todayDhaka} পর্যন্ত।`,
+          message: L(`এই তারিখের entry এখন বন্ধ (Locked)। অনুমোদিত সময়সীমা: ${oldestAllowedDhaka} থেকে ${todayDhaka} পর্যন্ত।`),
         },
         { status: 403 }
       );
@@ -395,7 +403,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: SAVE_SUCCESS_MESSAGE,
+      message: L(SAVE_SUCCESS_MESSAGE),
     });
   } catch (error) {
     console.error('Error saving daily entry:', error);

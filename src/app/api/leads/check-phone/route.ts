@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { normalizePhone, isValidBdPhone } from '@/lib/phone';
+import { makeTranslator } from '@/lib/i18n/translate';
+import { readLangFromRequest } from '@/lib/i18n/request-lang';
 
 export async function GET(request: NextRequest) {
+  // Only the "no owner" placeholder is translated; a real owner name is data.
+  const L = makeTranslator(readLangFromRequest(request));
+
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: 'লগইন করা নেই' }, { status: 401 });
@@ -34,7 +39,7 @@ export async function GET(request: NextRequest) {
       valid: true,
       leadId: existing.id,
       leadName: existing.name,
-      ownerName: existing.owner?.name || 'সিস্টেম',
+      ownerName: existing.owner?.name || L('সিস্টেম'),
       ownerEmail: session.role === 'ADMIN' ? existing.owner?.email : undefined,
       status: existing.status,
       isOwnLead: existing.owner_id === session.userId,

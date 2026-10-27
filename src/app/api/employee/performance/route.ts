@@ -4,6 +4,7 @@ import { getSession } from '@/lib/session';
 import { getDhakaDateString, parseDateOnly } from '@/lib/date';
 import { calculateEffectiveTargetsForRange } from '@/lib/targets';
 import { calculateEmployeeScore } from '@/lib/scoring';
+import { readLangFromRequest } from '@/lib/i18n/request-lang';
 import { MetricType } from '@prisma/client';
 import { subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, format } from 'date-fns';
 
@@ -13,6 +14,9 @@ export async function GET(req: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    // The metric and section names follow the language the user is reading in.
+    const lang = readLangFromRequest(req);
 
     const { searchParams } = new URL(req.url);
     const period = searchParams.get('period') || 'monthly'; // 'daily', 'weekly', 'monthly'
@@ -151,6 +155,7 @@ export async function GET(req: NextRequest) {
       achievementCap: cap,
       failingThreshold,
       sectionWeights,
+      lang,
     });
 
     // 6. Trend data: calculate last 14 days daily scores

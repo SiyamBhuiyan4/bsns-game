@@ -24,6 +24,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
 import { useLanguage } from '@/components/LanguageContext';
+import { SkeletonTable } from '@/components/ui/Skeleton';
 
 interface GroupLinkItem {
   id: string;
@@ -443,10 +444,7 @@ export default function SectionDetailsPage({
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {t('common.loading', 'লোড হচ্ছে...', 'Loading...')}
-          </div>
+          <SkeletonTable rows={6} cols={5} label={t('common.loading', 'লোড হচ্ছে...', 'Loading...')} />
         ) : links.length === 0 ? (
           <EmptyState
             icon={<Layers className="h-5 w-5" />}

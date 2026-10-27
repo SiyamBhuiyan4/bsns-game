@@ -108,11 +108,11 @@ export default function EmployeeHistoryModal({
   // Generate an avatar background gradient based on employee name
   const getAvatarGradient = (name: string) => {
     const gradients = [
-      'from-emerald-500 to-teal-600',
-      'from-sky-500 to-blue-600',
-      'from-indigo-500 to-purple-600',
-      'from-amber-500 to-orange-600',
-      'from-rose-500 to-pink-600',
+      'from-emerald-500 to-emerald-600',
+      'from-sky-500 to-sky-600',
+      'from-violet-500 to-violet-600',
+      'from-amber-500 to-amber-600',
+      'from-rose-500 to-rose-600',
     ];
     let sum = 0;
     for (let i = 0; i < name.length; i++) {
@@ -123,13 +123,13 @@ export default function EmployeeHistoryModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
+      className="modal-backdrop"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="flex flex-col w-full max-w-4xl max-h-[92vh] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden"
+        className="modal-panel flex flex-col border border-slate-200 sm:max-w-4xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Top Header */}
@@ -216,15 +216,15 @@ export default function EmployeeHistoryModal({
               <span className="text-[10px] text-emerald-600 mt-auto">{L('কনফার্মড অর্ডার', 'Confirmed')}</span>
             </div>
 
-            <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 flex flex-col">
-              <div className="flex items-center justify-between text-indigo-700 mb-1">
+            <div className="rounded-xl border border-violet-100 bg-violet-50/60 p-3 flex flex-col">
+              <div className="flex items-center justify-between text-violet-700 mb-1">
                 <span className="text-xs font-medium">{L('মেসেজ রিপ্লাই', 'Messages')}</span>
                 <MessageSquare className="w-4 h-4 opacity-75" />
               </div>
-              <div className="text-xl font-bold text-indigo-900 tabular-nums">
+              <div className="text-xl font-bold text-violet-900 tabular-nums">
                 {formatNum(employee.metrics.messages_replied)}
               </div>
-              <span className="text-[10px] text-indigo-600 mt-auto">{L('গ্রাহক রিপ্লাই', 'Followups')}</span>
+              <span className="text-[10px] text-violet-600 mt-auto">{L('গ্রাহক রিপ্লাই', 'Followups')}</span>
             </div>
 
             <div className="rounded-xl border border-amber-100 bg-amber-50/60 p-3 flex flex-col">
@@ -238,28 +238,28 @@ export default function EmployeeHistoryModal({
               <span className="text-[10px] text-amber-600 mt-auto">{L('নতুন লিড', 'New Leads')}</span>
             </div>
 
-            <div className="rounded-xl border border-teal-100 bg-teal-50/60 p-3 flex flex-col">
-              <div className="flex items-center justify-between text-teal-700 mb-1">
+            <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-3 flex flex-col">
+              <div className="flex items-center justify-between text-emerald-700 mb-1">
                 <span className="text-xs font-medium">{L('মোট বিক্রয়', 'Sales Amount')}</span>
                 <DollarSign className="w-4 h-4 opacity-75" />
               </div>
-              <div className="text-xl font-bold text-teal-900 tabular-nums">
+              <div className="text-xl font-bold text-emerald-900 tabular-nums">
                 {formatMoney(employee.metrics.sales_amount)}
               </div>
-              <span className="text-[10px] text-teal-600 mt-auto">{L('মোট আয়', 'Revenue')}</span>
+              <span className="text-[10px] text-emerald-600 mt-auto">{L('মোট আয়', 'Revenue')}</span>
             </div>
 
-            <div className="rounded-xl border border-purple-100 bg-purple-50/60 p-3 flex flex-col">
-              <div className="flex items-center justify-between text-purple-700 mb-1">
+            <div className="rounded-xl border border-violet-100 bg-violet-50/60 p-3 flex flex-col">
+              <div className="flex items-center justify-between text-violet-700 mb-1">
                 <span className="text-xs font-medium">{L('লক্ষ্য অর্জন', 'Target Progress')}</span>
                 <TrendingUp className="w-4 h-4 opacity-75" />
               </div>
-              <div className="text-xl font-bold text-purple-900 tabular-nums">
+              <div className="text-xl font-bold text-violet-900 tabular-nums">
                 {formatNum(employee.targetProgressPercent)}%
               </div>
-              <div className="w-full bg-purple-200 rounded-full h-1.5 mt-auto overflow-hidden">
+              <div className="w-full bg-violet-200 rounded-full h-1.5 mt-auto overflow-hidden">
                 <div
-                  className="bg-purple-600 h-1.5 rounded-full transition-all duration-300"
+                  className="bg-violet-600 h-1.5 rounded-full transition-all duration-300"
                   style={{ width: `${Math.min(100, Math.max(0, employee.targetProgressPercent))}%` }}
                 />
               </div>
@@ -387,7 +387,7 @@ export default function EmployeeHistoryModal({
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold tabular-nums ${
                               item.messages_replied > 0
-                                ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/20'
+                                ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-600/20'
                                 : 'text-slate-400'
                             }`}
                           >
@@ -412,7 +412,7 @@ export default function EmployeeHistoryModal({
                         <td className="px-3 py-3 text-right">
                           <span
                             className={`font-semibold text-xs tabular-nums ${
-                              item.sales_amount > 0 ? 'text-teal-700 font-bold' : 'text-slate-400'
+                              item.sales_amount > 0 ? 'text-emerald-700 font-bold' : 'text-slate-400'
                             }`}
                           >
                             {formatMoney(item.sales_amount)}

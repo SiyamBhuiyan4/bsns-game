@@ -1,4 +1,5 @@
 import { MetricType } from '@prisma/client';
+import { makeTranslator, type Lang } from './i18n/translate';
 
 export interface MetricScoreDetail {
   metricType: MetricType;
@@ -102,10 +103,14 @@ export function calculateEmployeeScore(
     achievementCap?: number;
     failingThreshold?: number;
     sectionWeights?: Partial<Record<string, number>>;
+    /** Language for the display names in the result. Defaults to Bangla. */
+    lang?: Lang;
   } = {}
 ): EmployeeScoreResult {
   const cap = options.achievementCap ?? 1.0;
   const threshold = options.failingThreshold ?? 0.8;
+  // Only the display names follow this; every number stays language-independent.
+  const L = makeTranslator(options.lang ?? 'bn');
 
   let customMetricWeights: Partial<Record<MetricType, number>> | undefined = options.weights;
   if (!customMetricWeights && options.sectionWeights) {
@@ -169,8 +174,8 @@ export function calculateEmployeeScore(
 
     metricsResult[m] = {
       metricType: m,
-      bengaliName: info.bn,
-      sectionName: info.sectionBn,
+      bengaliName: L(info.bn),
+      sectionName: L(info.sectionBn),
       target: isNA ? null : target,
       achieved,
       weight,
@@ -202,7 +207,7 @@ export function calculateEmployeeScore(
   const sections: Record<string, SectionScoreDetail> = {
     SALES_PROFIT: {
       sectionKey: 'SALES_PROFIT',
-      bengaliName: 'বিক্রি ও লাভ (Sales & Profit)',
+      bengaliName: L('বিক্রি ও লাভ (Sales & Profit)'),
       weight: 0,
       score: 0,
       scaledScore: 0,
@@ -210,7 +215,7 @@ export function calculateEmployeeScore(
     },
     CONTENT: {
       sectionKey: 'CONTENT',
-      bengaliName: 'কনটেন্ট ও পোস্ট বাস্তবায়ন (Content)',
+      bengaliName: L('কনটেন্ট ও পোস্ট বাস্তবায়ন (Content)'),
       weight: 0,
       score: 0,
       scaledScore: 0,
@@ -218,7 +223,7 @@ export function calculateEmployeeScore(
     },
     NEW_BUYERS_B2B: {
       sectionKey: 'NEW_BUYERS_B2B',
-      bengaliName: 'নতুন ক্রেতা ও B2B বিক্রি (New Buyers/B2B)',
+      bengaliName: L('নতুন ক্রেতা ও B2B বিক্রি (New Buyers/B2B)'),
       weight: 0,
       score: 0,
       scaledScore: 0,
@@ -226,7 +231,7 @@ export function calculateEmployeeScore(
     },
     RETENTION: {
       sectionKey: 'RETENTION',
-      bengaliName: 'পুরোনো ক্রেতা ধরে রাখা (Retention)',
+      bengaliName: L('পুরোনো ক্রেতা ধরে রাখা (Retention)'),
       weight: 0,
       score: 0,
       scaledScore: 0,
@@ -234,7 +239,7 @@ export function calculateEmployeeScore(
     },
     INBOX_FOLLOWUP: {
       sectionKey: 'INBOX_FOLLOWUP',
-      bengaliName: 'ইনবক্স ও ফলোআপ (Inbox & Follow-up)',
+      bengaliName: L('ইনবক্স ও ফলোআপ (Inbox & Follow-up)'),
       weight: 0,
       score: 0,
       scaledScore: 0,

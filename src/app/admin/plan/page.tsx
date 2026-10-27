@@ -25,6 +25,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
 import { useLanguage } from '@/components/LanguageContext';
+import { Skeleton, SkeletonStatCards } from '@/components/ui/Skeleton';
 
 interface Owner {
   id: string;
@@ -620,9 +621,21 @@ export default function AdminPlanPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3">
-        <Loader2 className="h-7 w-7 animate-spin text-brand-600" />
-        <p className="text-sm text-slate-500">{L("লোড হচ্ছে...")}</p>
+      <div className="space-y-6" role="status" aria-busy="true">
+        <span className="sr-only">{L("লোড হচ্ছে...")}</span>
+        <div className="flex items-start gap-3">
+          <Skeleton className="h-10 w-10 rounded-xl" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-52" />
+            <Skeleton className="h-3.5 w-72" />
+          </div>
+        </div>
+        <SkeletonStatCards count={4} />
+        <div className="card space-y-3 p-5">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-6 w-full" />
+          ))}
+        </div>
       </div>
     );
   }

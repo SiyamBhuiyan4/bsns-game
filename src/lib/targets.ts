@@ -1,5 +1,6 @@
 import { SectionTarget, PeriodType, MetricType } from '@prisma/client';
 import { getDaysInMonth, format, eachDayOfInterval, startOfMonth, endOfMonth } from 'date-fns';
+import { makeTranslator, type Lang } from './i18n/translate';
 
 export interface CalculatedMetricTarget {
   metricType: MetricType;
@@ -14,6 +15,8 @@ export interface LivePreviewInput {
   periodStart?: string | Date | null;
   periodEnd?: string | Date | null;
   metricType?: MetricType | string;
+  /** Language for `previewText`. Defaults to Bangla. */
+  lang?: Lang;
 }
 
 export interface LivePreviewResult {
@@ -27,13 +30,14 @@ export interface LivePreviewResult {
  * Calculates live preview for target entry modal: "প্রতিদিন X, মোট Y".
  */
 export function calculateTargetLivePreview(input: LivePreviewInput): LivePreviewResult {
+  const L = makeTranslator(input.lang ?? 'bn');
   const numValue = Number(input.targetValue);
   if (isNaN(numValue) || numValue <= 0) {
     return {
       dailyRate: 0,
       totalValue: 0,
       days: 0,
-      previewText: 'প্রতিদিন ০, মোট ০',
+      previewText: L('প্রতিদিন ০, মোট ০'),
     };
   }
 
@@ -65,7 +69,7 @@ export function calculateTargetLivePreview(input: LivePreviewInput): LivePreview
   }
 
   const formatNum = (n: number) => (Number.isInteger(n) ? n.toString() : n.toFixed(2));
-  const previewText = `প্রতিদিন ${formatNum(dailyRate)}, মোট ${formatNum(totalValue)}`;
+  const previewText = L(`প্রতিদিন ${formatNum(dailyRate)}, মোট ${formatNum(totalValue)}`);
 
   return {
     dailyRate,
@@ -466,20 +470,26 @@ export interface BudgetStatus {
   statusLabelBn: string;
 }
 
-export function calculateBudgetStatus(budgetAmount: number, actualSpend: number): BudgetStatus {
+export function calculateBudgetStatus(
+  budgetAmount: number,
+  actualSpend: number,
+  /** Language for `statusLabelBn`. Defaults to Bangla. */
+  lang: Lang = 'bn'
+): BudgetStatus {
+  const L = makeTranslator(lang);
   const spendPercentage = budgetAmount > 0 ? (actualSpend / budgetAmount) * 100 : 0;
   let status: 'SAFE' | 'WARNING' | 'EXCEEDED' = 'SAFE';
   let color: 'emerald' | 'amber' | 'red' = 'emerald';
-  let statusLabelBn = 'নিরাপদ সীমা (< ৮০%)';
+  let statusLabelBn = L('নিরাপদ সীমা (< ৮০%)');
 
   if (spendPercentage > 100) {
     status = 'EXCEEDED';
     color = 'red';
-    statusLabelBn = 'বাজেট অতিক্রান্ত (> ১০০%)';
+    statusLabelBn = L('বাজেট অতিক্রান্ত (> ১০০%)');
   } else if (spendPercentage >= 80) {
     status = 'WARNING';
     color = 'amber';
-    statusLabelBn = 'সতর্কবার্তা (৮০-১০০%)';
+    statusLabelBn = L('সতর্কবার্তা (৮০-১০০%)');
   }
 
   return {

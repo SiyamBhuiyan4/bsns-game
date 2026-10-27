@@ -4,10 +4,14 @@ import { getSession } from '@/lib/session';
 import { getDhakaDateString, parseDateOnly } from '@/lib/date';
 import { calculateEffectiveTargetsForRange } from '@/lib/targets';
 import { calculateEmployeeScore } from '@/lib/scoring';
+import { readLangFromRequest } from '@/lib/i18n/request-lang';
 import { MetricType } from '@prisma/client';
 
 export async function GET(req: NextRequest) {
   try {
+    // Score section/metric names follow the language the admin is reading in.
+    const lang = readLangFromRequest(req);
+
     const session = await getSession();
     if (!session || session.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -117,6 +121,7 @@ export async function GET(req: NextRequest) {
       const scoreResult = calculateEmployeeScore(scoringInput, {
         achievementCap: cap,
         failingThreshold,
+        lang,
       });
 
       // Accumulate team stats

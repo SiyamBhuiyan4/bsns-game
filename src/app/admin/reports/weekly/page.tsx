@@ -20,6 +20,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import { formatTaka } from '@/lib/date';
 import { WeeklyAutoData } from '@/lib/reports';
 import { useLanguage } from '@/components/LanguageContext';
+import { Skeleton, SkeletonStatCards } from '@/components/ui/Skeleton';
 
 interface PastReportItem {
   id: string;
@@ -224,7 +225,19 @@ export default function AdminWeeklyReportPage() {
       )}
 
       {loading || !report || !autoData ? (
-        <div className="card p-12 text-center text-sm text-slate-500">{L("লোড হচ্ছে...")}</div>
+        <div className="space-y-6" role="status" aria-busy="true">
+          <span className="sr-only">{L("লোড হচ্ছে...")}</span>
+          <SkeletonStatCards count={4} />
+          <div className="card p-5">
+            <Skeleton className="mb-4 h-4 w-40" />
+            <Skeleton className="h-56 w-full" />
+          </div>
+          <div className="card p-5 space-y-3">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-5 w-full" />
+            ))}
+          </div>
+        </div>
       ) : (
         <div className="space-y-6">
           <div className="card">

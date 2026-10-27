@@ -1,4 +1,5 @@
 import { CampaignChannel } from '@prisma/client';
+import { makeTranslator, type Lang } from './i18n/translate';
 
 export const VALID_CAMPAIGN_CHANNELS: CampaignChannel[] = [
   CampaignChannel.FACEBOOK_GROUP,
@@ -73,8 +74,11 @@ export interface CampaignBudgetEvaluation {
  */
 export function evaluateCampaignBudget(
   budgetAmount: number,
-  actualSpend: number
+  actualSpend: number,
+  /** Language for `warningMessage`. Defaults to Bangla. */
+  lang: Lang = 'bn'
 ): CampaignBudgetEvaluation {
+  const L = makeTranslator(lang);
   const spendPercentage = budgetAmount > 0 ? Number(((actualSpend / budgetAmount) * 100).toFixed(1)) : 0;
   let status: 'SAFE' | 'WARNING' | 'EXCEEDED' = 'SAFE';
   let color: 'emerald' | 'amber' | 'rose' = 'emerald';
@@ -87,13 +91,13 @@ export function evaluateCampaignBudget(
     color = 'rose';
     isExceeded = true;
     const overSpend = actualSpend - budgetAmount;
-    warningMessage = `বাজেট সীমা অতিক্রম করেছে (${spendPercentage}%)! অতিরিক্ত খরচ: ৳${overSpend.toLocaleString('en-IN')}`;
+    warningMessage = L(`বাজেট সীমা অতিক্রম করেছে (${spendPercentage}%)! অতিরিক্ত খরচ: ৳${overSpend.toLocaleString('en-IN')}`);
   } else if (spendPercentage >= 80) {
     status = 'WARNING';
     color = 'amber';
     isApproaching = true;
     const remaining = budgetAmount - actualSpend;
-    warningMessage = `বাজেট প্রায় শেষ (${spendPercentage}%)! অবশিষ্ট: ৳${remaining.toLocaleString('en-IN')}`;
+    warningMessage = L(`বাজেট প্রায় শেষ (${spendPercentage}%)! অবশিষ্ট: ৳${remaining.toLocaleString('en-IN')}`);
   }
 
   return {

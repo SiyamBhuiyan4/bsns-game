@@ -8,6 +8,8 @@ import { getDhakaDateString } from '@/lib/date';
 import { startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import { calculateBudgetStatus } from '@/lib/targets';
 import { calculateROAS, evaluateCampaignBudget } from '@/lib/campaigns';
+import { makeTranslator } from '@/lib/i18n/translate';
+import { readLangFromRequest } from '@/lib/i18n/request-lang';
 
 const budgetSchema = z.object({
   scope: z.nativeEnum(BudgetScope).default(BudgetScope.MONTHLY_TOTAL),
@@ -18,6 +20,9 @@ const budgetSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
+    // Budget status labels and warnings follow the reader's language.
+    const lang = readLangFromRequest(req);
+
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -57,7 +62,7 @@ export async function GET(req: NextRequest) {
     // Evaluate monthly budget status
     const monthlyBudgetAmount = monthlyBudget ? Number(monthlyBudget.amount) : 0;
     const monthlyBudgetStatus = monthlyBudget
-      ? calculateBudgetStatus(monthlyBudgetAmount, actualSpend)
+      ? calculateBudgetStatus(monthlyBudgetAmount, actualSpend, lang)
       : null;
 
     // Get campaign budgets
@@ -105,7 +110,7 @@ export async function GET(req: NextRequest) {
         spend = Math.round(budgetAmount * 0.5);
       }
 
-      const budgetEvaluation = evaluateCampaignBudget(budgetAmount, spend);
+      const budgetEvaluation = evaluateCampaignBudget(budgetAmount, spend, lang);
       const roas = calculateROAS(revenue, spend, budgetAmount);
 
       return {
@@ -135,6 +140,10 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    // Budget warnings and status labels follow the reader's language.
+    const lang = readLangFromRequest(req);
+    const L = makeTranslator(lang);
+
     const session = await getSession();
     const userId = session?.userId || session?.id;
     if (!session || session.role !== 'ADMIN' || !userId) {
@@ -195,10 +204,10 @@ export async function POST(req: NextRequest) {
 
       // Budget limit warning validations
       if (amount > 0 && currentSpend > amount) {
-        warning = `সতর্কতা: বর্তমান মোট খরচ (৳${currentSpend.toLocaleString('en-IN')}) নতুন বাজেট সীমা (৳${amount.toLocaleString('en-IN')}) অতিক্রম করেছে!`;
+        warning = L(`সতর্কতা: বর্তমান মোট খরচ (৳${currentSpend.toLocaleString('en-IN')}) নতুন বাজেট সীমা (৳${amount.toLocaleString('en-IN')}) অতিক্রম করেছে!`);
       } else if (amount > 0 && currentSpend >= 0.8 * amount) {
         const pct = ((currentSpend / amount) * 100).toFixed(1);
-        warning = `সতর্কতা: বর্তমান মোট খরচ নতুন বাজেটের ${pct}% (৮০% বা তার বেশি সীমা স্পর্শ করেছে)।`;
+        warning = L(`সতর্কতা: বর্তমান মোট খরচ নতুন বাজেটের ${pct}% (৮০% বা তার বেশি সীমা স্পর্শ করেছে)।`);
       }
     } else {
       if (!campaign_id) {
@@ -255,7 +264,7 @@ export async function POST(req: NextRequest) {
       currentSpend = campaignSpend;
 
       // Campaign spend warning validation
-      const evalCamp = evaluateCampaignBudget(amount, currentSpend);
+      const evalCamp = evaluateCampaignBudget(amount, currentSpend, lang);
       if (evalCamp.warningMessage) {
         warning = evalCamp.warningMessage;
       }
@@ -269,7 +278,7 @@ export async function POST(req: NextRequest) {
       payload: { scope, month, campaign_id, amount },
     });
 
-    const statusObj = calculateBudgetStatus(amount, currentSpend);
+    const statusObj = calculateBudgetStatus(amount, currentSpend, lang);
 
     return NextResponse.json({ budget, warning, status: statusObj });
   } catch (error) {

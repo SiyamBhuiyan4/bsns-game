@@ -5,6 +5,7 @@ import { createAuditLog } from '@/lib/audit';
 import { BudgetScope, CampaignChannel, CampaignStatus, MetricType } from '@prisma/client';
 import { z } from 'zod';
 import { calculateROAS, evaluateCampaignBudget } from '@/lib/campaigns';
+import { readLangFromRequest } from '@/lib/i18n/request-lang';
 
 const campaignSchema = z.object({
   name: z.string().min(2, 'ক্যাম্পেইনের নাম প্রদান করুন'),
@@ -27,7 +28,9 @@ const campaignUpdateSchema = z.object({
   end_date: z.string().optional().nullable(),
 });
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // Budget warnings follow the language the user is reading the app in.
+  const lang = readLangFromRequest(req);
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: 'লগইন করা নেই' }, { status: 401 });
@@ -97,7 +100,7 @@ export async function GET() {
       }
 
       // Budget threshold evaluation (SAFE <80%, WARNING 80-100%, EXCEEDED >100%)
-      const evalResult = evaluateCampaignBudget(budgetLimit, spend);
+      const evalResult = evaluateCampaignBudget(budgetLimit, spend, lang);
 
       // ROAS = Revenue / Ad Spend
       const roas = calculateROAS(revenue, spend, budgetLimit);

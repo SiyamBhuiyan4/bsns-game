@@ -5,6 +5,7 @@ import { GraduationCap, Trash2, Loader2, Plus, ArrowRight, MessageSquareText } f
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
 import { useLanguage } from '@/components/LanguageContext';
+import { SkeletonTable } from '@/components/ui/Skeleton';
 
 type Phrase = { id: string; phrase: string; href: string; label: string };
 type Page = { id: string; href: string; labelBn: string; labelEn: string };
@@ -127,10 +128,7 @@ export default function TeachAssistantPage() {
           <span className="badge badge-gray">{phrases.length}</span>
         </div>
         {loading ? (
-          <div className="flex items-center gap-2 px-5 py-8 text-sm text-slate-500">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {t('common.loading', 'লোড হচ্ছে…', 'Loading…')}
-          </div>
+          <SkeletonTable rows={4} cols={3} label={t('common.loading', 'লোড হচ্ছে…', 'Loading…')} />
         ) : phrases.length === 0 ? (
           <EmptyState
             icon={<MessageSquareText className="h-5 w-5" />}

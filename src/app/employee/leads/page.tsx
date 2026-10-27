@@ -24,6 +24,7 @@ import { format } from 'date-fns';
 import PageHeader from '@/components/ui/PageHeader';
 import { useLanguage } from '@/components/LanguageContext';
 import EmptyState from '@/components/ui/EmptyState';
+import { SkeletonTable } from '@/components/ui/Skeleton';
 import { formatBstDateTime } from '@/lib/date';
 
 interface ProductRef {
@@ -520,7 +521,7 @@ export default function EmployeeLeadsPage() {
             key={p.id}
             type="button"
             onClick={() => setDatePreset(p.id as any)}
-            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+            className={`press rounded-lg px-2.5 py-1 text-xs font-medium transition ${
               datePreset === p.id
                 ? 'bg-brand-600 text-white shadow-xs'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -600,10 +601,28 @@ export default function EmployeeLeadsPage() {
       {/* Leads list */}
       <div className="card overflow-hidden">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-            <Loader2 className="mb-2 h-6 w-6 animate-spin text-brand-600" />
-            <p className="text-sm">{L('লোড হচ্ছে...', 'Loading...')}</p>
-          </div>
+          <>
+            {/* Phone: stacked row placeholders, desktop: table placeholders */}
+            <div role="status" aria-busy="true" className="divide-y divide-slate-100 md:hidden">
+              <span className="sr-only">{L('লোড হচ্ছে...', 'Loading...')}</span>
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div key={i} className="space-y-2 px-4 py-3.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div aria-hidden className="skeleton h-4 w-32" />
+                    <div aria-hidden className="skeleton h-4 w-16 rounded-full" />
+                  </div>
+                  <div aria-hidden className="skeleton h-3 w-24" />
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div aria-hidden className="skeleton h-8 w-full rounded-lg" />
+                    <div aria-hidden className="skeleton h-8 w-full rounded-lg" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:block">
+              <SkeletonTable rows={6} cols={6} label={L('লোড হচ্ছে...', 'Loading...')} />
+            </div>
+          </>
         ) : leads.length === 0 ? (
           <EmptyState icon={<UserPlus className="h-5 w-5" />} title={L('কোনো লিড পাওয়া যায়নি', 'No leads found')} />
         ) : (
@@ -1053,7 +1072,7 @@ export default function EmployeeLeadsPage() {
       {/* Lead Detail & Notes Drawer */}
       {selectedLeadId && (
         <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-[2px]">
-          <div className="flex h-full w-full max-w-md flex-col bg-white shadow-xl animate-in slide-in-from-right duration-300">
+          <div className="flex h-full w-full max-w-md flex-col bg-white shadow-xl animate-fade-in">
             <div className="card-header">
               <h3 className="card-title">{L('লিড বিবরণ', 'Lead details')}</h3>
               <button
@@ -1070,8 +1089,25 @@ export default function EmployeeLeadsPage() {
 
             <div className="flex-1 overflow-y-auto">
               {detailLoading || !leadDetail ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+                <div role="status" aria-busy="true" className="card-body space-y-5">
+                  <span className="sr-only">{L('লোড হচ্ছে...', 'Loading...')}</span>
+                  <div className="space-y-2">
+                    <div aria-hidden className="skeleton h-4 w-40" />
+                    <div aria-hidden className="skeleton h-9 w-full rounded-lg" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div key={i} className="space-y-1.5">
+                        <div aria-hidden className="skeleton h-2.5 w-16" />
+                        <div aria-hidden className="skeleton h-3.5 w-24" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-2.5">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} aria-hidden className="skeleton h-16 w-full rounded-xl" />
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <div className="card-body space-y-5">

@@ -27,6 +27,7 @@ import {
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
+import { SkeletonStatCards, SkeletonTable } from '@/components/ui/Skeleton';
 import { useLanguage } from '@/components/LanguageContext';
 
 interface SectionRef {
@@ -356,12 +357,16 @@ export default function EmployeesPage() {
       )}
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {loading ? (
+        <SkeletonStatCards count={4} label={t('common.loading', 'লোড হচ্ছে...', 'Loading...')} />
+      ) : (
+      <div className="stagger grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label={t('emp.total', 'মোট কর্মী', 'Total')} value={employees.length} icon={<Users className="h-4 w-4" />} tone="gray" />
         <StatCard label={t('emp.active', 'সক্রিয়', 'Active')} value={activeCount} icon={<CheckCircle className="h-4 w-4" />} tone="brand" />
         <StatCard label={t('emp.inactive', 'নিষ্ক্রিয়', 'Inactive')} value={employees.length - activeCount} icon={<XCircle className="h-4 w-4" />} tone="gray" />
         <StatCard label={t('emp.done_links', 'সম্পন্ন লিংক', 'Completed links')} value={totalDone} icon={<Layers className="h-4 w-4" />} tone="blue" />
       </div>
+      )}
 
       {/* Employees Table */}
       <div className="card">
@@ -383,10 +388,7 @@ export default function EmployeesPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {t('common.loading', 'লোড হচ্ছে...', 'Loading...')}
-          </div>
+          <SkeletonTable rows={6} cols={6} label={t('common.loading', 'লোড হচ্ছে...', 'Loading...')} />
         ) : filteredEmployees.length === 0 ? (
           <EmptyState
             icon={<Users className="h-5 w-5" />}
@@ -462,7 +464,7 @@ export default function EmployeesPage() {
                         )}
                         {emp.can_view_all_customers && (
                           <span
-                            className="inline-flex items-center gap-1 rounded border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700"
+                            className="inline-flex items-center gap-1 rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700"
                             title={t('emp.has_cust_access', 'সম্পূর্ণ কাস্টমার ডেটাবেস দেখার অনুমতি রয়েছে', 'Has full customer database access')}
                           >
                             {t('emp.all_cust_badge', 'পূর্ণ কাস্টমার এক্সেস', 'Full Leads Access')}
@@ -705,14 +707,14 @@ export default function EmployeesPage() {
 
                 <label
                   htmlFor="edit_emp_can_view_all_customers"
-                  className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-indigo-200 bg-indigo-50/60 p-3 text-sm text-slate-800 transition hover:bg-indigo-50"
+                  className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-violet-200 bg-violet-50/60 p-3 text-sm text-slate-800 transition hover:bg-violet-50"
                 >
                   <input
                     type="checkbox"
                     id="edit_emp_can_view_all_customers"
                     checked={editCanViewAllCustomers}
                     onChange={(e) => setEditCanViewAllCustomers(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-indigo-600"
+                    className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-violet-600"
                   />
                   <div>
                     <span className="font-semibold text-slate-900">
@@ -972,9 +974,23 @@ export default function EmployeesPage() {
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
               {loadingWorkData ? (
-                <div className="flex flex-col items-center justify-center py-16 text-slate-500 gap-2">
-                  <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
-                  <span className="text-sm">{t('emp.loading_work', 'কাজের বিবরণ লোড হচ্ছে...', 'Loading work profile...')}</span>
+                <div role="status" aria-busy="true" className="space-y-5">
+                  <span className="sr-only">
+                    {t('emp.loading_work', 'কাজের বিবরণ লোড হচ্ছে...', 'Loading work profile...')}
+                  </span>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
+                        <div aria-hidden className="skeleton h-2.5 w-20" />
+                        <div aria-hidden className="skeleton mt-2 h-6 w-12" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-2.5">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <div key={i} aria-hidden className="skeleton h-14 w-full rounded-xl" />
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <>
@@ -992,7 +1008,7 @@ export default function EmployeesPage() {
                       <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                         {t('emp.total_posts', 'মোট সম্পন্ন পোস্ট', 'Total Posts')}
                       </div>
-                      <div className="text-xl font-bold font-mono text-blue-700 mt-1">
+                      <div className="text-xl font-bold font-mono text-sky-700 mt-1">
                         {workData?.stats?.totalCompletedLinks ?? workModalEmp.total_completed_links}
                       </div>
                     </div>
@@ -1000,7 +1016,7 @@ export default function EmployeesPage() {
                       <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                         {t('emp.total_leads', 'মোট লিড সংগ্রহ', 'Total Leads')}
                       </div>
-                      <div className="text-xl font-bold font-mono text-indigo-700 mt-1">
+                      <div className="text-xl font-bold font-mono text-violet-700 mt-1">
                         {workData?.stats?.totalLeads ?? workModalEmp.total_leads}
                       </div>
                     </div>
@@ -1129,7 +1145,7 @@ export default function EmployeesPage() {
                                 </div>
                                 <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
                                   <div
-                                    className={`h-full rounded-full transition-all ${tgt.is_met ? 'bg-emerald-500' : 'bg-blue-500'}`}
+                                    className={`h-full rounded-full transition-all ${tgt.is_met ? 'bg-emerald-500' : 'bg-sky-500'}`}
                                     style={{ width: `${tgt.percentage}%` }}
                                   />
                                 </div>

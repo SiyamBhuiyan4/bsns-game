@@ -127,11 +127,11 @@ export default function EmployeePerformanceOverview({
   // Avatar color generator
   const getAvatarGradient = (name: string) => {
     const gradients = [
-      'from-emerald-500 to-teal-600',
-      'from-sky-500 to-blue-600',
-      'from-indigo-500 to-purple-600',
-      'from-amber-500 to-orange-600',
-      'from-rose-500 to-pink-600',
+      'from-emerald-500 to-emerald-600',
+      'from-sky-500 to-sky-600',
+      'from-violet-500 to-violet-600',
+      'from-amber-500 to-amber-600',
+      'from-rose-500 to-rose-600',
     ];
     let sum = 0;
     for (let i = 0; i < name.length; i++) {
@@ -218,7 +218,7 @@ export default function EmployeePerformanceOverview({
         </div>
 
         {/* Team Aggregate Summary Pills */}
-        <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-4 border-t border-slate-100">
+        <div className="stagger mt-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-4 border-t border-slate-100">
           <div className="flex flex-col p-3 rounded-lg bg-slate-50 border border-slate-100">
             <span className="text-[11px] font-medium text-slate-500 flex items-center justify-between">
               {L('সক্রিয় কর্মী', 'Active Employees')}
@@ -249,12 +249,12 @@ export default function EmployeePerformanceOverview({
             </span>
           </div>
 
-          <div className="flex flex-col p-3 rounded-lg bg-indigo-50/50 border border-indigo-100">
-            <span className="text-[11px] font-medium text-indigo-700 flex items-center justify-between">
+          <div className="flex flex-col p-3 rounded-lg bg-violet-50/50 border border-violet-100">
+            <span className="text-[11px] font-medium text-violet-700 flex items-center justify-between">
               {L('মেসেজ রিপ্লাই', 'Messages')}
-              <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
+              <MessageSquare className="w-3.5 h-3.5 text-violet-500" />
             </span>
-            <span className="text-xl font-bold text-indigo-900 mt-1 tabular-nums">
+            <span className="text-xl font-bold text-violet-900 mt-1 tabular-nums">
               {formatNum(totals.messages_replied)}
             </span>
           </div>
@@ -269,12 +269,12 @@ export default function EmployeePerformanceOverview({
             </span>
           </div>
 
-          <div className="flex flex-col p-3 rounded-lg bg-teal-50/50 border border-teal-100">
-            <span className="text-[11px] font-medium text-teal-700 flex items-center justify-between">
+          <div className="flex flex-col p-3 rounded-lg bg-emerald-50/50 border border-emerald-100">
+            <span className="text-[11px] font-medium text-emerald-700 flex items-center justify-between">
               {L('মোট বিক্রয়', 'Total Sales')}
-              <DollarSign className="w-3.5 h-3.5 text-teal-500" />
+              <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
             </span>
-            <span className="text-xl font-bold text-teal-900 mt-1 tabular-nums">
+            <span className="text-xl font-bold text-emerald-900 mt-1 tabular-nums">
               {formatMoney(totals.sales_amount)}
             </span>
           </div>
@@ -490,7 +490,7 @@ export default function EmployeePerformanceOverview({
                         <span
                           className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold tabular-nums ${
                             emp.metrics.messages_replied > 0
-                              ? 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/20'
+                              ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-600/20'
                               : 'text-slate-400'
                           }`}
                         >
@@ -515,7 +515,7 @@ export default function EmployeePerformanceOverview({
                       <td className="px-3.5 py-4 text-right">
                         <span
                           className={`text-xs font-bold tabular-nums ${
-                            emp.metrics.sales_amount > 0 ? 'text-teal-700' : 'text-slate-400'
+                            emp.metrics.sales_amount > 0 ? 'text-emerald-700' : 'text-slate-400'
                           }`}
                         >
                           {formatMoney(emp.metrics.sales_amount)}
@@ -552,7 +552,7 @@ export default function EmployeePerformanceOverview({
                             e.stopPropagation();
                             handleOpenHistory(emp);
                           }}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:border-brand-500 hover:bg-brand-50 hover:text-brand-700 transition-all cursor-pointer"
+                          className="press inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:border-brand-500 hover:bg-brand-50 hover:text-brand-700 transition-all cursor-pointer"
                         >
                           <History className="w-3.5 h-3.5 text-brand-600" />
                           <span>{L('পূর্ণ ইতিহাস', 'Full History')}</span>
@@ -573,7 +573,7 @@ export default function EmployeePerformanceOverview({
         <PerformancePieCharts employees={employees} />
       ) : (
         /* ============ Modern Card Grid View ============ */
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="stagger grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredEmployees.map((emp) => {
             const progress = Math.max(0, emp.targetProgressPercent || 0);
             const progressColor =
@@ -586,7 +586,7 @@ export default function EmployeePerformanceOverview({
             return (
               <div
                 key={emp.id}
-                className="card p-5 hover:border-brand-500/50 hover:shadow-md transition-all flex flex-col justify-between cursor-pointer group"
+                className="card hover-lift press p-5 hover:border-brand-500/50 flex flex-col justify-between cursor-pointer group"
                 onClick={() => handleOpenHistory(emp)}
               >
                 <div>
@@ -643,12 +643,12 @@ export default function EmployeePerformanceOverview({
                       </span>
                     </div>
 
-                    <div className="rounded-lg bg-indigo-50/60 border border-indigo-100 p-2.5 flex items-center justify-between">
-                      <div className="text-indigo-700 flex items-center gap-1.5">
+                    <div className="rounded-lg bg-violet-50/60 border border-violet-100 p-2.5 flex items-center justify-between">
+                      <div className="text-violet-700 flex items-center gap-1.5">
                         <MessageSquare className="w-3.5 h-3.5" />
                         <span>{L('মেসেজ', 'Messages')}</span>
                       </div>
-                      <span className="font-bold text-indigo-900 tabular-nums">
+                      <span className="font-bold text-violet-900 tabular-nums">
                         {formatNum(emp.metrics.messages_replied)}
                       </span>
                     </div>
@@ -665,12 +665,12 @@ export default function EmployeePerformanceOverview({
                   </div>
 
                   {/* Total Sales row */}
-                  <div className="mt-2 rounded-lg bg-teal-50/60 border border-teal-100 p-2.5 flex items-center justify-between text-xs">
-                    <div className="text-teal-700 flex items-center gap-1.5">
+                  <div className="mt-2 rounded-lg bg-emerald-50/60 border border-emerald-100 p-2.5 flex items-center justify-between text-xs">
+                    <div className="text-emerald-700 flex items-center gap-1.5">
                       <DollarSign className="w-3.5 h-3.5" />
                       <span className="font-medium">{L('মোট বিক্রয়', 'Total Sales')}</span>
                     </div>
-                    <span className="font-bold text-teal-900 tabular-nums">
+                    <span className="font-bold text-emerald-900 tabular-nums">
                       {formatMoney(emp.metrics.sales_amount)}
                     </span>
                   </div>

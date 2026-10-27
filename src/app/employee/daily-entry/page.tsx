@@ -31,6 +31,7 @@ import {
 import PageHeader from '@/components/ui/PageHeader';
 import { useLanguage } from '@/components/LanguageContext';
 import EmptyState from '@/components/ui/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface Product {
   id: string;
@@ -555,7 +556,22 @@ export default function EmployeeDailyEntryPage() {
       )}
 
       {loading ? (
-        <div className="card p-12 text-center text-sm text-slate-500">{L('লোড হচ্ছে...', 'Loading...')}</div>
+        <div className="space-y-6" role="status" aria-busy="true">
+          <span className="sr-only">{L('লোড হচ্ছে...', 'Loading...')}</span>
+          {[0, 1].map((card) => (
+            <div key={card} className="card space-y-4 p-5">
+              <Skeleton className="h-4 w-40" />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="space-y-2">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-10 w-full rounded-xl" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Posts done */}

@@ -19,6 +19,7 @@ import {
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
 import { useLanguage } from '@/components/LanguageContext';
+import { Skeleton } from '@/components/ui/Skeleton';
 
 interface Actor {
   id: string;
@@ -326,10 +327,17 @@ export default function AuditLogPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-slate-500">
-                    <div className="flex flex-col items-center justify-center gap-2">
-                      <RefreshCw className="h-5 w-5 animate-spin text-brand-600" />
-                      <span>{L("লোড হচ্ছে...")}</span>
+                  <td colSpan={5} className="p-0">
+                    <div role="status" aria-busy="true" className="space-y-3 p-4">
+                      <span className="sr-only">{L("লোড হচ্ছে...")}</span>
+                      {[0, 1, 2, 3, 4, 5].map((i) => (
+                        <div key={i} className="flex items-center gap-3">
+                          <Skeleton className="h-4 w-32" />
+                          <Skeleton className="h-4 flex-1" />
+                          <Skeleton className="h-4 flex-1" />
+                          <Skeleton className="h-4 w-20" />
+                        </div>
+                      ))}
                     </div>
                   </td>
                 </tr>

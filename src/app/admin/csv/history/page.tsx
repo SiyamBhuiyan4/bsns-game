@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { History, FileSpreadsheet, Loader2, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
+import { History, FileSpreadsheet, ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
 import { useLanguage } from '@/components/LanguageContext';
 import { format } from 'date-fns';
+import { SkeletonTable } from '@/components/ui/Skeleton';
 
 interface BatchItem {
   id: string;
@@ -135,10 +136,7 @@ export default function CsvUploadHistoryPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center gap-2 py-12 text-sm text-slate-500">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {t('common.loading', 'লোড হচ্ছে...', 'Loading...')}
-          </div>
+          <SkeletonTable rows={5} cols={5} label={t('common.loading', 'লোড হচ্ছে...', 'Loading...')} />
         ) : batches.length === 0 ? (
           <EmptyState
             icon={<FileSpreadsheet className="h-5 w-5" />}

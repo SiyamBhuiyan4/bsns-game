@@ -39,6 +39,7 @@ import {
 } from 'recharts';
 import { MonthlyAutoData } from '@/lib/reports';
 import { useLanguage } from '@/components/LanguageContext';
+import { Skeleton, SkeletonStatCards } from '@/components/ui/Skeleton';
 
 interface MonthlyReportData {
   id: string;
@@ -250,14 +251,14 @@ function MonthlyReportContent() {
         subtitle={L("বিক্রয়, মুনাফা, পোস্ট, সেকশন অর্জন ও বাজেট")}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-0.5 text-xs font-medium">
+            <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium">
               <button
                 type="button"
                 onClick={() => setCurrentMonth(getOffsetMonth(0))}
-                className={`px-2.5 py-1 rounded-md transition-colors ${
+                className={`press px-2.5 py-1 rounded-md transition-colors ${
                   currentMonth === getOffsetMonth(0)
                     ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {L("চলতি মাস")}
@@ -265,10 +266,10 @@ function MonthlyReportContent() {
               <button
                 type="button"
                 onClick={() => setCurrentMonth(getOffsetMonth(1))}
-                className={`px-2.5 py-1 rounded-md transition-colors ${
+                className={`press px-2.5 py-1 rounded-md transition-colors ${
                   currentMonth === getOffsetMonth(1)
                     ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {L("গত মাস")}
@@ -276,10 +277,10 @@ function MonthlyReportContent() {
               <button
                 type="button"
                 onClick={() => setCurrentMonth(getOffsetMonth(2))}
-                className={`px-2.5 py-1 rounded-md transition-colors ${
+                className={`press px-2.5 py-1 rounded-md transition-colors ${
                   currentMonth === getOffsetMonth(2)
                     ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {L("২ মাস আগে")}
@@ -348,10 +349,16 @@ function MonthlyReportContent() {
       )}
 
       {loading ? (
-        <div className="card flex h-64 items-center justify-center">
-          <div className="flex flex-col items-center gap-2">
-            <div className="h-7 w-7 animate-spin rounded-full border-2 border-brand-500 border-t-transparent"></div>
-            <p className="text-sm text-slate-500">{L("লোড হচ্ছে...")}</p>
+        <div className="space-y-6" role="status" aria-busy="true">
+          <span className="sr-only">{L("লোড হচ্ছে...")}</span>
+          <SkeletonStatCards count={4} />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {[0, 1].map((i) => (
+              <div key={i} className="card p-5">
+                <Skeleton className="mb-4 h-4 w-40" />
+                <Skeleton className="h-56 w-full" />
+              </div>
+            ))}
           </div>
         </div>
       ) : !autoData ? (
@@ -396,14 +403,20 @@ function MonthlyReportContent() {
               <div className="card-body h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={momChartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
-                    <XAxis dataKey="name" stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#94A3B8" fontSize={12} tickLine={false} axisLine={false} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-slate-200)" />
+                    <XAxis dataKey="name" stroke="var(--color-slate-400)" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="var(--color-slate-400)" fontSize={12} tickLine={false} axisLine={false} />
                     <Tooltip
                       formatter={(val) => L(`৳ ${Number(val || 0).toLocaleString()}`)}
-                      contentStyle={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: 12 }}
+                      contentStyle={{
+                        backgroundColor: 'var(--color-white)',
+                        color: 'var(--color-slate-900)',
+                        borderRadius: '8px',
+                        border: '1px solid var(--color-slate-200)',
+                        fontSize: 12,
+                      }}
                     />
-                    <Bar dataKey={L("পূর্ববর্তী")} fill="#CBD5E1" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey={L("পূর্ববর্তী")} fill="var(--color-slate-300)" radius={[4, 4, 0, 0]} />
                     <Bar dataKey={L("বর্তমান")} fill="#059669" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
