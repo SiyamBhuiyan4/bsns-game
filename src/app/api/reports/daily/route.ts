@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { getDhakaDateString, parseDateOnly } from '@/lib/date';
 import { calculateEffectiveTargetsForRange } from '@/lib/targets';
-import { calculateEmployeeScore } from '@/lib/scoring';
+import { calculateEmployeeScore, selectEmployeeTargets, readSectionWeights } from '@/lib/scoring';
 import { readLangFromRequest } from '@/lib/i18n/request-lang';
 import { MetricType } from '@prisma/client';
 
@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
     const settings = await prisma.scoringSettings.findUnique({ where: { id: 'default' } });
     const cap = settings ? Number(settings.achievement_cap) : 1.0;
     const failingThreshold = settings ? Number(settings.failing_threshold) : 0.8;
+    const sectionWeights = readSectionWeights(settings);
 
     const employeeReports: Record<string, unknown>[] = [];
     let teamSales = 0;
@@ -61,7 +62,7 @@ export async function GET(req: NextRequest) {
       const sectionNames = emp.assignments_as_employee.map((a: any) => a.section.name);
 
       // Filter targets for assigned sections
-      const empTargets = allTargets.filter((t) => assignedSectionIds.includes(t.section_id));
+      const empTargets = selectEmployeeTargets(allTargets, emp.id, assignedSectionIds);
       const dailyTargets = calculateEffectiveTargetsForRange(empTargets, targetDate, targetDate);
 
       // Posts completed on this date
@@ -121,6 +122,7 @@ export async function GET(req: NextRequest) {
       const scoreResult = calculateEmployeeScore(scoringInput, {
         achievementCap: cap,
         failingThreshold,
+        sectionWeights,
         lang,
       });
 

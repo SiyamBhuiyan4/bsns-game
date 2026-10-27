@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   CheckSquare,
@@ -119,6 +119,19 @@ function EmployeeMyWorkContent() {
   // --- Task 2: Daily Entry State ---
   const [selectedDate, setSelectedDate] = useState(() => getDhakaDateString());
   const [products, setProducts] = useState<Product[]>([]);
+  const productsRef = useRef<Product[]>([]);
+  const entryAbortRef = useRef<AbortController | null>(null);
+  const queueAbortRef = useRef<AbortController | null>(null);
+  const selectedDateRef = useRef(selectedDate);
+  selectedDateRef.current = selectedDate;
+  // Metrics this tab does not edit; loaded so a save sends the real values back.
+  const [passthroughMetrics, setPassthroughMetrics] = useState({
+    NEW_LEADS: 0,
+    AD_SPEND: 0,
+    B2B_ORDERS: 0,
+    B2B_INQUIRIES: 0,
+    B2B_INQUIRY_VALUE: 0,
+  });
   const [loadingEntry, setLoadingEntry] = useState(false);
   const [savingEntry, setSavingEntry] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
@@ -140,34 +153,41 @@ function EmployeeMyWorkContent() {
 
   // 1. Fetch Work Queue (Links)
   const fetchWorkQueue = useCallback(async () => {
+    queueAbortRef.current?.abort();
+    const controller = new AbortController();
+    queueAbortRef.current = controller;
     try {
       setLoadingLinks(true);
       const url = `/api/employee/work?q=${encodeURIComponent(
         searchQuery
       )}&sectionId=${encodeURIComponent(selectedSection)}`;
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: controller.signal });
       const data = await res.json();
+      if (controller.signal.aborted) return;
       if (res.ok) {
         setTodoLinks(data.todoLinks || []);
         setCompletedLinks(data.completedLinks || []);
         setAssignedSections(data.assignedSections || []);
         setProgress(data.progress || { completedToday: 0, totalAssigned: 0, percentage: 0 });
         setUndoEnabled(data.undoEnabled !== false);
-        if (!extraSectionId && data.assignedSections && data.assignedSections.length > 0) {
-          setExtraSectionId(data.assignedSections[0].id);
+        if (data.assignedSections && data.assignedSections.length > 0) {
+          setExtraSectionId((prev) => prev || data.assignedSections[0].id);
         }
       } else {
         setErrorMessage(data.error || L('টাস্ক কিউ লোড করা যায়নি'));
       }
     } catch {
+      if (controller.signal.aborted) return;
       setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
-      setLoadingLinks(false);
+      if (!controller.signal.aborted) setLoadingLinks(false);
     }
-  }, [searchQuery, selectedSection, extraSectionId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, selectedSection]);
 
   useEffect(() => {
     fetchWorkQueue();
+    return () => queueAbortRef.current?.abort();
   }, [fetchWorkQueue]);
 
   // Refetch when window regains focus
@@ -179,53 +199,94 @@ function EmployeeMyWorkContent() {
 
   // 2. Fetch Daily Entry Data for Selected Date
   const fetchDailyEntry = useCallback(async (dateStr: string) => {
+    entryAbortRef.current?.abort();
+    const controller = new AbortController();
+    entryAbortRef.current = controller;
+    const isStale = () => controller.signal.aborted || selectedDateRef.current !== dateStr;
     try {
       setLoadingEntry(true);
-      const res = await fetch(`/api/employee/daily-entry?date=${dateStr}`);
+
+      let prods = productsRef.current;
+      if (prods.length === 0) {
+        try {
+          const prodRes = await fetch('/api/products', { signal: controller.signal });
+          if (prodRes.ok) {
+            const pData = await prodRes.json();
+            prods = pData.products || [];
+            productsRef.current = prods;
+            if (!isStale()) setProducts(prods);
+          }
+        } catch {
+          if (isStale()) return;
+        }
+      }
+      if (isStale()) return;
+
+      const res = await fetch(`/api/employee/daily-entry?date=${dateStr}`, { signal: controller.signal });
       const data = await res.json();
+      if (isStale()) return;
 
       if (res.ok) {
         setIsLocked(data.is_locked || false);
         setCanEdit(data.can_edit !== false);
 
+        // metrics come as { KEY: { value, note } }
         const m = data.metrics || {};
-        setSalesAmount(String(m.SALES_AMOUNT || 0));
-        setProfitAmount(String(m.PROFIT_AMOUNT || 0));
-        setConfirmedOrders(String(m.CONFIRMED_ORDERS || 0));
-        setNewClients(String(m.NEW_CLIENTS || 0));
-        setFollowupsDone(String(m.FOLLOWUPS_DONE || 0));
-        setRetentionCount(String(m.RETENTION_COUNT || 0));
+        const val = (k: string) => Number(m[k]?.value ?? 0) || 0;
+        setSalesAmount(String(val('SALES_AMOUNT')));
+        setProfitAmount(String(val('PROFIT_AMOUNT')));
+        setConfirmedOrders(String(val('CONFIRMED_ORDERS')));
+        setNewClients(String(val('NEW_CLIENTS')));
+        setFollowupsDone(String(val('FOLLOWUPS_DONE')));
+        setRetentionCount(String(val('RETENTION_COUNT')));
+        setPassthroughMetrics({
+          NEW_LEADS: val('NEW_LEADS'),
+          AD_SPEND: val('AD_SPEND'),
+          B2B_ORDERS: val('B2B_ORDERS'),
+          B2B_INQUIRIES: val('B2B_INQUIRIES'),
+          B2B_INQUIRY_VALUE: val('B2B_INQUIRY_VALUE'),
+        });
 
-        if (data.daily_text?.next_priorities) {
-          setDailyNote(data.daily_text.next_priorities);
-        }
+        setDailyNote(data.daily_text?.next_priorities || '');
 
-        if (Array.isArray(data.products)) {
-          setProducts(data.products);
-          const existingSales = data.product_sales || [];
-          const initialRows = data.products.map((p: Product) => {
-            const found = existingSales.find((es: any) => es.product_id === p.id);
-            return {
-              product_id: p.id,
-              product_name_bn: p.name_bn,
-              unit: p.unit,
-              selling_price: Number(p.selling_price),
-              quantity: found ? Number(found.quantity) : 0,
-              amount: found ? Number(found.amount) : 0,
-            };
-          });
-          setProductSales(initialRows);
+        // Rows from the active product list, plus any saved product not in
+        // that list, so a save never drops an existing breakdown row.
+        const existingSales: any[] = data.product_sales || [];
+        const rows: ProductSaleRow[] = prods.map((p: Product) => {
+          const found = existingSales.find((es) => es.product_id === p.id);
+          return {
+            product_id: p.id,
+            product_name_bn: p.name_bn,
+            unit: p.unit,
+            selling_price: Number(p.selling_price),
+            quantity: found ? Number(found.quantity) : 0,
+            amount: found ? Number(found.amount) : 0,
+          };
+        });
+        for (const es of existingSales) {
+          if (!rows.some((r) => r.product_id === es.product_id)) {
+            rows.push({
+              product_id: es.product_id,
+              product_name_bn: es.product_name_bn || '',
+              unit: es.unit || '',
+              selling_price: Number(es.selling_price) || 0,
+              quantity: Number(es.quantity) || 0,
+              amount: Number(es.amount) || 0,
+            });
+          }
         }
+        setProductSales(rows);
       }
     } catch {
       // silent fallback
     } finally {
-      setLoadingEntry(false);
+      if (!isStale()) setLoadingEntry(false);
     }
   }, []);
 
   useEffect(() => {
     fetchDailyEntry(selectedDate);
+    return () => entryAbortRef.current?.abort();
   }, [selectedDate, fetchDailyEntry]);
 
   // Reward toast trigger
@@ -433,11 +494,7 @@ function EmployeeMyWorkContent() {
           NEW_CLIENTS: Math.round(Number(newClients)) || 0,
           FOLLOWUPS_DONE: Math.round(Number(followupsDone)) || 0,
           RETENTION_COUNT: Math.round(Number(retentionCount)) || 0,
-          NEW_LEADS: 0,
-          AD_SPEND: 0,
-          B2B_ORDERS: 0,
-          B2B_INQUIRIES: 0,
-          B2B_INQUIRY_VALUE: 0,
+          ...passthroughMetrics,
         },
         product_sales: productSales
           .filter((p) => p.quantity > 0 || p.amount > 0)

@@ -1,6 +1,6 @@
 import prisma from './prisma';
 import { calculateEffectiveTargetsForRange } from './targets';
-import { calculateEmployeeScore } from './scoring';
+import { calculateEmployeeScore, selectEmployeeTargets, readSectionWeights } from './scoring';
 import { MetricType } from '@prisma/client';
 import { format } from 'date-fns';
 
@@ -205,6 +205,7 @@ export async function computeWeeklyAutoData(
   const scoringSettings = await prisma.scoringSettings.findUnique({ where: { id: 'default' } });
   const cap = scoringSettings ? Number(scoringSettings.achievement_cap) : 1.0;
   const failingThreshold = scoringSettings ? Number(scoringSettings.failing_threshold) : 0.8;
+  const sectionWeights = readSectionWeights(scoringSettings);
 
   let totalSales = 0;
   let totalProfit = 0;
@@ -217,7 +218,7 @@ export async function computeWeeklyAutoData(
 
   for (const emp of employees) {
     const assignedSectionIds = emp.assignments_as_employee.map((a: any) => a.section_id);
-    const empTargets = allTargets.filter((t) => assignedSectionIds.includes(t.section_id));
+    const empTargets = selectEmployeeTargets(allTargets, emp.id, assignedSectionIds);
     const effectiveTargets = calculateEffectiveTargetsForRange(empTargets, weekStart, weekEnd);
 
     const postsCount = await prisma.linkCompletion.count({
@@ -263,6 +264,7 @@ export async function computeWeeklyAutoData(
     const scoreResult = calculateEmployeeScore(scoringInput, {
       achievementCap: cap,
       failingThreshold,
+      sectionWeights,
     });
 
     totalSales += metricMap.SALES_AMOUNT;
@@ -414,6 +416,7 @@ export async function computeMonthlyAutoData(monthStr: string): Promise<MonthlyA
   const scoringSettings = await prisma.scoringSettings.findUnique({ where: { id: 'default' } });
   const cap = scoringSettings ? Number(scoringSettings.achievement_cap) : 1.0;
   const failingThreshold = scoringSettings ? Number(scoringSettings.failing_threshold) : 0.8;
+  const sectionWeights = readSectionWeights(scoringSettings);
 
   // 1. SECTION 1: Month-over-Month Growth
   // Posts
@@ -498,7 +501,7 @@ export async function computeMonthlyAutoData(monthStr: string): Promise<MonthlyA
     const assignedSectionIds = emp.assignments_as_employee.map((a: any) => a.section_id);
     employeeSectionCountMap.set(emp.id, Math.max(1, assignedSectionIds.length));
 
-    const empTargets = allTargets.filter((t) => assignedSectionIds.includes(t.section_id));
+    const empTargets = selectEmployeeTargets(allTargets, emp.id, assignedSectionIds);
     const effectiveTargets = calculateEffectiveTargetsForRange(empTargets, range.startDate, range.endDate);
 
     const empPosts = await prisma.linkCompletion.count({
@@ -537,6 +540,7 @@ export async function computeMonthlyAutoData(monthStr: string): Promise<MonthlyA
     const scoreResult = calculateEmployeeScore(scoringInput, {
       achievementCap: cap,
       failingThreshold,
+      sectionWeights,
     });
 
     employeeRankings.push({
@@ -801,6 +805,7 @@ export async function getDailyReportSummary(dateStr: string): Promise<DailyRepor
   const settings = await prisma.scoringSettings.findUnique({ where: { id: 'default' } });
   const cap = settings ? Number(settings.achievement_cap) : 1.0;
   const failingThreshold = settings ? Number(settings.failing_threshold) : 0.8;
+  const sectionWeights = readSectionWeights(settings);
 
   let totalScoreSum = 0;
   let passing_count = 0;
@@ -809,7 +814,7 @@ export async function getDailyReportSummary(dateStr: string): Promise<DailyRepor
 
   for (const emp of employees) {
     const assignedSectionIds = emp.assignments_as_employee.map((a: any) => a.section_id);
-    const empTargets = allTargets.filter((t) => assignedSectionIds.includes(t.section_id));
+    const empTargets = selectEmployeeTargets(allTargets, emp.id, assignedSectionIds);
     const dailyTargets = calculateEffectiveTargetsForRange(empTargets, targetDate, targetDate);
 
     const empEntries = entries.filter((e) => e.employee_id === emp.id);
@@ -841,6 +846,7 @@ export async function getDailyReportSummary(dateStr: string): Promise<DailyRepor
     const scoreResult = calculateEmployeeScore(scoringInput, {
       achievementCap: cap,
       failingThreshold,
+      sectionWeights,
     });
 
     totalScoreSum += scoreResult.totalScore;

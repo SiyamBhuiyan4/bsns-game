@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -76,6 +76,10 @@ export default function EmployeeDailyEntryPage() {
   const { lang, L } = useLanguage();
   const [selectedDate, setSelectedDate] = useState(() => getDhakaDateString());
   const [products, setProducts] = useState<Product[]>([]);
+  const productsRef = useRef<Product[]>([]);
+  const loadAbortRef = useRef<AbortController | null>(null);
+  const selectedDateRef = useRef(selectedDate);
+  selectedDateRef.current = selectedDate;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -139,6 +143,10 @@ export default function EmployeeDailyEntryPage() {
 
   // Fetch initial active products and daily entry
   const loadDayData = useCallback(async (dateStr: string) => {
+    loadAbortRef.current?.abort();
+    const controller = new AbortController();
+    loadAbortRef.current = controller;
+    const isStale = () => controller.signal.aborted || selectedDateRef.current !== dateStr;
     try {
       setLoading(true);
       setErrorMsg('');
@@ -146,19 +154,23 @@ export default function EmployeeDailyEntryPage() {
       setIsAdminForbidden(false);
 
       // Fetch products if not loaded
-      let prods = products;
+      let prods = productsRef.current;
       if (prods.length === 0) {
-        const prodRes = await fetch('/api/products');
+        const prodRes = await fetch('/api/products', { signal: controller.signal });
         if (prodRes.ok) {
           const pData = await prodRes.json();
           prods = pData.products || [];
-          setProducts(prods);
+          productsRef.current = prods;
+          if (!isStale()) setProducts(prods);
         }
       }
+      if (isStale()) return;
 
-      const res = await fetch(`/api/employee/daily-entry?date=${dateStr}`);
+      const res = await fetch(`/api/employee/daily-entry?date=${dateStr}`, { signal: controller.signal });
+      if (isStale()) return;
       if (res.status === 403) {
         const errJson = await res.json();
+        if (isStale()) return;
         if (errJson.is_admin_forbidden) {
           setIsAdminForbidden(true);
           setCanEdit(false);
@@ -171,6 +183,7 @@ export default function EmployeeDailyEntryPage() {
       }
 
       const data = await res.json();
+      if (isStale()) return;
       setIsLocked(data.is_locked);
       setCanEdit(data.can_edit);
       setTodayDhaka(data.today);
@@ -244,14 +257,17 @@ export default function EmployeeDailyEntryPage() {
       // History
       setHistory(data.history || []);
     } catch (err: unknown) {
+      if (isStale()) return;
       setErrorMsg(err instanceof Error ? err.message : L('ত্রুটি হয়েছে'));
     } finally {
-      setLoading(false);
+      if (!isStale()) setLoading(false);
     }
-  }, [products]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     loadDayData(selectedDate);
+    return () => loadAbortRef.current?.abort();
   }, [selectedDate, loadDayData]);
 
   // Product change with selling_price multiplication
@@ -371,7 +387,7 @@ export default function EmployeeDailyEntryPage() {
         throw new Error(data.error || L('তথ্য সংরক্ষণ করা যায়নি'));
       }
 
-      setSuccessMsg(data.message || SAVE_SUCCESS_MESSAGE);
+      setSuccessMsg(data.message || L(SAVE_SUCCESS_MESSAGE));
       loadDayData(selectedDate);
     } catch (err: unknown) {
       setErrorMsg(err instanceof Error ? err.message : L('ত্রুটি হয়েছে'));
@@ -516,7 +532,7 @@ export default function EmployeeDailyEntryPage() {
         <div className="alert alert-warning">
           <Lock className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="space-y-1">
-            <div className="font-medium">{LOCK_NOTICE}</div>
+            <div className="font-medium">{L(LOCK_NOTICE)}</div>
             <p className="text-xs">
               {L('শুধু আজ ও গতকালের তথ্য সম্পাদন করা যায়; এই তারিখ শুধু দেখা যাবে।', 'Only today and yesterday can be edited; this date is read-only.')}
             </p>

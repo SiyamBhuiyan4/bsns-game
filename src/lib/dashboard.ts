@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import { getDhakaDateString, parseDateOnly, formatDhakaDateTime } from '@/lib/date';
 import { calculateEffectiveTargetsForRange } from '@/lib/targets';
-import { calculateEmployeeScore } from '@/lib/scoring';
+import { calculateEmployeeScore, selectEmployeeTargets, readSectionWeights } from '@/lib/scoring';
 import { makeTranslator, type Lang } from '@/lib/i18n/translate';
 import { MetricType, PlanStatus } from '@prisma/client';
 import { subDays, format, parseISO, differenceInCalendarDays, eachDayOfInterval, isValid } from 'date-fns';
@@ -585,24 +585,30 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     const retentionAchieved = m.get(MetricType.RETENTION_COUNT) || 0;
     const followupsAchieved = m.get(MetricType.FOLLOWUPS_DONE) || 0;
 
+    // Per-employee targets (own targets + unscoped targets of assigned sections)
+    const empSectionIds = assignments.filter((a) => a.employee_id === emp.id).map((a) => a.section_id);
+    const empTargetRows = selectEmployeeTargets(allTargets, emp.id, empSectionIds);
+    const empTargets = calculateEffectiveTargetsForRange(empTargetRows, startUtcDate, endUtcDate);
+
     // Build metric score input
     const scoreInput: Partial<Record<MetricType, { target: number | null; achieved: number }>> = {
-      SALES_AMOUNT: { target: effectiveTargets.SALES_AMOUNT || null, achieved: salesAchieved },
-      PROFIT_AMOUNT: { target: effectiveTargets.PROFIT_AMOUNT || null, achieved: profitAchieved },
-      POSTS_DONE: { target: effectiveTargets.POSTS_DONE || null, achieved: postsAchieved },
-      NEW_CLIENTS: { target: effectiveTargets.NEW_CLIENTS || null, achieved: newClientsAchieved },
-      B2B_ORDERS: { target: effectiveTargets.B2B_ORDERS || null, achieved: b2bOrdersAchieved },
-      RETENTION_COUNT: { target: effectiveTargets.RETENTION_COUNT || null, achieved: retentionAchieved },
-      FOLLOWUPS_DONE: { target: effectiveTargets.FOLLOWUPS_DONE || null, achieved: followupsAchieved },
+      SALES_AMOUNT: { target: empTargets.SALES_AMOUNT || null, achieved: salesAchieved },
+      PROFIT_AMOUNT: { target: empTargets.PROFIT_AMOUNT || null, achieved: profitAchieved },
+      POSTS_DONE: { target: empTargets.POSTS_DONE || null, achieved: postsAchieved },
+      NEW_CLIENTS: { target: empTargets.NEW_CLIENTS || null, achieved: newClientsAchieved },
+      B2B_ORDERS: { target: empTargets.B2B_ORDERS || null, achieved: b2bOrdersAchieved },
+      RETENTION_COUNT: { target: empTargets.RETENTION_COUNT || null, achieved: retentionAchieved },
+      FOLLOWUPS_DONE: { target: empTargets.FOLLOWUPS_DONE || null, achieved: followupsAchieved },
     };
 
     const scoreResult = calculateEmployeeScore(scoreInput, {
       failingThreshold,
       achievementCap,
+      sectionWeights: readSectionWeights(scoringSettings),
     });
 
     const score = Math.round(scoreResult.totalScore);
-    if (scoreResult.isFailing && (effectiveTargets.SALES_AMOUNT || effectiveTargets.POSTS_DONE)) {
+    if (scoreResult.isFailing && (empTargets.SALES_AMOUNT || empTargets.POSTS_DONE)) {
       failingEmployeesCount++;
     }
 

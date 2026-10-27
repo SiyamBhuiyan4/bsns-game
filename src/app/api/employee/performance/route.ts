@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { getDhakaDateString, parseDateOnly } from '@/lib/date';
 import { calculateEffectiveTargetsForRange } from '@/lib/targets';
-import { calculateEmployeeScore } from '@/lib/scoring';
+import { calculateEmployeeScore, selectEmployeeTargets } from '@/lib/scoring';
 import { readLangFromRequest } from '@/lib/i18n/request-lang';
 import { MetricType } from '@prisma/client';
 import { subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, format } from 'date-fns';
@@ -43,6 +43,14 @@ export async function GET(req: NextRequest) {
       endDate = endOfMonth(refDate);
     }
 
+    // Targets are pro-rated over the period, so only compare against the days
+    // that have actually happened (never past today in Dhaka).
+    const todayDhakaStr = getDhakaDateString();
+    if (period !== 'daily' && format(endDate, 'yyyy-MM-dd') > todayDhakaStr) {
+      const clamped = parseDateOnly(todayDhakaStr);
+      endDate = clamped < startDate ? startDate : clamped;
+    }
+
     // 1. Get employee assigned sections
     const assignments = await prisma.assignment.findMany({
       where: { employee_id: targetEmployeeId },
@@ -51,9 +59,12 @@ export async function GET(req: NextRequest) {
     const sectionIds = assignments.map((a) => a.section_id);
 
     // 2. Fetch targets configured for these sections
-    const targets = await prisma.sectionTarget.findMany({
-      where: { section_id: { in: sectionIds } },
-    });
+    // Targets are often saved scoped to the employee with no section, so filter by both.
+    const targets = selectEmployeeTargets(
+      await prisma.sectionTarget.findMany(),
+      targetEmployeeId,
+      sectionIds
+    );
 
     // Effective targets for the date range
     const effectiveTargets = calculateEffectiveTargetsForRange(targets, startDate, endDate);

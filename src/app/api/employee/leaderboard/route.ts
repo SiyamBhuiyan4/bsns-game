@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { getDhakaDateString, parseDateOnly } from '@/lib/date';
 import { calculateEffectiveTargetsForRange } from '@/lib/targets';
-import { calculateTotalScore, calculateSectionScore } from '@/lib/scoring';
+import { calculateTotalScore, calculateSectionScore, selectEmployeeTargets, readSectionWeights } from '@/lib/scoring';
 import { makeTranslator } from '@/lib/i18n/translate';
 import { readLangFromRequest } from '@/lib/i18n/request-lang';
 import { MetricType } from '@prisma/client';
@@ -76,6 +76,13 @@ export async function GET(req: NextRequest) {
       endDate = parseDateOnly(format(endOfMonth(parseISO(todayStr)), 'yyyy-MM-dd'));
     }
 
+    // Targets are pro-rated over the whole range, so only compare against the days
+    // that have happened: clamp the end to today in Dhaka.
+    const todayDate = parseDateOnly(todayStr);
+    if (endDate > todayDate) {
+      endDate = todayDate < startDate ? startDate : todayDate;
+    }
+
     // 1. Fetch active employees with their assigned sections
     const employees = await prisma.user.findMany({
       where: {
@@ -138,11 +145,12 @@ export async function GET(req: NextRequest) {
     const scoringSettings = await prisma.scoringSettings.findUnique({ where: { id: 'default' } });
     const cap = scoringSettings ? Number(scoringSettings.achievement_cap) : 1.0;
     const failingThreshold = scoringSettings ? Number(scoringSettings.failing_threshold) : 0.8;
+    const sectionWeights = readSectionWeights(scoringSettings);
 
     // 7. Compute scores for each active employee
     const items: LeaderboardItem[] = employees.map((emp) => {
       const assignedSectionIds = emp.assignments_as_employee.map((a: any) => a.section_id);
-      const empTargets = allTargets.filter((t) => assignedSectionIds.includes(t.section_id));
+      const empTargets = selectEmployeeTargets(allTargets, emp.id, assignedSectionIds);
       const effectiveTargets = calculateEffectiveTargetsForRange(empTargets, startDate, endDate);
 
       const empDaily = employeeDailyMetrics[emp.id] || {};
@@ -182,28 +190,34 @@ export async function GET(req: NextRequest) {
       const total_score = calculateTotalScore(scoringInput, {
         achievementCap: cap,
         failingThreshold,
+        sectionWeights,
       });
 
       const section_scores: LeaderboardSectionScores = {
         sales_profit: calculateSectionScore('SALES_PROFIT', scoringInput, {
           achievementCap: cap,
           failingThreshold,
+          sectionWeights,
         }),
         content: calculateSectionScore('CONTENT', scoringInput, {
           achievementCap: cap,
           failingThreshold,
+          sectionWeights,
         }),
         new_buyers_b2b: calculateSectionScore('NEW_BUYERS_B2B', scoringInput, {
           achievementCap: cap,
           failingThreshold,
+          sectionWeights,
         }),
         retention: calculateSectionScore('RETENTION', scoringInput, {
           achievementCap: cap,
           failingThreshold,
+          sectionWeights,
         }),
         inbox_followup: calculateSectionScore('INBOX_FOLLOWUP', scoringInput, {
           achievementCap: cap,
           failingThreshold,
+          sectionWeights,
         }),
       };
 

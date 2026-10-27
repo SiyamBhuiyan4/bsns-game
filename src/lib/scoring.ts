@@ -28,6 +28,8 @@ export interface SectionScoreDetail {
 export interface EmployeeScoreResult {
   totalScore: number;
   isFailing: boolean;
+  /** True when no metric has a target (nothing to score): not failing, just not applicable. */
+  hasNoTargets: boolean;
   achievementCap: number;
   failingThreshold: number;
   activeWeightSum: number;
@@ -85,6 +87,31 @@ export const METRIC_DISPLAY_INFO: Record<
     sectionBn: 'ইনবক্স ও ফলোআপ',
   },
 };
+
+/** Reads the admin-configured section weights out of a ScoringSettings row (undefined if unset). */
+export function readSectionWeights(
+  settings: { section_weights?: unknown } | null | undefined
+): Record<string, number> | undefined {
+  const sw = settings?.section_weights;
+  return sw && typeof sw === 'object' ? (sw as Record<string, number>) : undefined;
+}
+
+/**
+ * Picks the targets that count for one employee: those scoped to the employee
+ * directly (even with no section), plus unscoped section targets for a section
+ * the employee is assigned to. Another employee's targets never leak in.
+ */
+export function selectEmployeeTargets<T extends { employee_id?: string | null; section_id?: string | null }>(
+  targets: T[],
+  employeeId: string,
+  assignedSectionIds: Array<string | null | undefined>
+): T[] {
+  return targets.filter((t) =>
+    t.employee_id
+      ? t.employee_id === employeeId
+      : !!t.section_id && assignedSectionIds.includes(t.section_id)
+  );
+}
 
 /**
  * Calculates scores for an employee based on achieved vs target values.
@@ -263,11 +290,13 @@ export function calculateEmployeeScore(
     sections[k].scaledScore = Number(sections[k].scaledScore.toFixed(2));
   }
 
-  const isFailing = totalScore < threshold * 100;
+  const hasNoTargets = activeWeightSum <= 0;
+  const isFailing = activeWeightSum > 0 && totalScore < threshold * 100;
 
   return {
     totalScore,
     isFailing,
+    hasNoTargets,
     achievementCap: cap,
     failingThreshold: threshold,
     activeWeightSum,
