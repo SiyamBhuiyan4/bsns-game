@@ -135,7 +135,8 @@ export async function POST(request: NextRequest) {
       payload: { name: employee.name, email: employee.email, role: 'EMPLOYEE' },
     });
 
-    return NextResponse.json({ success: true, employee }, { status: 201 });
+    const { password_hash: _ph, ...safeEmployee } = employee;
+    return NextResponse.json({ success: true, employee: safeEmployee }, { status: 201 });
   } catch (error) {
     console.error('Error creating employee:', error);
     return NextResponse.json({ error: 'কর্মী অ্যাকাউন্ট তৈরি ব্যর্থ হয়েছে' }, { status: 500 });

@@ -46,7 +46,12 @@ export async function GET(req: NextRequest) {
 
     const where: any = {};
     if (sectionId) where.section_id = sectionId;
-    if (employeeId) where.employee_id = employeeId;
+    // Employees see only their own targets: a colleague's quota and results are not theirs to read.
+    if (session.role !== 'ADMIN') {
+      where.employee_id = session.userId;
+    } else if (employeeId) {
+      where.employee_id = employeeId;
+    }
     if (periodType) where.period_type = periodType;
 
     const targets = await prisma.sectionTarget.findMany({

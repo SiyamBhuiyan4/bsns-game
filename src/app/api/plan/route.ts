@@ -29,7 +29,11 @@ export async function GET() {
       getActivePlan(),
       prisma.user.findMany({
         where: { role: UserRole.EMPLOYEE, is_active: true },
-        select: { id: true, name: true, email: true, phone: true },
+        // Contact details are for admins; employees only need names for assignee labels.
+        select:
+          session.role === 'ADMIN'
+            ? { id: true, name: true, email: true, phone: true }
+            : { id: true, name: true },
         orderBy: { name: 'asc' },
       }),
     ]);

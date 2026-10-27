@@ -248,6 +248,16 @@ export async function POST(request: NextRequest) {
     if (!url || typeof url !== 'string' || !url.trim()) {
       return NextResponse.json({ error: 'লিংক URL প্রদান করুন' }, { status: 400 });
     }
+    // Only web links. A javascript: or data: URL would be rendered as a live link in the admin's browser.
+    let safeUrl: URL;
+    try {
+      safeUrl = new URL(url.trim());
+    } catch {
+      return NextResponse.json({ error: 'সঠিক লিংক দিন' }, { status: 400 });
+    }
+    if (safeUrl.protocol !== 'http:' && safeUrl.protocol !== 'https:') {
+      return NextResponse.json({ error: 'সঠিক HTTP/HTTPS লিঙ্ক প্রদান করুন' }, { status: 400 });
+    }
     if (!section_id || typeof section_id !== 'string') {
       return NextResponse.json({ error: 'সেকশন নির্বাচন করুন' }, { status: 400 });
     }

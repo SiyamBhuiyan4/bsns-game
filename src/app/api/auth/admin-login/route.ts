@@ -6,6 +6,7 @@ import { signToken } from '@/lib/auth';
 import { setSessionCookie } from '@/lib/session';
 import { checkRateLimit, resetRateLimit } from '@/lib/rate-limit';
 import { createAuditLog } from '@/lib/audit';
+import { clientIp } from '@/lib/client-ip';
 
 const adminLoginSchema = z.object({
   passcode: z.string().min(1, { message: 'পাসকোড দিন / Please enter the passcode' }),
@@ -22,9 +23,7 @@ function passcodeMatches(input: string, expected: string): boolean {
 export async function POST(request: NextRequest) {
   try {
     // 1. IP extraction and Rate Limiting (stricter than employee login: short numeric passcode)
-    const forwardedFor = request.headers.get('x-forwarded-for');
-    const realIp = request.headers.get('x-real-ip');
-    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : (realIp?.trim() || '127.0.0.1');
+    const ip = clientIp(request);
     const rateKey = `admin:${ip}`;
 
     const rateCheck = checkRateLimit(rateKey, 5, 15 * 60 * 1000);

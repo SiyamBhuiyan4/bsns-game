@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 import { getJwtKey } from '@/lib/env';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { clientIp } from '@/lib/client-ip';
 
 const secretKey = getJwtKey();
 const COOKIE_NAME = 'auth_token';
@@ -36,12 +37,6 @@ async function verifyAuth(request: NextRequest): Promise<TokenPayload | null> {
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
-/** Caller IP as the proxy reports it, for rate-limit bucketing. */
-function clientIp(request: NextRequest): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return request.headers.get('x-real-ip')?.trim() || '127.0.0.1';
-}
 
 /**
  * Cross-site request check for anything that writes.

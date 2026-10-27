@@ -1,3 +1,4 @@
+import { randomInt } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
@@ -25,7 +26,7 @@ export async function POST(
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
     let tempPassword = '';
     for (let i = 0; i < 10; i++) {
-      tempPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+      tempPassword += chars.charAt(randomInt(chars.length));
     }
 
     const password_hash = await hashPassword(tempPassword);

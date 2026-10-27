@@ -66,7 +66,8 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json({ success: true, employee: updated });
+    const { password_hash: _ph, ...safeUpdated } = updated;
+    return NextResponse.json({ success: true, employee: safeUpdated });
   } catch (error) {
     console.error('Error updating employee:', error);
     return NextResponse.json({ error: 'আপডেট ব্যর্থ হয়েছে' }, { status: 500 });
