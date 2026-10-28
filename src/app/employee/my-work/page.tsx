@@ -23,6 +23,7 @@ import {
   FileSpreadsheet,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
+import TaskQuotaCard from '@/components/TaskQuotaCard';
 import EmptyState from '@/components/ui/EmptyState';
 import { formatTaka, getDhakaDateString } from '@/lib/date';
 
@@ -659,6 +660,9 @@ function EmployeeMyWorkContent() {
           </button>
         </div>
       </div>
+
+      {/* Today's mandatory / normal tasks from the assigned quota */}
+      <TaskQuotaCard />
 
       {/* Rewards Toast */}
       {successToast && (

@@ -515,3 +515,20 @@ model AuditLog {
   @@index([action])
   @@index([created_at])
 }
+
+// Task quota per employee (optionally per section), spread into daily
+// mandatory + optional work by src/lib/task-quota.ts.
+model TaskQuota {
+  id          String   @id @default(uuid())
+  employee_id String
+  section_id  String?
+  period      String   // DAILY | WEEKLY | MONTHLY
+  amount      Int
+  off_days    Int[]    // 0 = Sunday ... 6 = Saturday
+  is_active   Boolean  @default(true)
+  created_by  String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@unique([employee_id, section_id])
+}

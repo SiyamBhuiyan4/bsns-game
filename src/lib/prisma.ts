@@ -10,7 +10,8 @@ type ModelName =
   | 'user' | 'groupSection' | 'groupLink' | 'csvUploadBatch' | 'assignment' | 'linkCompletion'
   | 'product' | 'dailyProductSale' | 'campaign' | 'dailyEntry' | 'dailyText' | 'lead' | 'leadNote'
   | 'sectionTarget' | 'budgetLimit' | 'scoringSettings' | 'weeklyReport' | 'weeklyReportAnswer'
-  | 'monthlyReport' | 'plan' | 'planPhase' | 'planTask' | 'planMilestone' | 'auditLog' | 'agentPhrase';
+  | 'monthlyReport' | 'plan' | 'planPhase' | 'planTask' | 'planMilestone' | 'auditLog' | 'agentPhrase'
+  | 'taskQuota';
 
 type ModelDef = {
   table: string; // Pascal name used in relations
@@ -148,6 +149,16 @@ const MODELS: Record<ModelName, ModelDef> = {
     relations: {
       lead: { to: 'lead', fk: 'lead_id' },
       author: { to: 'user', fk: 'author_id' },
+    },
+  },
+  taskQuota: {
+    table: 'TaskQuota', dates: ['created_at', 'updated_at'], hasUpdatedAt: true,
+    defaults: { section_id: null, off_days: [], is_active: true, created_at: NOW },
+    unique: [['employee_id', 'section_id']],
+    relations: {
+      employee: { to: 'user', fk: 'employee_id' },
+      section: { to: 'groupSection', fk: 'section_id' },
+      creator: { to: 'user', fk: 'created_by' },
     },
   },
   sectionTarget: {
