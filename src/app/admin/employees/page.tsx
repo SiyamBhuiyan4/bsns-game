@@ -30,6 +30,7 @@ import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
 import { SkeletonStatCards, SkeletonTable } from '@/components/ui/Skeleton';
 import { useLanguage } from '@/components/LanguageContext';
+import Avatar from '@/components/ui/Avatar';
 
 interface SectionRef {
   id: string;
@@ -418,12 +419,17 @@ export default function EmployeesPage() {
                       className="cursor-pointer group"
                       title={t('emp.click_view_work', 'কাজের বিবরণ ও ইতিহাস দেখতে ক্লিক করুন', 'Click to view employee work & history')}
                     >
-                      <div className="font-medium text-slate-900 transition-colors group-hover:text-brand-700">
-                        {emp.name}
-                      </div>
-                      <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
-                        <Phone className="h-3 w-3" />
-                        <span className="tabular-nums">{emp.phone || '—'}</span>
+                      <div className="flex items-center gap-3">
+                        <Avatar name={emp.name} size={36} animated={false} />
+                        <div className="min-w-0">
+                          <div className="font-medium text-slate-900 transition-colors group-hover:text-brand-700">
+                            {emp.name}
+                          </div>
+                          <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
+                            <Phone className="h-3 w-3" />
+                            <span className="tabular-nums">{emp.phone || '—'}</span>
+                          </div>
+                        </div>
                       </div>
                     </td>
 
@@ -938,9 +944,7 @@ export default function EmployeesPage() {
             {/* Header */}
             <div className="card-header flex-nowrap items-start">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600">
-                  {workModalEmp.name.slice(0, 1).toUpperCase()}
-                </div>
+                <Avatar name={workModalEmp.name} size={40} animated={false} />
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 id="work-emp-title" className="truncate text-base font-semibold text-slate-900">{workModalEmp.name}</h3>

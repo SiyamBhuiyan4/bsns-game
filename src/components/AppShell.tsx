@@ -29,6 +29,18 @@ type Props = {
   children: ReactNode;
 };
 
+/** One colour per menu position: the icon wears it, and the active item becomes a gradient of it. */
+const NAV_TINTS = [
+  { icon: 'text-emerald-500', active: 'from-emerald-500 to-teal-500 shadow-emerald-500/25' },
+  { icon: 'text-sky-500', active: 'from-sky-500 to-indigo-500 shadow-sky-500/25' },
+  { icon: 'text-violet-500', active: 'from-violet-500 to-fuchsia-500 shadow-violet-500/25' },
+  { icon: 'text-amber-500', active: 'from-amber-500 to-orange-500 shadow-amber-500/25' },
+  { icon: 'text-rose-500', active: 'from-rose-500 to-pink-500 shadow-rose-500/25' },
+  { icon: 'text-teal-500', active: 'from-teal-500 to-cyan-500 shadow-teal-500/25' },
+  { icon: 'text-indigo-500', active: 'from-indigo-500 to-violet-500 shadow-indigo-500/25' },
+  { icon: 'text-fuchsia-500', active: 'from-fuchsia-500 to-rose-500 shadow-fuchsia-500/25' },
+];
+
 /** Sidebar + top bar frame shared by the admin and employee panels. */
 export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeHref, roleLabel, groups, session, logoutRedirect, vibrant = false, children }: Props) {
   const [open, setOpen] = useState(false);
@@ -56,9 +68,10 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
             </div>
           )}
           <ul className="space-y-0.5">
-            {group.items.map((item) => {
+            {group.items.map((item, index) => {
               const Icon = item.icon;
               const active = isActive(item.href);
+              const tint = NAV_TINTS[index % NAV_TINTS.length];
               return (
                 <li key={item.href}>
                   <Link
@@ -66,20 +79,13 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
                     aria-current={active ? 'page' : undefined}
                     className={`group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all duration-200 ${
                       active
-                        ? 'bg-brand-50 font-semibold text-brand-800'
+                        ? `bg-gradient-to-r ${tint.active} font-semibold text-white shadow-md`
                         : 'font-medium text-slate-600 hover:translate-x-0.5 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                   >
-                    {/* Rail on the active item, so the eye finds the current page at a glance. */}
-                    <span
-                      aria-hidden
-                      className={`absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-600 transition-all duration-200 ${
-                        active ? 'opacity-100' : 'opacity-0'
-                      }`}
-                    />
                     <Icon
                       className={`h-[18px] w-[18px] shrink-0 transition-transform duration-200 ${
-                        active ? 'text-brand-600' : 'text-slate-400 group-hover:scale-110 group-hover:text-slate-600'
+                        active ? 'text-white' : `${tint.icon} group-hover:scale-110`
                       }`}
                     />
                     <span className="truncate">{t(item.key, item.labelBn, item.labelEn)}</span>

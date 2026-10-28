@@ -19,6 +19,7 @@ import {
 import { EmployeeWorkSummaryItem } from '@/lib/dashboard';
 import { useLanguage } from '@/components/LanguageContext';
 import EmptyState from '@/components/ui/EmptyState';
+import Avatar from '@/components/ui/Avatar';
 
 export interface EmployeeHistoryModalProps {
   isOpen: boolean;
@@ -132,9 +133,7 @@ export default function EmployeeHistoryModal({
         {/* Header */}
         <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600">
-              {employee.name.slice(0, 2).toUpperCase()}
-            </div>
+            <Avatar name={employee.name} size={40} animated={false} />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 id="employee-history-title" className="truncate text-base font-semibold text-slate-900">

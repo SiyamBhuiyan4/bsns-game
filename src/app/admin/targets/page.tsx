@@ -30,6 +30,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
 import { SkeletonStatCards, SkeletonTable } from '@/components/ui/Skeleton';
+import Avatar from '@/components/ui/Avatar';
 
 interface Employee {
   id: string;
@@ -894,9 +895,7 @@ export default function AdminTargetsPage() {
                       {/* Employee Column */}
                       <td onClick={() => handleOpenEdit(t)} className="cursor-pointer" title={L('টার্গেট পরিবর্তন করতে ক্লিক করুন', 'Click to edit target')}>
                         <div className="flex items-center gap-2.5">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">
-                            {emp?.name ? emp.name.slice(0, 1).toUpperCase() : 'E'}
-                          </div>
+                          <Avatar name={emp?.name || 'E'} size={32} animated={false} />
                           <div className="min-w-0">
                             <div className="font-medium text-slate-900 hover:text-brand-700">
                               {emp?.name || L('সাধারণ / গ্রুপ লক্ষ্য', 'Unassigned / General')}

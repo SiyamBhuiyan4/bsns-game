@@ -17,7 +17,7 @@ export default function PageHeader({
     <div className="animate-fade-up mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div className="flex min-w-0 items-start gap-3">
         {icon && (
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-600/10">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 via-teal-500 to-violet-500 text-white shadow-lg shadow-teal-500/25">
             {icon}
           </div>
         )}

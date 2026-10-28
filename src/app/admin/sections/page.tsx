@@ -25,6 +25,7 @@ import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
 import { SkeletonStatCards, SkeletonTable } from '@/components/ui/Skeleton';
 import { useLanguage } from '@/components/LanguageContext';
+import Avatar from '@/components/ui/Avatar';
 
 interface Section {
   id: string;
@@ -787,9 +788,7 @@ export default function SectionsPage() {
                         className="flex cursor-pointer items-center justify-between gap-3 px-3 py-2.5 transition-colors hover:bg-slate-50"
                       >
                         <div className="flex min-w-0 items-center gap-2.5">
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                            {emp.name.slice(0, 1).toUpperCase()}
-                          </div>
+                          <Avatar name={emp.name} size={28} animated={false} />
                           <div className="min-w-0">
                             <div className="truncate text-sm font-medium text-slate-800">{emp.name}</div>
                             <div className="truncate text-xs text-slate-500">{emp.email}</div>

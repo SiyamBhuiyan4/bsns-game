@@ -22,6 +22,7 @@ import { useLanguage } from '@/components/LanguageContext';
 import EmployeeHistoryModal from './EmployeeHistoryModal';
 import EmptyState from '@/components/ui/EmptyState';
 import PerformancePieCharts from './PerformancePieCharts';
+import Avatar from '@/components/ui/Avatar';
 
 export interface EmployeePerformanceOverviewProps {
   employees: EmployeeWorkSummaryItem[];
@@ -125,7 +126,11 @@ export default function EmployeePerformanceOverview({
   };
 
   const progressBarColor = (progress: number) =>
-    progress >= 80 ? 'bg-emerald-500' : progress >= 50 ? 'bg-sky-500' : 'bg-amber-500';
+    progress >= 80
+      ? 'bg-gradient-to-r from-emerald-400 to-teal-500'
+      : progress >= 50
+        ? 'bg-gradient-to-r from-sky-400 to-indigo-500'
+        : 'bg-gradient-to-r from-amber-400 to-rose-500';
 
   const initials = (name: string) => name.slice(0, 2).toUpperCase();
 
@@ -162,9 +167,13 @@ export default function EmployeePerformanceOverview({
     { field: 'targetProgressPercent', label: L('লক্ষ্য অগ্রগতি', 'Target %'), align: 'left' },
   ];
 
-  const numCell = (value: number) => (
-    <span className={value > 0 ? 'text-slate-900' : 'text-slate-400'}>{formatNum(value)}</span>
-  );
+  // Each metric keeps its own colour across the table, so a column reads at a glance.
+  const numCell = (value: number, tone: string) =>
+    value > 0 ? (
+      <span className={`inline-flex min-w-8 justify-end rounded-lg px-2 py-0.5 font-semibold ${tone}`}>{formatNum(value)}</span>
+    ) : (
+      <span className="text-slate-400">{formatNum(value)}</span>
+    );
 
   return (
     <section className="space-y-4">
@@ -330,29 +339,27 @@ export default function EmployeePerformanceOverview({
                     >
                       <td>
                         <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                            {initials(emp.name)}
-                          </div>
+                          <Avatar name={emp.name} size={32} animated={false} />
                           <div className="min-w-0">
                             <div className="truncate font-medium text-slate-900">{emp.name}</div>
                             <div className="max-w-[200px] truncate text-xs text-slate-500">{emp.email}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="text-right tabular-nums">{numCell(emp.metrics.posts_done)}</td>
-                      <td className="text-right tabular-nums">{numCell(emp.metrics.orders_confirmed)}</td>
-                      <td className="text-right tabular-nums">{numCell(emp.metrics.messages_replied)}</td>
-                      <td className="text-right tabular-nums">{numCell(emp.metrics.leads_collected)}</td>
+                      <td className="text-right tabular-nums">{numCell(emp.metrics.posts_done, 'bg-violet-50 text-violet-700')}</td>
+                      <td className="text-right tabular-nums">{numCell(emp.metrics.orders_confirmed, 'bg-emerald-50 text-emerald-700')}</td>
+                      <td className="text-right tabular-nums">{numCell(emp.metrics.messages_replied, 'bg-sky-50 text-sky-700')}</td>
+                      <td className="text-right tabular-nums">{numCell(emp.metrics.leads_collected, 'bg-amber-50 text-amber-700')}</td>
                       <td className="whitespace-nowrap text-right tabular-nums">
-                        <span className={emp.metrics.sales_amount > 0 ? 'font-medium text-slate-900' : 'text-slate-400'}>
+                        <span className={emp.metrics.sales_amount > 0 ? 'rounded-lg bg-rose-50 px-2 py-0.5 font-semibold text-rose-700' : 'text-slate-400'}>
                           {formatMoney(emp.metrics.sales_amount)}
                         </span>
                       </td>
                       <td>
                         <div className="flex items-center gap-2.5">
-                          <div className="h-1.5 w-full min-w-[72px] overflow-hidden rounded-full bg-slate-100">
+                          <div className="h-2 w-full min-w-[72px] overflow-hidden rounded-full bg-slate-100">
                             <div
-                              className={`h-1.5 rounded-full ${progressBarColor(progress)} transition-all duration-300`}
+                              className={`h-2 rounded-full ${progressBarColor(progress)} transition-all duration-500`}
                               style={{ width: `${Math.min(100, progress)}%` }}
                             />
                           </div>
@@ -415,9 +422,7 @@ export default function EmployeePerformanceOverview({
                 <div>
                   <div className="mb-4 flex items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600">
-                        {initials(emp.name)}
-                      </div>
+                      <Avatar name={emp.name} size={36} animated={false} />
                       <div className="min-w-0">
                         <h4 className="truncate text-sm font-semibold text-slate-900">{emp.name}</h4>
                         <p className="truncate text-xs text-slate-500">{emp.email}</p>
@@ -430,7 +435,7 @@ export default function EmployeePerformanceOverview({
 
                   <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                     <div
-                      className={`h-1.5 rounded-full ${progressBarColor(progress)} transition-all duration-300`}
+                      className={`h-2 rounded-full ${progressBarColor(progress)} transition-all duration-500`}
                       style={{ width: `${Math.min(100, progress)}%` }}
                     />
                   </div>

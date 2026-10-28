@@ -608,3 +608,69 @@ html:has([aria-modal='true']) body {
 :root[data-theme='dark'] .overlay-dim {
   background-color: rgba(3, 7, 12, 0.72);
 }
+
+/* ============================================================================
+   Colour layer
+   ----------------------------------------------------------------------------
+   The owner wants the whole app colourful. Colour is applied here, through the
+   shared classes, so every page gets the same palette instead of each one
+   improvising: a soft colour wash behind the app, tinted table headers and
+   card headers, gradient primary buttons.
+   ========================================================================== */
+body {
+  background-image:
+    radial-gradient(1200px 600px at 0% 0%, rgba(16, 185, 129, 0.10), transparent 60%),
+    radial-gradient(1000px 600px at 100% 0%, rgba(139, 92, 246, 0.10), transparent 60%),
+    radial-gradient(900px 700px at 50% 100%, rgba(14, 165, 233, 0.08), transparent 60%);
+  background-attachment: fixed;
+}
+:root[data-theme='dark'] body {
+  background-image:
+    radial-gradient(1200px 600px at 0% 0%, rgba(16, 185, 129, 0.12), transparent 60%),
+    radial-gradient(1000px 600px at 100% 0%, rgba(139, 92, 246, 0.14), transparent 60%),
+    radial-gradient(900px 700px at 50% 100%, rgba(14, 165, 233, 0.10), transparent 60%);
+}
+/* The canvas utility would paint over the wash; let it show through. */
+.bg-canvas {
+  background-color: transparent;
+}
+
+.card-header {
+  background-image: linear-gradient(90deg, rgba(16, 185, 129, 0.07), rgba(14, 165, 233, 0.05) 45%, rgba(139, 92, 246, 0.06));
+}
+
+.table-pro thead th {
+  background-image: linear-gradient(90deg, rgba(16, 185, 129, 0.10), rgba(14, 165, 233, 0.08) 50%, rgba(139, 92, 246, 0.10));
+  color: var(--color-brand-800);
+}
+:root[data-theme='dark'] .table-pro thead th {
+  color: var(--color-brand-800);
+}
+.table-pro tbody tr:hover td {
+  background-color: rgba(139, 92, 246, 0.05);
+}
+
+.btn-primary {
+  background-image: linear-gradient(135deg, var(--color-brand-500), #0d9488);
+  border: 0;
+}
+.btn-primary:hover:not(:disabled) {
+  background-image: linear-gradient(135deg, var(--color-brand-600), #0f766e);
+}
+
+.segmented {
+  background-image: linear-gradient(90deg, rgba(16, 185, 129, 0.08), rgba(139, 92, 246, 0.08));
+}
+.segmented > [data-active='true'] {
+  color: var(--color-brand-700);
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+}
+/* With .bg-canvas see-through, the root element carries the base colour. */
+html {
+  background-color: var(--background);
+}
