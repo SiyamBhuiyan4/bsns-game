@@ -502,3 +502,42 @@ body {
     display: none !important;
   }
 }
+
+/* ============================================================================
+   Profile avatar: turning ring + breathing glow
+   ========================================================================== */
+@keyframes avatar-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes avatar-glow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--glow), 0 4px 14px -4px var(--glow); }
+  50% { box-shadow: 0 0 0 6px transparent, 0 6px 22px -2px var(--glow); }
+}
+.avatar-ring {
+  animation: avatar-spin 6s linear infinite, avatar-glow 2.6s ease-in-out infinite;
+  filter: saturate(1.15);
+}
+.avatar-wrap:hover .avatar-ring {
+  animation-duration: 2s, 1.2s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .avatar-ring { animation: none; }
+}
+
+/* ============================================================================
+   Employee panel: colourful profile card
+   ========================================================================== */
+.profile-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 55%, #ecfeff 100%);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+:root[data-theme='dark'] .profile-card {
+  background: linear-gradient(135deg, #151d2c 0%, #1b1640 55%, #0f2a33 100%);
+}
+
+/* ============================================================================
+   Font choice (employee panel)
+   ========================================================================== */
+:root[data-font='noto'] body { font-family: var(--font-noto-bengali), 'Noto Sans Bengali', sans-serif; }
+:root[data-font='inter'] body { font-family: var(--font-inter), 'Inter', sans-serif; }
+:root[data-font='hind'] body { font-family: var(--font-hind-siliguri), 'Hind Siliguri', sans-serif; }

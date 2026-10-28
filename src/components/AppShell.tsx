@@ -7,6 +7,8 @@ import { Menu, X, type LucideIcon } from 'lucide-react';
 import LogoutButton from '@/components/LogoutButton';
 import LanguageToggle from '@/components/LanguageToggle';
 import ThemeToggle from '@/components/ThemeToggle';
+import Avatar from '@/components/ui/Avatar';
+import FontPicker from '@/components/FontPicker';
 import { useLanguage } from '@/components/LanguageContext';
 
 export type NavItem = { href: string; key: string; labelBn: string; labelEn: string; icon: LucideIcon };
@@ -21,11 +23,13 @@ type Props = {
   groups: NavGroup[];
   session: { name: string; email: string };
   logoutRedirect: string;
+  /** Colourful profile card, animated avatar and font choice (employee panel). */
+  vibrant?: boolean;
   children: ReactNode;
 };
 
 /** Sidebar + top bar frame shared by the admin and employee panels. */
-export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeHref, roleLabel, groups, session, logoutRedirect, children }: Props) {
+export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeHref, roleLabel, groups, session, logoutRedirect, vibrant = false, children }: Props) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { t, lang, L } = useLanguage();
@@ -108,7 +112,17 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
     </Link>
   );
 
-  const userCard = (
+  const userCard = vibrant ? (
+    <div className="border-t border-slate-200 p-3">
+      <div className="profile-card hover-lift flex items-center gap-3 rounded-2xl px-3 py-3 shadow-sm">
+        <Avatar name={session.name} size={46} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold text-slate-900">{session.name}</span>
+          <span className="block truncate text-xs text-slate-500">{session.email}</span>
+        </span>
+      </div>
+    </div>
+  ) : (
     <div className="border-t border-slate-200 p-3">
       <div className="flex items-center gap-3 rounded-lg px-2 py-2 bg-slate-50/70 border border-slate-100">
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
@@ -157,6 +171,7 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
           <div className="min-w-0 flex-1 truncate text-sm font-medium text-slate-500">
             {current ? t(current.key, current.labelBn, current.labelEn) : ''}
           </div>
+          {vibrant && <FontPicker />}
           <ThemeToggle />
           <LanguageToggle />
           <LogoutButton redirectTo={logoutRedirect} />

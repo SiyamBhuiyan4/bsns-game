@@ -52,12 +52,15 @@ export default async function RootLayout({
   const lang: Language = cookieStore.get(COOKIE_LANG_KEY)?.value === 'en' ? 'en' : 'bn';
   const digitStyle: DigitStyle = cookieStore.get(COOKIE_DIGIT_KEY)?.value === 'en' ? 'en' : 'bn';
   const theme: Theme = cookieStore.get(COOKIE_THEME_KEY)?.value === 'dark' ? 'dark' : 'light';
+  const fontCookie = cookieStore.get('app_font')?.value;
+  const font = fontCookie === 'noto' || fontCookie === 'inter' ? fontCookie : 'hind';
 
   return (
     <html
       lang={lang}
       data-lang={lang}
       data-theme={theme}
+      data-font={font}
       style={{ colorScheme: theme }}
       className={`${hindSiliguri.variable} ${notoSansBengali.variable} ${inter.variable} scroll-smooth`}
     >

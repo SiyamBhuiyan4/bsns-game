@@ -46,6 +46,7 @@ export default function EmployeeShell({ session, children }: { session: { name: 
       groups={navGroups}
       session={session}
       logoutRedirect="/login"
+      vibrant
     >
       {children}
     </AppShell>
