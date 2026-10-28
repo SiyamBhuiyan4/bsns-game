@@ -1,24 +1,14 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import {
-  BarChart3,
-  CheckSquare,
-  TrendingUp,
-  Trophy,
-  FileSpreadsheet,
-  UserPlus,
-  CalendarCheck,
-  Sprout,
-} from 'lucide-react';
+import { BarChart3, CalendarCheck, CheckSquare, Sprout, TrendingUp, Trophy, UserPlus } from 'lucide-react';
 import AppShell, { type NavGroup } from '@/components/AppShell';
 import { useLanguage } from '@/components/LanguageContext';
 
 // Merged route alias retained for backward compatibility: '/employee/daily-entry'
 export const LEGACY_DAILY_ENTRY_ROUTE = '/employee/daily-entry';
 
-
-
+/** Employee panel frame: the shared AppShell in its colourful variant (profile card, animated avatar, font choice). */
 export default function EmployeeShell({ session, children }: { session: { name: string; email: string }; children: ReactNode }) {
   const { L } = useLanguage();
   const navGroups: NavGroup[] = [

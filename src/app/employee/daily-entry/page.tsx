@@ -407,7 +407,7 @@ export default function EmployeeDailyEntryPage() {
           <button
             type="button"
             onClick={() => toggleNoteField(metricKey)}
-            className="text-xs font-medium text-brand-700 hover:text-brand-800"
+            className="-my-1.5 inline-flex min-h-10 items-center text-xs font-medium text-brand-700 hover:text-brand-800"
           >
             {L('+ নোট', '+ Add note')}
           </button>
@@ -428,7 +428,7 @@ export default function EmployeeDailyEntryPage() {
               value={noteVal}
               onChange={(e) => setNote(metricKey, e.target.value)}
               placeholder={L('বিস্তারিত লিখুন', 'Details')}
-              className="input py-1.5 text-xs"
+              className="input min-h-10 py-1.5 text-base sm:min-h-0 sm:text-xs"
             />
           </div>
         )}
@@ -439,7 +439,7 @@ export default function EmployeeDailyEntryPage() {
   const sectionHeader = (icon: ReactNode, title: string, subtitle: string, right?: ReactNode) => (
     <div className="card-header">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
           {icon}
         </div>
         <div className="min-w-0">
@@ -500,12 +500,13 @@ export default function EmployeeDailyEntryPage() {
                 max={todayDhaka || getDhakaDateString()}
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="input w-auto pl-9 font-medium"
+                className="input min-h-10 w-full pl-9 font-medium tabular-nums sm:w-auto"
               />
             </div>
             <div className="segmented">
               <button
                 type="button"
+                className="min-h-9"
                 data-active={selectedDate === (todayDhaka || getDhakaDateString())}
                 onClick={() => {
                   setSelectedDate(todayDhaka || getDhakaDateString());
@@ -516,6 +517,7 @@ export default function EmployeeDailyEntryPage() {
               {oldestAllowed && (
                 <button
                   type="button"
+                  className="min-h-9"
                   data-active={selectedDate === oldestAllowed}
                   onClick={() => setSelectedDate(oldestAllowed)}
                 >
@@ -589,7 +591,7 @@ export default function EmployeeDailyEntryPage() {
           ))}
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className={`space-y-6 ${canEdit ? 'pb-20 sm:pb-0' : ''}`}>
           {/* Posts done */}
           <div className="card">
             {sectionHeader(
@@ -739,9 +741,7 @@ export default function EmployeeDailyEntryPage() {
             )}
 
             {productSales.length === 0 ? (
-              <div className="px-5 py-8 text-center text-sm text-slate-500">
-                {L('কোনো সক্রিয় পণ্য নেই', 'No active products')}
-              </div>
+              <EmptyState icon={<Package className="h-5 w-5" />} title={L('কোনো সক্রিয় পণ্য নেই', 'No active products')} />
             ) : (
               <>
                 <div className="hidden border-b border-slate-200 bg-slate-50/80 px-5 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500 sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:gap-4">
@@ -1064,7 +1064,8 @@ export default function EmployeeDailyEntryPage() {
           </div>
 
           {canEdit && (
-            <div className="flex justify-end">
+            /* Save bar: pinned to the bottom on phones so it is always in reach; inline on larger screens. */
+            <div className="fixed inset-x-0 bottom-0 z-30 flex justify-end border-t border-slate-200 bg-white/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md sm:static sm:z-auto sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
               <button type="submit" disabled={saving} className="btn btn-primary min-h-11 w-full px-6 sm:w-auto">
                 <Save className="h-4 w-4" />
                 {saving ? L('সংরক্ষণ হচ্ছে...', 'Saving...') : L('সংরক্ষণ করুন', 'Save entry')}
@@ -1089,8 +1090,10 @@ export default function EmployeeDailyEntryPage() {
       {/* Last 7 days */}
       <div className="card overflow-hidden">
         <div className="card-header">
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-slate-400" />
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+              <Clock className="h-4 w-4" />
+            </span>
             <h3 className="card-title">{L('গত ৭ দিন', 'Last 7 days')}</h3>
           </div>
           <span className="card-subtitle">
@@ -1099,9 +1102,7 @@ export default function EmployeeDailyEntryPage() {
         </div>
 
         {historyDates.length === 0 ? (
-          <div className="px-5 py-8 text-center text-sm text-slate-500">
-            {L('গত ৭ দিনের কোনো রেকর্ড নেই', 'No records in the last 7 days')}
-          </div>
+          <EmptyState icon={<Clock className="h-5 w-5" />} title={L('গত ৭ দিনের কোনো রেকর্ড নেই', 'No records in the last 7 days')} />
         ) : (
           <>
             {/* Phone: stacked rows */}

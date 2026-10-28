@@ -270,9 +270,9 @@ export default function AdminSettingsPage() {
   }
 
   const capOptions = [
-    { value: 1.0, title: L('১০০%'), note: 'স্ট্যান্ডার্ড, বোনাস নেই' },
-    { value: 1.2, title: L('১২০%'), note: 'টার্গেটের ১২০% পর্যন্ত' },
-    { value: 999, title: L('নো ক্যাপ'), note: 'যত কাজ তত স্কোর' },
+    { value: 1.0, title: L('১০০%'), note: L('স্ট্যান্ডার্ড, বোনাস নেই', 'Standard, no bonus') },
+    { value: 1.2, title: L('১২০%'), note: L('টার্গেটের ১২০% পর্যন্ত', 'Up to 120% of target') },
+    { value: 999, title: L('নো ক্যাপ'), note: L('যত কাজ তত স্কোর', 'Score grows with work') },
   ];
 
   return (
@@ -284,7 +284,7 @@ export default function AdminSettingsPage() {
       />
 
       {successMsg && (
-        <div className="alert alert-success">
+        <div className="alert alert-success" role="status">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="space-y-1">
             <p className="font-medium">{successMsg}</p>
@@ -298,7 +298,7 @@ export default function AdminSettingsPage() {
       )}
 
       {errorMsg && (
-        <div className="alert alert-error">
+        <div className="alert alert-error" role="alert">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
@@ -312,7 +312,7 @@ export default function AdminSettingsPage() {
               <h2 className="card-title">{L("সেকশন ওয়েট")}</h2>
               <p className="card-subtitle">{L("৫টি সেকশনের গুরুত্ব। যোগফল ঠিক ১০০% হতে হবে।")}</p>
             </div>
-            <span className={`badge ${isSumValid ? 'badge-green' : 'badge-red'}`}>
+            <span className={`badge tabular-nums ${isSumValid ? 'badge-green' : 'badge-red'}`}>
               {isSumValid ? <CheckCircle2 className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
               {L("মোট")} {toBengaliDigits(currentSum)}%
               {!isSumValid &&
@@ -331,13 +331,16 @@ export default function AdminSettingsPage() {
               />
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200">
               {SECTION_CONFIG.map((sec) => (
-                <div key={sec.key} className="min-w-0">
-                  <label className="label" htmlFor={`weight-${sec.key}`} title={sec.descBn}>
-                    {sec.nameBn}
-                  </label>
-                  <div className="relative">
+                <li key={sec.key} className="flex items-center justify-between gap-4 px-4 py-3">
+                  <div className="min-w-0">
+                    <label className="block text-sm font-medium text-slate-900" htmlFor={`weight-${sec.key}`}>
+                      {sec.nameBn}
+                    </label>
+                    <p className="mt-0.5 text-xs text-slate-500">{sec.descBn}</p>
+                  </div>
+                  <div className="relative w-24 shrink-0">
                     <input
                       id={`weight-${sec.key}`}
                       type="number"
@@ -346,17 +349,16 @@ export default function AdminSettingsPage() {
                       step="1"
                       value={settings.section_weights[sec.key]}
                       onChange={(e) => handleWeightChange(sec.key, e.target.value)}
-                      className="input pr-8 tabular-nums"
+                      className="input pr-8 text-right tabular-nums"
                       required
                     />
                     <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-slate-400">
                       %
                     </span>
                   </div>
-                  <p className="hint">{sec.nameEn}</p>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
 
             {!isSumValid && (
               <div className="alert alert-warning">
@@ -609,7 +611,7 @@ export default function AdminSettingsPage() {
         </div>
 
         {/* Sticky save bar */}
-        <div className="card sticky bottom-4 z-20 flex flex-col gap-3 p-4 shadow-lg sm:flex-row sm:items-center sm:justify-between">
+        <div className="card no-print sticky bottom-4 z-20 flex flex-col gap-3 p-4 shadow-[var(--shadow-pop)] sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <History className="h-4 w-4 shrink-0 text-slate-400" />
             <span>
@@ -618,7 +620,7 @@ export default function AdminSettingsPage() {
                 : L('প্রতিটি পরিবর্তন অডিট লগে রেকর্ড হয়')}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-end gap-2">
             <button type="button" onClick={handleResetToDefaults} className="btn btn-ghost">
               <RotateCcw className="h-4 w-4" />
               {L("ডিফল্টে ফেরান")}

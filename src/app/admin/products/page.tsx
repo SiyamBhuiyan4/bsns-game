@@ -194,7 +194,7 @@ export default function AdminProductsPage() {
       <PageHeader
         icon={<Package className="h-5 w-5" />}
         title={L('পণ্য ও মূল্য তালিকা', 'Products')}
-        subtitle="Selling price and unit for each product"
+        subtitle={L('প্রতিটি পণ্যের বিক্রয়মূল্য ও একক', 'Selling price and unit for each product')}
         actions={
           <button
             onClick={() => {
@@ -211,10 +211,10 @@ export default function AdminProductsPage() {
       />
 
       {errorMessage && (
-        <div className="alert alert-error">
+        <div className="alert alert-error" role="alert">
           <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
           <span className="flex-1">{L(errorMessage)}</span>
-          <button onClick={() => setErrorMessage(null)} className="btn-icon h-6 w-6" aria-label="Dismiss">
+          <button onClick={() => setErrorMessage(null)} className="btn-icon h-6 w-6" aria-label={L('বন্ধ করুন', 'Dismiss')}>
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -224,23 +224,31 @@ export default function AdminProductsPage() {
         <div className="alert alert-success">
           <CheckCircle className="h-4 w-4 mt-0.5 shrink-0" />
           <span className="flex-1">{L(successMessage)}</span>
-          <button onClick={() => setSuccessMessage(null)} className="btn-icon h-6 w-6" aria-label="Dismiss">
+          <button onClick={() => setSuccessMessage(null)} className="btn-icon h-6 w-6" aria-label={L('বন্ধ করুন', 'Dismiss')}>
             <X className="h-4 w-4" />
           </button>
         </div>
       )}
 
-      <div className="card overflow-x-auto">
+      <div className="card overflow-hidden">
+        <div className="card-header">
+          <div className="min-w-0">
+            <h2 className="card-title">{L('পণ্য তালিকা', 'Product list')}</h2>
+            <p className="card-subtitle">{L('স্ট্যাটাসে ক্লিক করে সক্রিয়/নিষ্ক্রিয় করুন', 'Click a status to switch it on or off')}</p>
+          </div>
+          {!loading && <span className="badge badge-gray tabular-nums">{products.length}</span>}
+        </div>
         {loading ? (
           <SkeletonTable rows={6} cols={5} label={L('লোড হচ্ছে', 'Loading…')} />
         ) : products.length === 0 ? (
           <EmptyState
             icon={<Package className="h-5 w-5" />}
             title={L('কোনো পণ্য নেই', 'No products yet')}
-            description="Add your first product to start recording sales."
+            description={L('বিক্রি রেকর্ড শুরু করতে প্রথম পণ্যটি যুক্ত করুন।', 'Add your first product to start recording sales.')}
           />
         ) : (
-          <table className="table-pro">
+          <div className="overflow-x-auto">
+          <table className="table-pro min-w-[560px]">
             <thead>
               <tr>
                 <th>{L('পণ্য', 'Product')}</th>
@@ -248,7 +256,7 @@ export default function AdminProductsPage() {
                 <th className="text-right">{L('মূল্য', 'Price')}</th>
                 <th className="text-center">{L('স্ট্যাটাস', 'Status')}</th>
                 <th className="text-right">
-                  <span className="sr-only">Actions</span>
+                  <span className="sr-only">{L('কাজ', 'Actions')}</span>
                 </th>
               </tr>
             </thead>
@@ -268,12 +276,12 @@ export default function AdminProductsPage() {
                       type="button"
                       disabled={togglingId === p.id}
                       onClick={() => handleToggleActive(p)}
-                      title={p.is_active ? 'Click to deactivate' : 'Click to activate'}
+                      title={p.is_active ? L('নিষ্ক্রিয় করতে ক্লিক করুন', 'Click to deactivate') : L('সক্রিয় করতে ক্লিক করুন', 'Click to activate')}
                       className="cursor-pointer disabled:opacity-50"
                     >
                       {togglingId === p.id ? (
                         <span className="badge badge-gray">
-                          <Loader2 className="h-3 w-3 animate-spin" /> Updating…
+                          <Loader2 className="h-3 w-3 animate-spin" /> {L('আপডেট হচ্ছে…', 'Updating…')}
                         </span>
                       ) : p.is_active ? (
                         <span className="badge badge-green">{L('সক্রিয়', 'Active')}</span>
@@ -294,8 +302,8 @@ export default function AdminProductsPage() {
                         setEditError(null);
                         setErrorMessage(null);
                       }}
-                      className="btn-icon"
-                      aria-label="Edit product"
+                      className="btn-icon h-8 w-8"
+                      aria-label={L('পণ্য সম্পাদনা', 'Edit product')}
                       title={L('সম্পাদনা', 'Edit')}
                     >
                       <Edit2 className="h-4 w-4" />
@@ -305,18 +313,19 @@ export default function AdminProductsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 
       {/* Modal: Add Product */}
       {isAddOpen && (
         <div className="modal-backdrop">
-          <div className="modal-panel">
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="add-product-title">
             <div className="card-header">
               <div>
-                <h3 className="card-title">{L('নতুন পণ্য', 'Add product')}</h3>
+                <h3 id="add-product-title" className="card-title">{L('নতুন পণ্য', 'Add product')}</h3>
               </div>
-              <button type="button" onClick={() => setIsAddOpen(false)} className="btn-icon" aria-label="Close">
+              <button type="button" onClick={() => setIsAddOpen(false)} className="btn-icon" aria-label={L('বন্ধ করুন', 'Close')}>
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -403,12 +412,12 @@ export default function AdminProductsPage() {
       {/* Modal: Edit Product */}
       {editingProduct && (
         <div className="modal-backdrop">
-          <div className="modal-panel">
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="edit-product-title">
             <div className="card-header">
               <div>
-                <h3 className="card-title">{L('পণ্য সম্পাদনা', 'Edit product')}</h3>
+                <h3 id="edit-product-title" className="card-title">{L('পণ্য সম্পাদনা', 'Edit product')}</h3>
               </div>
-              <button type="button" onClick={() => setEditingProduct(null)} className="btn-icon" aria-label="Close">
+              <button type="button" onClick={() => setEditingProduct(null)} className="btn-icon" aria-label={L('বন্ধ করুন', 'Close')}>
                 <X className="h-4 w-4" />
               </button>
             </div>

@@ -4,7 +4,6 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Calendar,
-  Download,
   Save,
   CheckCircle2,
   TrendingUp,
@@ -14,7 +13,6 @@ import {
   Layers,
   PieChart as PieIcon,
   Megaphone,
-  FileSpreadsheet,
   FileText,
   Clock,
   ChevronLeft,
@@ -23,6 +21,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
+import { ReportExportButtons, ReportPageSkeleton } from '@/components/admin/ReportKit';
 import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
 import {
@@ -62,7 +61,23 @@ interface HistoryItem {
   finalized_at: string | null;
 }
 
-const COLORS = ['#059669', '#0EA5E9', '#F59E0B', '#8B5CF6', '#94A3B8', '#64748B'];
+// Theme variables, so the chart follows dark mode.
+const COLORS = [
+  'var(--color-brand-600)',
+  'var(--color-sky-500)',
+  'var(--color-amber-500)',
+  'var(--color-violet-500)',
+  'var(--color-slate-400)',
+  'var(--color-slate-500)',
+];
+const TOOLTIP_STYLE = {
+  backgroundColor: 'var(--color-white)',
+  color: 'var(--color-slate-900)',
+  borderRadius: '10px',
+  border: '1px solid var(--color-slate-200)',
+  boxShadow: 'var(--shadow-pop)',
+  fontSize: 12,
+};
 
 function getOffsetMonth(offsetMonths: number): string {
   const now = new Date();
@@ -250,38 +265,26 @@ function MonthlyReportContent() {
         }
         subtitle={L("বিক্রয়, মুনাফা, পোস্ট, সেকশন অর্জন ও বাজেট")}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium">
+          <div className="no-print flex flex-wrap items-center gap-2">
+            <div className="segmented" role="group" aria-label={L('দ্রুত মাস', 'Quick months')}>
               <button
                 type="button"
+                data-active={currentMonth === getOffsetMonth(0)}
                 onClick={() => setCurrentMonth(getOffsetMonth(0))}
-                className={`press px-2.5 py-1 rounded-md transition-colors ${
-                  currentMonth === getOffsetMonth(0)
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
               >
                 {L("চলতি মাস")}
               </button>
               <button
                 type="button"
+                data-active={currentMonth === getOffsetMonth(1)}
                 onClick={() => setCurrentMonth(getOffsetMonth(1))}
-                className={`press px-2.5 py-1 rounded-md transition-colors ${
-                  currentMonth === getOffsetMonth(1)
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
               >
                 {L("গত মাস")}
               </button>
               <button
                 type="button"
+                data-active={currentMonth === getOffsetMonth(2)}
                 onClick={() => setCurrentMonth(getOffsetMonth(2))}
-                className={`press px-2.5 py-1 rounded-md transition-colors ${
-                  currentMonth === getOffsetMonth(2)
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
               >
                 {L("২ মাস আগে")}
               </button>
@@ -301,7 +304,7 @@ function MonthlyReportContent() {
                 type="month"
                 value={currentMonth}
                 onChange={(e) => setCurrentMonth(e.target.value)}
-                className="input w-auto"
+                className="input w-auto tabular-nums"
               />
               <button
                 onClick={() => handleMonthStep(1)}
@@ -312,38 +315,25 @@ function MonthlyReportContent() {
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
-            <a
-              href={`/api/reports/monthly/export?month=${currentMonth}&type=excel`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-secondary"
-            >
-              <FileSpreadsheet className="h-4 w-4" />
-              Excel
-            </a>
-            <a
-              href={`/api/reports/monthly/export?month=${currentMonth}&type=pdf`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-secondary"
-            >
-              <Download className="h-4 w-4" />
-              PDF
-            </a>
+            <ReportExportButtons
+              newTab
+              excelHref={`/api/reports/monthly/export?month=${currentMonth}&type=excel`}
+              pdfHref={`/api/reports/monthly/export?month=${currentMonth}&type=pdf`}
+            />
           </div>
         }
       />
 
       {error && (
-        <div className="alert alert-error">
-          <ShieldAlert className="h-4 w-4 shrink-0" />
+        <div className="alert alert-error" role="alert">
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {successMsg && (
-        <div className="alert alert-success">
-          <CheckCircle2 className="h-4 w-4 shrink-0" />
+        <div className="alert alert-success" role="status">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
@@ -351,7 +341,7 @@ function MonthlyReportContent() {
       {loading ? (
         <div className="space-y-6" role="status" aria-busy="true">
           <span className="sr-only">{L("লোড হচ্ছে...")}</span>
-          <SkeletonStatCards count={4} />
+          <SkeletonStatCards count={3} className="grid grid-cols-1 gap-4 md:grid-cols-3" />
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {[0, 1].map((i) => (
               <div key={i} className="card p-5">
@@ -368,7 +358,7 @@ function MonthlyReportContent() {
       ) : (
         <>
           {/* MoM growth */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="stagger grid grid-cols-1 gap-4 md:grid-cols-3 print:grid-cols-3">
             <StatCard
               label={<span className="flex items-center gap-2">{L("মোট বিক্রয়")} {growthBadge(autoData.mom_growth.growth_pct.sales)}</span>}
               value={`৳ ${autoData.mom_growth.current.sales.toLocaleString()}`}
@@ -381,19 +371,19 @@ function MonthlyReportContent() {
               value={`৳ ${autoData.mom_growth.current.profit.toLocaleString()}`}
               note={L(`আগের মাস ৳ ${autoData.mom_growth.previous.profit.toLocaleString()} · পার্থক্য ৳ ${autoData.mom_growth.diff.profit.toLocaleString()}`)}
               icon={<TrendingUp className="h-4 w-4" />}
-              tone="blue"
+              tone="gray"
             />
             <StatCard
               label={<span className="flex items-center gap-2">{L("গ্রুপ পোস্ট")} {growthBadge(autoData.mom_growth.growth_pct.posts)}</span>}
-              value={`${autoData.mom_growth.current.posts.toLocaleString()} টি`}
+              value={`${autoData.mom_growth.current.posts.toLocaleString()}${L(' টি', '')}`}
               note={L(`আগের মাস ${autoData.mom_growth.previous.posts.toLocaleString()} টি · পার্থক্য ${autoData.mom_growth.diff.posts.toLocaleString()} টি`)}
               icon={<Layers className="h-4 w-4" />}
-              tone="violet"
+              tone="gray"
             />
           </div>
 
           {isMounted && (
-            <div className="card">
+            <div className="card print:break-inside-avoid">
               <div className="card-header">
                 <div>
                   <h2 className="card-title">{L("মাসভিত্তিক তুলনা")}</h2>
@@ -405,19 +395,14 @@ function MonthlyReportContent() {
                   <BarChart data={momChartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-slate-200)" />
                     <XAxis dataKey="name" stroke="var(--color-slate-400)" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="var(--color-slate-400)" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="var(--color-slate-400)" fontSize={12} tickLine={false} axisLine={false} width={64} tickFormatter={(v) => Number(v).toLocaleString()} />
                     <Tooltip
                       formatter={(val) => L(`৳ ${Number(val || 0).toLocaleString()}`)}
-                      contentStyle={{
-                        backgroundColor: 'var(--color-white)',
-                        color: 'var(--color-slate-900)',
-                        borderRadius: '8px',
-                        border: '1px solid var(--color-slate-200)',
-                        fontSize: 12,
-                      }}
+                      contentStyle={TOOLTIP_STYLE}
+                      cursor={{ fill: 'var(--color-slate-100)' }}
                     />
                     <Bar dataKey={L("পূর্ববর্তী")} fill="var(--color-slate-300)" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey={L("বর্তমান")} fill="#059669" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey={L("বর্তমান")} fill="var(--color-brand-600)" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -436,7 +421,7 @@ function MonthlyReportContent() {
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="table-pro">
+              <table className="table-pro [&_td]:whitespace-nowrap">
                 <thead>
                   <tr>
                     <th>{L("র‍্যাংক")}</th>
@@ -444,21 +429,21 @@ function MonthlyReportContent() {
                     <th className="text-right">{L("গ্রুপ পোস্ট")}</th>
                     <th className="text-right">{L("বিক্রয় (৳)")}</th>
                     <th className="text-right">{L("মুনাফা (৳)")}</th>
-                    <th className="text-center">{L("স্কোর")}</th>
-                    <th className="text-center">{L("সম্মাননা")}</th>
+                    <th className="text-right">{L("স্কোর")}</th>
+                    <th>{L("সম্মাননা")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {autoData.employee_rankings.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center text-slate-400">
+                      <td colSpan={7} className="py-10 text-center text-slate-500">
                         {L("কোনো মার্কেটারের ডেটা পাওয়া যায়নি")}
                       </td>
                     </tr>
                   ) : (
                     autoData.employee_rankings.map((emp) => (
                       <tr key={emp.employee_id}>
-                        <td className="font-semibold tabular-nums text-slate-700">#{emp.rank}</td>
+                        <td className="w-16 font-semibold tabular-nums text-slate-500">#{emp.rank}</td>
                         <td className="whitespace-nowrap">
                           <div className="font-medium text-slate-900">{emp.employee_name}</div>
                           <div className="text-xs text-slate-500">{emp.email}</div>
@@ -468,14 +453,17 @@ function MonthlyReportContent() {
                           {L("৳")} {emp.sales_amount.toLocaleString()}
                         </td>
                         <td className="text-right tabular-nums">{L("৳")} {emp.profit_amount.toLocaleString()}</td>
-                        <td className="text-center">
-                          <span className={`badge ${emp.score >= 80 ? 'badge-green' : 'badge-red'}`}>
+                        <td className="text-right">
+                          <span className={`badge tabular-nums ${emp.score >= 80 ? 'badge-green' : 'badge-red'}`}>
                             {emp.score}%
                           </span>
                         </td>
-                        <td className="text-center">
+                        <td>
                           {emp.is_top_performer ? (
-                            <span className="badge badge-amber">Top Performer</span>
+                            <span className="badge badge-brand">
+                              <Award className="h-3 w-3" />
+                              {L('সেরা পারফর্মার', 'Top performer')}
+                            </span>
                           ) : (
                             <span className="text-slate-300">—</span>
                           )}
@@ -544,22 +532,22 @@ function MonthlyReportContent() {
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="table-pro">
+              <table className="table-pro [&_td]:whitespace-nowrap">
                 <thead>
                   <tr>
                     <th>{L("সেকশন")}</th>
                     <th className="text-right">{L("পোস্ট টার্গেট")}</th>
                     <th className="text-right">{L("সম্পন্ন পোস্ট")}</th>
-                    <th className="text-center">{L("পোস্ট অর্জন")}</th>
+                    <th className="text-right">{L("পোস্ট অর্জন")}</th>
                     <th className="text-right">{L("বিক্রয় টার্গেট (৳)")}</th>
                     <th className="text-right">{L("প্রকৃত বিক্রয় (৳)")}</th>
-                    <th className="text-center">{L("বিক্রয় অর্জন")}</th>
+                    <th className="text-right">{L("বিক্রয় অর্জন")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {autoData.section_achievements.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center text-slate-400">
+                      <td colSpan={7} className="py-10 text-center text-slate-500">
                         {L("কোনো সেকশন টার্গেট নির্ধারিত নেই")}
                       </td>
                     </tr>
@@ -569,10 +557,10 @@ function MonthlyReportContent() {
                         <td className="whitespace-nowrap font-medium text-slate-900">{s.section_name}</td>
                         <td className="text-right tabular-nums">{s.posts_target} {L("টি")}</td>
                         <td className="text-right tabular-nums">{s.posts_actual} {L("টি")}</td>
-                        <td className="text-center">{pctBadge(s.posts_pct)}</td>
+                        <td className="text-right">{pctBadge(s.posts_pct)}</td>
                         <td className="text-right tabular-nums">{L("৳")} {s.sales_target.toLocaleString()}</td>
                         <td className="text-right font-medium tabular-nums text-slate-900">{L("৳")} {s.sales_actual.toLocaleString()}</td>
-                        <td className="text-center">{pctBadge(s.sales_pct)}</td>
+                        <td className="text-right">{pctBadge(s.sales_pct)}</td>
                       </tr>
                     ))
                   )}
@@ -594,7 +582,7 @@ function MonthlyReportContent() {
                 </div>
               </div>
               <div className="overflow-x-auto">
-                <table className="table-pro">
+                <table className="table-pro [&_td]:whitespace-nowrap">
                   <thead>
                     <tr>
                       <th>{L("পণ্য")}</th>
@@ -606,7 +594,7 @@ function MonthlyReportContent() {
                   <tbody>
                     {autoData.top_products.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="text-center text-slate-400">
+                        <td colSpan={4} className="py-10 text-center text-slate-500">
                           {L("কোনো পণ্য বিক্রয়ের রেকর্ড নেই")}
                         </td>
                       </tr>
@@ -646,12 +634,13 @@ function MonthlyReportContent() {
                         label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                         labelLine={false}
                         fontSize={10}
+                        stroke="var(--color-white)"
                       >
                         {productChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(val) => L(`৳ ${Number(val || 0).toLocaleString()}`)} />
+                      <Tooltip formatter={(val) => L(`৳ ${Number(val || 0).toLocaleString()}`)} contentStyle={TOOLTIP_STYLE} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -758,7 +747,7 @@ function MonthlyReportContent() {
           </div>
 
           {/* Action footer */}
-          <div className="card flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="card no-print flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <div className="text-sm font-medium text-slate-900">
                 {isFinal ? L('রিপোর্টটি চূড়ান্ত ও লক করা') : L('খসড়া সংরক্ষণ বা চূড়ান্ত করুন')}
@@ -773,7 +762,7 @@ function MonthlyReportContent() {
             </div>
 
             {!isFinal ? (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap justify-end gap-2">
                 <button
                   type="button"
                   onClick={() => handleSave(false)}
@@ -802,7 +791,7 @@ function MonthlyReportContent() {
           </div>
 
           {history.length > 0 && (
-            <div className="card">
+            <div className="card no-print">
               <div className="card-header">
                 <h3 className="card-title flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-slate-400" />
@@ -816,7 +805,7 @@ function MonthlyReportContent() {
                     onClick={() => setCurrentMonth(item.month)}
                     className={`btn btn-sm ${
                       item.month === currentMonth
-                        ? 'border border-brand-600 bg-brand-50 text-brand-800'
+                        ? 'border border-brand-500 bg-brand-50 text-brand-800'
                         : 'btn-secondary'
                     }`}
                   >
@@ -840,13 +829,7 @@ function MonthlyReportContent() {
 
 export default function MonthlyReportPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[400px] items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
-        </div>
-      }
-    >
+    <Suspense fallback={<ReportPageSkeleton />}>
       <MonthlyReportContent />
     </Suspense>
   );

@@ -250,7 +250,7 @@ export default function SectionCsvUploadPage({
             <h2 className="text-lg font-semibold text-slate-900">{t('up.done', 'আপলোড সম্পন্ন', 'Upload complete')}</h2>
             <p className="mt-1 text-sm text-slate-500">{t('up.done_sub', 'লিংকগুলো সংরক্ষিত হয়েছে।', 'Links have been saved.')}</p>
 
-            <div className="mt-6 grid w-full max-w-lg grid-cols-3 gap-4 text-left">
+            <div className="mt-6 grid w-full max-w-lg grid-cols-1 gap-4 text-left sm:grid-cols-3">
               <StatCard label={t('up.inserted', 'সংরক্ষিত', 'Inserted')} value={uploadResult.inserted} />
               <StatCard label={t('up.duplicates', 'ডুপ্লিকেট', 'Duplicates')} value={uploadResult.duplicates} />
               <StatCard label={t('up.invalid', 'অবৈধ', 'Invalid')} value={uploadResult.invalid} />
@@ -258,7 +258,7 @@ export default function SectionCsvUploadPage({
 
             <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
               {uploadResult.invalid > 0 && previewData && previewData.invalidRows.length > 0 && (
-                <button onClick={downloadInvalidCsv} className="btn btn-secondary">
+                <button type="button" onClick={downloadInvalidCsv} className="btn btn-secondary">
                   <Download className="h-4 w-4" />
                   {t('up.download_invalid', 'অবৈধ সারি ডাউনলোড', 'Download invalid rows')}
                 </button>
@@ -268,7 +268,7 @@ export default function SectionCsvUploadPage({
                 {t('sec.upload_history', 'আপলোড হিস্ট্রি', 'Upload history')}
               </Link>
 
-              <button onClick={() => router.push(`/admin/sections/${sectionId}`)} className="btn btn-primary">
+              <button type="button" onClick={() => router.push(`/admin/sections/${sectionId}`)} className="btn btn-primary">
                 <Layers className="h-4 w-4" />
                 {t('up.back_to_section', 'সেকশনে ফিরুন', 'Back to section')}
               </button>
@@ -340,11 +340,11 @@ export default function SectionCsvUploadPage({
                   <div className="min-w-0">
                     <h3 className="card-title">{t('up.step2', '২. প্রিভিউ ও নিশ্চিতকরণ', '2. Review and confirm')}</h3>
                     <p className="card-subtitle mt-0.5 break-all">
-                      <span className="font-mono">{previewData.fileName}</span> · {previewData.totalRows} {t('up.rows', 'সারি', 'rows')}
+                      <span className="font-mono">{previewData.fileName}</span> · <span className="tabular-nums">{previewData.totalRows}</span> {t('up.rows', 'সারি', 'rows')}
                     </p>
                   </div>
 
-                  <button onClick={handleConfirmSave} disabled={confirming || previewData.validCount === 0} className="btn btn-primary">
+                  <button type="button" onClick={handleConfirmSave} disabled={confirming || previewData.validCount === 0} className="btn btn-primary">
                     {confirming ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -421,11 +421,11 @@ export default function SectionCsvUploadPage({
                       <AlertCircle className="h-4 w-4 text-rose-600" />
                       <h3 className="card-title">
                         {t('up.invalid_rows', 'অবৈধ সারি', 'Invalid rows')}{' '}
-                        <span className="badge badge-red ml-1 align-middle">{previewData.invalidRows.length}</span>
+                        <span className="badge badge-red ml-1 align-middle tabular-nums">{previewData.invalidRows.length}</span>
                       </h3>
                     </div>
 
-                    <button onClick={downloadInvalidCsv} className="btn btn-secondary btn-sm">
+                    <button type="button" onClick={downloadInvalidCsv} className="btn btn-secondary btn-sm">
                       <Download className="h-3.5 w-3.5" />
                       {t('up.download_csv', 'CSV ডাউনলোড', 'Download CSV')}
                     </button>

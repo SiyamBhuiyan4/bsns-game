@@ -67,7 +67,7 @@ export default function DashboardHeaderStats({
             : L('কর্মী পারফরম্যান্স ও সেকশন কাজের সার্বিক ড্যাশবোর্ড', 'Employee Performance & Section Overview Dashboard')
         }
         actions={
-          <span className="badge badge-gray py-1 font-mono">
+          <span className="badge badge-gray py-1 tabular-nums">
             <Clock className="h-3.5 w-3.5" />
             {L(`ঢাকা: ${formatDigits(todayStr)}`, `Dhaka: ${todayStr}`)}
           </span>

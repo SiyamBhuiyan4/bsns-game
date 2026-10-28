@@ -245,37 +245,40 @@ export default function EmployeePlanPage() {
         }
       />
 
-      {/* Admin's Strategic Guidance & Objectives Callout */}
-      <div className="rounded-2xl border border-violet-500/20 bg-gradient-to-r from-slate-900 via-violet-950 to-slate-900 p-5 text-white shadow-md">
+      {/* Admin's guidance and the current phase goal */}
+      <section className="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-sky-50 p-5 shadow-[var(--shadow-card)]">
         <div className="flex items-start gap-3">
-          <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 shrink-0 mt-0.5">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
             <Award className="h-5 w-5" />
-          </div>
+          </span>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
-                {L('অ্যাডমিনের দিকনির্দেশনা ও লক্ষ্য', "ADMIN'S GUIDANCE & PHASE GOAL")}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-violet-700">
+                {L('অ্যাডমিনের দিকনির্দেশনা ও লক্ষ্য', "Admin's guidance & phase goal")}
               </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-slate-200">
+              <span className="badge badge-violet">
                 {formatPhaseTitle(isEn ? (activePhase?.name_en || activePhase?.name_bn) : activePhase?.name_bn)}
               </span>
             </div>
-            <p className="text-sm font-semibold text-slate-100 mt-1">
+            <p className="mt-1.5 text-sm font-medium leading-relaxed text-slate-900">
               {activeMilestone?.expected_result ||
                 L(
                   'নির্ধারিত সময়সীমার মধ্যে সকল টাস্ক সম্পন্ন করে ব্যবসার বেসলাইন ও লক্ষ্য অর্জন করুন।',
                   'Complete all assigned milestone tasks within deadline to achieve the targeted business growth.'
                 )}
             </p>
-            <p className="text-xs text-slate-400 mt-1">
-              {L(
-                'শুধু কর্মীদের দেখার জন্য; টাস্ক পরিবর্তনের জন্য হেড অব মার্কেটিংয়ের সাথে যোগাযোগ করুন।',
-                'Read-only view for employees. Contact Head of Marketing for task re-assignments.'
-              )}
+            <p className="mt-1.5 flex items-start gap-1.5 text-xs text-slate-500">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <span>
+                {L(
+                  'শুধু কর্মীদের দেখার জন্য; টাস্ক পরিবর্তনের জন্য হেড অব মার্কেটিংয়ের সাথে যোগাযোগ করুন।',
+                  'Read-only view for employees. Contact Head of Marketing for task re-assignments.'
+                )}
+              </span>
             </p>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Overall progress */}
       <div className="card card-body">
@@ -316,7 +319,7 @@ export default function EmployeePlanPage() {
               key={phase.id}
               onClick={() => setActivePhaseOrder(phase.order_no)}
               aria-pressed={isCurrentActiveTab}
-              className={`card flex flex-col p-4 text-left transition-colors ${
+              className={`card press flex flex-col p-4 text-left transition-colors ${
                 isCurrentActiveTab ? 'border-brand-600 ring-2 ring-brand-600/15' : 'hover:border-slate-300'
               }`}
             >

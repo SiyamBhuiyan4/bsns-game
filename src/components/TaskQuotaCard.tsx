@@ -35,29 +35,62 @@ export default function TaskQuotaCard() {
     return () => ctrl.abort();
   }, []);
 
-  if (quotas === null) return <div className="skeleton h-28" />;
+  if (quotas === null) {
+    return (
+      <div role="status" aria-busy="true" className="card overflow-hidden">
+        <span className="sr-only">{L('লোড হচ্ছে...', 'Loading...')}</span>
+        <div className="flex items-center gap-3 border-b border-slate-100 px-5 py-4">
+          <div aria-hidden className="skeleton h-9 w-9 rounded-xl" />
+          <div className="flex-1 space-y-1.5">
+            <div aria-hidden className="skeleton h-4 w-32" />
+            <div aria-hidden className="skeleton h-3 w-44" />
+          </div>
+        </div>
+        <div className="grid gap-4 p-5 sm:grid-cols-2">
+          {[0, 1].map((i) => (
+            <div key={i} className="space-y-2.5 rounded-xl border border-slate-100 p-4">
+              <div aria-hidden className="skeleton h-3 w-24" />
+              <div aria-hidden className="skeleton h-7 w-16" />
+              <div aria-hidden className="skeleton h-2 w-full rounded-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
   if (quotas.length === 0) return null;
 
   const periodLabel = (p: Status['period']) =>
     p === 'DAILY' ? L('দৈনিক', 'Daily') : p === 'WEEKLY' ? L('সাপ্তাহিক', 'Weekly') : L('মাসিক', 'Monthly');
 
   return (
-    <div className="stagger grid gap-4 md:grid-cols-2">
+    <div className={`stagger grid gap-4 ${quotas.length > 1 ? 'lg:grid-cols-2' : ''}`}>
       {quotas.map((q) => {
         const mandatoryDone = q.mandatory - q.mandatoryLeft;
         const pct = q.mandatory > 0 ? Math.min(100, Math.round((mandatoryDone / q.mandatory) * 100)) : 100;
+        const normalDone = q.normal - q.normalLeft;
+        const normalPct = q.normal > 0 ? Math.min(100, Math.round((normalDone / q.normal) * 100)) : 0;
+        const mandatoryComplete = q.mandatoryLeft === 0;
         return (
-          <div key={q.quotaId} className="card hover-lift overflow-hidden">
+          <section key={q.quotaId} className="card relative overflow-hidden">
+            {/* Thin colour rail: violet while work is open, green once the mandatory part is done. */}
+            <span
+              aria-hidden
+              className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${
+                mandatoryComplete ? 'from-emerald-500 to-brand-400' : 'from-violet-500 to-sky-500'
+              }`}
+            />
             <div className="card-header">
-              <div className="flex items-center gap-2">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-50 text-violet-700">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700">
                   <CalendarClock className="h-4 w-4" />
                 </span>
-                <div>
-                  <div className="card-title">{L('আজকের কাজ', "Today's tasks")}</div>
-                  <div className="card-subtitle">
-                    {periodLabel(q.period)} {q.amount} · {q.sectionName ?? L('সব সেকশন', 'All sections')}
-                  </div>
+                <div className="min-w-0">
+                  <h2 className="card-title">{L('আজকের কাজ', "Today's tasks")}</h2>
+                  <p className="card-subtitle truncate">
+                    {periodLabel(q.period)} <span className="tabular-nums">{q.amount}</span> ·{' '}
+                    {q.sectionName ?? L('সব সেকশন', 'All sections')}
+                  </p>
                 </div>
               </div>
               {q.isLastWorkingDay && !q.isOffDay && (
@@ -66,49 +99,93 @@ export default function TaskQuotaCard() {
                 </span>
               )}
             </div>
-            <div className="card-body space-y-4">
+
+            <div className="card-body">
               {q.isOffDay ? (
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <Coffee className="h-4 w-4 text-amber-500" />
-                  {L('আজ আপনার ছুটির দিন। চাইলে বাকি কাজ এগিয়ে রাখতে পারেন।', 'Today is your off day. You can still get ahead on the remaining work.')}
+                <div className="flex items-start gap-3 rounded-xl bg-amber-50/60 p-4 text-sm text-slate-700">
+                  <Coffee className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                  <span>
+                    {L('আজ আপনার ছুটির দিন। চাইলে বাকি কাজ এগিয়ে রাখতে পারেন।', 'Today is your off day. You can still get ahead on the remaining work.')}
+                  </span>
                 </div>
               ) : (
-                <>
-                  <div>
-                    <div className="mb-1.5 flex items-center justify-between text-sm">
-                      <span className="font-medium text-slate-900">{L('বাধ্যতামূলক', 'Mandatory')}</span>
-                      <span className="tabular-nums text-slate-600">
-                        {mandatoryDone}/{q.mandatory}
-                      </span>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {/* Mandatory */}
+                  <div
+                    className={`rounded-xl border p-4 ${
+                      mandatoryComplete ? 'border-emerald-200 bg-emerald-50/50' : 'border-violet-200 bg-violet-50/40'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-slate-700">{L('বাধ্যতামূলক', 'Mandatory')}</span>
+                      {mandatoryComplete ? (
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      ) : (
+                        <span className="text-xs font-medium text-violet-700 tabular-nums">
+                          {q.mandatoryLeft} {L('বাকি', 'left')}
+                        </span>
+                      )}
                     </div>
-                    <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                    <div className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
+                      {mandatoryDone}
+                      <span className="text-base font-normal text-slate-400">/{q.mandatory}</span>
+                    </div>
+                    <div
+                      className="mt-2 h-2 overflow-hidden rounded-full bg-white/80"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={pct}
+                      aria-label={L('বাধ্যতামূলক', 'Mandatory')}
+                    >
                       <div
-                        className={`h-full rounded-full transition-all duration-700 ${q.mandatoryLeft === 0 ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                        className={`h-full rounded-full transition-all duration-700 ${
+                          mandatoryComplete ? 'bg-emerald-500' : 'bg-violet-500'
+                        }`}
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    {q.mandatoryLeft === 0 && (
-                      <p className="mt-1.5 flex items-center gap-1 text-xs text-emerald-700">
-                        <CheckCircle2 className="h-3.5 w-3.5" /> {L('আজকের বাধ্যতামূলক কাজ শেষ', "Today's mandatory work is done")}
+                    {mandatoryComplete && (
+                      <p className="mt-2 text-xs font-medium text-emerald-700">
+                        {L('আজকের বাধ্যতামূলক কাজ শেষ', "Today's mandatory work is done")}
                       </p>
                     )}
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-600">{L('সাধারণ (ঐচ্ছিক)', 'Normal (optional)')}</span>
-                    <span className="tabular-nums text-slate-600">
-                      {q.normal - q.normalLeft}/{q.normal}
-                    </span>
+
+                  {/* Optional */}
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-slate-700">{L('সাধারণ (ঐচ্ছিক)', 'Normal (optional)')}</span>
+                      <span className="text-xs text-slate-500 tabular-nums">
+                        {q.normalLeft} {L('বাকি', 'left')}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
+                      {normalDone}
+                      <span className="text-base font-normal text-slate-400">/{q.normal}</span>
+                    </div>
+                    <div
+                      className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200/70"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={normalPct}
+                      aria-label={L('সাধারণ (ঐচ্ছিক)', 'Normal (optional)')}
+                    >
+                      <div className="h-full rounded-full bg-sky-500 transition-all duration-700" style={{ width: `${normalPct}%` }} />
+                    </div>
                   </div>
-                </>
+                </div>
               )}
-              <p className="text-xs text-slate-500">
-                {L(
-                  `${q.windowEnd} এর মধ্যে বাকি ${q.remaining}টি · ${q.workingDaysLeft} কাজের দিন বাকি। সাধারণ কাজ না করলে শেষ দিনে সব বাধ্যতামূলক হবে।`,
-                  `${q.remaining} left by ${q.windowEnd} · ${q.workingDaysLeft} working days to go. Normal tasks you skip become mandatory on the last day.`
-                )}
-              </p>
             </div>
-          </div>
+
+            <p className="border-t border-slate-100 bg-slate-50/60 px-5 py-3 text-xs text-slate-500">
+              {L(
+                `${q.windowEnd} এর মধ্যে বাকি ${q.remaining}টি · ${q.workingDaysLeft} কাজের দিন বাকি। সাধারণ কাজ না করলে শেষ দিনে সব বাধ্যতামূলক হবে।`,
+                `${q.remaining} left by ${q.windowEnd} · ${q.workingDaysLeft} working days to go. Normal tasks you skip become mandatory on the last day.`
+              )}
+            </p>
+          </section>
         );
       })}
     </div>

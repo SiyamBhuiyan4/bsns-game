@@ -311,17 +311,17 @@ export default function SectionDetailsPage({
       />
 
       {/* Overview */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="stagger grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
           label={t('sec.total_links', 'মোট লিংক', 'Total links')}
           value={totalCount}
           icon={<Layers className="h-4 w-4" />}
           note={
             <span className="flex flex-wrap gap-1.5">
-              <span className="badge badge-green">
+              <span className="badge badge-green tabular-nums">
                 {section?.active_links_count ?? links.filter((l) => l.is_active).length} {t('sec.active_s', 'সক্রিয়', 'Active')}
               </span>
-              <span className="badge badge-gray">
+              <span className="badge badge-gray tabular-nums">
                 {(section?._count?.group_links ?? totalLinks) - (section?.active_links_count ?? 0)} {t('sec.inactive_s', 'নিষ্ক্রিয়', 'Inactive')}
               </span>
             </span>
@@ -337,7 +337,7 @@ export default function SectionDetailsPage({
             <span className="flex max-h-16 flex-wrap gap-1.5 overflow-y-auto">
               {section?.assignments && section.assignments.length > 0 ? (
                 section.assignments.map((a) => (
-                  <span key={a.id} className="badge badge-blue" title={a.employee.email}>
+                  <span key={a.id} className="badge badge-gray" title={a.employee.email}>
                     {a.employee.name}
                   </span>
                 ))
@@ -432,7 +432,7 @@ export default function SectionDetailsPage({
           {/* Bulk Action Button */}
           {selectedIds.length > 0 && (
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-slate-600">
+              <span className="text-xs font-medium text-slate-600 tabular-nums">
                 {t('sec.selected', `${selectedIds.length}টি নির্বাচিত`, `${selectedIds.length} selected`)}
               </span>
               <button onClick={handleBulkDeactivate} disabled={bulkLoading} className="btn btn-secondary btn-sm">
@@ -462,6 +462,7 @@ export default function SectionDetailsPage({
                 <tr>
                   <th className="w-10">
                     <button
+                      type="button"
                       onClick={toggleSelectAll}
                       className="flex cursor-pointer items-center text-slate-400 hover:text-slate-600"
                       title={t('sec.select_all', 'সব নির্বাচন', 'Select all')}
@@ -490,6 +491,7 @@ export default function SectionDetailsPage({
                     <tr key={link.id} className={isSelected ? '[&>td]:bg-brand-50/40' : ''}>
                       <td>
                         <button
+                          type="button"
                           onClick={() => toggleSelectOne(link.id)}
                           className="flex cursor-pointer items-center text-slate-400 hover:text-slate-600"
                           aria-label={t('sec.select', 'নির্বাচন', 'Select')}
@@ -506,7 +508,7 @@ export default function SectionDetailsPage({
                           href={link.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex max-w-full items-center gap-1 text-xs text-slate-500 hover:text-brand-700 hover:underline"
+                          className="inline-flex max-w-full items-center gap-1 text-xs text-slate-500 hover:text-brand-700"
                           title={link.url}
                         >
                           <span className="truncate">{link.url}</span>
@@ -534,6 +536,7 @@ export default function SectionDetailsPage({
 
                       <td className="whitespace-nowrap text-right">
                         <button
+                          type="button"
                           onClick={() => {
                             setEditingLink(link);
                             setEditUrl(link.url);
@@ -541,7 +544,7 @@ export default function SectionDetailsPage({
                             setEditActive(link.is_active);
                             setErrorMessage(null);
                           }}
-                          className="btn-icon"
+                          className="btn-icon h-8 w-8"
                           title={t('common.edit', 'সম্পাদনা', 'Edit')}
                           aria-label={t('common.edit', 'সম্পাদনা', 'Edit')}
                         >

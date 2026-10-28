@@ -19,6 +19,7 @@ import {
   Clock,
   ShieldCheck,
   Lock,
+  X,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import PageHeader from '@/components/ui/PageHeader';
@@ -462,10 +463,10 @@ export default function EmployeeLeadsPage() {
           </div>
           <button
             onClick={() => setErrorMessage(null)}
-            className="btn-icon h-7 w-7 text-rose-600 hover:bg-rose-100 hover:text-rose-800"
-            aria-label="Dismiss"
+            className="btn-icon h-10 w-10 shrink-0 text-rose-600 hover:bg-rose-100 hover:text-rose-800 sm:h-8 sm:w-8"
+            aria-label={L('বন্ধ করুন', 'Dismiss')}
           >
-            ×
+            <X className="h-4 w-4" />
           </button>
         </div>
       )}
@@ -478,75 +479,85 @@ export default function EmployeeLeadsPage() {
           </div>
           <button
             onClick={() => setSuccessMessage(null)}
-            className="btn-icon h-7 w-7 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-800"
-            aria-label="Dismiss"
+            className="btn-icon h-10 w-10 shrink-0 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-800 sm:h-8 sm:w-8"
+            aria-label={L('বন্ধ করুন', 'Dismiss')}
           >
-            ×
+            <X className="h-4 w-4" />
           </button>
         </div>
       )}
 
-      {/* Permission Indicator */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+      {/* Access level + period filter */}
+      <div className="card space-y-3 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
+            <Calendar className="h-3.5 w-3.5 text-brand-600" />
+            {L('সময়কাল:', 'Period:')}
+          </span>
           {canViewAllCustomers ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800 shadow-xs">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+            <span className="badge badge-green">
+              <ShieldCheck className="h-3 w-3" />
               {L('সম্পূর্ণ কাস্টমার ডেটাবেস দেখার অনুমতি সক্রিয় (Full Access)', 'Full Customer Database Access Granted')}
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-              <Lock className="h-3.5 w-3.5 text-slate-500" />
+            <span className="badge badge-gray">
+              <Lock className="h-3 w-3" />
               {L('নিজস্ব কাস্টমার তালিকা (Own Customers Only)', 'Viewing Own Customers Only')}
             </span>
           )}
         </div>
-      </div>
-
-      {/* Date Filter Presets & Calendar Range */}
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/80 bg-white p-2.5 shadow-xs">
-        <span className="flex items-center gap-1 text-xs font-semibold text-slate-600 mr-1">
-          <Calendar className="h-3.5 w-3.5 text-brand-600" />
-          {L('সময়কাল:', 'Period:')}
-        </span>
-        {[
-          { id: '1d', label: L('১ দিন (আজ)', '1 Day (Today)') },
-          { id: '3d', label: L('৩ দিন', '3 Days') },
-          { id: '7d', label: L('৭ দিন', '7 Days') },
-          { id: '30d', label: L('৩০ দিন', '30 Days') },
-          { id: 'all', label: L('সকল সময়', 'All Time') },
-          { id: 'custom', label: L('কাস্টম ক্যালেন্ডার', 'Custom Range') },
-        ].map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => setDatePreset(p.id as any)}
-            className={`press rounded-lg px-2.5 py-1 text-xs font-medium transition ${
-              datePreset === p.id
-                ? 'bg-brand-600 text-white shadow-xs'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
+        <div className="no-scrollbar -mx-4 overflow-x-auto px-4">
+          <div className="flex w-max gap-2">
+            {[
+              { id: '1d', label: L('১ দিন (আজ)', '1 Day (Today)') },
+              { id: '3d', label: L('৩ দিন', '3 Days') },
+              { id: '7d', label: L('৭ দিন', '7 Days') },
+              { id: '30d', label: L('৩০ দিন', '30 Days') },
+              { id: 'all', label: L('সকল সময়', 'All Time') },
+              { id: 'custom', label: L('কাস্টম ক্যালেন্ডার', 'Custom Range') },
+            ].map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                aria-pressed={datePreset === p.id}
+                onClick={() => setDatePreset(p.id as any)}
+                className={`press min-h-10 whitespace-nowrap rounded-xl px-3 text-xs font-medium transition sm:min-h-8 ${
+                  datePreset === p.id
+                    ? 'bg-brand-600 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
         {datePreset === 'custom' && (
-          <div className="flex items-center gap-1.5 ml-auto">
-            <input
-              type="date"
-              value={customStartDate}
-              onChange={(e) => setCustomStartDate(e.target.value)}
-              className="input h-8 px-2 py-0.5 text-xs"
-              title={L('শুরুর তারিখ', 'Start date')}
-            />
-            <span className="text-xs text-slate-400">—</span>
-            <input
-              type="date"
-              value={customEndDate}
-              onChange={(e) => setCustomEndDate(e.target.value)}
-              className="input h-8 px-2 py-0.5 text-xs"
-              title={L('শেষ তারিখ', 'End date')}
-            />
+          <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 sm:flex sm:items-end">
+            <div>
+              <label htmlFor="leads-from" className="label">
+                {L('শুরুর তারিখ', 'Start date')}
+              </label>
+              <input
+                id="leads-from"
+                type="date"
+                value={customStartDate}
+                onChange={(e) => setCustomStartDate(e.target.value)}
+                className="input min-h-10 tabular-nums"
+              />
+            </div>
+            <div>
+              <label htmlFor="leads-to" className="label">
+                {L('শেষ তারিখ', 'End date')}
+              </label>
+              <input
+                id="leads-to"
+                type="date"
+                value={customEndDate}
+                onChange={(e) => setCustomEndDate(e.target.value)}
+                className="input min-h-10 tabular-nums"
+              />
+            </div>
           </div>
         )}
       </div>
@@ -561,12 +572,13 @@ export default function EmployeeLeadsPage() {
             ].map((tab) => (
               <button
                 key={tab.key}
+                type="button"
                 data-active={activeTab === tab.key && !showUnfinishedOnly}
                 onClick={() => {
                   setActiveTab(tab.key);
                   setShowUnfinishedOnly(false);
                 }}
-                className="whitespace-nowrap"
+                className="min-h-9 whitespace-nowrap px-4"
               >
                 {tab.label}
               </button>
@@ -586,7 +598,7 @@ export default function EmployeeLeadsPage() {
               placeholder={L('নাম, ফোন বা চ্যানেল', 'Search name, phone, channel')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input pl-9"
+              className="input min-h-10 pl-9 text-base sm:text-sm"
             />
           </div>
           {showUnfinishedOnly && (
@@ -624,7 +636,25 @@ export default function EmployeeLeadsPage() {
             </div>
           </>
         ) : leads.length === 0 ? (
-          <EmptyState icon={<UserPlus className="h-5 w-5" />} title={L('কোনো লিড পাওয়া যায়নি', 'No leads found')} />
+          <EmptyState
+            icon={<UserPlus className="h-5 w-5" />}
+            title={L('কোনো লিড পাওয়া যায়নি', 'No leads found')}
+            description={L('নতুন লিড যোগ করুন বা ফিল্টার বদলে দেখুন।', 'Add a new lead or try a different filter.')}
+            action={
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddOpen(true);
+                  setErrorMessage(null);
+                  setPhoneWarning(null);
+                }}
+                className="btn btn-primary min-h-10"
+              >
+                <Plus className="h-4 w-4" />
+                <span>{L('নতুন লিড', 'Add lead')}</span>
+              </button>
+            }
+          />
         ) : (
           <>
             {/* Phone: stacked rows */}
@@ -687,7 +717,7 @@ export default function EmployeeLeadsPage() {
                     <th>{L('স্টেজ', 'Stage')}</th>
                     <th className="text-right">{L('মূল্য', 'Value')}</th>
                     <th className="text-right">
-                      <span className="sr-only">Actions</span>
+                      <span className="sr-only">{L('অ্যাকশন', 'Actions')}</span>
                     </th>
                   </tr>
                 </thead>
@@ -755,15 +785,29 @@ export default function EmployeeLeadsPage() {
       {/* Modal: Add Lead */}
       {isAddOpen && (
         <div className="modal-backdrop">
-          <div className="modal-panel">
-            <div className="card-header">
-              <div>
-                <h3 className="card-title">{L('নতুন লিড', 'Add lead')}</h3>
-                <p className="card-subtitle">{L('সম্ভাব্য ক্রেতার তথ্য দিন', "Enter the customer's details")}</p>
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="add-lead-title">
+            <div className="card-header flex-nowrap">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+                  <UserPlus className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <h3 id="add-lead-title" className="card-title">{L('নতুন লিড', 'Add lead')}</h3>
+                  <p className="card-subtitle">{L('সম্ভাব্য ক্রেতার তথ্য দিন', "Enter the customer's details")}</p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setIsAddOpen(false)}
+                className="btn-icon h-10 w-10 shrink-0"
+                aria-label={L('বন্ধ করুন', 'Close')}
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
-            <form onSubmit={handleAddLead} className="card-body space-y-4">
+            <form onSubmit={handleAddLead} className="card-body space-y-4 pb-0">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{L('ক্রেতা', 'Customer')}</p>
               <div>
                 <label htmlFor="add-name" className="label">
                   {L('ক্রেতার নাম *', 'Name *')}
@@ -828,6 +872,23 @@ export default function EmployeeLeadsPage() {
                 )}
               </div>
 
+              <div>
+                <label htmlFor="add-address" className="label">
+                  {L('ঠিকানা', 'Address')}
+                </label>
+                <input
+                  id="add-address"
+                  type="text"
+                  placeholder={L("যেমন: মিরপুর ১০, ঢাকা")}
+                  value={addAddress}
+                  onChange={(e) => setAddAddress(e.target.value)}
+                  className="input"
+                />
+              </div>
+
+              <p className="border-t border-slate-100 pt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                {L('লিডের বিবরণ', 'Lead details')}
+              </p>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label htmlFor="add-type" className="label">
@@ -931,20 +992,6 @@ export default function EmployeeLeadsPage() {
               </div>
 
               <div>
-                <label htmlFor="add-address" className="label">
-                  {L('ঠিকানা', 'Address')}
-                </label>
-                <input
-                  id="add-address"
-                  type="text"
-                  placeholder={L("যেমন: মিরপুর ১০, ঢাকা")}
-                  value={addAddress}
-                  onChange={(e) => setAddAddress(e.target.value)}
-                  className="input"
-                />
-              </div>
-
-              <div>
                 <label htmlFor="add-note" className="label">
                   {L('প্রাথমিক নোট', 'Initial note')}
                 </label>
@@ -958,7 +1005,7 @@ export default function EmployeeLeadsPage() {
                 />
               </div>
 
-              <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+              <div className="sticky bottom-0 -mx-5 flex flex-col-reverse gap-2 border-t border-slate-100 bg-white px-5 py-4 sm:flex-row sm:justify-end">
                 <button type="button" onClick={() => setIsAddOpen(false)} className="btn btn-secondary min-h-10">
                   {L('বাতিল', 'Cancel')}
                 </button>
@@ -979,7 +1026,7 @@ export default function EmployeeLeadsPage() {
       {/* Modal: Update Lead Status */}
       {statusLead && (
         <div className="modal-backdrop">
-          <div className="modal-panel sm:max-w-md">
+          <div className="modal-panel sm:max-w-md" role="dialog" aria-modal="true">
             <div className="card-header">
               <div className="min-w-0">
                 <h3 className="card-title">{L('স্টেজ পরিবর্তন', 'Change stage')}</h3>
@@ -1071,8 +1118,8 @@ export default function EmployeeLeadsPage() {
 
       {/* Lead Detail & Notes Drawer */}
       {selectedLeadId && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-[2px]">
-          <div className="flex h-full w-full max-w-md flex-col bg-white shadow-xl animate-fade-in">
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex justify-end overlay-dim backdrop-blur-[2px]">
+          <div className="flex h-full w-full max-w-md flex-col bg-white shadow-[var(--shadow-overlay)] animate-fade-in">
             <div className="card-header">
               <h3 className="card-title">{L('লিড বিবরণ', 'Lead details')}</h3>
               <button
@@ -1083,7 +1130,7 @@ export default function EmployeeLeadsPage() {
                 className="btn-icon"
                 aria-label={L('বন্ধ করুন', 'Close')}
               >
-                <XCircle className="h-5 w-5" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
@@ -1161,7 +1208,9 @@ export default function EmployeeLeadsPage() {
                   <div>
                     <h4 className="mb-2 text-sm font-semibold text-slate-900">{L('ফলোআপ নোট', 'Notes')}</h4>
                     {leadDetail.notes.length === 0 ? (
-                      <p className="text-sm text-slate-500">{L('কোনো নোট নেই', 'No notes yet')}</p>
+                      <div className="rounded-xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500">
+                        {L('কোনো নোট নেই', 'No notes yet')}
+                      </div>
                     ) : (
                       <div className="space-y-2">
                         {leadDetail.notes.map((n) => (
@@ -1192,7 +1241,7 @@ export default function EmployeeLeadsPage() {
                   placeholder={L('নতুন ফলোআপ নোট', 'New note...')}
                   value={newNoteText}
                   onChange={(e) => setNewNoteText(e.target.value)}
-                  className="input flex-1"
+                  className="input min-h-10 flex-1 text-base sm:text-sm"
                 />
                 <button
                   type="submit"

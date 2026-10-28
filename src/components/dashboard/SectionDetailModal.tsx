@@ -35,6 +35,7 @@ import {
   GroupSectionOverviewItem,
 } from '@/lib/dashboard';
 import { toBengaliDigits } from '@/lib/formatter';
+import EmptyState from '@/components/ui/EmptyState';
 
 export type DetailSectionData =
   | { type: 'standard'; section: SectionOverviewItem }
@@ -50,15 +51,8 @@ interface SectionDetailModalProps {
   standardGroupSection?: SectionOverviewItem;
 }
 
-const AVATAR_COLORS = [
-  'bg-emerald-100 text-emerald-800 border-emerald-200',
-  'bg-sky-100 text-sky-800 border-sky-200',
-  'bg-violet-100 text-violet-800 border-violet-200',
-  'bg-amber-100 text-amber-800 border-amber-200',
-  'bg-violet-100 text-violet-800 border-violet-200',
-  'bg-rose-100 text-rose-800 border-rose-200',
-  'bg-emerald-100 text-emerald-800 border-emerald-200',
-];
+// One calm, neutral tone for initials keeps long tables easy to scan.
+const AVATAR_COLORS = ['bg-slate-100 text-slate-600 border-transparent'];
 
 function getAvatarColor(name: string): string {
   let hash = 0;
@@ -540,24 +534,24 @@ export default function SectionDetailModal({
     : groupSec!.completionsHistory.length;
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-labelledby="section-detail-title">
       {/* Modal Dialog Content */}
       <div
-        className="modal-panel relative z-10 flex flex-col border border-slate-200/90 sm:max-w-4xl"
+        className="modal-panel relative z-10 flex flex-col sm:max-w-4xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 bg-slate-50/70 px-6 py-4.5">
-          <div className="flex items-center gap-3.5 min-w-0">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-600/20 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-600/10">
               {renderIcon()}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-slate-900 truncate tracking-tight">
+                <h3 id="section-detail-title" className="truncate text-base font-semibold tracking-tight text-slate-900">
                   {title}
                 </h3>
-                <span className="badge badge-gray shrink-0 font-normal">
+                <span className="badge badge-gray shrink-0">
                   {isStandard
                     ? L('কোর সেকশন', 'Core Metric')
                     : L('গ্রুপ লিঙ্ক', 'Group Links')}
@@ -577,15 +571,16 @@ export default function SectionDetailModal({
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {isStandard && standardSec?.key === 'NEW_CLIENTS' && (
               <button
+                type="button"
                 onClick={() => {
                   setIsAddCustomerOpen(true);
                   setCustError(null);
                   setPhoneWarning(null);
                 }}
-                className="btn btn-primary btn-sm inline-flex items-center gap-1.5 text-xs bg-brand-600 hover:bg-brand-700 text-white font-medium shadow-sm"
+                className="btn btn-primary btn-sm"
               >
                 <UserPlus className="h-3.5 w-3.5" />
                 <span>{L('নতুন কাস্টমার প্রোফাইল', 'Add Customer Profile')}</span>
@@ -593,8 +588,10 @@ export default function SectionDetailModal({
             )}
             {!isStandard && standardGroupSection && onSelectStandardSection && (
               <button
+                type="button"
                 onClick={() => onSelectStandardSection(standardGroupSection)}
-                className="btn btn-secondary btn-sm inline-flex items-center gap-1 text-xs text-violet-700 hover:text-violet-800 border-violet-200"
+                aria-label={L('গ্রুপ ওভারভিউতে ফিরুন', 'Back to Group')}
+                className="btn btn-secondary btn-sm"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">
@@ -603,9 +600,11 @@ export default function SectionDetailModal({
               </button>
             )}
             <button
+              type="button"
               onClick={handleExportCSV}
               title={L('সিএসভি ডাউনলোড করুন', 'Export CSV')}
-              className="btn btn-secondary btn-sm inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-900"
+              aria-label={L('সিএসভি ডাউনলোড করুন', 'Export CSV')}
+              className="btn btn-secondary btn-sm"
             >
               <Download className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">
@@ -613,8 +612,9 @@ export default function SectionDetailModal({
               </span>
             </button>
             <button
+              type="button"
               onClick={onClose}
-              className="btn-icon rounded-lg text-slate-400 hover:bg-slate-200/60 hover:text-slate-700"
+              className="btn-icon"
               aria-label={L('বন্ধ করুন', 'Close')}
             >
               <X className="h-5 w-5" />
@@ -624,50 +624,52 @@ export default function SectionDetailModal({
 
         {/* Success Alert Banner (for Customer Creation) */}
         {custSuccess && (
-          <div className="mx-6 mt-4 flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-xs text-emerald-800 animate-fade-in">
+          <div className="alert alert-success mx-5 mt-4 items-center justify-between sm:mx-6">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
               <span>{custSuccess}</span>
             </div>
             <button
+              type="button"
               onClick={() => setCustSuccess(null)}
-              className="text-emerald-600 hover:text-emerald-900 font-bold ml-2 text-sm leading-none"
+              aria-label={L('বন্ধ করুন', 'Close')}
+              className="shrink-0 opacity-70 hover:opacity-100"
             >
-              ×
+              <X className="h-4 w-4" />
             </button>
           </div>
         )}
 
         {/* Quick Highlights Summary Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-5 bg-white border-b border-slate-100">
+        <div className="grid grid-cols-2 gap-px border-b border-slate-100 bg-slate-100 sm:grid-cols-4">
           {/* Card 1: Total Done */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+          <div className="bg-white px-4 py-3">
             <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
               <span>{L('মোট সম্পন্ন', 'Total Achieved')}</span>
-              <CheckCircle2 className="h-4 w-4 text-brand-600" />
+              <CheckCircle2 className="h-3.5 w-3.5 text-slate-400" />
             </div>
-            <div className="text-lg font-bold text-slate-900 tracking-tight">
+            <div className="text-lg font-semibold tracking-tight text-slate-900 tabular-nums">
               {totalAchievedDisplay}
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">
+            <div className="mt-0.5 text-xs text-slate-500">
               {L('এই সময়কালে', 'in this period')}
             </div>
           </div>
 
           {/* Card 2: Target / Goal */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+          <div className="bg-white px-4 py-3">
             <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
               <span>{isStandard ? L('লক্ষ্যমাত্রা', 'Target') : L('মোট লিঙ্ক', 'Total Links')}</span>
-              <Target className="h-4 w-4 text-sky-600" />
+              <Target className="h-3.5 w-3.5 text-slate-400" />
             </div>
-            <div className="text-lg font-bold text-slate-900 tracking-tight">
+            <div className="text-lg font-semibold tracking-tight text-slate-900 tabular-nums">
               {isStandard
                 ? standardSec!.totalTarget > 0
                   ? formatSectionValue(standardSec!.totalTarget)
                   : '—'
                 : `${formatNum(groupSec!.totalLinks)} ${L('টি', 'links')}`}
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">
+            <div className="mt-0.5 text-xs text-slate-500">
               {targetPercentage !== null
                 ? `${formatDigits(targetPercentage)}% ${L('গড় লক্ষ্য পূরণ', 'avg achieved')}`
                 : L('কোনো টার্গেট নেই', 'No target set')}
@@ -675,15 +677,15 @@ export default function SectionDetailModal({
           </div>
 
           {/* Card 3: Assigned / Active Employees */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+          <div className="bg-white px-4 py-3">
             <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
               <span>{L('দায়িত্বপ্রাপ্ত কর্মী', 'Assigned Employees')}</span>
-              <Users className="h-4 w-4 text-violet-600" />
+              <Users className="h-3.5 w-3.5 text-slate-400" />
             </div>
-            <div className="text-lg font-bold text-slate-900 tracking-tight">
+            <div className="text-lg font-semibold tracking-tight text-slate-900 tabular-nums">
               {formatNum(assignedEmployeesCount)} <span className="text-xs font-normal text-slate-500">{L('জন কর্মী', 'employees')}</span>
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">
+            <div className="mt-0.5 text-xs text-slate-500">
               {isStandard
                 ? `${formatNum(activeEmployeesCount)} ${L('জন সক্রিয়ভাবে কাজ করেছেন', 'active contributors')}`
                 : L('কাজ সম্পাদনকারী কর্মী', 'contributors')}
@@ -691,56 +693,62 @@ export default function SectionDetailModal({
           </div>
 
           {/* Card 4: Total Log Entries */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
+          <div className="bg-white px-4 py-3">
             <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
               <span>{L('মোট রেকর্ড', 'Total Entries')}</span>
-              <Clock className="h-4 w-4 text-amber-600" />
+              <Clock className="h-3.5 w-3.5 text-slate-400" />
             </div>
-            <div className="text-lg font-bold text-slate-900 tracking-tight">
+            <div className="text-lg font-semibold tracking-tight text-slate-900 tabular-nums">
               {formatNum(totalLogsCount)} <span className="text-xs font-normal text-slate-500">{L('টি', 'records')}</span>
             </div>
-            <div className="text-[11px] text-slate-400 mt-0.5">
+            <div className="mt-0.5 text-xs text-slate-500">
               {L('হিস্ট্রি এন্ট্রি সংখ্যা', 'logged updates')}
             </div>
           </div>
         </div>
 
         {/* Tab Selection Bar & Search Input */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-6 py-3 border-b border-slate-100 bg-white">
+        <div className="flex flex-col justify-between gap-3 border-b border-slate-100 px-5 py-3 sm:px-6 lg:flex-row lg:items-center">
           {/* Segmented Tab Switcher */}
-          <div className="segmented">
+          <div className="segmented max-w-full flex-wrap" role="group">
             <button
+              type="button"
               onClick={() => setActiveTab('employees')}
               data-active={activeTab === 'employees'}
+              aria-pressed={activeTab === 'employees'}
               className="flex items-center gap-1.5"
             >
               <Users className="h-3.5 w-3.5" />
               <span>{L('কর্মী অনুযায়ী বিশ্লেষণ', 'Employee Breakdown')}</span>
-              <span className="ml-1 rounded-full bg-slate-200/80 px-1.5 py-0.2 text-[10px] font-semibold text-slate-700">
+              <span className="ml-1 rounded-full bg-slate-200/80 px-1.5 text-[10px] font-semibold text-slate-700 tabular-nums">
                 {formatNum(rawEmployeeList.length)}
               </span>
             </button>
             {isStandard && standardSec?.key === 'POSTS_DONE' && (
               <button
+                type="button"
                 onClick={() => setActiveTab('subgroups')}
                 data-active={activeTab === 'subgroups'}
+                aria-pressed={activeTab === 'subgroups'}
                 className="flex items-center gap-1.5"
               >
                 <Layers className="h-3.5 w-3.5" />
                 <span>{L('সাব-গ্রুপসমূহ', 'Sub-Groups')}</span>
-                <span className="ml-1 rounded-full bg-violet-100 px-1.5 py-0.2 text-[10px] font-semibold text-violet-700">
+                <span className="ml-1 rounded-full bg-slate-200/80 px-1.5 text-[10px] font-semibold text-slate-700 tabular-nums">
                   {formatNum(groupSectionsOverview?.length || 0)}
                 </span>
               </button>
             )}
             <button
+              type="button"
               onClick={() => setActiveTab('history')}
               data-active={activeTab === 'history'}
+              aria-pressed={activeTab === 'history'}
               className="flex items-center gap-1.5"
             >
               <Clock className="h-3.5 w-3.5" />
               <span>{L('সম্পূর্ণ হিস্ট্রি লগ', 'Full History Log')}</span>
-              <span className="ml-1 rounded-full bg-slate-200/80 px-1.5 py-0.2 text-[10px] font-semibold text-slate-700">
+              <span className="ml-1 rounded-full bg-slate-200/80 px-1.5 text-[10px] font-semibold text-slate-700 tabular-nums">
                 {formatNum(totalLogsCount)}
               </span>
             </button>
@@ -748,10 +756,15 @@ export default function SectionDetailModal({
 
           {/* Search Box & Sort Toggle */}
           <div className="flex items-center gap-2">
-            <div className="relative flex-1 sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <div className="relative flex-1 lg:w-64">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
+                aria-label={
+                  activeTab === 'employees'
+                    ? L('কর্মী খুঁজুন (নাম বা ইমেইল)...', 'Search employee...')
+                    : L('হিস্ট্রি খুঁজুন (কর্মী, নোট, লিংক)...', 'Search logs...')
+                }
                 placeholder={
                   activeTab === 'employees'
                     ? L('কর্মী খুঁজুন (নাম বা ইমেইল)...', 'Search employee...')
@@ -759,11 +772,13 @@ export default function SectionDetailModal({
                 }
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="input pl-9 py-1 text-xs"
+                className="input input-sm pl-9 pr-8"
               />
               {searchTerm && (
                 <button
+                  type="button"
                   onClick={() => setSearchTerm('')}
+                  aria-label={L('মুছুন', 'Clear')}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -772,13 +787,19 @@ export default function SectionDetailModal({
             </div>
 
             <button
+              type="button"
+              aria-label={
+                sortOrder === 'desc'
+                  ? L('সর্বোচ্চ থেকে সর্বনিম্ন', 'Highest first')
+                  : L('সর্বনিম্ন থেকে সর্বোচ্চ', 'Lowest first')
+              }
               onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
               title={
                 sortOrder === 'desc'
                   ? L('সর্বোচ্চ থেকে সর্বনিম্ন', 'Highest first')
                   : L('সর্বনিম্ন থেকে সর্বোচ্চ', 'Lowest first')
               }
-              className="btn btn-secondary btn-sm p-1.5 text-slate-600"
+              className="btn btn-secondary btn-sm px-2"
             >
               <ArrowUpDown className="h-3.5 w-3.5" />
             </button>
@@ -786,47 +807,41 @@ export default function SectionDetailModal({
         </div>
 
         {/* Modal Body / Tab Content */}
-        <div className="flex-1 overflow-y-auto p-6 bg-slate-50/40">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50/50 p-5 sm:p-6">
           {activeTab === 'employees' ? (
             /* TAB 1: EMPLOYEE BREAKDOWN */
             <div>
               {/* Assignment filter pills */}
               <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-1.5">
+                <div className="segmented" role="group">
                   <button
+                    type="button"
                     onClick={() => setEmployeeFilter('assigned')}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                      employeeFilter === 'assigned'
-                        ? 'bg-brand-600 text-white shadow-xs'
-                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                    }`}
+                    data-active={employeeFilter === 'assigned'}
+                    aria-pressed={employeeFilter === 'assigned'}
                   >
                     {L('দায়িত্বপ্রাপ্ত কর্মী', 'Assigned Employees')} ({formatNum(rawEmployeeList.filter(e => e.target > 0 || e.total > 0).length || rawEmployeeList.length)})
                   </button>
                   <button
+                    type="button"
                     onClick={() => setEmployeeFilter('all')}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                      employeeFilter === 'all'
-                        ? 'bg-brand-600 text-white shadow-xs'
-                        : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                    }`}
+                    data-active={employeeFilter === 'all'}
+                    aria-pressed={employeeFilter === 'all'}
                   >
                     {L('সকল কর্মী', 'All Employees')} ({formatNum(rawEmployeeList.length)})
                   </button>
                 </div>
-                <p className="text-[11px] text-slate-400 hidden sm:block">
+                <p className="hidden text-xs text-slate-500 sm:block">
                   {L('প্রতিটি কর্মীর অর্জিত কাজ ও লক্ষ্যমাত্রা পূরণের অগ্রগতি', 'Individual target, progress % and achievements')}
                 </p>
               </div>
 
               {filteredEmployees.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-10 text-center bg-white rounded-xl border border-dashed border-slate-200">
-                  <Users className="h-10 w-10 text-slate-300 mb-2" />
-                  <p className="text-sm font-medium text-slate-700">
-                    {L('কোনো কর্মী পাওয়া যায়নি', 'No employee records found')}
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1 max-w-sm">
-                    {searchTerm
+                <div className="rounded-xl border border-dashed border-slate-200 bg-white">
+                  <EmptyState
+                    icon={<Users className="h-5 w-5" />}
+                    title={L('কোনো কর্মী পাওয়া যায়নি', 'No employee records found')}
+                    description={searchTerm
                       ? L(
                           'অনুসন্ধানের সাথে মিল পাওয়া যায়নি। অন্য কীওয়ার্ড দিয়ে চেষ্টা করুন।',
                           'No match found for your search query. Try another keyword.'
@@ -835,10 +850,10 @@ export default function SectionDetailModal({
                           'এই সময়ে কোনো কর্মী এই সেকশনে কোনো কাজ করেননি।',
                           'No employee has performed any work in this section during this period.'
                         )}
-                  </p>
+                  />
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-slate-200/90 bg-white shadow-sm">
+                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
                   <table className="table-pro">
                     <thead>
                       <tr>
@@ -889,14 +904,14 @@ export default function SectionDetailModal({
                             <td>
                               <div className="flex items-center gap-3">
                                 <div
-                                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold border ${getAvatarColor(
+                                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${getAvatarColor(
                                     emp.name
                                   )}`}
                                 >
                                   {getInitials(emp.name)}
                                 </div>
                                 <div className="min-w-0">
-                                  <div className="font-semibold text-slate-900 truncate">
+                                  <div className="truncate font-medium text-slate-900">
                                     {emp.name}
                                   </div>
                                   {emp.email ? (
@@ -952,7 +967,7 @@ export default function SectionDetailModal({
                                     </span>
                                   )}
                                 </div>
-                                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                                   <div
                                     className={`h-full rounded-full transition-all duration-300 ${barColor}`}
                                     style={{ width: `${pct}%` }}
@@ -981,8 +996,8 @@ export default function SectionDetailModal({
             <div className="space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Layers className="h-4 w-4 text-violet-600" />
+                  <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                    <Layers className="h-4 w-4 text-slate-400" />
                     {L('গ্রুপ লিঙ্ক পোস্টিং - অন্তর্ভুক্ত সাব-গ্রুপসমূহ', 'Group Link Posting - Sub-Groups')}
                   </h4>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -992,23 +1007,21 @@ export default function SectionDetailModal({
                     )}
                   </p>
                 </div>
-                <span className="badge badge-violet text-xs font-semibold">
+                <span className="badge badge-gray tabular-nums">
                   {formatNum(filteredSubgroups.length)} {L('টি সাব-গ্রুপ', 'sub-groups')}
                 </span>
               </div>
 
               {filteredSubgroups.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-10 text-center bg-white rounded-xl border border-dashed border-slate-200">
-                  <Layers className="h-10 w-10 text-slate-300 mb-2" />
-                  <p className="text-sm font-medium text-slate-700">
-                    {L('কোনো সাব-গ্রুপ পাওয়া যায়নি', 'No sub-groups found')}
-                  </p>
-                  <p className="text-xs text-slate-400 mt-1">
-                    {L('অনুসন্ধান শব্দ পরিবর্তন করে পুনরায় চেষ্টা করুন।', 'Try adjusting your search criteria.')}
-                  </p>
+                <div className="rounded-xl border border-dashed border-slate-200 bg-white">
+                  <EmptyState
+                    icon={<Layers className="h-5 w-5" />}
+                    title={L('কোনো সাব-গ্রুপ পাওয়া যায়নি', 'No sub-groups found')}
+                    description={L('অনুসন্ধান শব্দ পরিবর্তন করে পুনরায় চেষ্টা করুন।', 'Try adjusting your search criteria.')}
+                  />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {filteredSubgroups.map((g) => {
                     const total = g.totalLinks || 1;
                     const comp = g.completedLinksCount || 0;
@@ -1018,24 +1031,32 @@ export default function SectionDetailModal({
                     return (
                       <div
                         key={g.id}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => {
                           if (onSelectGroupSection) {
                             onSelectGroupSection(g);
                           }
                         }}
-                        className="card p-4.5 cursor-pointer hover:shadow-md hover:border-violet-300 transition-all duration-200 group flex flex-col justify-between bg-white border border-slate-200/90"
+                        onKeyDown={(e) => {
+                          if ((e.key === 'Enter' || e.key === ' ') && onSelectGroupSection) {
+                            e.preventDefault();
+                            onSelectGroupSection(g);
+                          }
+                        }}
+                        className="card group flex cursor-pointer flex-col justify-between p-4"
                       >
                         <div>
                           <div className="flex items-start justify-between gap-2.5">
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700 border border-violet-200/60 shadow-xs group-hover:scale-105 transition-transform">
-                                <Layers className="h-5 w-5" />
+                            <div className="flex min-w-0 items-center gap-3">
+                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
+                                <Layers className="h-4 w-4" />
                               </div>
                               <div className="min-w-0">
-                                <h4 className="font-semibold text-slate-900 group-hover:text-violet-700 transition-colors truncate">
+                                <h4 className="truncate text-sm font-semibold text-slate-900">
                                   {g.name}
                                 </h4>
-                                <p className="text-[11px] text-slate-400">
+                                <p className="text-xs text-slate-500">
                                   {L('সাব-গ্রুপ লিঙ্ক পোস্টিং', 'Sub-Group Posting')}
                                 </p>
                               </div>
@@ -1043,14 +1064,14 @@ export default function SectionDetailModal({
                             <span
                               className={`badge ${
                                 pct >= 100 ? 'badge-green' : pct >= 50 ? 'badge-blue' : 'badge-amber'
-                              } font-semibold tabular-nums text-[11px]`}
+                              } shrink-0 tabular-nums`}
                             >
                               {formatDigits(pct)}%
                             </span>
                           </div>
 
                           <div className="mt-3.5">
-                            <div className="text-xl font-bold text-slate-900 tabular-nums">
+                            <div className="text-xl font-semibold text-slate-900 tabular-nums">
                               {formatNum(comp)}{' '}
                               <span className="text-xs font-normal text-slate-500">
                                 / {formatNum(g.totalLinks)} {L('টি লিঙ্ক সম্পন্ন', 'links')}
@@ -1060,7 +1081,7 @@ export default function SectionDetailModal({
 
                           <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                             <div
-                              className="h-full rounded-full bg-violet-600 transition-all duration-300"
+                              className="h-full rounded-full bg-brand-600 transition-all duration-300"
                               style={{ width: `${pct}%` }}
                             />
                           </div>
@@ -1070,11 +1091,11 @@ export default function SectionDetailModal({
                           <span className="flex items-center gap-1.5">
                             <Users className="h-3.5 w-3.5 text-slate-400" />
                             <span>
-                              <strong className="text-slate-800 font-semibold">{formatNum(uniqueUsers)}</strong>{' '}
+                              <span className="font-medium text-slate-800 tabular-nums">{formatNum(uniqueUsers)}</span>{' '}
                               {L('কর্মী সক্রিয়', 'active')}
                             </span>
                           </span>
-                          <span className="inline-flex items-center gap-1 font-medium text-violet-600 group-hover:text-violet-800 transition-colors">
+                          <span className="inline-flex items-center gap-1 font-medium text-slate-500 transition-colors group-hover:text-brand-700">
                             {L('লিঙ্ক ও বিস্তারিত দেখুন', 'View Details')}
                             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                           </span>
@@ -1091,13 +1112,11 @@ export default function SectionDetailModal({
               {isStandard ? (
                 /* Standard Section History Logs */
                 filteredHistoryLogs.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center p-10 text-center bg-white rounded-xl border border-dashed border-slate-200">
-                    <Clock className="h-10 w-10 text-slate-300 mb-2" />
-                    <p className="text-sm font-medium text-slate-700">
-                      {L('কোনো হিস্ট্রি লগ পাওয়া যায়নি', 'No history logs found')}
-                    </p>
-                    <p className="text-xs text-slate-400 mt-1 max-w-sm">
-                      {searchTerm
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-white">
+                    <EmptyState
+                      icon={<Clock className="h-5 w-5" />}
+                      title={L('কোনো হিস্ট্রি লগ পাওয়া যায়নি', 'No history logs found')}
+                      description={searchTerm
                         ? L(
                             'অনুসন্ধানের সাথে মিল পাওয়া যায়নি।',
                             'No logs match your filter criteria.'
@@ -1106,10 +1125,10 @@ export default function SectionDetailModal({
                             'এই সেকশনে এখনও কোনো দৈনিক কাজের হিস্ট্রি এন্ট্রি রেকর্ড হয়নি।',
                             'No daily entries recorded for this section in the selected timeframe.'
                           )}
-                    </p>
+                    />
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-xl border border-slate-200/90 bg-white shadow-sm">
+                  <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
                     <table className="table-pro">
                       <thead>
                         <tr>
@@ -1134,7 +1153,7 @@ export default function SectionDetailModal({
                       <tbody>
                         {filteredHistoryLogs.map((log, idx) => (
                           <tr key={`${log.date}_${log.employeeId}_${idx}`} className="transition-colors">
-                            <td className="font-mono text-xs text-slate-700 whitespace-nowrap">
+                            <td className="whitespace-nowrap text-xs text-slate-700 tabular-nums">
                               <div className="flex items-center gap-1.5">
                                 <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                                 <span>{formatDigits(log.date)}</span>
@@ -1143,18 +1162,18 @@ export default function SectionDetailModal({
                             <td>
                               <div className="flex items-center gap-2">
                                 <div
-                                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold border ${getAvatarColor(
+                                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${getAvatarColor(
                                     log.employeeName
                                   )}`}
                                 >
                                   {getInitials(log.employeeName)}
                                 </div>
                                 <div>
-                                  <span className="font-semibold text-slate-900 truncate block">
+                                  <span className="block truncate font-medium text-slate-900">
                                     {log.employeeName}
                                   </span>
                                   {standardSec?.key === 'NEW_CLIENTS' && (
-                                    <span className="badge badge-blue text-[9px] py-0 px-1 font-medium">
+                                    <span className="text-[11px] text-slate-500">
                                       {L('যুক্ত করেছেন', 'Added by')}
                                     </span>
                                   )}
@@ -1162,7 +1181,7 @@ export default function SectionDetailModal({
                               </div>
                             </td>
                             <td className="text-right">
-                              <span className="font-semibold text-brand-700 tabular-nums">
+                              <span className="font-medium text-slate-900 tabular-nums">
                                 {formatSectionValue(log.value)}
                               </span>
                             </td>
@@ -1170,7 +1189,7 @@ export default function SectionDetailModal({
                               {log.note ? (
                                 standardSec?.key === 'NEW_CLIENTS' ? (
                                   <div className="flex items-center gap-2 max-w-lg">
-                                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
                                       <UserPlus className="h-3 w-3" />
                                     </div>
                                     <span className="text-xs text-slate-800 font-medium leading-relaxed">
@@ -1184,7 +1203,7 @@ export default function SectionDetailModal({
                                   </span>
                                 )
                               ) : (
-                                <span className="text-xs text-slate-400 italic">
+                                <span className="text-xs text-slate-400">
                                   {L('কোনো নোট নেই', 'No notes')}
                                 </span>
                               )}
@@ -1198,20 +1217,18 @@ export default function SectionDetailModal({
               ) : (
                 /* Group Section Completions History */
                 filteredGroupCompletions.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center p-10 text-center bg-white rounded-xl border border-dashed border-slate-200">
-                    <Layers className="h-10 w-10 text-slate-300 mb-2" />
-                    <p className="text-sm font-medium text-slate-700">
-                      {L('কোনো গ্রুপ লিঙ্ক হিস্ট্রি পাওয়া যায়নি', 'No link completion history')}
-                    </p>
-                    <p className="text-xs text-slate-400 mt-1 max-w-sm">
-                      {L(
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-white">
+                    <EmptyState
+                      icon={<Layers className="h-5 w-5" />}
+                      title={L('কোনো গ্রুপ লিঙ্ক হিস্ট্রি পাওয়া যায়নি', 'No link completion history')}
+                      description={L(
                         'এই গ্রুপ সেকশনে এখনো কোনো লিঙ্ক সম্পূর্ণ করা হয়নি।',
                         'No group links completed in this section during this period.'
                       )}
-                    </p>
+                    />
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-xl border border-slate-200/90 bg-white shadow-sm">
+                  <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
                     <table className="table-pro">
                       <thead>
                         <tr>
@@ -1224,7 +1241,7 @@ export default function SectionDetailModal({
                       <tbody>
                         {filteredGroupCompletions.map((comp, idx) => (
                           <tr key={`${comp.employeeId}_${comp.date}_${idx}`} className="transition-colors">
-                            <td className="font-mono text-xs text-slate-700 whitespace-nowrap">
+                            <td className="whitespace-nowrap text-xs text-slate-700 tabular-nums">
                               <div className="flex items-center gap-1.5">
                                 <Clock className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                                 <span>{formatDigits(comp.date)}</span>
@@ -1233,7 +1250,7 @@ export default function SectionDetailModal({
                             <td>
                               <div className="flex items-center gap-2">
                                 <div
-                                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold border ${getAvatarColor(
+                                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${getAvatarColor(
                                     comp.employeeName
                                   )}`}
                                 >
@@ -1280,27 +1297,27 @@ export default function SectionDetailModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-between border-t border-slate-100 bg-white px-6 py-3.5">
+        <div className="flex items-center justify-between gap-3 border-t border-slate-100 px-5 py-3 sm:px-6">
           <div className="text-xs text-slate-500">
             {activeTab === 'employees' ? (
               <span>
                 {L('মোট সক্রিয় কর্মী:', 'Active Contributors:')}{' '}
-                <strong className="text-slate-800 font-semibold">{formatNum(filteredEmployees.length)}</strong>
+                <span className="font-medium text-slate-800 tabular-nums">{formatNum(filteredEmployees.length)}</span>
               </span>
             ) : (
               <span>
                 {L('প্রদর্শিত লগ সংখ্যা:', 'Showing Entries:')}{' '}
-                <strong className="text-slate-800 font-semibold">
+                <span className="font-medium text-slate-800 tabular-nums">
                   {formatNum(
                     isStandard
                       ? filteredHistoryLogs.length
                       : filteredGroupCompletions.length
                   )}
-                </strong>
+                </span>
               </span>
             )}
           </div>
-          <button onClick={onClose} className="btn btn-secondary btn-sm">
+          <button type="button" onClick={onClose} className="btn btn-secondary btn-sm">
             {L('বন্ধ করুন', 'Close')}
           </button>
         </div>
@@ -1308,21 +1325,21 @@ export default function SectionDetailModal({
 
       {/* Add Customer Profile Modal */}
       {isAddCustomerOpen && (
-        <div className="modal-backdrop z-60" onClick={() => setIsAddCustomerOpen(false)}>
+        <div className="modal-backdrop z-60" onClick={() => setIsAddCustomerOpen(false)} role="dialog" aria-modal="true" aria-labelledby="add-customer-title">
           <div
-            className="modal-panel relative z-10 border border-slate-200 sm:max-w-md"
+            className="modal-panel relative z-10 sm:max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/80 px-5 py-3.5">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-50 text-brand-700 border border-brand-200">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-600/10">
                   <UserPlus className="h-4 w-4" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">
+                <div className="min-w-0">
+                  <h3 id="add-customer-title" className="text-sm font-semibold text-slate-900">
                     {L('নতুন কাস্টমার প্রোফাইল তৈরি', 'Create Customer Profile')}
                   </h3>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-xs text-slate-500">
                     {L('কাস্টমার তথ্য ও সংশ্লিষ্ট কর্মীর নাম যুক্ত করুন', 'Add customer details and creator employee')}
                   </p>
                 </div>
@@ -1330,22 +1347,23 @@ export default function SectionDetailModal({
               <button
                 type="button"
                 onClick={() => setIsAddCustomerOpen(false)}
-                className="btn-icon text-slate-400 hover:text-slate-700"
+                aria-label={L('বন্ধ করুন', 'Close')}
+                className="btn-icon shrink-0"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateCustomer} className="p-5 space-y-3.5">
+            <form onSubmit={handleCreateCustomer} className="space-y-4 p-5">
               {custError && (
-                <div className="rounded-lg bg-rose-50 border border-rose-200 p-2.5 text-xs text-rose-700 flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                <div className="alert alert-error" role="alert">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>{custError}</span>
                 </div>
               )}
 
               <div>
-                <label className="label text-xs font-semibold text-slate-700">
+                <label className="label">
                   {L('কাস্টমারের নাম *', 'Customer Name *')}
                 </label>
                 <input
@@ -1354,12 +1372,12 @@ export default function SectionDetailModal({
                   placeholder={L('যেমন: মো: আরিফুল ইসলাম', 'e.g. John Doe')}
                   value={custName}
                   onChange={(e) => setCustName(e.target.value)}
-                  className="input text-xs py-1.5"
+                  className="input"
                 />
               </div>
 
               <div>
-                <label className="label text-xs font-semibold text-slate-700">
+                <label className="label">
                   {L('মোবাইল নম্বর (১১ ডিজিট) *', 'Phone Number (11 Digits) *')}
                 </label>
                 <div className="relative">
@@ -1369,29 +1387,29 @@ export default function SectionDetailModal({
                     placeholder="01XXXXXXXXX"
                     value={custPhone}
                     onChange={(e) => handlePhoneChange(e.target.value)}
-                    className="input text-xs py-1.5 tabular-nums pr-8"
+                    className="input pr-8 tabular-nums"
                   />
                   {checkingPhone && (
                     <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-slate-400" />
                   )}
                 </div>
                 {phoneWarning && (
-                  <div className="mt-1 text-[11px] text-amber-700 bg-amber-50 rounded p-1.5 border border-amber-200 flex items-start gap-1.5">
-                    <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5 text-amber-600" />
+                  <div className="alert alert-warning mt-2 px-3 py-2 text-xs">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                     <span>{phoneWarning}</span>
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="label text-xs font-semibold text-slate-700">
+                  <label className="label">
                     {L('ক্রেতার ধরন', 'Buyer Type')}
                   </label>
                   <select
                     value={custBuyerType}
                     onChange={(e) => setCustBuyerType(e.target.value)}
-                    className="input text-xs py-1.5"
+                    className="input"
                   >
                     <option value="RETAIL">{L('খুচরা (Retail)', 'Retail')}</option>
                     <option value="WHOLESALER">{L('পাইকারি (Wholesale)', 'Wholesale')}</option>
@@ -1403,13 +1421,13 @@ export default function SectionDetailModal({
                 </div>
 
                 <div>
-                  <label className="label text-xs font-semibold text-slate-700">
+                  <label className="label">
                     {L('তৈরি করেছেন (কর্মী)', 'Created by (Employee)')}
                   </label>
                   <select
                     value={custOwnerId}
                     onChange={(e) => setCustOwnerId(e.target.value)}
-                    className="input text-xs py-1.5"
+                    className="input"
                   >
                     <option value="">{L('বর্তমান ইউজার', 'Current User')}</option>
                     {rawEmployeeList.map((emp) => (
@@ -1422,7 +1440,7 @@ export default function SectionDetailModal({
               </div>
 
               <div>
-                <label className="label text-xs font-semibold text-slate-700">
+                <label className="label">
                   {L('ঠিকানা / এলাকা', 'Address / Area')}
                 </label>
                 <input
@@ -1430,12 +1448,12 @@ export default function SectionDetailModal({
                   placeholder={L('যেমন: মিরপুর ১০, ঢাকা', 'e.g. Mirpur 10, Dhaka')}
                   value={custAddress}
                   onChange={(e) => setCustAddress(e.target.value)}
-                  className="input text-xs py-1.5"
+                  className="input"
                 />
               </div>
 
               <div>
-                <label className="label text-xs font-semibold text-slate-700">
+                <label className="label">
                   {L('মন্তব্য বা প্রাথমিক নোট', 'Initial Notes')}
                 </label>
                 <textarea
@@ -1443,22 +1461,22 @@ export default function SectionDetailModal({
                   placeholder={L('পণ্য আগ্রহ বা অতিরিক্ত তথ্য...', 'Notes or product interest...')}
                   value={custNote}
                   onChange={(e) => setCustNote(e.target.value)}
-                  className="input text-xs py-1.5"
+                  className="input"
                 />
               </div>
 
-              <div className="pt-2 flex items-center justify-end gap-2 border-t border-slate-100">
+              <div className="-mx-5 flex items-center justify-end gap-2 border-t border-slate-100 px-5 pt-4">
                 <button
                   type="button"
                   onClick={() => setIsAddCustomerOpen(false)}
-                  className="btn btn-secondary btn-sm text-xs"
+                  className="btn btn-secondary"
                 >
                   {L('বাতিল', 'Cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={custSubmitting}
-                  className="btn btn-primary btn-sm text-xs bg-brand-600 hover:bg-brand-700 text-white flex items-center gap-1.5"
+                  className="btn btn-primary"
                 >
                   {custSubmitting ? (
                     <>

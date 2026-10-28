@@ -23,7 +23,7 @@ import { format } from 'date-fns';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
-import { SkeletonTable } from '@/components/ui/Skeleton';
+import { SkeletonStatCards, SkeletonTable } from '@/components/ui/Skeleton';
 
 interface ProductRef {
   id: string;
@@ -217,13 +217,13 @@ export default function AdminCampaignsPage() {
   const getChannelBadge = (ch: string) => {
     switch (ch) {
       case 'FACEBOOK_GROUP':
-        return <span className="badge badge-blue">FB Group</span>;
+        return <span className="badge badge-gray">{L('এফবি গ্রুপ', 'FB Group')}</span>;
       case 'FACEBOOK_AD':
-        return <span className="badge badge-violet">FB Ad</span>;
+        return <span className="badge badge-gray">{L('এফবি অ্যাড', 'FB Ad')}</span>;
       case 'GOOGLE_AD':
-        return <span className="badge badge-amber">Google Ad</span>;
+        return <span className="badge badge-gray">{L('গুগল অ্যাড', 'Google Ad')}</span>;
       case 'YOUTUBE':
-        return <span className="badge badge-red">YouTube</span>;
+        return <span className="badge badge-gray">{L('ইউটিউব', 'YouTube')}</span>;
       default:
         return <span className="badge badge-gray">{L('অন্যান্য', 'Other')}</span>;
     }
@@ -252,26 +252,26 @@ export default function AdminCampaignsPage() {
   const getBudgetStatusBadge = (status: 'SAFE' | 'WARNING' | 'EXCEEDED', pct: number) => {
     switch (status) {
       case 'EXCEEDED':
-        return <span className="badge badge-red">{L('অতিক্রান্ত', 'Over')} · {pct}%</span>;
+        return <span className="badge badge-red tabular-nums">{L('অতিক্রান্ত', 'Over')} · {pct}%</span>;
       case 'WARNING':
-        return <span className="badge badge-amber">{L('সতর্কতা', 'Warning')} · {pct}%</span>;
+        return <span className="badge badge-amber tabular-nums">{L('সতর্কতা', 'Warning')} · {pct}%</span>;
       case 'SAFE':
       default:
-        return <span className="badge badge-green">{L('নিরাপদ', 'OK')} · {pct}%</span>;
+        return <span className="text-xs tabular-nums text-slate-500">{pct}%</span>;
     }
   };
 
   const getRoasBadge = (roas: number) => {
     if (roas >= 3.0) {
-      return <span className="badge badge-green tabular-nums">{roas.toFixed(2)}x</span>;
+      return <span className="font-medium tabular-nums text-emerald-700">{roas.toFixed(2)}x</span>;
     }
     if (roas >= 1.5) {
-      return <span className="badge badge-blue tabular-nums">{roas.toFixed(2)}x</span>;
+      return <span className="font-medium tabular-nums text-slate-900">{roas.toFixed(2)}x</span>;
     }
     if (roas > 0) {
-      return <span className="badge badge-amber tabular-nums">{roas.toFixed(2)}x</span>;
+      return <span className="font-medium tabular-nums text-amber-700">{roas.toFixed(2)}x</span>;
     }
-    return <span className="badge badge-gray tabular-nums">0.00x</span>;
+    return <span className="tabular-nums text-slate-400">0.00x</span>;
   };
 
   // Filtered campaigns
@@ -290,10 +290,10 @@ export default function AdminCampaignsPage() {
 
   const channelOptions = (
     <>
-      <option value="FACEBOOK_AD">Facebook Ad</option>
-      <option value="FACEBOOK_GROUP">Facebook Group</option>
-      <option value="GOOGLE_AD">Google Ad</option>
-      <option value="YOUTUBE">YouTube</option>
+      <option value="FACEBOOK_AD">{L('ফেসবুক অ্যাড', 'Facebook Ad')}</option>
+      <option value="FACEBOOK_GROUP">{L('ফেসবুক গ্রুপ', 'Facebook Group')}</option>
+      <option value="GOOGLE_AD">{L('গুগল অ্যাড', 'Google Ad')}</option>
+      <option value="YOUTUBE">{L('ইউটিউব', 'YouTube')}</option>
       <option value="OTHER">{L('অন্যান্য', 'Other')}</option>
     </>
   );
@@ -312,7 +312,7 @@ export default function AdminCampaignsPage() {
       <PageHeader
         icon={<Megaphone className="h-5 w-5" />}
         title={L('ক্যাম্পেইন', 'Campaigns')}
-        subtitle="Budget, ad spend and ROAS per campaign"
+        subtitle={L('প্রতিটি ক্যাম্পেইনের বাজেট, খরচ ও ROAS', 'Budget, ad spend and ROAS per campaign')}
         actions={
           <button
             onClick={() => {
@@ -331,7 +331,7 @@ export default function AdminCampaignsPage() {
         <div className="alert alert-error">
           <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
           <span className="flex-1">{L(errorMessage)}</span>
-          <button onClick={() => setErrorMessage(null)} className="btn-icon h-6 w-6" aria-label="Dismiss">
+          <button onClick={() => setErrorMessage(null)} className="btn-icon h-6 w-6" aria-label={L('বন্ধ করুন', 'Dismiss')}>
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -341,7 +341,7 @@ export default function AdminCampaignsPage() {
         <div className="alert alert-success">
           <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
           <span className="flex-1">{L(successMessage)}</span>
-          <button onClick={() => setSuccessMessage(null)} className="btn-icon h-6 w-6" aria-label="Dismiss">
+          <button onClick={() => setSuccessMessage(null)} className="btn-icon h-6 w-6" aria-label={L('বন্ধ করুন', 'Dismiss')}>
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -373,13 +373,17 @@ export default function AdminCampaignsPage() {
         </div>
       )}
 
+      {!summary && loading && (
+        <SkeletonStatCards count={6} className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6" />
+      )}
+
       {summary && (
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
+        <div className="stagger grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-6">
           <StatCard
             label={L('মোট ক্যাম্পেইন', 'Total')}
             value={summary.total_campaigns}
             icon={<Megaphone className="h-4 w-4" />}
-            tone="blue"
+            tone="gray"
           />
           <StatCard
             label={L('সক্রিয়', 'Running')}
@@ -395,9 +399,9 @@ export default function AdminCampaignsPage() {
           <StatCard
             label={L('অ্যাড স্পেন্ড', 'Spend')}
             value={`৳ ${summary.total_spend.toLocaleString('en-IN')}`}
-            note={`${summary.total_budget > 0 ? ((summary.total_spend / summary.total_budget) * 100).toFixed(1) : 0}% of budget`}
+            note={`${summary.total_budget > 0 ? ((summary.total_spend / summary.total_budget) * 100).toFixed(1) : 0}% ${L('বাজেটের', 'of budget')}`}
             icon={<TrendingUp className="h-4 w-4" />}
-            tone="violet"
+            tone="gray"
           />
           <StatCard
             label={L('রাজস্ব', 'Revenue')}
@@ -407,9 +411,8 @@ export default function AdminCampaignsPage() {
           <StatCard
             label="ROAS"
             value={`${summary.overall_roas.toFixed(2)}x`}
-            note="Revenue / Ad spend"
+            note={L('রাজস্ব / অ্যাড খরচ', 'Revenue / Ad spend')}
             icon={<PieChart className="h-4 w-4" />}
-            tone="violet"
           />
         </div>
       )}
@@ -418,25 +421,25 @@ export default function AdminCampaignsPage() {
         <div className="card-header">
           <div>
             <h2 className="card-title">{L('সব ক্যাম্পেইন', 'All campaigns')}</h2>
-            <p className="card-subtitle">{filteredCampaigns.length} shown</p>
+            <p className="card-subtitle tabular-nums">{filteredCampaigns.length} {L('টি দেখানো হচ্ছে', 'shown')}</p>
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-            <label htmlFor="filter_channel" className="sr-only">Channel</label>
+            <label htmlFor="filter_channel" className="sr-only">{L('চ্যানেল', 'Channel')}</label>
             <select
               id="filter_channel"
               value={selectedChannel}
               onChange={(e) => setSelectedChannel(e.target.value)}
-              className="input w-full py-1.5 text-xs sm:w-auto"
+              className="input input-sm w-full sm:w-auto"
             >
               <option value="ALL">{L('সব চ্যানেল', 'All channels')}</option>
               {channelOptions}
             </select>
-            <label htmlFor="filter_status" className="sr-only">Status</label>
+            <label htmlFor="filter_status" className="sr-only">{L('স্ট্যাটাস', 'Status')}</label>
             <select
               id="filter_status"
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="input w-full py-1.5 text-xs sm:w-auto"
+              className="input input-sm w-full sm:w-auto"
             >
               <option value="ALL">{L('সব স্ট্যাটাস', 'All statuses')}</option>
               {statusOptions}
@@ -451,23 +454,23 @@ export default function AdminCampaignsPage() {
             <EmptyState
               icon={<Megaphone className="h-5 w-5" />}
               title={L('কোনো ক্যাম্পেইন নেই', 'No campaigns')}
-              description="Create a campaign or change the filters."
+              description={L('নতুন ক্যাম্পেইন তৈরি করুন বা ফিল্টার বদলান।', 'Create a campaign or change the filters.')}
             />
           ) : (
-            <table className="table-pro">
+            <table className="table-pro min-w-[960px]">
               <thead>
                 <tr>
                   <th>{L('ক্যাম্পেইন', 'Campaign')}</th>
                   <th>{L('চ্যানেল', 'Channel')}</th>
                   <th>{L('পণ্য', 'Product')}</th>
                   <th className="text-right">{L('বাজেট', 'Budget')}</th>
-                  <th>{L('খরচ', 'Spend')}</th>
+                  <th className="text-right">{L('খরচ', 'Spend')}</th>
                   <th className="text-right">{L('রাজস্ব', 'Revenue')}</th>
-                  <th className="text-center">ROAS</th>
-                  <th className="text-center">{L("লিড / অর্ডার")}</th>
+                  <th className="text-right">ROAS</th>
+                  <th className="text-right">{L("লিড / অর্ডার")}</th>
                   <th className="text-center">{L('স্ট্যাটাস', 'Status')}</th>
                   <th className="text-right">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">{L('কাজ', 'Actions')}</span>
                   </th>
                 </tr>
               </thead>
@@ -494,11 +497,11 @@ export default function AdminCampaignsPage() {
                     </td>
 
                     <td className="whitespace-nowrap">
-                      <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center justify-end gap-2">
+                        {getBudgetStatusBadge(c.budget_status, c.spend_percentage)}
                         <span className="tabular-nums font-medium text-slate-900">
                           {L("৳")} {c.spend.toLocaleString('en-IN')}
                         </span>
-                        {getBudgetStatusBadge(c.budget_status, c.spend_percentage)}
                       </div>
                       <div className="mt-1.5 h-1 w-full min-w-[140px] overflow-hidden rounded-full bg-slate-100">
                         <div
@@ -507,7 +510,7 @@ export default function AdminCampaignsPage() {
                               ? 'bg-rose-500'
                               : c.budget_status === 'WARNING'
                               ? 'bg-amber-500'
-                              : 'bg-emerald-500'
+                              : 'bg-brand-500'
                           }`}
                           style={{ width: `${Math.min(c.spend_percentage, 100)}%` }}
                         />
@@ -518,9 +521,9 @@ export default function AdminCampaignsPage() {
                       {L("৳")} {c.revenue.toLocaleString('en-IN')}
                     </td>
 
-                    <td className="whitespace-nowrap text-center">{getRoasBadge(c.roas)}</td>
+                    <td className="whitespace-nowrap text-right">{getRoasBadge(c.roas)}</td>
 
-                    <td className="whitespace-nowrap text-center tabular-nums">
+                    <td className="whitespace-nowrap text-right tabular-nums">
                       <span className="text-slate-900">{c.leads_count}</span>
                       <span className="text-slate-400"> / {c.orders_count || 0}</span>
                     </td>
@@ -530,8 +533,8 @@ export default function AdminCampaignsPage() {
                     <td className="whitespace-nowrap text-right">
                       <button
                         onClick={() => handleOpenEdit(c)}
-                        className="btn-icon"
-                        aria-label="Edit campaign"
+                        className="btn-icon h-8 w-8"
+                        aria-label={L('ক্যাম্পেইন সম্পাদনা', 'Edit campaign')}
                         title={L('সম্পাদনা', 'Edit')}
                       >
                         <Edit2 className="h-4 w-4" />
@@ -548,10 +551,10 @@ export default function AdminCampaignsPage() {
       {/* Modal: Add Campaign */}
       {isAddOpen && (
         <div className="modal-backdrop">
-          <div className="modal-panel">
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="add-campaign-title">
             <div className="card-header">
-              <h3 className="card-title">{L('নতুন ক্যাম্পেইন', 'New campaign')}</h3>
-              <button type="button" onClick={() => setIsAddOpen(false)} className="btn-icon" aria-label="Close">
+              <h3 id="add-campaign-title" className="card-title">{L('নতুন ক্যাম্পেইন', 'New campaign')}</h3>
+              <button type="button" onClick={() => setIsAddOpen(false)} className="btn-icon" aria-label={L('বন্ধ করুন', 'Close')}>
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -671,13 +674,13 @@ export default function AdminCampaignsPage() {
       {/* Modal: Edit Campaign Budget & Status */}
       {editingCampaign && (
         <div className="modal-backdrop">
-          <div className="modal-panel">
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="edit-campaign-title">
             <div className="card-header">
               <div className="min-w-0">
-                <h3 className="card-title">{L('ক্যাম্পেইন আপডেট', 'Edit campaign')}</h3>
+                <h3 id="edit-campaign-title" className="card-title">{L('ক্যাম্পেইন আপডেট', 'Edit campaign')}</h3>
                 <p className="card-subtitle truncate">{editingCampaign.name}</p>
               </div>
-              <button type="button" onClick={() => setEditingCampaign(null)} className="btn-icon" aria-label="Close">
+              <button type="button" onClick={() => setEditingCampaign(null)} className="btn-icon" aria-label={L('বন্ধ করুন', 'Close')}>
                 <X className="h-4 w-4" />
               </button>
             </div>

@@ -3,28 +3,31 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
-  CheckSquare,
-  ExternalLink,
+  ArrowRight,
+  Calendar,
   CheckCircle2,
+  CheckSquare,
+  Circle,
+  Coins,
+  ExternalLink,
+  FileText,
+  Loader2,
+  Lock,
+  PlusCircle,
   RotateCcw,
+  Save,
   Search,
+  ShoppingBag,
   Sparkles,
   AlertCircle,
-  Loader2,
-  Save,
-  Flame,
-  Swords,
-  Coins,
-  ShoppingBag,
-  Zap,
-  PlusCircle,
+  Users,
   X,
-  Target,
-  FileSpreadsheet,
+  Zap,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 import TaskQuotaCard from '@/components/TaskQuotaCard';
 import EmptyState from '@/components/ui/EmptyState';
+import PageHeader from '@/components/ui/PageHeader';
 import { formatTaka, getDhakaDateString } from '@/lib/date';
 
 interface TodoLink {
@@ -549,425 +552,577 @@ function EmployeeMyWorkContent() {
   const questsCompleted = (progress.completedToday > 0 ? 1 : 0) + (Number(salesAmount) > 0 || Number(confirmedOrders) > 0 ? 1 : 0);
   const questPercent = Math.round((questsCompleted / questsTotal) * 100);
 
+  // ---- Presentation only: nothing below changes data or saving ----
+  const field = 'input min-h-10 text-base tabular-nums sm:text-sm';
+  const dhakaHour =
+    Number(
+      new Intl.DateTimeFormat('en-US', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Asia/Dhaka' }).format(new Date())
+    ) % 24;
+  const greeting =
+    dhakaHour < 12
+      ? L('শুভ সকাল', 'Good morning')
+      : dhakaHour < 17
+      ? L('শুভ অপরাহ্ন', 'Good afternoon')
+      : L('শুভ সন্ধ্যা', 'Good evening');
+  const goals = [
+    {
+      done: progress.completedToday > 0,
+      label: L('অন্তত একটি নির্ধারিত পোস্ট সম্পন্ন করুন', 'Finish at least one assigned post'),
+    },
+    {
+      done: Number(salesAmount) > 0 || Number(confirmedOrders) > 0,
+      label: L('আজকের বিক্রি বা অর্ডার লিখুন', "Log today's sales or orders"),
+    },
+  ];
+  const ringRadius = 26;
+  const ringCircumference = 2 * Math.PI * ringRadius;
+  const tabs = [
+    { id: 'links' as const, icon: CheckSquare, label: L('পোস্ট ও কাজ', 'Posts & tasks'), count: todoLinks.length },
+    { id: 'daily_entry' as const, icon: Coins, label: L('দৈনিক এন্ট্রি', 'Daily entry'), count: null },
+    { id: 'completed' as const, icon: CheckCircle2, label: L('সম্পন্ন', 'Completed'), count: completedLinks.length },
+  ];
+
   return (
     <div className="space-y-6">
-      {/* ARENA HERO HUD (Gaming Arena Atmosphere) */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-white shadow-xl border border-white/10">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-64 w-64 rounded-full bg-sky-500/10 blur-3xl pointer-events-none" />
+      <PageHeader
+        icon={<CheckSquare className="h-5 w-5" />}
+        title={L('আমার কাজ ও দৈনিক এন্ট্রি', 'My Work & Daily Entry')}
+        subtitle={L(
+          'অ্যাডমিনের নির্ধারিত কাজ, নিজের উদ্যোগে অতিরিক্ত পোস্ট ও দৈনিক বিক্রয়ের হিসাব — সব এক জায়গায় সহজে সম্পন্ন করুন।',
+          'Assigned posts, your own extra posts and daily sales — all in one place.'
+        )}
+        actions={
+          <button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            className="btn btn-secondary min-h-10 w-full sm:w-auto"
+          >
+            <PlusCircle className="h-4 w-4 text-amber-600" />
+            <span>{L('অতিরিক্ত কাজ যোগ করুন', 'Add Extra Work')}</span>
+          </button>
+        }
+      />
 
-        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <div className="flex flex-wrap items-center gap-2 mb-1.5">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-100 border border-emerald-500/30">
-                <Swords className="w-3.5 h-3.5" />
-                {L('মার্কেটার এরিনা', 'Marketer Battle Arena')}
-              </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-100 border border-amber-500/30">
-                <Flame className="w-3.5 h-3.5 text-amber-400" />
-                {L('দৈনিক স্ট্রাইক সক্রিয়', 'Daily Streak Active')}
-              </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-500/20 text-sky-100 border border-sky-500/30">
-                <Zap className="w-3.5 h-3.5 text-sky-400" />
-                {L('সীমাহীন অতিরিক্ত কাজ উন্মুক্ত', 'Unlimited Extra Work Enabled')}
-              </span>
-            </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-              {L('আমার কাজ ও দৈনিক এন্ট্রি', 'My Work & Daily Entry')}
-            </h1>
-            <p className="text-xs md:text-sm text-slate-300 mt-1 max-w-2xl">
-              {L(
-                'অ্যাডমিনের নির্ধারিত কাজ, নিজের উদ্যোগে অতিরিক্ত পোস্ট ও দৈনিক বিক্রয়ের হিসাব — সব এক জায়গায় সহজে সম্পন্ন করুন।',
-                'Assigned group quotas, self-initiated extra posts & daily sales results — all unified in one arena.'
-              )}
-            </p>
-          </div>
-
-          {/* Gamified Mission Progress & Extra Work Action */}
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="btn btn-sm gap-2 bg-gradient-to-r from-amber-500 to-amber-500 hover:from-amber-600 hover:to-amber-600 text-slate-950 font-bold shadow-lg shadow-amber-500/20 border-0"
-            >
-              <Zap className="w-4 h-4 fill-current" />
-              <span>{L('অতিরিক্ত কাজ যোগ করুন', 'Add Extra Work')}</span>
-            </button>
-
-            <div className="bg-slate-800/80 backdrop-blur-md rounded-xl p-3 border border-slate-700/60 flex items-center gap-3">
-              <div className="relative flex items-center justify-center">
-                <div className="w-10 h-10 rounded-full border-3 border-slate-700 border-t-emerald-400 flex items-center justify-center font-bold text-xs text-emerald-400">
+      {/* Today at a glance */}
+      <section className="card relative overflow-hidden" aria-label={L('আজকের অগ্রগতি', "Today's progress")}>
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-brand-50 via-transparent to-sky-50"
+        />
+        <div className="relative space-y-5 p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
+              <div className="relative h-16 w-16 shrink-0">
+                <svg viewBox="0 0 64 64" className="h-16 w-16 -rotate-90" aria-hidden>
+                  <circle cx="32" cy="32" r={ringRadius} fill="none" strokeWidth="6" className="stroke-slate-200" />
+                  <circle
+                    cx="32"
+                    cy="32"
+                    r={ringRadius}
+                    fill="none"
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    className={questPercent === 100 ? 'stroke-emerald-500' : 'stroke-brand-500'}
+                    strokeDasharray={ringCircumference}
+                    strokeDashoffset={ringCircumference * (1 - questPercent / 100)}
+                    style={{ transition: 'stroke-dashoffset 0.7s var(--ease-out-soft)' }}
+                  />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-slate-900 tabular-nums">
                   {questPercent}%
-                </div>
+                </span>
               </div>
-              <div>
-                <div className="text-[11px] text-slate-400 font-medium">
-                  {L('মিশন অগ্রগতি', 'Quest Progress')}
-                </div>
-                <div className="text-xs font-bold text-white flex items-center gap-1">
-                  <span>{questsCompleted} / {questsTotal} {L('সম্পন্ন', 'Done')}</span>
-                  {questPercent === 100 && <span className="text-emerald-400">⭐</span>}
-                </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-brand-700" suppressHydrationWarning>
+                  {greeting}
+                </p>
+                <h2 className="mt-0.5 text-lg font-semibold tracking-tight text-slate-900">
+                  {questPercent === 100
+                    ? L('আজকের লক্ষ্য পূরণ হয়েছে, দারুণ কাজ!', "Today's goals are done — great work!")
+                    : L(
+                        `আজকের ${questsTotal}টি লক্ষ্যের ${questsCompleted}টি সম্পন্ন`,
+                        `${questsCompleted} of ${questsTotal} daily goals done`
+                      )}
+                </h2>
+                <p className="mt-0.5 text-sm text-slate-500">
+                  {L('কাজ জমা দিলে আপনার স্কোর ও র‍্যাঙ্ক সাথে সাথে আপডেট হয়।', 'Your score and ranking update as soon as you submit.')}
+                </p>
               </div>
             </div>
+
+            {questPercent < 100 ? (
+              <button
+                type="button"
+                onClick={() => setActiveTab(goals[0].done ? 'daily_entry' : 'links')}
+                className="btn btn-primary min-h-10 w-full shrink-0 sm:w-auto"
+              >
+                {goals[0].done ? <Coins className="h-4 w-4" /> : <CheckSquare className="h-4 w-4" />}
+                <span>{goals[0].done ? L('আজকের বিক্রি লিখুন', "Log today's sales") : L('পোস্ট শুরু করুন', 'Start posting')}</span>
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            ) : (
+              <span className="badge badge-green shrink-0 self-start px-3 py-1 text-xs sm:self-auto">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {L('আজকের কাজ শেষ', 'All done for today')}
+              </span>
+            )}
           </div>
+
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {goals.map((g) => (
+              <li
+                key={g.label}
+                className="flex items-center gap-2.5 rounded-xl border border-slate-200/80 bg-white/70 px-3 py-2.5 text-sm"
+              >
+                {g.done ? (
+                  <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+                ) : (
+                  <Circle className="h-5 w-5 shrink-0 text-slate-300" />
+                )}
+                <span className={g.done ? 'text-slate-500' : 'font-medium text-slate-800'}>{g.label}</span>
+              </li>
+            ))}
+          </ul>
+
+          <dl className="grid grid-cols-3 gap-4 border-t border-slate-200/70 pt-4">
+            <div className="min-w-0">
+              <dt className="truncate text-xs text-slate-500">{L('আজ পোস্ট', 'Posts today')}</dt>
+              <dd className="mt-0.5 text-lg font-semibold text-slate-900 tabular-nums">
+                {progress.completedToday}
+                {progress.totalAssigned > 0 && (
+                  <span className="text-sm font-normal text-slate-400"> / {progress.totalAssigned}</span>
+                )}
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="truncate text-xs text-slate-500">{L('বিক্রি', 'Sales')}</dt>
+              <dd className="mt-0.5 truncate text-lg font-semibold text-slate-900 tabular-nums">
+                {formatTaka(Number(salesAmount))}
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="truncate text-xs text-slate-500">{L('সম্পন্ন কাজ', 'Completed')}</dt>
+              <dd className="mt-0.5 text-lg font-semibold text-slate-900 tabular-nums">{completedLinks.length}</dd>
+            </div>
+          </dl>
         </div>
-
-        {/* Quest Navigation Tabs */}
-        <div className="relative z-10 mt-6 flex flex-wrap gap-2 border-t border-slate-700/60 pt-4">
-          <button
-            onClick={() => setActiveTab('links')}
-            className={`press flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              activeTab === 'links'
-                ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/25 ring-2 ring-emerald-400/40'
-                : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <CheckSquare className="w-4 h-4" />
-            <span>{L('টাস্ক ১: পোস্ট ও কাজের তালিকা', 'Task 1: Group Posts & Tasks')}</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-md bg-white/20 text-xs font-mono">
-              {todoLinks.length}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('daily_entry')}
-            className={`press flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              activeTab === 'daily_entry'
-                ? 'bg-sky-600 text-white shadow-lg shadow-sky-500/25 ring-2 ring-sky-400/40'
-                : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <Coins className="w-4 h-4" />
-            <span>{L('টাস্ক ২: দৈনিক বিক্রয় ও মেট্রিক্স এন্ট্রি', 'Task 2: Daily Sales & Log')}</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-md bg-white/20 text-xs font-mono">
-              {L("৳")} {formatTaka(Number(salesAmount))}
-            </span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('completed')}
-            className={`press flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              activeTab === 'completed'
-                ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/25 ring-2 ring-amber-400/40'
-                : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            <span>{L('সম্পন্ন কাজ ও বোনাস লগ', 'Completed & Bonus Log')}</span>
-            <span className="ml-1 px-1.5 py-0.2 rounded-md bg-white/20 text-xs font-mono">
-              {completedLinks.length}
-            </span>
-          </button>
-        </div>
-      </div>
+      </section>
 
       {/* Today's mandatory / normal tasks from the assigned quota */}
       <TaskQuotaCard />
 
-      {/* Rewards Toast */}
-      {successToast && (
-        <div className="flex items-center justify-between rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-emerald-800 shadow-sm animate-fade-up">
-          <div className="flex items-center gap-2.5">
-            <Sparkles className="h-5 w-5 text-emerald-600 animate-bounce" />
-            <span className="font-semibold text-sm">{successToast}</span>
-            {xpReward && (
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500 text-white text-xs font-bold">
-                +{xpReward} XP
-              </span>
-            )}
-          </div>
-          <button
-            onClick={() => setSuccessToast(null)}
-            className="text-emerald-700 hover:text-emerald-900 font-bold ml-2"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      {/* Tabs */}
+      <div
+        role="tablist"
+        aria-label={L('আমার কাজ', 'My work')}
+        className="segmented grid w-full grid-cols-3 sm:inline-flex sm:w-auto"
+      >
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const active = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              data-active={active}
+              onClick={() => setActiveTab(tab.id)}
+              className="flex min-h-10 min-w-0 items-center justify-center gap-1.5 px-2 sm:px-4"
+            >
+              <Icon className="hidden h-4 w-4 shrink-0 sm:block" />
+              <span className="truncate">{tab.label}</span>
+              {tab.count !== null && (
+                <span className="rounded-md bg-slate-200/70 px-1.5 text-[11px] font-semibold text-slate-600 tabular-nums">
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
-      {/* Error Alert */}
-      {errorMessage && (
-        <div className="flex items-center justify-between rounded-xl border border-rose-500/40 bg-rose-500/10 px-4 py-3 text-rose-800 shadow-sm">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-rose-600 shrink-0" />
-            <span className="text-sm font-medium">{L(errorMessage)}</span>
-          </div>
-          <button onClick={() => setErrorMessage(null)} className="text-rose-700 font-bold ml-2">
-            ×
-          </button>
+      {/* Toasts: pinned under the top bar so they are seen wherever the user has scrolled */}
+      {(successToast || errorMessage) && (
+        <div className="pointer-events-none fixed inset-x-4 top-16 z-40 flex flex-col gap-2 sm:left-auto sm:right-6 sm:w-[26rem]">
+          {successToast && (
+            <div role="status" aria-live="polite" className="alert alert-success pointer-events-auto items-center shadow-[var(--shadow-pop)]">
+              <Sparkles className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 flex-1 font-medium">{successToast}</span>
+              {xpReward && <span className="badge badge-green shrink-0 tabular-nums">+{xpReward} XP</span>}
+              <button
+                type="button"
+                onClick={() => setSuccessToast(null)}
+                className="btn-icon h-8 w-8 shrink-0 text-emerald-700 hover:bg-emerald-100"
+                aria-label={L('বন্ধ করুন', 'Dismiss')}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          {errorMessage && (
+            <div role="alert" className="alert alert-error pointer-events-auto items-center shadow-[var(--shadow-pop)]">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 flex-1 font-medium">{L(errorMessage)}</span>
+              <button
+                type="button"
+                onClick={() => setErrorMessage(null)}
+                className="btn-icon h-8 w-8 shrink-0 text-rose-700 hover:bg-rose-100"
+                aria-label={L('বন্ধ করুন', 'Dismiss')}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
       {/* ========================================================
-          TAB 1: TASK 1 - TODAY'S GROUP POSTS & EXTRA TASKS
+          TAB 1: TODAY'S GROUP POSTS & EXTRA TASKS
       ======================================================== */}
       {activeTab === 'links' && (
-        <div className="space-y-4">
-          {/* Section Quota & Bonus Indicator Cards */}
+        <div className="space-y-6">
+          {/* Per-section quota */}
           {assignedSections.length > 0 && (
-            <div className="stagger grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {assignedSections.map((sec) => (
-                <div
-                  key={sec.id}
-                  className={`p-3.5 rounded-xl border transition-all ${
-                    sec.isLimitReached
-                      ? 'bg-amber-500/10 border-amber-500/40 shadow-sm'
-                      : 'bg-white border-slate-200'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-sm truncate">{sec.name}</span>
-                    {sec.isLimitReached ? (
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-bold flex items-center gap-1">
-                        <Zap className="w-3 h-3 fill-current" />
-                        {L('কোটা পূর্ণ (বোনাস উন্মুক্ত)', 'Quota Full (Bonus Open)')}
-                      </span>
-                    ) : (
-                      <span className="text-xs text-slate-500">
-                        {L('দৈনিক লক্ষ্য', 'Target')}: {sec.postLimit ?? '∞'}
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-                    <span>{L('আজ সম্পন্ন', 'Completed Today')}:</span>
-                    <span className="font-bold text-slate-900">
-                      {sec.completedToday || 0} / {sec.postLimit ?? '∞'}
-                    </span>
-                  </div>
-                  {sec.postLimit && (
-                    <div className="mt-1.5 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${
-                          sec.isLimitReached ? 'bg-amber-500' : 'bg-emerald-500'
-                        }`}
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            Math.round(((sec.completedToday || 0) / sec.postLimit) * 100)
-                          )}%`,
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Search, Filter & Quick Add Row */}
-          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-white p-3 rounded-xl border border-slate-200">
-            <div className="relative w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder={L('লিঙ্ক বা গ্রুপের নাম খুঁজুন...', 'Search links or groups...')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="input input-sm pl-9 w-full"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
-              {assignedSections.length > 1 && (
-                <select
-                  value={selectedSection}
-                  onChange={(e) => setSelectedSection(e.target.value)}
-                  className="select select-sm w-full sm:w-auto"
-                >
-                  <option value="">{L('সকল গ্রুপ ও সেকশন', 'All Groups & Sections')}</option>
-                  {assignedSections.map((sec) => (
-                    <option key={sec.id} value={sec.id}>
-                      {sec.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="btn btn-sm btn-secondary gap-1.5 border-dashed border-amber-500/50 text-amber-700 hover:bg-amber-500/10"
-              >
-                <PlusCircle className="w-4 h-4 text-amber-500" />
-                <span>{L('অতিরিক্ত কাজ যোগ করুন', 'Add Extra Work')}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Links Queue */}
-          {loadingLinks ? (
-            <div role="status" aria-busy="true" className="grid grid-cols-1 gap-3">
-              <span className="sr-only">{L('লোড হচ্ছে...', 'Loading...')}</span>
-              {[0, 1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <div aria-hidden className="skeleton h-3 w-24" />
-                    <div aria-hidden className="skeleton h-4 w-2/3" />
-                    <div aria-hidden className="skeleton h-3 w-1/3" />
-                  </div>
-                  <div className="flex gap-2">
-                    <div aria-hidden className="skeleton h-8 w-24 rounded-xl" />
-                    <div aria-hidden className="skeleton h-8 w-20 rounded-xl" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : todoLinks.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-4">
-              <div className="w-14 h-14 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                <CheckCircle2 className="w-8 h-8" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">
-                  {L('আজকের নির্ধারিত কাজ সম্পন্ন!', 'Assigned Quota Complete!')}
-                </h3>
-                <p className="text-xs md:text-sm text-slate-500 max-w-md mx-auto mt-1">
-                  {L(
-                    'অ্যাডমিন নির্ধারিত সকল কাজ সম্পন্ন হয়েছে। আরও পয়েন্ট অর্জন ও লিডারবোর্ডে এগিয়ে থাকতে অতিরিক্ত কাজ যোগ করতে পারেন!',
-                    'All assigned tasks cleared. Feel free to log extra posts or tasks to earn bonus score & boost your ranking!'
-                  )}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="btn btn-primary gap-2 bg-gradient-to-r from-amber-500 to-amber-500 hover:from-amber-600 hover:to-amber-600 text-slate-950 font-bold border-0 shadow-md"
-              >
-                <Zap className="w-4 h-4 fill-current" />
-                <span>{L('⚡ অতিরিক্ত কাজ যোগ করুন (+৫০ XP)', '⚡ Add Extra Work (+50 XP)')}</span>
-              </button>
-            </div>
-          ) : (
-            <div className="stagger grid grid-cols-1 gap-3">
-              {todoLinks.map((link) => (
-                <div
-                  key={link.id}
-                  className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-white rounded-xl border transition-all ${
-                    link.is_limit_reached
-                      ? 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/60'
-                      : 'border-slate-200 hover:border-emerald-500/50'
-                  }`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700">
-                        {link.section_name}
-                      </span>
-                      {link.is_limit_reached && (
-                        <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-500/20 text-amber-700 flex items-center gap-1">
-                          <Zap className="w-3 h-3 fill-current" />
-                          {L('কোটা পূর্ণ — বোনাস কাজ সক্রিয়', 'Quota Full — Bonus Active')}
+            <div className="stagger grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {assignedSections.map((sec) => {
+                const pct = sec.postLimit
+                  ? Math.min(100, Math.round(((sec.completedToday || 0) / sec.postLimit) * 100))
+                  : 0;
+                return (
+                  <div
+                    key={sec.id}
+                    className={`card p-4 ${sec.isLimitReached ? 'border-amber-200 bg-amber-50/40' : ''}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="min-w-0 truncate text-sm font-semibold text-slate-900">{sec.name}</span>
+                      {sec.isLimitReached ? (
+                        <span className="badge badge-amber shrink-0">
+                          <Zap className="h-3 w-3" />
+                          {L('কোটা পূর্ণ (বোনাস উন্মুক্ত)', 'Quota Full (Bonus Open)')}
+                        </span>
+                      ) : (
+                        <span className="shrink-0 text-xs text-slate-500">
+                          {L('দৈনিক লক্ষ্য', 'Target')}: <span className="tabular-nums">{sec.postLimit ?? '∞'}</span>
                         </span>
                       )}
                     </div>
-                    <div className="font-semibold text-slate-900 truncate text-base">
-                      {link.title || link.url}
+                    <div className="mt-3 flex items-baseline justify-between gap-2">
+                      <span className="text-xs text-slate-500">{L('আজ সম্পন্ন', 'Completed Today')}</span>
+                      <span className="text-sm font-semibold text-slate-900 tabular-nums">
+                        {sec.completedToday || 0}
+                        <span className="font-normal text-slate-400"> / {sec.postLimit ?? '∞'}</span>
+                      </span>
                     </div>
-                    <div className="text-xs text-slate-500 truncate mt-0.5">{link.url}</div>
+                    {sec.postLimit ? (
+                      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            sec.isLimitReached ? 'bg-amber-500' : 'bg-brand-500'
+                          }`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    ) : null}
                   </div>
-
-                  <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
-                    <a
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-secondary btn-sm gap-1.5"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                      <span>{L('গ্রুপে যান', 'Visit')}</span>
-                    </a>
-
-                    {link.is_limit_reached ? (
-                      <button
-                        onClick={() => handleMarkDone(link, true)}
-                        disabled={actionLoadingId === link.id}
-                        className="btn btn-sm gap-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold shadow-md shadow-amber-500/20"
-                        title={L(
-                          'কোটা পূর্ণ হলেও অতিরিক্ত পোস্ট করে বোনাস স্কোর (+৫০ XP) অর্জন করতে পারেন',
-                          'Post extra to earn bonus XP (+50 XP)'
-                        )}
-                      >
-                        {actionLoadingId === link.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Zap className="h-3.5 w-3.5 fill-current" />
-                        )}
-                        <span>{L('⚡ অতিরিক্ত পোস্ট (+৫০ XP)', '⚡ Bonus Post (+50 XP)')}</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleMarkDone(link, false)}
-                        disabled={actionLoadingId === link.id}
-                        className="btn btn-primary btn-sm gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-                      >
-                        {actionLoadingId === link.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                        )}
-                        <span>{L('সম্পন্ন (+২৫ XP)', 'Done (+25 XP)')}</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
+
+          {/* Queue */}
+          <div className="card overflow-hidden">
+            <div className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+              <div className="relative w-full sm:max-w-xs">
+                <label htmlFor="mw-search" className="sr-only">
+                  {L('অনুসন্ধান', 'Search')}
+                </label>
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  id="mw-search"
+                  type="text"
+                  placeholder={L('লিঙ্ক বা গ্রুপের নাম খুঁজুন...', 'Search links or groups...')}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="input min-h-10 pl-9 text-base sm:text-sm"
+                />
+              </div>
+
+              {assignedSections.length > 1 && (
+                <div className="w-full sm:w-56">
+                  <label htmlFor="mw-section" className="sr-only">
+                    {L('সেকশন', 'Section')}
+                  </label>
+                  <select
+                    id="mw-section"
+                    value={selectedSection}
+                    onChange={(e) => setSelectedSection(e.target.value)}
+                    className="input min-h-10 text-base sm:text-sm"
+                  >
+                    <option value="">{L('সকল গ্রুপ ও সেকশন', 'All Groups & Sections')}</option>
+                    {assignedSections.map((sec) => (
+                      <option key={sec.id} value={sec.id}>
+                        {sec.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {loadingLinks ? (
+              <div role="status" aria-busy="true" className="divide-y divide-slate-100">
+                <span className="sr-only">{L('লোড হচ্ছে...', 'Loading...')}</span>
+                {[0, 1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
+                  >
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div aria-hidden className="skeleton h-4 w-20 rounded-full" />
+                      <div aria-hidden className="skeleton h-4 w-2/3" />
+                      <div aria-hidden className="skeleton h-3 w-1/2" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 sm:flex">
+                      <div aria-hidden className="skeleton h-10 w-full rounded-xl sm:w-24" />
+                      <div aria-hidden className="skeleton h-10 w-full rounded-xl sm:w-32" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : todoLinks.length === 0 ? (
+              searchQuery || selectedSection ? (
+                <EmptyState
+                  icon={<Search className="h-5 w-5" />}
+                  title={L('কোনো লিংক পাওয়া যায়নি', 'No matching links')}
+                  description={L('অন্য শব্দ দিয়ে খুঁজুন বা ফিল্টার সরিয়ে দিন।', 'Try another search or clear the filter.')}
+                />
+              ) : (
+                <EmptyState
+                  icon={<CheckCircle2 className="h-6 w-6 text-emerald-600" />}
+                  title={L('আজকের নির্ধারিত কাজ সম্পন্ন!', 'Assigned Quota Complete!')}
+                  description={L(
+                    'অ্যাডমিন নির্ধারিত সকল কাজ সম্পন্ন হয়েছে। আরও পয়েন্ট অর্জন ও লিডারবোর্ডে এগিয়ে থাকতে অতিরিক্ত কাজ যোগ করতে পারেন!',
+                    'All assigned tasks cleared. Feel free to log extra posts or tasks to earn bonus score & boost your ranking!'
+                  )}
+                  action={
+                    <button type="button" onClick={() => setShowAddModal(true)} className="btn btn-primary min-h-10">
+                      <PlusCircle className="h-4 w-4" />
+                      <span>{L('অতিরিক্ত কাজ যোগ করুন (+৫০ XP)', 'Add extra work (+50 XP)')}</span>
+                    </button>
+                  }
+                />
+              )
+            ) : (
+              <ul className="stagger divide-y divide-slate-100">
+                {todoLinks.map((link) => (
+                  <li
+                    key={link.id}
+                    className={`flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 ${
+                      link.is_limit_reached ? 'bg-amber-50/40' : ''
+                    }`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
+                        <span className="badge badge-gray">{link.section_name}</span>
+                        {link.is_limit_reached && (
+                          <span className="badge badge-amber">
+                            <Zap className="h-3 w-3" />
+                            {L('কোটা পূর্ণ — বোনাস কাজ সক্রিয়', 'Quota Full — Bonus Active')}
+                          </span>
+                        )}
+                      </div>
+                      <div className="truncate text-sm font-semibold text-slate-900 sm:text-[15px]">
+                        {link.title || link.url}
+                      </div>
+                      <div className="mt-0.5 truncate text-xs text-slate-500">{link.url}</div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0 sm:items-center">
+                      <a
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-secondary min-h-10"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        <span>{L('গ্রুপে যান', 'Visit')}</span>
+                      </a>
+
+                      {link.is_limit_reached ? (
+                        <button
+                          type="button"
+                          onClick={() => handleMarkDone(link, true)}
+                          disabled={actionLoadingId === link.id}
+                          className="btn min-h-10 border border-amber-200 bg-amber-50 font-semibold text-amber-800 hover:bg-amber-100"
+                          title={L(
+                            'কোটা পূর্ণ হলেও অতিরিক্ত পোস্ট করে বোনাস স্কোর (+৫০ XP) অর্জন করতে পারেন',
+                            'Post extra to earn bonus XP (+50 XP)'
+                          )}
+                        >
+                          {actionLoadingId === link.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Zap className="h-4 w-4" />
+                          )}
+                          <span>{L('অতিরিক্ত পোস্ট (+৫০ XP)', 'Bonus post (+50 XP)')}</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleMarkDone(link, false)}
+                          disabled={actionLoadingId === link.id}
+                          className="btn btn-primary min-h-10"
+                        >
+                          {actionLoadingId === link.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="h-4 w-4" />
+                          )}
+                          <span>{L('সম্পন্ন (+২৫ XP)', 'Done (+25 XP)')}</span>
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       )}
 
       {/* ========================================================
-          TAB 2: TASK 2 - DAILY SALES, ORDERS & WORK ENTRY
+          TAB 2: DAILY SALES, ORDERS & WORK ENTRY
       ======================================================== */}
       {activeTab === 'daily_entry' && (
-        <form onSubmit={handleSaveDailyEntry} className="space-y-6 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          {/* Header & Date Selector */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
-            <div>
-              <div className="flex items-center gap-2">
-                <Coins className="w-5 h-5 text-sky-500" />
-                <h2 className="text-lg font-bold text-slate-900">
-                  {L('আজকের বিক্রয়, অর্ডার ও কাজের হিসাব', "Today's Sales, Orders & Work Log")}
-                </h2>
+        <form onSubmit={handleSaveDailyEntry} className="space-y-6 pb-20 sm:pb-0">
+          {/* Date + sales */}
+          <div className="card">
+            <div className="card-header">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-700">
+                  <Coins className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <h2 className="card-title">
+                    {L('আজকের বিক্রয়, অর্ডার ও কাজের হিসাব', "Today's Sales, Orders & Work Log")}
+                  </h2>
+                  <p className="card-subtitle">
+                    {L(
+                      'টু-ডু ও দৈনিক এন্ট্রি এখন একসাথে সংযুক্ত — তথ্য সাবমিট করলে আপনার পারফরম্যান্স স্কোর ও লিডারবোর্ড সাথে সাথে আপডেট হবে।',
+                      'To-Do & Daily Entry are unified here — submitting updates your score & ranking immediately.'
+                    )}
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {L(
-                  'টু-ডু ও দৈনিক এন্ট্রি এখন একসাথে সংযুক্ত — তথ্য সাবমিট করলে আপনার পারফরম্যান্স স্কোর ও লিডারবোর্ড সাথে সাথে আপডেট হবে।',
-                  'To-Do & Daily Entry are unified here — submitting updates your score & ranking immediately.'
-                )}
-              </p>
+
+              <div className="flex w-full items-center gap-2 sm:w-auto">
+                <label htmlFor="mw-date" className="sr-only">
+                  {L('তারিখ', 'Date')}
+                </label>
+                <div className="relative min-w-0 flex-1 sm:flex-none">
+                  <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    id="mw-date"
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    className="input min-h-10 pl-9 text-base font-medium tabular-nums sm:text-sm"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDate(getDhakaDateString())}
+                  className="btn btn-secondary min-h-10 shrink-0"
+                >
+                  {L('আজ', 'Today')}
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="input input-sm font-semibold"
-              />
-              <button
-                type="button"
-                onClick={() => setSelectedDate(getDhakaDateString())}
-                className="btn btn-secondary btn-sm"
-              >
-                {L('আজ', 'Today')}
-              </button>
+            <div className="card-body space-y-4">
+              {(isLocked || !canEdit) && !loadingEntry && (
+                <div className="alert alert-warning">
+                  <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{L('এই তারিখের এন্ট্রি সম্পাদনা করা যাবে না।', 'This date entry is locked and cannot be edited.')}</span>
+                </div>
+              )}
+
+              {loadingEntry ? (
+                <div role="status" aria-busy="true" className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <span className="sr-only">{L('লোড হচ্ছে...', 'Loading...')}</span>
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="space-y-2">
+                      <div aria-hidden className="skeleton h-3 w-28" />
+                      <div aria-hidden className="skeleton h-10 w-full rounded-xl" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div>
+                    <label htmlFor="mw-sales" className="label">
+                      {L('মোট বিক্রি (৳)', 'Total Sales (৳)')} <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                        {L('৳')}
+                      </span>
+                      <input
+                        id="mw-sales"
+                        type="number"
+                        min="0"
+                        inputMode="decimal"
+                        value={salesAmount}
+                        onChange={(e) => setSalesAmount(e.target.value)}
+                        className={`${field} pl-8 font-semibold`}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="mw-profit" className="label">
+                      {L('অবদানমূলক লাভ (৳)', 'Net Profit (৳)')} <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+                        {L('৳')}
+                      </span>
+                      <input
+                        id="mw-profit"
+                        type="number"
+                        min="0"
+                        inputMode="decimal"
+                        value={profitAmount}
+                        onChange={(e) => setProfitAmount(e.target.value)}
+                        className={`${field} pl-8 font-semibold`}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="mw-orders" className="label">
+                      {L('নিশ্চিত অর্ডার (সংখ্যা)', 'Confirmed Orders')} <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      id="mw-orders"
+                      type="number"
+                      min="0"
+                      inputMode="numeric"
+                      value={confirmedOrders}
+                      onChange={(e) => setConfirmedOrders(e.target.value)}
+                      className={`${field} font-semibold`}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {loadingEntry ? (
-            <div role="status" aria-busy="true" className="space-y-6">
-              <span className="sr-only">{L('লোড হচ্ছে...', 'Loading...')}</span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="space-y-2">
-                    <div aria-hidden className="skeleton h-3 w-28" />
-                    <div aria-hidden className="skeleton h-10 w-full rounded-xl" />
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div role="status" aria-busy="true" className="card space-y-4 p-5">
+              <div aria-hidden className="skeleton h-4 w-40" />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 {[0, 1, 2].map((i) => (
                   <div key={i} className="space-y-2">
                     <div aria-hidden className="skeleton h-3 w-24" />
@@ -979,166 +1134,154 @@ function EmployeeMyWorkContent() {
             </div>
           ) : (
             <>
-              {/* Sales, Profit & Confirmed Orders */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="label font-semibold text-xs">
-                    {L('মোট বিক্রি (৳)', 'Total Sales (৳)')} *
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-slate-400 font-bold">{L("৳")}</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={salesAmount}
-                      onChange={(e) => setSalesAmount(e.target.value)}
-                      className="input pl-8 w-full font-bold text-base"
-                    />
+              {/* Clients, follow-ups & retention */}
+              <div className="card">
+                <div className="card-header">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700">
+                      <Users className="h-4 w-4" />
+                    </span>
+                    <h2 className="card-title">{L('ক্রেতা ও ফলোআপ', 'Clients & follow-ups')}</h2>
                   </div>
                 </div>
+                <div className="card-body">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <div>
+                      <label htmlFor="mw-clients" className="label">
+                        {L('নতুন কাস্টমার (সংখ্যা)', 'New Clients')}
+                      </label>
+                      <input
+                        id="mw-clients"
+                        type="number"
+                        min="0"
+                        inputMode="numeric"
+                        value={newClients}
+                        onChange={(e) => setNewClients(e.target.value)}
+                        className={field}
+                      />
+                    </div>
 
-                <div>
-                  <label className="label font-semibold text-xs">
-                    {L('অবদানমূলক লাভ (৳)', 'Net Profit (৳)')} *
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-slate-400 font-bold">{L("৳")}</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={profitAmount}
-                      onChange={(e) => setProfitAmount(e.target.value)}
-                      className="input pl-8 w-full font-bold text-base"
-                    />
+                    <div>
+                      <label htmlFor="mw-followups" className="label">
+                        {L('ফলো-আপ সম্পন্ন (ইনবক্স/কল)', 'Follow-ups Done')}
+                      </label>
+                      <input
+                        id="mw-followups"
+                        type="number"
+                        min="0"
+                        inputMode="numeric"
+                        value={followupsDone}
+                        onChange={(e) => setFollowupsDone(e.target.value)}
+                        className={field}
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="mw-retention" className="label">
+                        {L('পুরোনো ক্রেতার পুনঃঅর্ডার', 'Repeat Retention')}
+                      </label>
+                      <input
+                        id="mw-retention"
+                        type="number"
+                        min="0"
+                        inputMode="numeric"
+                        value={retentionCount}
+                        onChange={(e) => setRetentionCount(e.target.value)}
+                        className={field}
+                      />
+                    </div>
                   </div>
-                </div>
-
-                <div>
-                  <label className="label font-semibold text-xs">
-                    {L('নিশ্চিত অর্ডার (সংখ্যা)', 'Confirmed Orders')} *
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={confirmedOrders}
-                    onChange={(e) => setConfirmedOrders(e.target.value)}
-                    className="input w-full font-bold text-base"
-                  />
                 </div>
               </div>
 
-              {/* Clients, Followups & Retention */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
-                <div>
-                  <label className="label font-semibold text-xs">
-                    {L('নতুন কাস্টমার (সংখ্যা)', 'New Clients')}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={newClients}
-                    onChange={(e) => setNewClients(e.target.value)}
-                    className="input w-full font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="label font-semibold text-xs">
-                    {L('ফলো-আপ সম্পন্ন (ইনবক্স/কল)', 'Follow-ups Done')}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={followupsDone}
-                    onChange={(e) => setFollowupsDone(e.target.value)}
-                    className="input w-full font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="label font-semibold text-xs">
-                    {L('পুরোনো ক্রেতার পুনঃঅর্ডার', 'Repeat Retention')}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={retentionCount}
-                    onChange={(e) => setRetentionCount(e.target.value)}
-                    className="input w-full font-bold"
-                  />
-                </div>
-              </div>
-
-              {/* Product-wise Sales Breakdown */}
+              {/* Product-wise sales */}
               {products.length > 0 && (
-                <div className="space-y-3 pt-4 border-t border-slate-200">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
-                      <ShoppingBag className="w-4 h-4 text-emerald-500" />
-                      <span>{L('পণ্যভিত্তিক বিক্রির হিসাব', 'Product Sales Breakdown')}</span>
-                    </h3>
-                    <span className="text-xs font-bold text-emerald-600">
-                      {L('মোট পণ্য বিক্রি', 'Total')}{L(": ৳")} {formatTaka(totalProductAmount)}
+                <div className="card overflow-hidden">
+                  <div className="card-header">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+                        <ShoppingBag className="h-4 w-4" />
+                      </span>
+                      <h2 className="card-title">{L('পণ্যভিত্তিক বিক্রির হিসাব', 'Product Sales Breakdown')}</h2>
+                    </div>
+                    <span className="text-xs text-slate-500">
+                      {L('মোট পণ্য বিক্রি', 'Total')}{' '}
+                      <span className="text-sm font-semibold text-brand-700 tabular-nums">
+                        {formatTaka(totalProductAmount)}
+                      </span>
                     </span>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  <ul className="divide-y divide-slate-100">
                     {productSales.map((ps) => (
-                      <div
-                        key={ps.product_id}
-                        className="p-3 rounded-xl border border-slate-200 bg-slate-50/50"
-                      >
-                        <div className="font-semibold text-sm truncate">{ps.product_name_bn}</div>
-                        <div className="text-xs text-slate-500 mb-2">
-                          {L("মূল্য: ৳")}{ps.selling_price} / {ps.unit}
+                      <li key={ps.product_id} className="flex items-center gap-3 px-4 py-3 sm:px-5">
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-medium text-slate-900">{ps.product_name_bn}</div>
+                          <div className="text-xs text-slate-500 tabular-nums">
+                            {L('মূল্য: ৳')}
+                            {ps.selling_price} / {ps.unit}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="w-24 shrink-0">
+                          <label htmlFor={`mw-qty-${ps.product_id}`} className="sr-only">
+                            {L('পরিমাণ')}
+                          </label>
                           <input
+                            id={`mw-qty-${ps.product_id}`}
                             type="number"
                             min="0"
-                            placeholder={L("পরিমাণ")}
+                            inputMode="decimal"
+                            placeholder={L('পরিমাণ')}
                             value={ps.quantity || ''}
                             onChange={(e) => handleProductQuantityChange(ps.product_id, e.target.value)}
-                            className="input input-sm w-full font-semibold"
+                            className={field}
                           />
-                          <span className="text-xs font-mono shrink-0 font-bold text-slate-700">
-                            {L("৳")}{formatTaka(ps.amount)}
-                          </span>
                         </div>
-                      </div>
+                        <div className="w-20 shrink-0 text-right text-sm font-semibold text-slate-900 tabular-nums sm:w-28">
+                          {formatTaka(ps.amount)}
+                        </div>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </div>
               )}
 
-              {/* Next Priorities / Notes */}
-              <div className="pt-2">
-                <label className="label font-semibold text-xs">
-                  {L('আগামীকালের অগ্রাধিকার ও মন্তব্য', 'Next Priorities & Notes')}
-                </label>
-                <textarea
-                  rows={2}
-                  value={dailyNote}
-                  onChange={(e) => setDailyNote(e.target.value)}
-                  placeholder={L('আজকের বিশেষ কোনো সমস্যা বা আগামী দিনের কাজের নোট...', 'Roadblocks or priorities for tomorrow...')}
-                  className="textarea w-full text-sm"
-                />
+              {/* Notes */}
+              <div className="card">
+                <div className="card-header">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                      <FileText className="h-4 w-4" />
+                    </span>
+                    <h2 className="card-title">{L('দিনের নোট', 'Notes for the day')}</h2>
+                  </div>
+                </div>
+                <div className="card-body">
+                  <label htmlFor="mw-note" className="label">
+                    {L('আগামীকালের অগ্রাধিকার ও মন্তব্য', 'Next Priorities & Notes')}
+                  </label>
+                  <textarea
+                    id="mw-note"
+                    rows={3}
+                    value={dailyNote}
+                    onChange={(e) => setDailyNote(e.target.value)}
+                    placeholder={L('আজকের বিশেষ কোনো সমস্যা বা আগামী দিনের কাজের নোট...', 'Roadblocks or priorities for tomorrow...')}
+                    className="input text-base sm:text-sm"
+                  />
+                </div>
               </div>
 
-              {/* Submit Button */}
-              <div className="pt-4 flex items-center justify-end gap-3">
-                <button
-                  type="submit"
-                  disabled={savingEntry || !canEdit || isLocked}
-                  className="btn btn-primary gap-2 px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-base shadow-md hover:shadow-lg transition-all"
-                >
-                  {savingEntry ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Save className="h-5 w-5" />
-                  )}
-                  <span>{L('দৈনিক এন্ট্রি সাবমিট করুন (+৫০ XP)', 'Save Daily Log (+50 XP)')}</span>
-                </button>
+              {/* Save bar: pinned to the bottom on phones, inline on larger screens */}
+              <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-md sm:static sm:z-auto sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    type="submit"
+                    disabled={savingEntry || !canEdit || isLocked}
+                    className="btn btn-primary min-h-11 w-full px-6 sm:w-auto"
+                  >
+                    {savingEntry ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    <span>{L('দৈনিক এন্ট্রি সাবমিট করুন (+৫০ XP)', 'Save Daily Log (+50 XP)')}</span>
+                  </button>
+                </div>
               </div>
             </>
           )}
@@ -1149,52 +1292,59 @@ function EmployeeMyWorkContent() {
           TAB 3: COMPLETED LINKS & BONUS LOG
       ======================================================== */}
       {activeTab === 'completed' && (
-        <div className="space-y-4">
+        <div className="card overflow-hidden">
           {completedLinks.length === 0 ? (
             <EmptyState
-              icon={<CheckCircle2 className="h-8 w-8 text-slate-400" />}
+              icon={<CheckCircle2 className="h-5 w-5" />}
               title={L('এখনো কোনো কাজ সম্পন্ন করেননি', 'No completed tasks yet')}
-              description={L('টাস্ক ১ থেকে লিঙ্ক পোস্ট করুন বা অতিরিক্ত কাজ যোগ করুন।', 'Post links in Task 1 or log extra tasks to see them here.')}
+              description={L('পোস্ট ও কাজ তালিকা থেকে লিংক পোস্ট করুন বা অতিরিক্ত কাজ যোগ করুন।', 'Post links from Posts & tasks or log extra work to see them here.')}
+              action={
+                <button type="button" onClick={() => setActiveTab('links')} className="btn btn-secondary min-h-10">
+                  <CheckSquare className="h-4 w-4" />
+                  <span>{L('পোস্ট ও কাজ', 'Posts & tasks')}</span>
+                </button>
+              }
             />
           ) : (
-            <div className="stagger grid grid-cols-1 gap-3">
+            <ul className="stagger divide-y divide-slate-100">
               {completedLinks.map((link) => (
-                <div
+                <li
                   key={link.completion_id}
-                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-white rounded-xl border border-slate-200 opacity-90"
+                  className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
                 >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span className="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800">
-                        ✓ {L('সম্পন্ন', 'Done')}
-                      </span>
-                      {link.is_extra_work && (
-                        <span className="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800 flex items-center gap-1">
-                          <Zap className="w-3 h-3 fill-current" />
-                          {L('অতিরিক্ত বোনাস পোস্ট (+৫০ XP)', 'Extra Bonus Post (+50 XP)')}
-                        </span>
-                      )}
-                      <span className="text-xs text-slate-500">{link.section_name}</span>
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                      <CheckCircle2 className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex flex-wrap items-center gap-1.5">
+                        <span className="text-xs font-medium text-slate-500">{link.section_name}</span>
+                        {link.is_extra_work && (
+                          <span className="badge badge-amber">
+                            <Zap className="h-3 w-3" />
+                            {L('অতিরিক্ত বোনাস পোস্ট (+৫০ XP)', 'Extra Bonus Post (+50 XP)')}
+                          </span>
+                        )}
+                      </div>
+                      <div className="truncate text-sm font-medium text-slate-700">{link.title || link.url}</div>
+                      <div className="mt-0.5 truncate text-xs text-slate-400">{link.url}</div>
                     </div>
-                    <div className="font-semibold text-slate-900 truncate text-base line-through text-slate-500">
-                      {link.title || link.url}
-                    </div>
-                    <div className="text-xs text-slate-400 truncate mt-0.5">{link.url}</div>
                   </div>
 
                   {undoEnabled && (
                     <button
+                      type="button"
                       onClick={() => handleUndo(link)}
                       disabled={actionLoadingId === link.id}
-                      className="btn btn-secondary btn-sm gap-1.5 shrink-0"
+                      className="btn btn-secondary min-h-10 w-full shrink-0 sm:w-auto"
                     >
-                      <RotateCcw className="h-3.5 w-3.5" />
+                      <RotateCcw className="h-4 w-4" />
                       <span>{L('পূর্বাবস্থায় ফেরান', 'Undo')}</span>
                     </button>
                   )}
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </div>
       )}
@@ -1204,65 +1354,72 @@ function EmployeeMyWorkContent() {
       ======================================================== */}
       {showAddModal && (
         <div className="modal-backdrop">
-          <div className="modal-panel space-y-4 p-6" role="dialog" aria-modal="true">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-              <div className="flex items-center gap-2 text-amber-600">
-                <Zap className="w-5 h-5 fill-current" />
-                <h3 className="text-lg font-bold text-slate-900">
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="mw-extra-title">
+            <div className="card-header flex-nowrap">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                  <Zap className="h-4 w-4" />
+                </span>
+                <h3 id="mw-extra-title" className="card-title">
                   {L('অতিরিক্ত কাজ / বোনাস পোস্ট যোগ করুন', 'Add Extra Work / Bonus Post')}
                 </h3>
               </div>
               <button
+                type="button"
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="btn-icon h-10 w-10 shrink-0"
+                aria-label={L('বন্ধ করুন', 'Close')}
               >
-                <X className="w-5 h-5" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-500">
-              {L(
-                'অ্যাডমিনের নির্ধারিত কোটার বাইরে আপনি যেসব গ্রুপ পোস্ট বা কাজ করেছেন, তা এখানে যুক্ত করুন। সাথে সাথে আপনার পয়েন্ট যোগ হবে (+৫০ XP)।',
-                'Log self-initiated extra posts beyond assigned quota to claim bonus score (+50 XP).'
-              )}
-            </p>
+            <form onSubmit={handleAddExtraSubmit} className="card-body space-y-4">
+              <p className="text-sm text-slate-500">
+                {L(
+                  'অ্যাডমিনের নির্ধারিত কোটার বাইরে আপনি যেসব গ্রুপ পোস্ট বা কাজ করেছেন, তা এখানে যুক্ত করুন। সাথে সাথে আপনার পয়েন্ট যোগ হবে (+৫০ XP)।',
+                  'Log self-initiated extra posts beyond assigned quota to claim bonus score (+50 XP).'
+                )}
+              </p>
 
-            <form onSubmit={handleAddExtraSubmit} className="space-y-4">
               <div>
-                <label className="label font-semibold text-xs">
-                  {L('কাজের / পোস্টের লিংক (URL)', 'Work / Post URL')} *
+                <label htmlFor="mw-extra-url" className="label">
+                  {L('কাজের / পোস্টের লিংক (URL)', 'Work / Post URL')} <span className="text-rose-500">*</span>
                 </label>
                 <input
+                  id="mw-extra-url"
                   type="url"
                   required
                   placeholder="https://facebook.com/groups/..."
                   value={extraUrl}
                   onChange={(e) => setExtraUrl(e.target.value)}
-                  className="input w-full text-sm"
+                  className="input min-h-10 text-base sm:text-sm"
                 />
               </div>
 
               <div>
-                <label className="label font-semibold text-xs">
+                <label htmlFor="mw-extra-title" className="label">
                   {L('শিরোনাম / বিবরণ (ঐচ্ছিক)', 'Title / Description (Optional)')}
                 </label>
                 <input
+                  id="mw-extra-title"
                   type="text"
                   placeholder={L('যেমন: কৃষি ফোরামে নতুন পোস্ট', 'e.g. Extra post in agri group')}
                   value={extraTitle}
                   onChange={(e) => setExtraTitle(e.target.value)}
-                  className="input w-full text-sm"
+                  className="input min-h-10 text-base sm:text-sm"
                 />
               </div>
 
               <div>
-                <label className="label font-semibold text-xs">
-                  {L('সেকশন নির্বাচন করুন', 'Select Section')} *
+                <label htmlFor="mw-extra-section" className="label">
+                  {L('সেকশন নির্বাচন করুন', 'Select Section')} <span className="text-rose-500">*</span>
                 </label>
                 <select
+                  id="mw-extra-section"
                   value={extraSectionId}
                   onChange={(e) => setExtraSectionId(e.target.value)}
-                  className="select w-full text-sm"
+                  className="input min-h-10 text-base sm:text-sm"
                 >
                   {assignedSections.map((sec) => (
                     <option key={sec.id} value={sec.id}>
@@ -1272,24 +1429,12 @@ function EmployeeMyWorkContent() {
                 </select>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="btn btn-secondary btn-sm"
-                >
+              <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
+                <button type="button" onClick={() => setShowAddModal(false)} className="btn btn-secondary min-h-10">
                   {L('বাতিল', 'Cancel')}
                 </button>
-                <button
-                  type="submit"
-                  disabled={savingExtra || !extraUrl.trim()}
-                  className="btn btn-primary btn-sm gap-2 bg-gradient-to-r from-amber-500 to-amber-500 hover:from-amber-600 hover:to-amber-600 text-slate-950 font-bold border-0"
-                >
-                  {savingExtra ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Zap className="w-4 h-4 fill-current" />
-                  )}
+                <button type="submit" disabled={savingExtra || !extraUrl.trim()} className="btn btn-primary min-h-10">
+                  {savingExtra ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
                   <span>{L('বোনাস কাজ সাবমিট করুন (+৫০ XP)', 'Submit Bonus Task (+50 XP)')}</span>
                 </button>
               </div>
@@ -1306,15 +1451,33 @@ export default function EmployeeMyWorkPage() {
     <Suspense
       fallback={
         <div role="status" aria-busy="true" className="space-y-6">
-          <div aria-hidden className="skeleton h-40 w-full rounded-2xl" />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {[0, 1, 2].map((i) => (
-              <div key={i} aria-hidden className="skeleton h-20 w-full rounded-xl" />
-            ))}
+          <div className="flex items-start gap-3">
+            <div aria-hidden className="skeleton h-10 w-10 rounded-xl" />
+            <div className="flex-1 space-y-2">
+              <div aria-hidden className="skeleton h-6 w-56" />
+              <div aria-hidden className="skeleton h-3.5 w-full max-w-md" />
+            </div>
           </div>
-          <div className="space-y-3">
+          <div className="card space-y-5 p-5">
+            <div className="flex items-center gap-4">
+              <div aria-hidden className="skeleton h-16 w-16 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <div aria-hidden className="skeleton h-3 w-24" />
+                <div aria-hidden className="skeleton h-5 w-2/3" />
+              </div>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div aria-hidden className="skeleton h-11 w-full rounded-xl" />
+              <div aria-hidden className="skeleton h-11 w-full rounded-xl" />
+            </div>
+          </div>
+          <div aria-hidden className="skeleton h-12 w-full rounded-xl sm:w-96" />
+          <div className="card divide-y divide-slate-100">
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} aria-hidden className="skeleton h-20 w-full rounded-xl" />
+              <div key={i} className="space-y-2 p-4">
+                <div aria-hidden className="skeleton h-4 w-20 rounded-full" />
+                <div aria-hidden className="skeleton h-4 w-2/3" />
+              </div>
             ))}
           </div>
         </div>

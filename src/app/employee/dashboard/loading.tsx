@@ -2,7 +2,7 @@ import { Skeleton, SkeletonStatCards } from '@/components/ui/Skeleton';
 
 /**
  * Shown while the server renders the employee dashboard: header, quick stats,
- * arena banner, the three shortcut tiles, then the section cards.
+ * the three shortcut tiles, the period bar, then the section cards.
  */
 export default function EmployeeDashboardLoading() {
   return (
@@ -20,13 +20,16 @@ export default function EmployeeDashboardLoading() {
 
       <SkeletonStatCards count={4} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" />
 
-      {/* Arena banner */}
-      <Skeleton className="h-24 w-full rounded-2xl" />
-
       {/* Shortcut tiles */}
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-[72px] w-full rounded-xl" />
+          <div key={i} className="card flex min-h-[72px] items-center gap-3 p-4">
+            <Skeleton className="h-10 w-10 rounded-xl" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-3 w-24" />
+            </div>
+          </div>
         ))}
       </div>
 

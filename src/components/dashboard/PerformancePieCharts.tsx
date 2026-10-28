@@ -9,10 +9,6 @@ import {
   MessageSquare,
   UserPlus,
   DollarSign,
-  Layers,
-  Sparkles,
-  BarChart3,
-  Award,
 } from 'lucide-react';
 import ThreeDPieChart, { PieSliceData } from './ThreeDPieChart';
 import {
@@ -21,6 +17,7 @@ import {
   TeamScoreShareItem,
 } from '@/lib/dashboard';
 import { useLanguage } from '@/components/LanguageContext';
+import EmptyState from '@/components/ui/EmptyState';
 
 interface PerformancePieChartsProps {
   employees: EmployeeWorkSummaryItem[];
@@ -275,24 +272,34 @@ export default function PerformancePieCharts({
   const currentMetricCfg = metricConfigs[selectedMetric];
   const MetricIcon = currentMetricCfg.icon;
 
+  const viewTabs: { key: ViewCategory; label: string }[] = [
+    { key: 'OVERALL', label: L('সার্বিক পারফরম্যান্স', 'Overall Performance') },
+    { key: 'BY_METRIC', label: L('প্রতিটি পারফরম্যান্স', 'Each Performance') },
+    { key: 'BY_EMPLOYEE', label: L('প্রতিটি কর্মী', 'Each Employee') },
+  ];
+
+  const chipClass = (isSelected: boolean) =>
+    `inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+      isSelected
+        ? 'border-slate-900 bg-slate-900 text-white'
+        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+    }`;
+  const chipCountClass = (isSelected: boolean) =>
+    `rounded-full px-1.5 py-px text-[11px] tabular-nums ${
+      isSelected ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-500'
+    }`;
+
   return (
-    <div className="card p-6 shadow-sm border border-slate-200/90 rounded-2xl bg-white space-y-6">
-      {/* Header & Mode Switcher */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-700 shadow-xs border border-brand-200/60">
-            <PieIcon className="h-5 w-5" />
+    <section className="card">
+      {/* Header & mode switcher */}
+      <div className="card-header">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-600/10">
+            <PieIcon className="h-4 w-4" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                {L('৩ডি পারফরম্যান্স পাই চার্ট', '3D Performance Pie Charts')}
-              </h2>
-              <span className="badge badge-brand text-[10px] font-bold uppercase tracking-wider py-0.5">
-                3D Interactive
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+          <div className="min-w-0">
+            <h2 className="card-title">{L('৩ডি পারফরম্যান্স পাই চার্ট', '3D Performance Pie Charts')}</h2>
+            <p className="card-subtitle mt-0.5">
               {L(
                 'সার্বিক কাজের বিভাজন এবং প্রতিটি কাজের পারফরম্যান্স ও কর্মীদের বিস্তারিত ৩ডি পাই চার্ট',
                 'Overall work ratio, performance by individual task, and employee 3D pie charts'
@@ -301,67 +308,36 @@ export default function PerformancePieCharts({
           </div>
         </div>
 
-        {/* 3 Main View Tabs */}
-        <div className="flex items-center rounded-xl bg-slate-100/80 p-1 border border-slate-200/60 self-start md:self-auto shadow-2xs">
-          <button
-            type="button"
-            onClick={() => setViewCategory('OVERALL')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-              viewCategory === 'OVERALL'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Sparkles className="h-3.5 w-3.5 text-brand-600" />
-            <span>{L('সার্বিক পারফরম্যান্স', 'Overall Performance')}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setViewCategory('BY_METRIC')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-              viewCategory === 'BY_METRIC'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Layers className="h-3.5 w-3.5 text-violet-600" />
-            <span>{L('প্রতিটি পারফরম্যান্স', 'Each Performance')}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setViewCategory('BY_EMPLOYEE')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-              viewCategory === 'BY_EMPLOYEE'
-                ? 'bg-white text-slate-900 shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <Users className="h-3.5 w-3.5 text-sky-600" />
-            <span>{L('প্রতিটি কর্মী', 'Each Employee')}</span>
-          </button>
+        <div className="segmented max-w-full flex-wrap" role="group">
+          {viewTabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setViewCategory(tab.key)}
+              data-active={viewCategory === tab.key}
+              aria-pressed={viewCategory === tab.key}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 1. OVERALL VIEW: 2 Side-by-Side 3D Pie Charts */}
-      {/* ========================================================================= */}
+      <div className="card-body">
+      {/* 1. Overall view: two charts side by side */}
       {viewCategory === 'OVERALL' && (
-        <div className="stagger grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Chart 1A: Overall Metric Distribution */}
-          <div className="p-5 rounded-2xl bg-gradient-to-b from-slate-50/70 to-white border border-slate-200/80 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-brand-600" />
+        <div className="stagger grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="space-y-4 rounded-xl border border-slate-200 p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold text-slate-900">
                   {L('কাজের সামগ্রিক বিভাজন', 'Work Distribution by Category')}
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="mt-0.5 text-xs text-slate-500">
                   {L('সব কর্মীর সম্পন্ন করা মোট কাজের অনুপাত', 'Proportion of total work completed')}
                 </p>
               </div>
-              <span className="badge badge-gray text-xs font-mono font-semibold">
+              <span className="badge badge-gray shrink-0 tabular-nums">
                 {formatNum(totals.posts + totals.orders + totals.messages + totals.leads)} {L('টি কাজ', 'tasks')}
               </span>
             </div>
@@ -374,19 +350,17 @@ export default function PerformancePieCharts({
             />
           </div>
 
-          {/* Chart 1B: Employees Overall Score Contribution */}
-          <div className="p-5 rounded-2xl bg-gradient-to-b from-slate-50/70 to-white border border-slate-200/80 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Award className="h-4 w-4 text-amber-500" />
+          <div className="space-y-4 rounded-xl border border-slate-200 p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold text-slate-900">
                   {L('কর্মীদের সার্বিক অবদানের ভাগ', "Employees' Overall Contribution")}
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="mt-0.5 text-xs text-slate-500">
                   {L('মোট স্কোরে কোন কর্মীর কতটুকু অবদান', "Each employee's share of overall score")}
                 </p>
               </div>
-              <span className="badge badge-brand text-xs font-mono font-semibold">
+              <span className="badge badge-gray shrink-0 tabular-nums">
                 {formatNum(employees.length)} {L('জন কর্মী', 'employees')}
               </span>
             </div>
@@ -401,12 +375,9 @@ export default function PerformancePieCharts({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* 2. FOR EACH PERFORMANCE / METRIC VIEW */}
-      {/* ========================================================================= */}
+      {/* 2. Per-metric view */}
       {viewCategory === 'BY_METRIC' && (
-        <div className="space-y-5">
-          {/* Metric Selector Pills */}
+        <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             {(
               [
@@ -423,20 +394,13 @@ export default function PerformancePieCharts({
                 <button
                   key={item.key}
                   type="button"
+                  aria-pressed={isSelected}
                   onClick={() => setSelectedMetric(item.key)}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all ${
-                    isSelected
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                  }`}
+                  className={chipClass(isSelected)}
                 >
-                  <Icon className="h-4 w-4" style={{ color: isSelected ? 'var(--color-white)' : METRIC_COLORS[item.key] }} />
+                  <Icon className="h-3.5 w-3.5" style={{ color: isSelected ? 'currentColor' : METRIC_COLORS[item.key] }} />
                   <span>{item.label}</span>
-                  <span
-                    className={`ml-1 px-2 py-0.5 rounded-full text-[11px] font-mono ${
-                      isSelected ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
+                  <span className={chipCountClass(isSelected)}>
                     {typeof item.count === 'number' ? formatNum(item.count) : item.count}
                   </span>
                 </button>
@@ -444,18 +408,14 @@ export default function PerformancePieCharts({
             })}
           </div>
 
-          {/* Metric 3D Pie Chart Container */}
-          <div className="p-6 rounded-2xl bg-gradient-to-b from-slate-50/70 to-white border border-slate-200/90 shadow-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-200/70">
-              <div className="flex items-center gap-2.5">
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-xs"
-                  style={{ backgroundColor: METRIC_COLORS[selectedMetric] }}
-                >
-                  <MetricIcon className="h-4.5 w-4.5" />
+          <div className="rounded-xl border border-slate-200 p-4 sm:p-5">
+            <div className="mb-4 flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
+                  <MetricIcon className="h-4 w-4" style={{ color: METRIC_COLORS[selectedMetric] }} />
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold text-slate-900">
                     {L(currentMetricCfg.titleBn, currentMetricCfg.titleEn)}
                   </h3>
                   <p className="text-xs text-slate-500">
@@ -464,12 +424,10 @@ export default function PerformancePieCharts({
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <div className="text-[11px] text-slate-400 font-medium">{L('সর্বমোট অর্জিত', 'Total Achieved')}</div>
-                  <div className="text-base font-bold font-mono text-slate-900">
-                    {selectedMetric === 'SALES' ? formatMoney(totals.sales) : `${formatNum(currentMetricCfg.total)} ${currentMetricCfg.unit}`}
-                  </div>
+              <div className="sm:text-right">
+                <div className="text-xs text-slate-500">{L('সর্বমোট অর্জিত', 'Total Achieved')}</div>
+                <div className="text-lg font-semibold text-slate-900 tabular-nums">
+                  {selectedMetric === 'SALES' ? formatMoney(totals.sales) : `${formatNum(currentMetricCfg.total)} ${currentMetricCfg.unit}`}
                 </div>
               </div>
             </div>
@@ -484,12 +442,9 @@ export default function PerformancePieCharts({
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* 3. FOR EACH EMPLOYEE VIEW */}
-      {/* ========================================================================= */}
+      {/* 3. Per-employee view */}
       {viewCategory === 'BY_EMPLOYEE' && (
-        <div className="space-y-5">
-          {/* Employee Picker Chips */}
+        <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
             {employees.map((emp, index) => {
               const isSelected = selectedEmployeeId === emp.id;
@@ -498,42 +453,30 @@ export default function PerformancePieCharts({
                 <button
                   key={emp.id}
                   type="button"
+                  aria-pressed={isSelected}
                   onClick={() => setSelectedEmployeeId(emp.id)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                    isSelected
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                      : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                  }`}
+                  className={chipClass(isSelected)}
                 >
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
                   <span>{emp.name}</span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
-                      isSelected ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-500'
-                    }`}
-                  >
-                    {emp.targetProgressPercent}%
-                  </span>
+                  <span className={chipCountClass(isSelected)}>{formatNum(emp.targetProgressPercent)}%</span>
                 </button>
               );
             })}
           </div>
 
-          {/* Individual Employee 3D Pie Chart & Quick Stats Grid */}
           {activeEmployee ? (
-            <div className="stagger grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left 2 Cols: 3D Pie Chart */}
-              <div className="lg:col-span-2 p-5 rounded-2xl bg-gradient-to-b from-slate-50/70 to-white border border-slate-200/90 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-brand-500" />
+            <div className="stagger grid grid-cols-1 gap-4 lg:grid-cols-3">
+              <div className="space-y-4 rounded-xl border border-slate-200 p-4 sm:p-5 lg:col-span-2">
+                <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold text-slate-900">
                       {activeEmployee.name} - {L('কাজের ব্যক্তিগত ৩ডি বিভাজন', 'Personal Work 3D Distribution')}
                     </h3>
-                    <p className="text-xs text-slate-400">{activeEmployee.email}</p>
+                    <p className="truncate text-xs text-slate-500">{activeEmployee.email}</p>
                   </div>
-                  <span className="badge badge-brand text-xs font-semibold">
-                    {L('অগ্রগতি', 'Progress')}: {activeEmployee.targetProgressPercent}%
+                  <span className="badge badge-brand shrink-0 tabular-nums">
+                    {L('অগ্রগতি', 'Progress')}: {formatNum(activeEmployee.targetProgressPercent)}%
                   </span>
                 </div>
 
@@ -546,51 +489,37 @@ export default function PerformancePieCharts({
                 />
               </div>
 
-              {/* Right Col: Personal Stat Highlights */}
-              <div className="space-y-3 flex flex-col justify-between">
-                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-1">
-                  <div className="text-[11px] font-semibold text-slate-500">{L('মোট পোস্ট', 'Total Posts')}</div>
-                  <div className="text-xl font-bold font-mono text-sky-700">
-                    {formatNum(activeEmployee.metrics.posts_done)} <span className="text-xs font-normal text-slate-500">{L('টি', '')}</span>
+              <dl className="grid grid-cols-2 gap-3 lg:grid-cols-1">
+                {(
+                  [
+                    { label: L('মোট পোস্ট', 'Total Posts'), value: formatNum(activeEmployee.metrics.posts_done), unit: L('টি', ''), color: METRIC_COLORS.POSTS },
+                    { label: L('নিশ্চিত অর্ডার', 'Confirmed Orders'), value: formatNum(activeEmployee.metrics.orders_confirmed), unit: L('টি', ''), color: METRIC_COLORS.ORDERS },
+                    { label: L('মেসেজ রিপ্লাই', 'Messages Replied'), value: formatNum(activeEmployee.metrics.messages_replied), unit: L('টি', ''), color: METRIC_COLORS.MESSAGES },
+                    { label: L('লিড সংগ্রহ', 'Leads Collected'), value: formatNum(activeEmployee.metrics.leads_collected), unit: L('জন', ''), color: METRIC_COLORS.LEADS },
+                    { label: L('মোট বিক্রয়', 'Sales Amount'), value: formatMoney(activeEmployee.metrics.sales_amount), unit: '', color: METRIC_COLORS.SALES },
+                  ]
+                ).map((stat) => (
+                  <div key={stat.label} className="rounded-xl border border-slate-200 px-4 py-3">
+                    <dt className="flex items-center gap-1.5 text-xs text-slate-500">
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: stat.color }} />
+                      {stat.label}
+                    </dt>
+                    <dd className="mt-1 text-lg font-semibold text-slate-900 tabular-nums">
+                      {stat.value} {stat.unit && <span className="text-xs font-normal text-slate-500">{stat.unit}</span>}
+                    </dd>
                   </div>
-                </div>
-
-                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-1">
-                  <div className="text-[11px] font-semibold text-slate-500">{L('নিশ্চিত অর্ডার', 'Confirmed Orders')}</div>
-                  <div className="text-xl font-bold font-mono text-emerald-700">
-                    {formatNum(activeEmployee.metrics.orders_confirmed)} <span className="text-xs font-normal text-slate-500">{L('টি', '')}</span>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-1">
-                  <div className="text-[11px] font-semibold text-slate-500">{L('মেসেজ রিপ্লাই', 'Messages Replied')}</div>
-                  <div className="text-xl font-bold font-mono text-violet-700">
-                    {formatNum(activeEmployee.metrics.messages_replied)} <span className="text-xs font-normal text-slate-500">{L('টি', '')}</span>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-1">
-                  <div className="text-[11px] font-semibold text-slate-500">{L('লিড সংগ্রহ', 'Leads Collected')}</div>
-                  <div className="text-xl font-bold font-mono text-amber-700">
-                    {formatNum(activeEmployee.metrics.leads_collected)} <span className="text-xs font-normal text-slate-500">{L('জন', '')}</span>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-1">
-                  <div className="text-[11px] font-semibold text-slate-500">{L('মোট বিক্রয়', 'Sales Amount')}</div>
-                  <div className="text-xl font-bold font-mono text-rose-700">
-                    {formatMoney(activeEmployee.metrics.sales_amount)}
-                  </div>
-                </div>
-              </div>
+                ))}
+              </dl>
             </div>
           ) : (
-            <div className="p-8 text-center text-slate-400 bg-slate-50 rounded-xl">
-              {L('কোনো কর্মী পাওয়া যায়নি', 'No employee found')}
-            </div>
+            <EmptyState
+              icon={<Users className="h-5 w-5" />}
+              title={L('কোনো কর্মী পাওয়া যায়নি', 'No employee found')}
+            />
           )}
         </div>
       )}
-    </div>
+      </div>
+    </section>
   );
 }

@@ -112,6 +112,10 @@ export default function CsvUploadHistoryPage() {
       {/* History Table */}
       <div className="card">
         <div className="card-header">
+          <div className="min-w-0">
+            <h2 className="card-title">{t('hist.batches', 'সব ব্যাচ', 'All batches')}</h2>
+            <p className="card-subtitle tabular-nums">{t('hist.count', 'মোট', 'Total')}: {pagination.total}</p>
+          </div>
           <div className="flex w-full items-center gap-2 sm:w-auto">
             <label htmlFor="hist_section" className="whitespace-nowrap text-xs font-medium text-slate-600">
               {t('hist.section', 'সেকশন', 'Section')}
@@ -182,9 +186,7 @@ export default function CsvUploadHistoryPage() {
 
                       <td className="text-right tabular-nums font-medium text-slate-900">{b.total_rows}</td>
 
-                      <td className="text-right">
-                        <span className="badge badge-green tabular-nums">{b.inserted}</span>
-                      </td>
+                      <td className="text-right tabular-nums text-emerald-700">{b.inserted}</td>
 
                       <td className="text-right">
                         {b.duplicates > 0 ? (
@@ -226,7 +228,7 @@ export default function CsvUploadHistoryPage() {
                       setLimit(Number(e.target.value));
                       setPage(1);
                     }}
-                    className="input w-auto py-1 text-xs"
+                    className="input input-sm w-auto"
                   >
                     <option value={10}>10</option>
                     <option value={20}>20</option>

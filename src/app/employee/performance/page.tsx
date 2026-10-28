@@ -32,6 +32,7 @@ import {
   Legend,
 } from 'recharts';
 import { Skeleton, SkeletonStatCards } from '@/components/ui/Skeleton';
+import EmptyState from '@/components/ui/EmptyState';
 
 interface PerformanceTrendDay {
   date: string;
@@ -56,7 +57,14 @@ interface PerformanceResponse {
   product_sales: ProductSalesSummary[];
 }
 
-const PIE_COLORS = ['#059669', '#0284c7', '#d97706', '#8b5cf6', '#ec4899'];
+// Theme variables, so the charts follow light / dark mode like the rest of the page.
+const PIE_COLORS = [
+  'var(--color-brand-600)',
+  'var(--color-sky-500)',
+  'var(--color-amber-500)',
+  'var(--color-violet-500)',
+  'var(--color-rose-500)',
+];
 
 export default function EmployeePerformancePage() {
   const { lang, L } = useLanguage();
@@ -99,6 +107,16 @@ export default function EmployeePerformancePage() {
     return (
       <div className="space-y-6" role="status" aria-busy="true">
         <span className="sr-only">{L('লোড হচ্ছে...', 'Loading...')}</span>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex items-start gap-3">
+            <Skeleton className="h-10 w-10 rounded-xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-3.5 w-56" />
+            </div>
+          </div>
+          <Skeleton className="h-9 w-full rounded-xl sm:w-48" />
+        </div>
         <SkeletonStatCards count={4} />
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {[0, 1].map((i) => (
@@ -156,14 +174,14 @@ export default function EmployeePerformancePage() {
         title={L('পারফরম্যান্স', 'Performance')}
         subtitle={L('লক্ষ্য অর্জন, স্কোর ও অগ্রগতি', 'Targets, score and progress')}
         actions={
-          <div className="segmented">
-            <button data-active={period === 'daily'} onClick={() => setPeriod('daily')}>
+          <div className="segmented grid w-full grid-cols-3 sm:inline-flex sm:w-auto" aria-busy={loading}>
+            <button type="button" className="min-h-10 sm:min-h-0" data-active={period === 'daily'} onClick={() => setPeriod('daily')}>
               {L('আজ', 'Day')}
             </button>
-            <button data-active={period === 'weekly'} onClick={() => setPeriod('weekly')}>
+            <button type="button" className="min-h-10 sm:min-h-0" data-active={period === 'weekly'} onClick={() => setPeriod('weekly')}>
               {L('সপ্তাহ', 'Week')}
             </button>
-            <button data-active={period === 'monthly'} onClick={() => setPeriod('monthly')}>
+            <button type="button" className="min-h-10 sm:min-h-0" data-active={period === 'monthly'} onClick={() => setPeriod('monthly')}>
               {L('মাস', 'Month')}
             </button>
           </div>
@@ -275,7 +293,9 @@ export default function EmployeePerformancePage() {
           </div>
           <div className="card-body">
             {trend.length === 0 ? (
-              <div className="flex h-64 items-center justify-center text-sm text-slate-500">{L('কোনো ডাটা নেই', 'No data')}</div>
+              <div className="flex h-64 items-center justify-center">
+                <EmptyState icon={<TrendingUp className="h-5 w-5" />} title={L('কোনো ডাটা নেই', 'No data')} />
+              </div>
             ) : (
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -286,17 +306,17 @@ export default function EmployeePerformancePage() {
                     <Tooltip contentStyle={tooltipStyle} />
                     <ReferenceLine
                       y={threshold}
-                      label={{ value: `${threshold}% পাস`, fill: '#e11d48', fontSize: 10 }}
-                      stroke="#e11d48"
+                      label={{ value: L(`${threshold}% পাস`, `${threshold}% pass`), fill: 'var(--color-rose-500)', fontSize: 10 }}
+                      stroke="var(--color-rose-500)"
                       strokeDasharray="4 4"
                     />
                     <Line
                       type="monotone"
                       dataKey="score"
                       name={L("দৈনিক স্কোর")}
-                      stroke="#059669"
+                      stroke="var(--color-brand-600)"
                       strokeWidth={2}
-                      dot={{ r: 2.5, fill: '#059669' }}
+                      dot={{ r: 2.5, fill: 'var(--color-brand-600)' }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -314,6 +334,11 @@ export default function EmployeePerformancePage() {
             <span className="card-subtitle">{L('ওয়েটেড', 'Weighted')}</span>
           </div>
           <div className="card-body">
+            {componentChartData.length === 0 ? (
+              <div className="flex h-64 items-center justify-center">
+                <EmptyState icon={<Target className="h-5 w-5" />} title={L('কোনো ডাটা নেই', 'No data')} />
+              </div>
+            ) : (
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={componentChartData}>
@@ -321,11 +346,12 @@ export default function EmployeePerformancePage() {
                   <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'var(--color-slate-400)' }} interval={0} />
                   <YAxis domain={[0, 'auto']} tick={{ fontSize: 10, fill: 'var(--color-slate-400)' }} width={32} />
                   <Tooltip contentStyle={tooltipStyle} />
-                  <Bar dataKey="score" name={L("অর্জিত স্কোর")} fill="#059669" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="score" name={L("অর্জিত স্কোর")} fill="var(--color-brand-600)" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="weight" name={L("সর্বোচ্চ ওয়েট")} fill="var(--color-slate-200)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
+            )}
           </div>
         </div>
       </div>
@@ -341,8 +367,8 @@ export default function EmployeePerformancePage() {
           </div>
           <div className="card-body">
             {pieData.length === 0 ? (
-              <div className="flex h-56 items-center justify-center text-sm text-slate-500">
-                {L('কোনো বিক্রি নেই', 'No sales yet')}
+              <div className="flex h-56 items-center justify-center">
+                <EmptyState icon={<ShoppingBag className="h-5 w-5" />} title={L('কোনো বিক্রি নেই', 'No sales yet')} />
               </div>
             ) : (
               <div className="h-56 w-full">
@@ -366,6 +392,10 @@ export default function EmployeePerformancePage() {
           <div className="card-header">
             <h2 className="card-title">{L('টার্গেট বনাম অর্জন', 'Target vs actual')}</h2>
           </div>
+
+          {Object.keys(metrics).length === 0 && (
+            <EmptyState icon={<Target className="h-5 w-5" />} title={L('কোনো টার্গেট সেট নেই', 'No targets set yet')} />
+          )}
 
           {/* Phone: stacked rows */}
           <ul className="divide-y divide-slate-100 md:hidden">

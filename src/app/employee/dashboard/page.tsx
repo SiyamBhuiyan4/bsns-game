@@ -1,21 +1,10 @@
-import Link from 'next/link';
 import { requireEmployee } from '@/lib/session';
 import { getAdminDashboardData, DashboardPeriodKey } from '@/lib/dashboard';
 import DashboardPeriodSelector from '@/components/dashboard/DashboardPeriodSelector';
 import DashboardHeaderStats from '@/components/dashboard/DashboardHeaderStats';
 import SectionOverviewCards from '@/components/dashboard/SectionOverviewCards';
 import PerformancePieCharts from '@/components/dashboard/PerformancePieCharts';
-import {
-  CheckSquare,
-  UserPlus,
-  FileSpreadsheet,
-  ArrowRight,
-  Sparkles,
-  Swords,
-  Trophy,
-  Flame,
-  Crown,
-} from 'lucide-react';
+import EmployeeQuickActions from './EmployeeQuickActions';
 
 interface PageProps {
   searchParams?: Promise<{
@@ -80,101 +69,8 @@ export default async function EmployeeDashboardPage(props: PageProps) {
         employeeScore={employeeScore}
       />
 
-      {/* GAME ARENA BATTLE HUD BANNER */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 p-5 text-white shadow-lg border border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-amber-950 font-black text-xl shadow-md ring-2 ring-amber-300">
-            <Swords className="w-6 h-6 text-amber-950" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-base tracking-wide bg-gradient-to-r from-amber-200 via-white to-violet-200 bg-clip-text text-transparent">
-                বিজনেস গেম এরিনা (Game Arena)
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-100 border border-emerald-500/30">
-                লাইভ কম্পিটিশন 🔥
-              </span>
-            </div>
-            <p className="text-xs text-slate-300 mt-0.5">
-              আজকের মিশন পূরণ করুন, স্কোর বাড়ান এবং লিডারবোর্ডের শীর্ষে পৌঁছান!
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 justify-end">
-          <Link
-            href="/employee/leaderboard"
-            className="btn btn-secondary btn-sm gap-1.5 bg-slate-800/80 hover:bg-slate-700 text-amber-100 border-amber-500/40"
-          >
-            <Trophy className="w-4 h-4 text-amber-400" />
-            <span>এরিনা লিডারবোর্ড</span>
-          </Link>
-          <Link
-            href="/employee/my-work"
-            className="btn btn-primary btn-sm gap-1.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold shadow-md"
-          >
-            <CheckSquare className="w-4 h-4" />
-            <span>আজকের মিশন ও কাজ</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Quick Action Shortcuts for Employee */}
-      <div className="stagger grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Link
-          href="/employee/my-work"
-          className="group hover-lift press relative flex items-center justify-between p-4 bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/30 rounded-xl hover:border-emerald-500/60 hover:shadow-md transition-all duration-200"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
-              <CheckSquare className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="font-semibold text-slate-900 group-hover:text-emerald-700 transition-colors">
-                আজকের পোস্ট ও টু-ডু মিশন
-              </div>
-              <div className="text-xs text-slate-400">My Daily Work, Links & Sales</div>
-            </div>
-          </div>
-          <ArrowRight className="w-4 h-4 text-emerald-400 transform group-hover:translate-x-1 transition-transform" />
-        </Link>
-
-        <Link
-          href="/employee/leads"
-          className="group hover-lift press relative flex items-center justify-between p-4 bg-gradient-to-r from-sky-500/10 via-sky-500/5 to-transparent border border-sky-500/30 rounded-xl hover:border-sky-500/60 hover:shadow-md transition-all duration-200"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold">
-              <UserPlus className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="font-semibold text-slate-900 group-hover:text-sky-700 transition-colors">
-                নতুন কাস্টমার ও লিড
-              </div>
-              <div className="text-xs text-slate-400">Add Customer & Surplus Rollover</div>
-            </div>
-          </div>
-          <ArrowRight className="w-4 h-4 text-sky-400 transform group-hover:translate-x-1 transition-transform" />
-        </Link>
-
-        <Link
-          href="/employee/leaderboard"
-          className="group hover-lift press relative flex items-center justify-between p-4 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/30 rounded-xl hover:border-amber-500/60 hover:shadow-md transition-all duration-200"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
-              <Trophy className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="font-semibold text-slate-900 group-hover:text-amber-700 transition-colors">
-                এরিনা লিডারবোর্ড
-              </div>
-              <div className="text-xs text-slate-400">Rankings, Podiums & XP</div>
-            </div>
-          </div>
-          <ArrowRight className="w-4 h-4 text-amber-400 transform group-hover:translate-x-1 transition-transform" />
-        </Link>
-      </div>
+      {/* Shortcuts to the three things a marketer does every day */}
+      <EmployeeQuickActions />
 
       {/* Dynamic Bilingual Period selector */}
       <DashboardPeriodSelector

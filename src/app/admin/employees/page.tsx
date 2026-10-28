@@ -23,6 +23,7 @@ import {
   Target,
   ArrowUpRight,
   Briefcase,
+  Lock,
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
@@ -411,15 +412,14 @@ export default function EmployeesPage() {
               </thead>
               <tbody>
                 {filteredEmployees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-slate-50/70 transition-colors">
+                  <tr key={emp.id}>
                     <td
                       onClick={() => handleOpenWorkProfile(emp)}
                       className="cursor-pointer group"
                       title={t('emp.click_view_work', 'কাজের বিবরণ ও ইতিহাস দেখতে ক্লিক করুন', 'Click to view employee work & history')}
                     >
-                      <div className="font-semibold text-slate-900 group-hover:text-brand-700 flex items-center gap-1.5 transition-colors">
-                        <span>{emp.name}</span>
-                        <Eye className="h-3.5 w-3.5 text-slate-400 group-hover:text-brand-600 transition-colors opacity-70 group-hover:opacity-100" />
+                      <div className="font-medium text-slate-900 transition-colors group-hover:text-brand-700">
+                        {emp.name}
                       </div>
                       <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-500">
                         <Phone className="h-3 w-3" />
@@ -427,11 +427,8 @@ export default function EmployeesPage() {
                       </div>
                     </td>
 
-                    <td className="text-xs text-slate-600">
-                      <div className="flex items-center gap-1.5">
-                        <Mail className="h-3 w-3 text-slate-400" />
-                        <span>{emp.email}</span>
-                      </div>
+                    <td className="text-sm text-slate-600">
+                      <span className="block max-w-[220px] truncate" title={emp.email}>{emp.email}</span>
                     </td>
 
                     <td>
@@ -443,7 +440,7 @@ export default function EmployeesPage() {
                             <span key={sec.id} className="badge badge-gray inline-flex items-center gap-1">
                               <span>{sec.name}</span>
                               {sec.post_limit && sec.post_limit > 0 && (
-                                <span className="font-bold text-brand-700">
+                                <span className="text-slate-400 tabular-nums">
                                   ({sec.post_limit}{L("টি)")}
                                 </span>
                               )}
@@ -464,7 +461,7 @@ export default function EmployeesPage() {
                         )}
                         {emp.can_view_all_customers && (
                           <span
-                            className="inline-flex items-center gap-1 rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700"
+                            className="badge badge-violet"
                             title={t('emp.has_cust_access', 'সম্পূর্ণ কাস্টমার ডেটাবেস দেখার অনুমতি রয়েছে', 'Has full customer database access')}
                           >
                             {t('emp.all_cust_badge', 'পূর্ণ কাস্টমার এক্সেস', 'Full Leads Access')}
@@ -477,9 +474,11 @@ export default function EmployeesPage() {
                       <div className="inline-flex items-center gap-0.5">
                         {/* View Work & Tasks */}
                         <button
+                          type="button"
                           onClick={() => handleOpenWorkProfile(emp)}
-                          className="btn-icon text-brand-700 hover:bg-brand-50"
+                          className="btn-icon h-8 w-8"
                           title={t('emp.view_work', 'কাজের বিবরণ ও হিস্ট্রি দেখুন', 'View work & history')}
+                          aria-label={t('emp.view_work', 'কাজের বিবরণ ও হিস্ট্রি দেখুন', 'View work & history')}
                         >
                           <Eye className="h-4 w-4" />
                         </button>
@@ -498,7 +497,7 @@ export default function EmployeesPage() {
                             setAssignSectionLimits(initialLimits);
                             setErrorMessage(null);
                           }}
-                          className="btn-icon"
+                          className="btn-icon h-8 w-8"
                           title={t('emp.assign', 'সেকশন অ্যাসাইন', 'Assign sections')}
                           aria-label={t('emp.assign', 'সেকশন অ্যাসাইন', 'Assign sections')}
                         >
@@ -512,7 +511,7 @@ export default function EmployeesPage() {
                             setTempPassword(null);
                             setErrorMessage(null);
                           }}
-                          className="btn-icon"
+                          className="btn-icon h-8 w-8"
                           title={t('emp.reset', 'পাসওয়ার্ড রিসেট', 'Reset password')}
                           aria-label={t('emp.reset', 'পাসওয়ার্ড রিসেট', 'Reset password')}
                         >
@@ -530,7 +529,7 @@ export default function EmployeesPage() {
                             setEditCanViewAllCustomers(!!emp.can_view_all_customers);
                             setErrorMessage(null);
                           }}
-                          className="btn-icon"
+                          className="btn-icon h-8 w-8"
                           title={t('emp.edit', 'সম্পাদনা', 'Edit')}
                           aria-label={t('emp.edit', 'সম্পাদনা', 'Edit')}
                         >
@@ -707,24 +706,24 @@ export default function EmployeesPage() {
 
                 <label
                   htmlFor="edit_emp_can_view_all_customers"
-                  className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-violet-200 bg-violet-50/60 p-3 text-sm text-slate-800 transition hover:bg-violet-50"
+                  className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-800 transition-colors hover:bg-slate-100/70"
                 >
                   <input
                     type="checkbox"
                     id="edit_emp_can_view_all_customers"
                     checked={editCanViewAllCustomers}
                     onChange={(e) => setEditCanViewAllCustomers(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-violet-600"
+                    className="mt-0.5 h-4 w-4 rounded border-slate-300 accent-brand-600"
                   />
                   <div>
-                    <span className="font-semibold text-slate-900">
+                    <span className="font-medium text-slate-900">
                       {t(
                         'emp.grant_customer_db_access',
                         'সম্পূর্ণ কাস্টমার ডেটাবেস দেখার অনুমতি দিন',
                         'Grant Full Customer Database Access'
                       )}
                     </span>
-                    <p className="mt-0.5 text-xs text-slate-600">
+                    <p className="mt-0.5 text-xs text-slate-500">
                       {t(
                         'emp.grant_customer_db_desc',
                         'অনুমোদন দিলে এই কর্মী নিজের ও অন্যান্য সকল কর্মীর যুক্ত করা কাস্টমার তালিকা দেখতে পারবেন',
@@ -819,7 +818,7 @@ export default function EmployeesPage() {
                                     [sec.id]: val,
                                   }));
                                 }}
-                                className="input py-1 px-2 text-xs w-24 text-center font-bold text-slate-800"
+                                className="input input-sm w-20 text-right tabular-nums"
                               />
                               <span className="text-xs text-slate-500">
                                 {t('common.posts_unit', 'টি', 'posts')}
@@ -834,11 +833,11 @@ export default function EmployeesPage() {
 
                 {/* Quota Summary Calculation */}
                 {assignSelectedSections.length > 0 && (
-                  <div className="mt-3 p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
-                    <span className="text-slate-600 font-medium">
+                  <div className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs">
+                    <span className="text-slate-600">
                       {t('emp.total_quota', 'মোট নির্ধারিত পোস্ট কোটা:', 'Total Assigned Quota:')}
                     </span>
-                    <span className="font-bold text-brand-700">
+                    <span className="font-semibold text-slate-900 tabular-nums">
                       {assignSelectedSections.reduce((sum, id) => {
                         const val = assignSectionLimits[id];
                         return sum + (typeof val === 'number' && val > 0 ? val : 0);
@@ -935,21 +934,21 @@ export default function EmployeesPage() {
       {/* Employee Work & Tasks Detail Modal */}
       {workModalEmp && (
         <div className="modal-backdrop">
-          <div className="modal-panel max-w-3xl max-h-[92vh] flex flex-col p-0">
+          <div className="modal-panel flex flex-col sm:max-w-3xl" role="dialog" aria-modal="true" aria-labelledby="work-emp-title">
             {/* Header */}
-            <div className="card-header p-5 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-brand-600 to-emerald-500 text-white font-bold text-lg shadow-sm">
+            <div className="card-header flex-nowrap items-start">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-semibold text-slate-600">
                   {workModalEmp.name.slice(0, 1).toUpperCase()}
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="card-title text-base sm:text-lg">{workModalEmp.name}</h3>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 id="work-emp-title" className="truncate text-base font-semibold text-slate-900">{workModalEmp.name}</h3>
                     <span className={`badge ${workModalEmp.is_active ? 'badge-green' : 'badge-gray'}`}>
                       {workModalEmp.is_active ? t('emp.active', 'সক্রিয়', 'Active') : t('emp.inactive', 'নিষ্ক্রিয়', 'Inactive')}
                     </span>
                   </div>
-                  <p className="card-subtitle text-xs flex items-center gap-3 mt-0.5">
+                  <p className="card-subtitle mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
                     <span className="flex items-center gap-1">
                       <Mail className="h-3 w-3 text-slate-400" /> {workModalEmp.email}
                     </span>
@@ -964,23 +963,23 @@ export default function EmployeesPage() {
               <button
                 type="button"
                 onClick={() => setWorkModalEmp(null)}
-                className="btn-icon"
-                aria-label="Close"
+                className="btn-icon shrink-0"
+                aria-label={L('বন্ধ করুন', 'Close')}
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
               {loadingWorkData ? (
                 <div role="status" aria-busy="true" className="space-y-5">
                   <span className="sr-only">
                     {t('emp.loading_work', 'কাজের বিবরণ লোড হচ্ছে...', 'Loading work profile...')}
                   </span>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200">
                     {[0, 1, 2].map((i) => (
-                      <div key={i} className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
+                      <div key={i} className="bg-white p-3.5">
                         <div aria-hidden className="skeleton h-2.5 w-20" />
                         <div aria-hidden className="skeleton mt-2 h-6 w-12" />
                       </div>
@@ -995,28 +994,28 @@ export default function EmployeesPage() {
               ) : (
                 <>
                   {/* Quick Stats Grid */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
-                      <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  <div className="grid grid-cols-3 gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200">
+                    <div className="bg-white p-3.5">
+                      <div className="text-xs text-slate-500">
                         {t('emp.today_posts', 'আজকের সম্পন্ন পোস্ট', 'Today Posts')}
                       </div>
-                      <div className="text-xl font-bold font-mono text-emerald-700 mt-1">
+                      <div className="mt-1 text-xl font-semibold text-slate-900 tabular-nums">
                         {workData?.stats?.todayCompletedLinks ?? 0}
                       </div>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
-                      <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                      <div className="text-xs text-slate-500">
                         {t('emp.total_posts', 'মোট সম্পন্ন পোস্ট', 'Total Posts')}
                       </div>
-                      <div className="text-xl font-bold font-mono text-sky-700 mt-1">
+                      <div className="mt-1 text-xl font-semibold text-slate-900 tabular-nums">
                         {workData?.stats?.totalCompletedLinks ?? workModalEmp.total_completed_links}
                       </div>
                     </div>
                     <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
-                      <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                      <div className="text-xs text-slate-500">
                         {t('emp.total_leads', 'মোট লিড সংগ্রহ', 'Total Leads')}
                       </div>
-                      <div className="text-xl font-bold font-mono text-violet-700 mt-1">
+                      <div className="mt-1 text-xl font-semibold text-slate-900 tabular-nums">
                         {workData?.stats?.totalLeads ?? workModalEmp.total_leads}
                       </div>
                     </div>
@@ -1024,31 +1023,31 @@ export default function EmployeesPage() {
 
                   {/* Sub-Group Post Limits Live Status Banner */}
                   {workData?.assignedSections && workData.assignedSections.length > 0 && (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 space-y-2">
-                      <div className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
-                        <Layers className="h-4 w-4 text-emerald-600" />
+                    <div className="space-y-3 rounded-xl border border-slate-200 p-4">
+                      <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+                        <Layers className="h-4 w-4 text-slate-400" />
                         <span>{t('emp.subgroup_quotas', 'সাব-গ্রুপভিত্তিক পোস্ট কোটা ও লিমিট স্ট্যাটাস', 'Sub-Group Post Quotas & Live Status')}</span>
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         {workData.assignedSections.map((sec: any) => (
-                          <div key={sec.section_id} className="bg-white rounded-lg p-2.5 border border-emerald-100 flex items-center justify-between shadow-xs">
-                            <div>
-                              <div className="font-semibold text-xs text-slate-800">{sec.section_name}</div>
-                              <div className="text-[11px] text-slate-500">
+                          <div key={sec.section_id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2.5">
+                            <div className="min-w-0">
+                              <div className="truncate text-sm font-medium text-slate-800">{sec.section_name}</div>
+                              <div className="text-xs text-slate-500">
                                 {sec.post_limit ? L(`${t('emp.quota', 'কোটা', 'Quota')}: ${sec.post_limit}টি`) : t('emp.no_limit', 'সীমাহীন', 'No Limit')}
                               </div>
                             </div>
-                            <div>
+                            <div className="shrink-0">
                               {sec.is_limit_reached ? (
-                                <span className="badge badge-red text-[11px]">
-                                  🔒 {t('emp.limit_reached', 'কোটা পূর্ণ', 'Quota Met')} ({sec.today_completed}/{sec.post_limit})
+                                <span className="badge badge-red tabular-nums">
+                                  <Lock className="h-3 w-3" aria-hidden /> {t('emp.limit_reached', 'কোটা পূর্ণ', 'Quota Met')} ({sec.today_completed}/{sec.post_limit})
                                 </span>
                               ) : sec.post_limit ? (
-                                <span className="badge badge-green text-[11px]">
+                                <span className="badge badge-green tabular-nums">
                                   {sec.today_completed} / {sec.post_limit} ({t('emp.remaining', 'বাকি', 'Left')}: {sec.remaining})
                                 </span>
                               ) : (
-                                <span className="badge badge-gray text-[11px]">
+                                <span className="badge badge-gray tabular-nums">
                                   {sec.today_completed} {t('emp.done', 'টি সম্পন্ন', 'done')}
                                 </span>
                               )}
@@ -1060,19 +1059,19 @@ export default function EmployeesPage() {
                   )}
 
                   {/* Navigation Tabs */}
-                  <div className="flex items-center gap-2 border-b border-slate-200">
+                  <div className="no-scrollbar -mx-5 flex items-center gap-1 overflow-x-auto border-b border-slate-200 px-5" role="tablist">
                     <button
                       type="button"
                       onClick={() => setWorkActiveTab('TASKS')}
-                      className={`py-2 px-3 text-xs font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+                      className={`-mb-px flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
                         workActiveTab === 'TASKS'
-                          ? 'border-brand-600 text-brand-700'
+                          ? 'border-brand-600 text-slate-900'
                           : 'border-transparent text-slate-500 hover:text-slate-800'
                       }`}
                     >
                       <Target className="h-3.5 w-3.5" />
                       <span>{t('emp.tab_tasks', 'কাজের তালিকা ও লক্ষ্যমাত্রা', 'Assigned Jobs & Targets')}</span>
-                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-700">
+                      <span className="rounded-full bg-slate-100 px-1.5 text-[11px] text-slate-600 tabular-nums">
                         {workData?.targets?.length ?? 0}
                       </span>
                     </button>
@@ -1080,15 +1079,15 @@ export default function EmployeesPage() {
                     <button
                       type="button"
                       onClick={() => setWorkActiveTab('POSTS')}
-                      className={`py-2 px-3 text-xs font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+                      className={`-mb-px flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
                         workActiveTab === 'POSTS'
-                          ? 'border-brand-600 text-brand-700'
+                          ? 'border-brand-600 text-slate-900'
                           : 'border-transparent text-slate-500 hover:text-slate-800'
                       }`}
                     >
                       <Layers className="h-3.5 w-3.5" />
                       <span>{t('emp.tab_posts', 'পোস্টিং হিস্ট্রি (কাজগুলো)', 'Posting History')}</span>
-                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-700">
+                      <span className="rounded-full bg-slate-100 px-1.5 text-[11px] text-slate-600 tabular-nums">
                         {workData?.recentCompletions?.length ?? 0}
                       </span>
                     </button>
@@ -1096,15 +1095,15 @@ export default function EmployeesPage() {
                     <button
                       type="button"
                       onClick={() => setWorkActiveTab('LEADS')}
-                      className={`py-2 px-3 text-xs font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+                      className={`-mb-px flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
                         workActiveTab === 'LEADS'
-                          ? 'border-brand-600 text-brand-700'
+                          ? 'border-brand-600 text-slate-900'
                           : 'border-transparent text-slate-500 hover:text-slate-800'
                       }`}
                     >
                       <Users className="h-3.5 w-3.5" />
                       <span>{t('emp.tab_leads', 'সংগৃহীত লিডসমূহ', 'Leads')}</span>
-                      <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-700">
+                      <span className="rounded-full bg-slate-100 px-1.5 text-[11px] text-slate-600 tabular-nums">
                         {workData?.recentLeads?.length ?? 0}
                       </span>
                     </button>
@@ -1114,36 +1113,37 @@ export default function EmployeesPage() {
                   {workActiveTab === 'TASKS' && (
                     <div className="space-y-3">
                       {!workData?.targets || workData.targets.length === 0 ? (
-                        <div className="text-center py-8 text-xs text-slate-400">
-                          {t('emp.no_tasks', 'এই কর্মচারীর জন্য কোনো টার্গেট বা কাজ এখনও নির্ধারণ করা হয়নি', 'No targets or jobs assigned yet')}
-                        </div>
+                        <EmptyState
+                          icon={<Target className="h-5 w-5" />}
+                          title={t('emp.no_tasks', 'এই কর্মচারীর জন্য কোনো টার্গেট বা কাজ এখনও নির্ধারণ করা হয়নি', 'No targets or jobs assigned yet')}
+                        />
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {workData.targets.map((tgt: any) => (
-                            <div key={tgt.id} className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2 shadow-xs">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="font-semibold text-xs text-slate-800">{tgt.metric_type}</div>
+                            <div key={tgt.id} className="space-y-2.5 rounded-xl border border-slate-200 bg-white p-4">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                  <div className="text-sm font-medium text-slate-800">{tgt.metric_type}</div>
                                   {tgt.section_name && (
-                                    <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                                    <div className="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
                                       <Layers className="h-3 w-3 text-slate-400" />
                                       <span>{tgt.section_name}</span>
                                     </div>
                                   )}
                                 </div>
-                                <span className={`badge text-[11px] ${tgt.is_met ? 'badge-green' : 'badge-blue'}`}>
+                                <span className={`badge shrink-0 tabular-nums ${tgt.is_met ? 'badge-green' : 'badge-blue'}`}>
                                   {tgt.percentage}% {tgt.is_met ? t('emp.met', 'সম্পন্ন', 'Met') : ''}
                                 </span>
                               </div>
 
                               <div className="space-y-1">
-                                <div className="flex items-center justify-between text-xs text-slate-600">
+                                <div className="flex items-center justify-between text-xs text-slate-500">
                                   <span>{t('emp.progress', 'অগ্রগতি', 'Progress')}</span>
-                                  <span className="font-mono font-bold">
+                                  <span className="font-medium text-slate-800 tabular-nums">
                                     {tgt.achieved_value} / {tgt.target_value}
                                   </span>
                                 </div>
-                                <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                                   <div
                                     className={`h-full rounded-full transition-all ${tgt.is_met ? 'bg-emerald-500' : 'bg-sky-500'}`}
                                     style={{ width: `${tgt.percentage}%` }}
@@ -1161,19 +1161,20 @@ export default function EmployeesPage() {
                   {workActiveTab === 'POSTS' && (
                     <div className="space-y-2">
                       {!workData?.recentCompletions || workData.recentCompletions.length === 0 ? (
-                        <div className="text-center py-8 text-xs text-slate-400">
-                          {t('emp.no_completions', 'এখনও কোনো লিংক পোস্ট সম্পন্ন করা হয়নি', 'No completed link posts yet')}
-                        </div>
+                        <EmptyState
+                          icon={<Layers className="h-5 w-5" />}
+                          title={t('emp.no_completions', 'এখনও কোনো লিংক পোস্ট সম্পন্ন করা হয়নি', 'No completed link posts yet')}
+                        />
                       ) : (
                         <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-white max-h-72 overflow-y-auto">
                           {workData.recentCompletions.map((comp: any) => (
-                            <div key={comp.id} className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors">
+                            <div key={comp.id} className="p-3 flex items-center justify-between gap-3 transition-colors hover:bg-slate-50/80">
                               <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="badge badge-gray text-[10px] shrink-0 font-medium">
+                                  <span className="badge badge-gray shrink-0">
                                     {comp.section_name}
                                   </span>
-                                  <span className="font-semibold text-xs text-slate-800 truncate">
+                                  <span className="truncate text-sm font-medium text-slate-800">
                                     {comp.title}
                                   </span>
                                 </div>
@@ -1181,18 +1182,18 @@ export default function EmployeesPage() {
                                   href={comp.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-[11px] text-brand-600 hover:text-brand-800 hover:underline truncate inline-flex items-center gap-1 mt-0.5"
+                                  className="mt-0.5 inline-flex max-w-full items-center gap-1 truncate text-xs text-brand-700 hover:underline"
                                 >
                                   <span className="truncate">{comp.url}</span>
                                   <ExternalLink className="h-2.5 w-2.5 shrink-0" />
                                 </a>
                               </div>
                               <div className="text-right shrink-0">
-                                <span className="badge badge-green text-[10px] mb-1">
-                                  ✓ {t('emp.done', 'সম্পন্ন', 'Done')}
+                                <span className="badge badge-green mb-1">
+                                  <Check className="h-3 w-3" aria-hidden /> {t('emp.done', 'সম্পন্ন', 'Done')}
                                 </span>
-                                <div className="text-[10px] text-slate-400 flex items-center gap-1 justify-end">
-                                  <Clock className="h-2.5 w-2.5" />
+                                <div className="flex items-center justify-end gap-1 text-[11px] text-slate-500 tabular-nums">
+                                  <Clock className="h-3 w-3" />
                                   <span>{new Date(comp.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                 </div>
                               </div>
@@ -1207,18 +1208,19 @@ export default function EmployeesPage() {
                   {workActiveTab === 'LEADS' && (
                     <div className="space-y-2">
                       {!workData?.recentLeads || workData.recentLeads.length === 0 ? (
-                        <div className="text-center py-8 text-xs text-slate-400">
-                          {t('emp.no_leads', 'এই কর্মচারীর কোনো সংগৃহীত লিড নেই', 'No leads collected yet')}
-                        </div>
+                        <EmptyState
+                          icon={<Users className="h-5 w-5" />}
+                          title={t('emp.no_leads', 'এই কর্মচারীর কোনো সংগৃহীত লিড নেই', 'No leads collected yet')}
+                        />
                       ) : (
                         <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-white max-h-72 overflow-y-auto">
                           {workData.recentLeads.map((lead: any) => (
-                            <div key={lead.id} className="p-3 flex items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors">
+                            <div key={lead.id} className="p-3 flex items-center justify-between gap-3 transition-colors hover:bg-slate-50/80">
                               <div>
-                                <div className="font-semibold text-xs text-slate-800">{lead.name}</div>
-                                <div className="text-[11px] text-slate-500">{lead.phone} • {lead.product_name}</div>
+                                <div className="text-sm font-medium text-slate-800">{lead.name}</div>
+                                <div className="text-xs text-slate-500"><span className="tabular-nums">{lead.phone}</span> · {lead.product_name}</div>
                               </div>
-                              <span className="badge badge-blue text-[11px]">{lead.status}</span>
+                              <span className="badge badge-blue shrink-0">{lead.status}</span>
                             </div>
                           ))}
                         </div>
@@ -1230,12 +1232,12 @@ export default function EmployeesPage() {
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-5 py-4">
               <a
                 href={`/admin/targets`}
-                className="btn btn-secondary text-xs flex items-center gap-1.5"
+                className="btn btn-ghost btn-sm"
               >
-                <Target className="h-3.5 w-3.5 text-brand-600" />
+                <Target className="h-3.5 w-3.5" />
                 <span>{t('emp.assign_target_btn', 'টার্গেট ও কাজ দিন', 'Assign Jobs & Targets')}</span>
                 <ArrowUpRight className="h-3 w-3 text-slate-400" />
               </a>
@@ -1248,7 +1250,7 @@ export default function EmployeesPage() {
                     setWorkModalEmp(null);
                     if (current) openAssignSectionsModal(current);
                   }}
-                  className="btn btn-secondary text-xs flex items-center gap-1.5"
+                  className="btn btn-secondary btn-sm"
                 >
                   <Layers className="h-3.5 w-3.5" />
                   <span>{t('emp.change_sections', 'সেকশন পরিবর্তন', 'Change Sections')}</span>
@@ -1256,7 +1258,7 @@ export default function EmployeesPage() {
                 <button
                   type="button"
                   onClick={() => setWorkModalEmp(null)}
-                  className="btn btn-primary text-xs"
+                  className="btn btn-primary btn-sm"
                 >
                   {t('common.close', 'বন্ধ করুন', 'Close')}
                 </button>

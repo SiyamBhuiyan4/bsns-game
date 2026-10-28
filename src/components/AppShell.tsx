@@ -154,7 +154,7 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
       {/* Mobile drawer */}
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
-          <div className="animate-fade-in absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <div className="animate-fade-in absolute inset-0 overlay-dim backdrop-blur-sm" onClick={() => setOpen(false)} />
           <aside className="animate-slide-in-left absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-white shadow-xl">
             <div className="flex items-center justify-between pr-3">
               {brand}

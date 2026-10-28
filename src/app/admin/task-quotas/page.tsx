@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { CalendarClock, Loader2, Plus, Trash2 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
+import { SkeletonTable } from '@/components/ui/Skeleton';
 import { useLanguage } from '@/components/LanguageContext';
 
 type Period = 'DAILY' | 'WEEKLY' | 'MONTHLY';
@@ -156,13 +157,15 @@ export default function TaskQuotasPage() {
         )}
       />
 
-      {error && <div className="alert alert-error">{error}</div>}
-      {success && <div className="alert alert-success">{success}</div>}
+      {error && <div className="alert alert-error" role="alert">{error}</div>}
+      {success && <div className="alert alert-success" role="status">{success}</div>}
 
       <div className="card">
         <div className="card-header">
-          <h2 className="card-title">{L('নতুন কোটা', 'New quota')}</h2>
-          <span className="card-subtitle">{L('একই কর্মী ও সেকশনে আবার দিলে আগেরটা বদলে যাবে', 'Saving again for the same employee and section replaces it')}</span>
+          <div className="min-w-0">
+            <h2 className="card-title">{L('নতুন কোটা', 'New quota')}</h2>
+            <p className="card-subtitle">{L('একই কর্মী ও সেকশনে আবার দিলে আগেরটা বদলে যাবে', 'Saving again for the same employee and section replaces it')}</p>
+          </div>
         </div>
         <div className="card-body grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
@@ -207,8 +210,9 @@ export default function TaskQuotasPage() {
                     key={i}
                     type="button"
                     onClick={() => toggleDay(i)}
-                    className={`press rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors ${
-                      off ? 'border-rose-300 bg-rose-50 text-rose-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    aria-pressed={off}
+                    className={`press min-w-[3.25rem] rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                      off ? 'border-slate-800 bg-slate-800 text-white' : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
                     }`}
                   >
                     {L(d.bn, d.en)}
@@ -218,7 +222,7 @@ export default function TaskQuotasPage() {
             </div>
             <p className="hint">{perDayHint()}</p>
           </div>
-          <div className="sm:col-span-2 lg:col-span-4 flex justify-end">
+          <div className="flex justify-end border-t border-slate-100 pt-4 sm:col-span-2 lg:col-span-4">
             <button type="button" onClick={save} disabled={saving} className="btn btn-primary">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               {L('সংরক্ষণ করুন', 'Save')}
@@ -232,11 +236,7 @@ export default function TaskQuotasPage() {
           <h2 className="card-title">{L('আজকের অবস্থা', "Today's status")}</h2>
         </div>
         {loading ? (
-          <div className="space-y-2 p-5">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="skeleton h-10" />
-            ))}
-          </div>
+          <SkeletonTable rows={3} cols={6} label={L('লোড হচ্ছে…', 'Loading…')} />
         ) : quotas.length === 0 ? (
           <EmptyState
             icon={<CalendarClock className="h-5 w-5" />}
@@ -251,10 +251,10 @@ export default function TaskQuotasPage() {
                   <th>{L('কর্মী', 'Employee')}</th>
                   <th>{L('কোটা', 'Quota')}</th>
                   <th>{L('আজ বাধ্যতামূলক', 'Mandatory today')}</th>
-                  <th>{L('আজ সাধারণ', 'Normal today')}</th>
-                  <th>{L('আজ সম্পন্ন', 'Done today')}</th>
-                  <th>{L('বাকি', 'Remaining')}</th>
-                  <th />
+                  <th className="text-right">{L('আজ সাধারণ', 'Normal today')}</th>
+                  <th className="text-right">{L('আজ সম্পন্ন', 'Done today')}</th>
+                  <th className="text-right">{L('বাকি', 'Remaining')}</th>
+                  <th className="w-12"><span className="sr-only">{L('কাজ', 'Actions')}</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -262,11 +262,13 @@ export default function TaskQuotasPage() {
                   <tr key={q.quotaId}>
                     <td>
                       <div className="font-medium text-slate-900">{q.employeeName}</div>
-                      <div className="text-xs text-slate-500">{q.sectionName ?? L('সব সেকশন', 'All sections')}</div>
+                      <div className="mt-0.5 text-xs text-slate-500">{q.sectionName ?? L('সব সেকশন', 'All sections')}</div>
                     </td>
                     <td>
-                      <span className="badge badge-violet">{PERIOD_LABEL[q.period]}</span>{' '}
-                      <span className="tabular-nums">{q.amount}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="badge badge-gray">{PERIOD_LABEL[q.period]}</span>
+                        <span className="font-medium tabular-nums text-slate-900">{q.amount}</span>
+                      </div>
                       {q.offDays.length > 0 && (
                         <div className="text-xs text-slate-500">
                           {L('ছুটি', 'Off')}: {q.offDays.map((d) => L(WEEKDAYS[d].bn, WEEKDAYS[d].en)).join(', ')}
@@ -277,23 +279,23 @@ export default function TaskQuotasPage() {
                       {q.isOffDay ? (
                         <span className="badge badge-gray">{L('ছুটির দিন', 'Off day')}</span>
                       ) : (
-                        <span className={`badge ${q.mandatoryLeft > 0 ? 'badge-red' : 'badge-green'}`}>
+                        <span className={`badge tabular-nums ${q.mandatoryLeft > 0 ? 'badge-amber' : 'badge-green'}`}>
                           {q.mandatory - q.mandatoryLeft}/{q.mandatory}
                           {q.isLastWorkingDay && ` · ${L('শেষ দিন', 'last day')}`}
                         </span>
                       )}
                     </td>
-                    <td className="tabular-nums">{q.normal - q.normalLeft}/{q.normal}</td>
-                    <td className="tabular-nums">{q.doneToday}</td>
-                    <td className="tabular-nums">
-                      {q.remaining}
+                    <td className="text-right tabular-nums">{q.normal - q.normalLeft}/{q.normal}</td>
+                    <td className="text-right tabular-nums">{q.doneToday}</td>
+                    <td className="text-right tabular-nums">
+                      <span className="font-medium text-slate-900">{q.remaining}</span>
                       <div className="text-xs text-slate-500">{L('শেষ', 'by')} {q.windowEnd}</div>
                     </td>
                     <td className="text-right">
                       <button
                         type="button"
                         onClick={() => remove(q.quotaId)}
-                        className="btn-icon hover:text-rose-600"
+                        className="btn-icon h-8 w-8 hover:bg-rose-50 hover:text-rose-600"
                         aria-label={L('মুছুন', 'Delete')}
                       >
                         <Trash2 className="h-4 w-4" />

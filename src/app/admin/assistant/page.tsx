@@ -73,6 +73,12 @@ export default function TeachAssistantPage() {
       />
 
       <form onSubmit={add} className="card">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">{t('assistant.newTitle', 'নতুন বাক্য শেখান', 'Teach a new phrase')}</h2>
+            <p className="card-subtitle">{t('assistant.newSub', 'সহকারী এই বাক্য দেখলে নির্বাচিত পেজটি খুলবে।', 'The assistant opens the chosen page when it sees this phrase.')}</p>
+          </div>
+        </div>
         <div className="card-body space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
@@ -125,7 +131,7 @@ export default function TeachAssistantPage() {
           <div>
             <h2 className="card-title">{t('assistant.list', 'শেখানো বাক্য', 'Taught phrases')}</h2>
           </div>
-          <span className="badge badge-gray">{phrases.length}</span>
+          <span className="badge badge-gray tabular-nums">{phrases.length}</span>
         </div>
         {loading ? (
           <SkeletonTable rows={4} cols={3} label={t('common.loading', 'লোড হচ্ছে…', 'Loading…')} />

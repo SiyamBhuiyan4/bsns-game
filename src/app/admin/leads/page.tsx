@@ -480,7 +480,7 @@ export default function AdminLeadsPage() {
       return <span className="text-xs text-slate-400">—</span>;
     }
     return (
-      <div className="flex items-center gap-0.5" title={`Quality: ${rating} / 5`} aria-label={`Quality ${rating} of 5`}>
+      <div className="flex items-center gap-0.5" title={`${L('রেটিং', 'Quality')}: ${rating} / 5`} aria-label={`${L('রেটিং', 'Quality')} ${rating} / 5`}>
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
@@ -499,7 +499,7 @@ export default function AdminLeadsPage() {
           type="button"
           onClick={() => onPick(star === value ? '' : star)}
           className="rounded p-1 cursor-pointer hover:bg-slate-100"
-          aria-label={`${star} star`}
+          aria-label={`${star} / 5`}
         >
           <Star
             className={`h-5 w-5 ${
@@ -537,7 +537,7 @@ export default function AdminLeadsPage() {
         <div className="alert alert-error">
           <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
           <span className="flex-1">{L(errorMessage)}</span>
-          <button onClick={() => setErrorMessage(null)} className="btn-icon h-6 w-6" aria-label="Dismiss">
+          <button type="button" onClick={() => setErrorMessage(null)} className="btn-icon -my-1 h-6 w-6" aria-label={L('বন্ধ করুন', 'Dismiss')}>
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -547,7 +547,7 @@ export default function AdminLeadsPage() {
         <div className="alert alert-success">
           <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
           <span className="flex-1">{L(successMessage)}</span>
-          <button onClick={() => setSuccessMessage(null)} className="btn-icon h-6 w-6" aria-label="Dismiss">
+          <button type="button" onClick={() => setSuccessMessage(null)} className="btn-icon -my-1 h-6 w-6" aria-label={L('বন্ধ করুন', 'Dismiss')}>
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -559,9 +559,9 @@ export default function AdminLeadsPage() {
             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
             <div>
               <p className="font-medium">
-                {unfinishedCount} {L('লিড ৩+ দিন অপেক্ষমাণ', 'waiting 3+ days without an order')}
+                <span className="tabular-nums">{unfinishedCount}</span> {L('লিড ৩+ দিন অপেক্ষমাণ', 'waiting 3+ days without an order')}
               </p>
-              <p className="mt-0.5 text-xs opacity-80">Ask the owners to follow up.</p>
+              <p className="mt-0.5 text-xs opacity-80">{L('দায়িত্বপ্রাপ্ত কর্মীদের ফলো-আপ করতে বলুন।', 'Ask the owners to follow up.')}</p>
             </div>
           </div>
           <button
@@ -607,7 +607,7 @@ export default function AdminLeadsPage() {
         <div className="card-body space-y-4">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <label htmlFor="lead_search" className="sr-only">Search</label>
+            <label htmlFor="lead_search" className="sr-only">{L('খুঁজুন', 'Search')}</label>
             <input
               id="lead_search"
               type="text"
@@ -619,11 +619,12 @@ export default function AdminLeadsPage() {
           </div>
 
           {/* Calendar & Date Filter Presets */}
-          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 p-2.5">
-            <span className="flex items-center gap-1 text-xs font-semibold text-slate-600 mr-1">
-              <Calendar className="h-3.5 w-3.5 text-brand-600" />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <span id="lead_period_label" className="flex items-center gap-1.5 text-xs font-medium text-slate-700">
+              <Calendar className="h-3.5 w-3.5 text-slate-400" />
               {L('সময়কাল:', 'Period:')}
             </span>
+            <div className="segmented max-w-full flex-wrap" role="group" aria-labelledby="lead_period_label">
             {[
               { id: '1d', label: L('১ দিন (আজকের নতুন)', '1 Day (Today)') },
               { id: '3d', label: L('৩ দিন', '3 Days') },
@@ -636,15 +637,13 @@ export default function AdminLeadsPage() {
                 key={p.id}
                 type="button"
                 onClick={() => setDatePreset(p.id as any)}
-                className={`press rounded-lg px-2.5 py-1 text-xs font-medium transition ${
-                  datePreset === p.id
-                    ? 'bg-brand-600 text-white shadow-xs'
-                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
-                }`}
+                data-active={datePreset === p.id}
+                aria-pressed={datePreset === p.id}
               >
                 {p.label}
               </button>
             ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
@@ -721,14 +720,14 @@ export default function AdminLeadsPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto border-t border-slate-100">
+        <div className="max-h-[70vh] overflow-auto border-t border-slate-100">
           {loading ? (
             <SkeletonTable rows={7} cols={6} label={L('লোড হচ্ছে', 'Loading…')} />
           ) : leads.length === 0 ? (
             <EmptyState
               icon={<UserPlus className="h-5 w-5" />}
               title={L('কোনো লিড নেই', 'No leads found')}
-              description={hasActiveFilters ? 'Try clearing the filters.' : 'Add a lead to start the pipeline.'}
+              description={hasActiveFilters ? L('ফিল্টার সরিয়ে আবার চেষ্টা করুন।', 'Try clearing the filters.') : L('পাইপলাইন শুরু করতে একটি লিড যোগ করুন।', 'Add a lead to start the pipeline.')}
               action={
                 hasActiveFilters ? (
                   <button onClick={resetAllFilters} className="btn btn-secondary btn-sm">
@@ -740,17 +739,17 @@ export default function AdminLeadsPage() {
             />
           ) : (
             <table className="table-pro">
-              <thead>
+              <thead className="sticky top-0 z-10">
                 <tr>
                   <th>{L('ক্রেতা', 'Customer')}</th>
                   <th>{L('যোগ করার সময় (BST)', 'Added (BST)')}</th>
                   <th>{L('মার্কেটার', 'Owner')}</th>
                   <th>{L('ধরন', 'Type')}</th>
                   <th>{L("পণ্য / চ্যানেল")}</th>
-                  <th className="text-center">{L('স্টেজ', 'Stage')}</th>
+                  <th>{L('স্টেজ', 'Stage')}</th>
                   <th className="text-right">{L('মূল্য', 'Value')}</th>
                   <th className="text-right">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">{L('কার্যক্রম', 'Actions')}</span>
                   </th>
                 </tr>
               </thead>
@@ -761,12 +760,12 @@ export default function AdminLeadsPage() {
                       <div className="flex flex-wrap items-center gap-1.5">
                         <button
                           onClick={() => openDetail(l.id)}
-                          className="text-left font-medium text-slate-900 hover:text-brand-700 hover:underline cursor-pointer"
+                          className="cursor-pointer text-left font-medium text-slate-900 hover:text-brand-700"
                         >
                           {l.name}
                         </button>
                         {l.is_unfinished && (
-                          <span className="badge badge-amber">{l.days_since_update}d waiting</span>
+                          <span className="badge badge-amber tabular-nums">{L(`${l.days_since_update} দিন অপেক্ষমাণ`, `${l.days_since_update}d waiting`)}</span>
                         )}
                       </div>
                       <div className="mt-0.5 flex items-center gap-1 text-xs text-slate-500">
@@ -777,21 +776,16 @@ export default function AdminLeadsPage() {
                       </div>
                     </td>
 
-                    <td className="whitespace-nowrap text-xs text-slate-700">
-                      <div className="flex items-center gap-1.5 font-medium font-mono text-[11px]">
-                        <Clock className="h-3.5 w-3.5 text-slate-400" />
-                        <span>{formatBstDateTime(l.created_at, lang)}</span>
-                      </div>
+                    <td className="whitespace-nowrap text-xs text-slate-600 tabular-nums">
+                      {formatBstDateTime(l.created_at, lang)}
                     </td>
 
                     <td className="whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <span className="badge badge-blue text-[10px] font-semibold py-0.5">
-                          {L('যুক্ত করেছেন', 'Added by')}
-                        </span>
-                        <span className="font-semibold text-slate-900">{l.owner_name}</span>
+                      <div className="font-medium text-slate-900" title={L('যুক্ত করেছেন', 'Added by')}>
+                        <span className="sr-only">{L('যুক্ত করেছেন', 'Added by')}: </span>
+                        {l.owner_name}
                       </div>
-                      <div className="text-xs text-slate-500 mt-0.5">{l.owner_email}</div>
+                      <div className="mt-0.5 text-xs text-slate-500">{l.owner_email}</div>
                     </td>
 
                     <td className="whitespace-nowrap">
@@ -807,7 +801,7 @@ export default function AdminLeadsPage() {
                       {l.campaign && <div className="text-xs text-slate-500">{l.campaign.name}</div>}
                     </td>
 
-                    <td className="whitespace-nowrap text-center">{getStatusBadge(l.status)}</td>
+                    <td className="whitespace-nowrap">{getStatusBadge(l.status)}</td>
 
                     <td className="whitespace-nowrap text-right tabular-nums">
                       {l.status === 'ORDERED' && l.order_amount ? (
@@ -820,8 +814,10 @@ export default function AdminLeadsPage() {
                     </td>
 
                     <td className="whitespace-nowrap text-right">
-                      <div className="inline-flex items-center gap-1.5">
+                      <div className="inline-flex items-center gap-1">
                         <button
+                          type="button"
+                          aria-label={`${L('স্টেজ', 'Stage')}: ${l.name}`}
                           onClick={() => {
                             setStatusLead(l);
                             setTargetStatus(l.status);
@@ -836,9 +832,10 @@ export default function AdminLeadsPage() {
                           <ChevronRight className="h-3 w-3" />
                         </button>
                         <button
+                          type="button"
                           onClick={() => openDetail(l.id)}
-                          className="btn btn-ghost btn-sm"
-                          aria-label={`Notes (${l.notes_count})`}
+                          className="btn btn-ghost btn-sm tabular-nums"
+                          aria-label={`${L('নোট', 'Notes')} (${l.notes_count})`}
                         >
                           <MessageSquare className="h-3.5 w-3.5" />
                           {l.notes_count}
@@ -855,17 +852,17 @@ export default function AdminLeadsPage() {
 
       {/* Admin Detail Drawer */}
       {selectedLeadId && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-[2px]">
-          <div className="flex h-full w-full max-w-md flex-col bg-white shadow-xl">
+        <div role="dialog" aria-modal="true" aria-labelledby="lead_detail_title" className="animate-fade-in fixed inset-0 z-50 flex justify-end bg-[rgb(3_7_12/0.45)] backdrop-blur-[2px]">
+          <div className="flex h-full w-full max-w-md flex-col bg-white" style={{ boxShadow: 'var(--shadow-overlay)' }}>
             <div className="card-header">
-              <h3 className="card-title">{L('লিড বিবরণ', 'Lead details')}</h3>
+              <h3 id="lead_detail_title" className="card-title">{L('লিড বিবরণ', 'Lead details')}</h3>
               <button
                 onClick={() => {
                   setSelectedLeadId(null);
                   setLeadDetail(null);
                 }}
                 className="btn-icon"
-                aria-label="Close"
+                aria-label={L('বন্ধ করুন', 'Close')}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -910,7 +907,7 @@ export default function AdminLeadsPage() {
                       {getStatusBadge(leadDetail.status)}
                     </div>
 
-                    <dl className="grid grid-cols-2 gap-4 rounded-lg border border-slate-200 p-3 text-xs">
+                    <dl className="grid grid-cols-2 gap-4 rounded-xl border border-slate-200 p-4 text-xs">
                       <div>
                         <dt className="text-slate-500">{L('ক্রেতার ধরন', 'Type')}</dt>
                         <dd className="mt-1">{getBuyerTypeBadge(leadDetail.buyer_type)}</dd>
@@ -921,10 +918,10 @@ export default function AdminLeadsPage() {
                       </div>
                       <div className="col-span-2">
                         <dt className="text-slate-500">{L('যুক্ত করেছেন (কর্মী)', 'Added by (Employee)')}</dt>
-                        <dd className="mt-0.5 text-slate-900 flex items-center gap-2">
-                          <span className="badge badge-blue text-[10px] font-medium">{L('কর্মী', 'Employee')}</span>
-                          <span className="font-semibold">{leadDetail.owner_name}</span>
-                          <span className="text-slate-500 text-xs">({leadDetail.owner_email})</span>
+                        <dd className="mt-0.5 flex flex-wrap items-center gap-x-2 text-slate-900">
+                          <span className="sr-only">{L('কর্মী', 'Employee')}: </span>
+                          <span className="font-medium">{leadDetail.owner_name}</span>
+                          <span className="text-xs text-slate-500">{leadDetail.owner_email}</span>
                         </dd>
                       </div>
                       {leadDetail.address && (
@@ -947,17 +944,17 @@ export default function AdminLeadsPage() {
                   </div>
 
                   <div>
-                    <h4 className="mb-2 text-[13px] font-semibold text-slate-900">{L('নোট', 'Notes')}</h4>
+                    <h4 className="mb-2 text-sm font-semibold text-slate-900">{L('নোট', 'Notes')}</h4>
                     {leadDetail.notes.length === 0 ? (
                       <p className="text-xs text-slate-500">{L('কোনো নোট নেই', 'No notes yet')}</p>
                     ) : (
                       <ul className="space-y-2">
                         {leadDetail.notes.map((n) => (
-                          <li key={n.id} className="rounded-lg border border-slate-200 p-3 text-xs">
+                          <li key={n.id} className="rounded-xl border border-slate-200 p-3 text-xs">
                             <p className="leading-relaxed text-slate-800">{n.note}</p>
                             <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
                               <span>{n.author.name} · {n.author.role}</span>
-                              <span>{format(new Date(n.created_at), 'dd MMM yyyy, hh:mm a')}</span>
+                              <span className="tabular-nums">{format(new Date(n.created_at), 'dd MMM yyyy, hh:mm a')}</span>
                             </div>
                           </li>
                         ))}
@@ -970,7 +967,7 @@ export default function AdminLeadsPage() {
 
             {leadDetail && (
               <form onSubmit={handleAddAdminNote} className="flex gap-2 border-t border-slate-100 p-4">
-                <label htmlFor="admin_note" className="sr-only">Note</label>
+                <label htmlFor="admin_note" className="sr-only">{L('নোট', 'Note')}</label>
                 <input
                   id="admin_note"
                   type="text"
@@ -980,7 +977,7 @@ export default function AdminLeadsPage() {
                   onChange={(e) => setAdminNoteText(e.target.value)}
                   className="input flex-1"
                 />
-                <button type="submit" disabled={noteSubmitting} className="btn btn-primary" aria-label="Send note">
+                <button type="submit" disabled={noteSubmitting} className="btn btn-primary" aria-label={L('নোট পাঠান', 'Send note')}>
                   <Send className="h-4 w-4" />
                 </button>
               </form>
@@ -992,10 +989,10 @@ export default function AdminLeadsPage() {
       {/* Modal: Add Lead (Admin with phone duplicate check showing owner name) */}
       {isAddOpen && (
         <div className="modal-backdrop">
-          <div className="modal-panel">
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="add_lead_title">
             <div className="card-header">
-              <h3 className="card-title">{L('নতুন লিড', 'Add lead')}</h3>
-              <button type="button" onClick={() => setIsAddOpen(false)} className="btn-icon" aria-label="Close">
+              <h3 id="add_lead_title" className="card-title">{L('নতুন লিড', 'Add lead')}</h3>
+              <button type="button" onClick={() => setIsAddOpen(false)} className="btn-icon" aria-label={L('বন্ধ করুন', 'Close')}>
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1039,24 +1036,24 @@ export default function AdminLeadsPage() {
                   </div>
 
                   {phoneCheckResult?.checked && !phoneCheckResult.isExisting && (
-                    <div className="mt-2 flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-800">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                    <div className="alert alert-success mt-2 items-center px-3 py-2 text-xs">
+                      <CheckCircle2 className="h-4 w-4 shrink-0" />
                       <span>{L('নতুন কাস্টমার (New Customer)', 'New Customer')}</span>
                     </div>
                   )}
 
                   {phoneCheckResult?.checked && phoneCheckResult.isExisting && (
-                    <div className="mt-2 rounded-md border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-800 space-y-1">
-                      <div className="flex items-center gap-1.5 font-bold text-rose-700">
-                        <XCircle className="h-4 w-4 shrink-0 text-rose-600" />
-                        <span>{phoneCheckResult.message}</span>
-                      </div>
-                      <p className="text-[11px] text-rose-600">
+                    <div className="alert alert-error mt-2 px-3 py-2.5 text-xs" role="alert">
+                      <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                      <div className="space-y-1">
+                      <p className="font-medium">{phoneCheckResult.message}</p>
+                      <p className="opacity-80">
                         {L(
                           'এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার)। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।',
                           'This mobile number already exists in the database (Old Customer). Duplicate customers cannot be added.'
                         )}
                       </p>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1180,7 +1177,7 @@ export default function AdminLeadsPage() {
                       </option>
                     ))}
                   </select>
-                  <p className="hint text-[11px] text-slate-500 mt-1">
+                  <p className="hint">
                     {L('যে কর্মীকে নির্বাচন করবেন, তার নতুন ক্লায়েন্ট (NEW_CLIENTS) সংখ্যায় স্বয়ংক্রিয়ভাবে +১ যোগ হবে।', 'The selected employee will automatically receive +1 in their NEW_CLIENTS count.')}
                   </p>
                 </div>
@@ -1219,15 +1216,15 @@ export default function AdminLeadsPage() {
       {/* Modal: Status Transition & Quality Rating Update */}
       {statusLead && (
         <div className="modal-backdrop">
-          <div className="modal-panel">
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="stage_title">
             <div className="card-header">
               <div className="min-w-0">
-                <h3 className="card-title">{L('স্টেজ পরিবর্তন', 'Change stage')}</h3>
+                <h3 id="stage_title" className="card-title">{L('স্টেজ পরিবর্তন', 'Change stage')}</h3>
                 <p className="card-subtitle truncate">
                   {statusLead.name} · {statusLead.phone || statusLead.masked_phone}
                 </p>
               </div>
-              <button type="button" onClick={() => setStatusLead(null)} className="btn-icon" aria-label="Close">
+              <button type="button" onClick={() => setStatusLead(null)} className="btn-icon" aria-label={L('বন্ধ করুন', 'Close')}>
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1282,7 +1279,7 @@ export default function AdminLeadsPage() {
                         className="input pl-9 tabular-nums"
                       />
                     </div>
-                    <p className="hint">Required to mark a lead as ordered.</p>
+                    <p className="hint">{L('অর্ডার হিসেবে চিহ্নিত করতে মূল্য দিতে হবে।', 'Required to mark a lead as ordered.')}</p>
                   </div>
                 )}
 
@@ -1298,7 +1295,7 @@ export default function AdminLeadsPage() {
                       onChange={(e) => setLostReason(e.target.value)}
                       className="input"
                     />
-                    <p className="hint">Required to mark a lead as lost.</p>
+                    <p className="hint">{L('বাতিল হিসেবে চিহ্নিত করতে কারণ দিতে হবে।', 'Required to mark a lead as lost.')}</p>
                   </div>
                 )}
               </div>

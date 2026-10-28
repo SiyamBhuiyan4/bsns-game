@@ -681,14 +681,14 @@ export default function AdminPlanPage() {
       {toastMessage && (
         <div
           role="status"
-          className={`alert fixed right-4 top-4 z-[60] max-w-sm shadow-lg ${
+          className={`alert fixed right-4 top-4 z-[60] max-w-[calc(100vw-2rem)] shadow-[var(--shadow-pop)] sm:max-w-sm ${
             toastMessage.type === 'success' ? 'alert-success' : 'alert-error'
           }`}
         >
           {toastMessage.type === 'success' ? (
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           ) : (
-            <AlertCircle className="h-4 w-4 shrink-0" />
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           )}
           <span>{toastMessage.text}</span>
         </div>
@@ -781,13 +781,13 @@ export default function AdminPlanPage() {
       )}
 
       {/* STATS OVERVIEW */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="stagger grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label={L('চলমান দিন', 'Current Day')}
           value={isEn ? `${stats?.current_day || 1} / ${totalPlanDays}` : `${fmtNum(stats?.current_day || 1)} / ${fmtNum(totalPlanDays)}`}
           note={isEn ? `Phase ${stats?.current_phase_order || 1} active` : L(`ফেজ ${fmtNum(stats?.current_phase_order || 1)} সক্রিয়`)}
           icon={<Clock className="h-4 w-4" />}
-          tone="blue"
+          tone="gray"
         />
         <StatCard
           label={L('সার্বিক অগ্রগতি', 'Overall Progress')}
@@ -807,7 +807,7 @@ export default function AdminPlanPage() {
           label={L('সম্পন্ন টাস্ক', 'Completed Tasks')}
           value={isEn ? `${stats?.completed_tasks || 0} / ${stats?.total_tasks || 0}` : `${fmtNum(stats?.completed_tasks || 0)} / ${fmtNum(stats?.total_tasks || 0)}`}
           icon={<CheckCircle2 className="h-4 w-4" />}
-          tone="violet"
+          tone="gray"
         />
         <StatCard
           label={L('বিলম্বিত টাস্ক', 'Overdue Tasks')}
@@ -856,8 +856,9 @@ export default function AdminPlanPage() {
                           e.stopPropagation();
                           setEditingPhase(phase);
                         }}
-                        className="btn-icon p-1 text-slate-400 hover:text-brand-600"
+                        className="btn-icon h-7 w-7 text-slate-400"
                         title={L('ফেজের নাম ও দিন সম্পাদনা করুন', 'Edit phase details')}
+                        aria-label={L('ফেজের নাম ও দিন সম্পাদনা করুন', 'Edit phase details')}
                       >
                         <Edit2 className="h-3.5 w-3.5" />
                       </button>
@@ -872,7 +873,7 @@ export default function AdminPlanPage() {
 
                 <div className="flex shrink-0 items-center justify-between gap-4 md:justify-end">
                   <div className="text-right">
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs tabular-nums text-slate-500">
                       {L('টাস্ক', 'Tasks')} {fmtNum(phaseCompleted)}/{fmtNum(phaseTotal)}
                       <span className="ml-2 font-semibold text-slate-900">{fmtNum(phasePct)}%</span>
                     </div>
@@ -935,7 +936,7 @@ export default function AdminPlanPage() {
                   <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 bg-white">
                     <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                       {L('টাস্ক তালিকা', 'Task List')}
-                      <span className="badge badge-gray">{toBengaliDigits(phaseTasks.length)}</span>
+                      <span className="badge badge-gray tabular-nums">{fmtNum(phaseTasks.length)}</span>
                     </h4>
                     <button
                       type="button"
@@ -977,7 +978,7 @@ export default function AdminPlanPage() {
                                   id={`task-status-${task.id}`}
                                   value={task.status}
                                   onChange={(e) => handleQuickStatusChange(task.id, e.target.value as TaskStatus)}
-                                  className={`cursor-pointer rounded-md border px-2 py-1 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500/20 ${
+                                  className={`cursor-pointer rounded-lg border px-2 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand-500/20 ${
                                     task.status === 'DONE'
                                       ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                                       : task.status === 'IN_PROGRESS'
@@ -1010,11 +1011,10 @@ export default function AdminPlanPage() {
                                 title={L('সম্পাদনা করতে ক্লিক করুন', 'Click to edit task')}
                               >
                                 <div>
-                                  <h5 className="text-sm font-semibold leading-snug text-slate-900 group-hover:text-brand-600 group-hover:underline flex items-center gap-1.5">
-                                    {task.title_bn}
-                                    <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-100 text-brand-600 transition-opacity" />
+                                  <h5 className="flex items-center gap-1.5 text-sm font-semibold leading-snug text-slate-900 group-hover:text-brand-700">
+                                    {isEn ? task.title_en || task.title_bn : task.title_bn}
+                                    <Edit2 className="h-3 w-3 text-slate-400 opacity-0 transition-opacity group-hover:opacity-100" />
                                   </h5>
-                                  <p className="mt-0.5 text-xs text-slate-500">{task.title_en}</p>
                                   {task.description && (
                                     <p className="mt-1 text-sm text-slate-600">{task.description}</p>
                                   )}
@@ -1050,7 +1050,7 @@ export default function AdminPlanPage() {
                                     placeholder={L('অর্জিত ফলাফল লিখুন...', 'Enter achieved outcome...')}
                                     value={outcomeDraft}
                                     onChange={(e) => setOutcomeDraft(e.target.value)}
-                                    className="input max-w-md flex-1 py-1 text-xs"
+                                    className="input input-sm max-w-md flex-1"
                                   />
                                   <button onClick={() => handleSaveOutcomeNote(task.id)} className="btn btn-primary btn-sm">
                                     {L('সংরক্ষণ', 'Save')}
@@ -1065,14 +1065,14 @@ export default function AdminPlanPage() {
                             <div className="flex flex-wrap items-end gap-4 lg:flex-nowrap">
                               {/* Assigned Marketer */}
                               <div className="w-44">
-                                <label className="label text-xs font-medium" htmlFor={`task-owner-${task.id}`}>
+                                <label className="label" htmlFor={`task-owner-${task.id}`}>
                                   {L('দায়িত্বপ্রাপ্ত', 'Assigned To')}
                                 </label>
                                 <select
                                   id={`task-owner-${task.id}`}
                                   value={task.owner_id || 'UNASSIGNED'}
                                   onChange={(e) => handleQuickOwnerChange(task.id, e.target.value)}
-                                  className="input py-1.5 text-xs font-semibold"
+                                  className="input input-sm"
                                 >
                                   <option value="UNASSIGNED">{L('অবণ্টিত', 'Unassigned')}</option>
                                   {employees.map((emp) => (
@@ -1085,9 +1085,9 @@ export default function AdminPlanPage() {
 
                               {/* Progress Slider */}
                               <div className="w-36">
-                                <div className="label flex items-center justify-between text-xs font-medium">
+                                <div className="label flex items-center justify-between">
                                   <label htmlFor={`task-progress-${task.id}`}>{L('অগ্রগতি', 'Progress')}</label>
-                                  <span className="tabular-nums font-bold text-slate-900">{toBengaliDigits(task.progress_percent)}%</span>
+                                  <span className="tabular-nums font-semibold text-slate-900">{fmtNum(task.progress_percent)}%</span>
                                 </div>
                                 <input
                                   id={`task-progress-${task.id}`}

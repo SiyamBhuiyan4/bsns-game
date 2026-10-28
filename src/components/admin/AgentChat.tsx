@@ -172,9 +172,9 @@ export default function AgentChat() {
           aria-label={L("Open AI assistant / AI সহকারী খুলুন")}
           aria-expanded={open}
           aria-controls="agent-chat-panel"
-          className="press fixed bottom-4 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand-600 text-white shadow-lg transition hover:bg-brand-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/40"
+          className="no-print press fixed bottom-4 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-brand-600 text-white shadow-[var(--shadow-pop)] transition hover:bg-brand-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/40"
         >
-          <Bot className="h-6 w-6" aria-hidden="true" />
+          <Bot className="h-5 w-5" aria-hidden="true" />
         </button>
       )}
 
@@ -184,12 +184,14 @@ export default function AgentChat() {
           role="dialog"
           aria-modal="false"
           aria-label={L("AI assistant / AI সহকারী")}
-          className="fixed inset-0 z-50 flex flex-col bg-white sm:inset-auto sm:bottom-4 sm:right-4 sm:h-[560px] sm:max-h-[calc(100vh-2rem)] sm:w-[380px] sm:rounded-2xl sm:border sm:border-slate-200 sm:shadow-2xl"
+          className="no-print animate-scale-in fixed inset-0 z-50 flex flex-col bg-white sm:inset-auto sm:bottom-4 sm:right-4 sm:h-[560px] sm:max-h-[calc(100vh-2rem)] sm:w-[380px] sm:rounded-2xl sm:border sm:border-slate-200 sm:shadow-[var(--shadow-overlay)]"
         >
           {/* Header */}
-          <div className="flex items-center justify-between gap-3 rounded-t-2xl bg-white border-b border-slate-200 px-4 py-3 text-slate-900">
-            <div className="flex items-center gap-2 min-w-0">
-              <Bot className="h-5 w-5 shrink-0 text-brand-600" aria-hidden="true" />
+          <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 text-slate-900 sm:rounded-t-2xl">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 ring-1 ring-brand-600/10">
+                <Bot className="h-4 w-4" aria-hidden="true" />
+              </span>
               <h2 className="truncate text-sm font-semibold text-slate-900">
                 {L("সহকারী · Assistant")}
               </h2>
@@ -198,9 +200,9 @@ export default function AgentChat() {
               type="button"
               onClick={() => setOpen(false)}
               aria-label={L("Close / বন্ধ করুন")}
-              className="rounded-lg p-1.5 hover:bg-slate-100 text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+              className="btn-icon h-8 w-8"
             >
-              <X className="h-5 w-5" aria-hidden="true" />
+              <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
 
@@ -219,8 +221,8 @@ export default function AgentChat() {
                   <div
                     className={
                       m.role === 'user'
-                        ? 'whitespace-pre-wrap break-words rounded-2xl rounded-br-sm bg-brand-600 px-3 py-2 text-sm text-white'
-                        : 'whitespace-pre-wrap break-words rounded-2xl rounded-bl-sm bg-slate-100 px-3 py-2 text-sm text-slate-800'
+                        ? 'whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-brand-600 px-3.5 py-2 text-sm leading-relaxed text-white'
+                        : 'whitespace-pre-wrap break-words rounded-2xl rounded-bl-md border border-slate-200/70 bg-slate-50 px-3.5 py-2 text-sm leading-relaxed text-slate-800'
                     }
                   >
                     {m.text}
@@ -231,7 +233,7 @@ export default function AgentChat() {
                         type="button"
                         disabled={loading}
                         onClick={() => answerConfirmation(m.id, m.originalMessage!, true, m.pending)}
-                        className="press rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+                        className="btn btn-primary btn-sm"
                       >
                         {L("Yes, do it / হ্যাঁ, করুন")}
                       </button>
@@ -239,7 +241,7 @@ export default function AgentChat() {
                         type="button"
                         disabled={loading}
                         onClick={() => answerConfirmation(m.id, m.originalMessage!, false)}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                        className="btn btn-secondary btn-sm"
                       >
                         {L("No / না")}
                       </button>
@@ -254,8 +256,8 @@ export default function AgentChat() {
                           onClick={() => router.push(l.href)}
                           className={
                             i === 0 && m.link
-                              ? 'inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700'
-                              : 'inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50'
+                              ? 'btn btn-primary btn-sm'
+                              : 'btn btn-secondary btn-sm'
                           }
                         >
                           {l.labelBn}
@@ -270,7 +272,7 @@ export default function AgentChat() {
 
             {loading && (
               <div className="flex justify-start" role="status">
-                <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm bg-slate-100 px-3 py-2 text-sm text-slate-500">
+                <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-slate-200/70 bg-slate-50 px-3.5 py-2 text-sm text-slate-500">
                   <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                   <span>{L("Thinking... / ভাবছি...")}</span>
                 </div>
@@ -280,7 +282,7 @@ export default function AgentChat() {
           </div>
 
           {/* Quick hints */}
-          <div className="flex flex-wrap gap-2 border-t border-slate-200 px-4 pt-3">
+          <div className="no-scrollbar flex gap-1.5 overflow-x-auto border-t border-slate-200 px-4 pt-3">
             {HINTS.map((hint) => (
               <button
                 key={hint}
@@ -289,7 +291,7 @@ export default function AgentChat() {
                   setInput(hint);
                   inputRef.current?.focus();
                 }}
-                className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-600 hover:border-emerald-300 hover:text-emerald-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+                className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 transition-colors hover:border-brand-300 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
               >
                 {hint}
               </button>
@@ -309,14 +311,14 @@ export default function AgentChat() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
               placeholder={L("Type a message... / বার্তা লিখুন...")}
-              className="max-h-32 min-h-[40px] flex-1 resize-none rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+              className="input max-h-32 min-h-[40px] flex-1 resize-none"
             />
             <button
               type="button"
               onClick={send}
               disabled={loading || !input.trim()}
               aria-label={L("Send / পাঠান")}
-              className="press flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40"
+              className="btn btn-primary h-10 w-10 shrink-0 px-0"
             >
               <Send className="h-4 w-4" aria-hidden="true" />
             </button>

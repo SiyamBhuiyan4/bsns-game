@@ -60,15 +60,15 @@ export default function AuditLogPage() {
     UPDATE: { labelBn: L('আপডেট'), color: 'badge-blue' },
     DELETE: { labelBn: L('ডিলিট'), color: 'badge-red' },
     LOGIN: { labelBn: L('লগইন'), color: 'badge-gray' },
-    UPLOAD: { labelBn: L('আপলোড'), color: 'badge-violet' },
+    UPLOAD: { labelBn: L('আপলোড'), color: 'badge-gray' },
     ASSIGN: { labelBn: L('অ্যাসাইন'), color: 'badge-blue' },
-    TARGET_SET: { labelBn: L('টার্গেট সেট'), color: 'badge-violet' },
-    BUDGET_SET: { labelBn: L('বাজেট সেট'), color: 'badge-violet' },
+    TARGET_SET: { labelBn: L('টার্গেট সেট'), color: 'badge-gray' },
+    BUDGET_SET: { labelBn: L('বাজেট সেট'), color: 'badge-gray' },
     ENTRY_SAVE: { labelBn: L('এন্ট্রি সেভ'), color: 'badge-green' },
     LEAD_UPDATE: { labelBn: L('লিড আপডেট'), color: 'badge-blue' },
     UNDO: { labelBn: L('আনডু'), color: 'badge-amber' },
-    REPORT_PUBLISH: { labelBn: L('রিপোর্ট প্রকাশ'), color: 'badge-green' },
-    REPORT_FINALIZE: { labelBn: L('রিপোর্ট চূড়ান্ত'), color: 'badge-green' },
+    REPORT_PUBLISH: { labelBn: L('রিপোর্ট প্রকাশ'), color: 'badge-brand' },
+    REPORT_FINALIZE: { labelBn: L('রিপোর্ট চূড়ান্ত'), color: 'badge-brand' },
     PLAN_UPDATE: { labelBn: L('প্ল্যান আপডেট'), color: 'badge-blue' },
     EXPORT: { labelBn: L('এক্সপোর্ট'), color: 'badge-gray' },
   };
@@ -213,6 +213,12 @@ export default function AuditLogPage() {
       />
 
       <div className="card">
+        <div className="card-header">
+          <div className="min-w-0">
+            <h2 className="card-title">{L('ফিল্টার', 'Filters')}</h2>
+            <p className="card-subtitle">{L('ব্যবহারকারী, অ্যাকশন, এনটিটি বা তারিখ দিয়ে খুঁজুন', 'Narrow down by user, action, entity or date')}</p>
+          </div>
+        </div>
         <div className="card-body grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           <div>
             <label className="label" htmlFor="audit-actor">{L("ব্যবহারকারী")}</label>
@@ -312,9 +318,9 @@ export default function AuditLogPage() {
         )}
       </div>
 
-      <div className="card">
-        <div className="overflow-x-auto">
-          <table className="table-pro">
+      <div className="card overflow-hidden">
+        <div className="max-h-[70vh] overflow-auto [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-slate-50">
+          <table className="table-pro min-w-[760px]">
             <thead>
               <tr>
                 <th>{L("সময় (ঢাকা)")}</th>
@@ -415,7 +421,8 @@ export default function AuditLogPage() {
                               setSelectedLog(log);
                               setModalTab(isDiff ? 'diff' : 'raw');
                             }}
-                            className="btn btn-secondary btn-sm"
+                            className="btn btn-ghost btn-sm"
+                            aria-label={L('লগ বিবরণ দেখুন', 'View log details')}
                           >
                             <Eye className="h-3.5 w-3.5" />
                             {L("দেখুন")}
@@ -448,7 +455,7 @@ export default function AuditLogPage() {
                   setLimit(Number(e.target.value));
                   setCurrentPage(1);
                 }}
-                className="input w-auto py-1 text-xs"
+                className="input input-sm w-auto"
               >
                 <option value={25}>{L("২৫")}</option>
                 <option value={50}>{L("৫০")}</option>
@@ -482,13 +489,13 @@ export default function AuditLogPage() {
       </div>
 
       {selectedLog && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true">
-          <div className="modal-panel flex flex-col sm:max-w-2xl">
+        <div className="modal-backdrop">
+          <div className="modal-panel flex flex-col sm:max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="audit-log-title">
             <div className="card-header">
               <div className="flex min-w-0 items-center gap-2">
                 <FileCode className="h-4 w-4 shrink-0 text-slate-400" />
                 <div className="min-w-0">
-                  <h3 className="card-title">{L("লগ বিবরণ")}</h3>
+                  <h3 id="audit-log-title" className="card-title">{L("লগ বিবরণ")}</h3>
                   <p className="card-subtitle truncate">
                     {selectedLog.entity} · {formatDhakaDateTime(selectedLog.created_at)}
                   </p>
@@ -541,7 +548,7 @@ export default function AuditLogPage() {
                         <div
                           key={key}
                           className={`rounded-lg border p-3 ${
-                            isChanged ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200'
+                            isChanged ? 'border-amber-200 bg-amber-50/40' : 'border-slate-200 bg-white'
                           }`}
                         >
                           <div className="mb-2 flex items-center gap-2 font-mono text-xs font-semibold text-slate-800">
@@ -552,13 +559,13 @@ export default function AuditLogPage() {
                             <div className="min-w-0 rounded-md border border-rose-100 bg-rose-50 p-2 text-rose-900">
                               <span className="mb-1 block text-[11px] font-medium text-rose-700">{L("আগের মান")}</span>
                               <pre className="whitespace-pre-wrap break-all font-mono text-[11px]">
-                                {oldVal !== undefined ? JSON.stringify(oldVal, null, 2) : '(none)'}
+                                {oldVal !== undefined ? JSON.stringify(oldVal, null, 2) : L('(নেই)', '(none)')}
                               </pre>
                             </div>
                             <div className="min-w-0 rounded-md border border-emerald-100 bg-emerald-50 p-2 text-emerald-900">
                               <span className="mb-1 block text-[11px] font-medium text-emerald-700">{L("নতুন মান")}</span>
                               <pre className="whitespace-pre-wrap break-all font-mono text-[11px]">
-                                {newVal !== undefined ? JSON.stringify(newVal, null, 2) : '(none)'}
+                                {newVal !== undefined ? JSON.stringify(newVal, null, 2) : L('(নেই)', '(none)')}
                               </pre>
                             </div>
                           </div>
@@ -568,7 +575,7 @@ export default function AuditLogPage() {
                   </div>
                 )
               ) : (
-                <div className="overflow-x-auto rounded-lg bg-slate-900 p-4 font-mono text-xs text-slate-100">
+                <div className="overflow-x-auto rounded-xl border border-slate-200 bg-slate-50 p-4 font-mono text-xs leading-relaxed text-slate-800">
                   <pre>{JSON.stringify(selectedLog.payload, null, 2)}</pre>
                 </div>
               )}

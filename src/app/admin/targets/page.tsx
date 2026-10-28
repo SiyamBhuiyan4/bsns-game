@@ -19,7 +19,7 @@ import {
   Award,
   Briefcase,
   ListPlus,
-  Sparkles,
+  Info,
   CheckSquare,
   Square,
   Filter,
@@ -556,16 +556,16 @@ export default function AdminTargetsPage() {
 
       {/* Success Notification */}
       {successMsg && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800 flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+        <div className="alert alert-success" role="status">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {/* Error Notification */}
       {errorMsg && !showModal && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 flex items-center gap-2">
-          <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+        <div className="alert alert-error" role="alert">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
@@ -576,22 +576,24 @@ export default function AdminTargetsPage() {
       ) : (
       <div className="stagger grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          icon={<Target className="h-5 w-5 text-emerald-600" />}
+          icon={<Target className="h-4 w-4" />}
           label={L('মোট টার্গেট', 'Total Targets')}
           value={formatNum(stats.total)}
         />
         <StatCard
-          icon={<Users className="h-5 w-5 text-sky-600" />}
+          icon={<Users className="h-4 w-4" />}
+          tone="gray"
           label={L('টার্গেটপ্রাপ্ত কর্মী', 'Targeted Employees')}
           value={formatNum(stats.uniqueEmployees)}
         />
         <StatCard
-          icon={<TrendingUp className="h-5 w-5 text-violet-600" />}
+          icon={<TrendingUp className="h-4 w-4" />}
+          tone="gray"
           label={L('গড় পূরণ হার', 'Avg Achievement')}
           value={`${formatNum(stats.avgRate)}%`}
         />
         <StatCard
-          icon={<Award className="h-5 w-5 text-emerald-600" />}
+          icon={<Award className="h-4 w-4" />}
           label={L('লক্ষ্য পূরণ সম্পন্ন', 'Targets Met')}
           value={formatNum(stats.metCount)}
         />
@@ -599,26 +601,27 @@ export default function AdminTargetsPage() {
       )}
 
       {/* Advanced Multi-Option Filter Toolbar */}
-      <div className="card p-4 space-y-3.5">
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+      <div className="card space-y-4 p-4 sm:p-5">
+        <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-12">
           {/* Search Box */}
           <div className="sm:col-span-4">
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label className="label">
               {L('খুঁজুন (Search)', 'Search Employee / Section')}
             </label>
             <div className="relative">
-              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder={L('কর্মী, গ্রুপ বা কাজের নাম...', 'Employee, group or task name...')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none"
+                className="input pl-9 pr-8"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery('')}
+                  aria-label={L('খোঁজা মুছুন', 'Clear search')}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -629,13 +632,13 @@ export default function AdminTargetsPage() {
 
           {/* Employee Filter */}
           <div className="sm:col-span-3">
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label className="label">
               {L('কর্মচারী দিয়ে ফিল্টার', 'Filter by Employee')}
             </label>
             <select
               value={filterEmployee}
               onChange={(e) => setFilterEmployee(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-brand-500 focus:outline-none"
+              className="input"
             >
               <option value="ALL">{L('সব কর্মচারী (All Employees)', 'All Employees')}</option>
               {employees.map((emp) => (
@@ -648,13 +651,13 @@ export default function AdminTargetsPage() {
 
           {/* Period Filter */}
           <div className="sm:col-span-2">
-            <label className="block text-xs font-semibold text-slate-500 mb-1">
+            <label className="label">
               {L('সময়কাল', 'Period')}
             </label>
             <select
               value={filterPeriod}
               onChange={(e) => setFilterPeriod(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-brand-500 focus:outline-none"
+              className="input"
             >
               <option value="ALL">{L('সব সময়কাল', 'All Periods')}</option>
               <option value="DAILY">{L('দৈনিক (Daily)', 'Daily')}</option>
@@ -665,15 +668,15 @@ export default function AdminTargetsPage() {
 
           {/* Advanced Multi-Select Task / Metric Filter */}
           <div className="sm:col-span-3 relative">
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-semibold text-slate-500">
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="label mb-0">
                 {L('কাজের ধরন (Multiple Options)', 'Tasks / Metrics (Multi-Select)')}
               </label>
               {selectedMetrics.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setSelectedMetrics([])}
-                  className="text-[11px] text-brand-600 hover:text-brand-800 font-semibold"
+                  className="text-[11px] font-medium text-brand-700 hover:text-brand-800"
                 >
                   {L('ক্লিয়ার', 'Reset')}
                 </button>
@@ -684,10 +687,10 @@ export default function AdminTargetsPage() {
             <button
               type="button"
               onClick={() => setIsMetricDropdownOpen((prev) => !prev)}
-              className={`w-full flex items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors cursor-pointer ${
-                selectedMetrics.length > 0
-                  ? 'border-emerald-500 bg-emerald-50/50 text-emerald-900 font-medium'
-                  : 'border-slate-200 bg-white text-slate-800 hover:bg-slate-50'
+              aria-haspopup="listbox"
+              aria-expanded={isMetricDropdownOpen}
+              className={`input flex cursor-pointer items-center justify-between text-left ${
+                selectedMetrics.length > 0 ? 'border-brand-500 font-medium' : 'hover:bg-slate-50'
               }`}
             >
               <span className="truncate">
@@ -697,7 +700,7 @@ export default function AdminTargetsPage() {
               </span>
               <div className="flex items-center gap-1 shrink-0 ml-2">
                 {selectedMetrics.length > 0 && (
-                  <span className="inline-flex items-center justify-center h-5 px-1.5 rounded-full text-[11px] font-bold bg-emerald-600 text-white">
+                  <span className="inline-flex h-5 items-center justify-center rounded-full bg-brand-600 px-1.5 text-[11px] font-semibold tabular-nums text-white">
                     {selectedMetrics.length}
                   </span>
                 )}
@@ -716,9 +719,9 @@ export default function AdminTargetsPage() {
                   className="fixed inset-0 z-20"
                   onClick={() => setIsMetricDropdownOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-1.5 w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-xl z-30 space-y-1">
+                <div className="animate-scale-in absolute right-0 top-full z-30 mt-1.5 w-full max-w-[calc(100vw-2rem)] space-y-0.5 rounded-xl border border-slate-200 bg-white p-1.5 shadow-[var(--shadow-pop)] sm:w-72">
                   <div className="flex items-center justify-between px-2 py-1.5 border-b border-slate-100 mb-1">
-                    <span className="text-xs font-bold text-slate-700">
+                    <span className="text-xs font-semibold text-slate-700">
                       {L('এক বা একাধিক কাজ বেছে নিন', 'Select One or Multiple')}
                     </span>
                     <button
@@ -735,12 +738,12 @@ export default function AdminTargetsPage() {
                     onClick={() => toggleMetricFilter('ALL')}
                     className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
                       selectedMetrics.length === 0
-                        ? 'bg-emerald-50 text-emerald-800 font-semibold'
+                        ? 'bg-brand-50 font-medium text-brand-800'
                         : 'text-slate-700 hover:bg-slate-50'
                     }`}
                   >
                     {selectedMetrics.length === 0 ? (
-                      <CheckSquare className="h-4 w-4 text-emerald-600 shrink-0" />
+                      <CheckSquare className="h-4 w-4 shrink-0 text-brand-600" />
                     ) : (
                       <Square className="h-4 w-4 text-slate-400 shrink-0" />
                     )}
@@ -758,19 +761,19 @@ export default function AdminTargetsPage() {
                         onClick={() => toggleMetricFilter(key)}
                         className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
                           isChecked
-                            ? 'bg-emerald-50 text-emerald-900 font-semibold'
+                            ? 'bg-brand-50 font-medium text-brand-800'
                             : 'text-slate-700 hover:bg-slate-50'
                         }`}
                       >
                         <div className="flex items-center gap-2.5 truncate">
                           {isChecked ? (
-                            <CheckSquare className="h-4 w-4 text-emerald-600 shrink-0" />
+                            <CheckSquare className="h-4 w-4 shrink-0 text-brand-600" />
                           ) : (
                             <Square className="h-4 w-4 text-slate-400 shrink-0" />
                           )}
                           <span className="truncate">{L(cfg.bn, cfg.en)}</span>
                         </div>
-                        <span className="text-[11px] text-slate-400 ml-2 font-mono tabular-nums shrink-0">
+                        <span className="ml-2 shrink-0 text-[11px] tabular-nums text-slate-400">
                           ({count})
                         </span>
                       </div>
@@ -783,8 +786,8 @@ export default function AdminTargetsPage() {
         </div>
 
         {/* Quick-Filter Pills/Chips (Interactive Multi-Select Row) */}
-        <div className="pt-2 border-t border-slate-100 flex items-center gap-1.5 flex-wrap">
-          <span className="text-[11px] font-semibold text-slate-400 mr-1 flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-3">
+          <span className="mr-1 flex items-center gap-1 text-xs font-medium text-slate-500">
             <Filter className="h-3 w-3" />
             {L('দ্রুত বাছাই:', 'Quick Filter:')}
           </span>
@@ -793,10 +796,11 @@ export default function AdminTargetsPage() {
           <button
             type="button"
             onClick={() => toggleMetricFilter('ALL')}
-            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
+            aria-pressed={selectedMetrics.length === 0}
+            className={`press cursor-pointer rounded-full px-2.5 py-1 text-xs font-medium tabular-nums transition-colors ${
               selectedMetrics.length === 0
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                ? 'bg-slate-800 text-white'
+                : 'bg-white text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-50'
             }`}
           >
             {L('সব কাজ', 'All')} ({targets.length})
@@ -812,16 +816,17 @@ export default function AdminTargetsPage() {
                 key={key}
                 type="button"
                 onClick={() => toggleMetricFilter(key)}
-                className={`press inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer ${
+                aria-pressed={isSelected}
+                className={`press inline-flex cursor-pointer items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
                   isSelected
-                    ? 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-600/30'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200/80 border border-transparent'
+                    ? 'bg-brand-50 text-brand-800 ring-1 ring-inset ring-brand-600/30'
+                    : 'bg-white text-slate-600 ring-1 ring-inset ring-slate-200 hover:bg-slate-50'
                 }`}
               >
                 <span>{L(cfg.bn, cfg.en)}</span>
                 <span
-                  className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full tabular-nums ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-600'
+                  className={`text-[11px] tabular-nums ${
+                    isSelected ? 'text-brand-700' : 'text-slate-400'
                   }`}
                 >
                   {count}
@@ -838,7 +843,7 @@ export default function AdminTargetsPage() {
           <SkeletonTable rows={6} cols={6} label={L('টার্গেট তালিকা লোড হচ্ছে...', 'Loading targets...')} />
         ) : filteredTargets.length === 0 ? (
           <EmptyState
-            icon={<Target className="h-6 w-6 text-slate-400" />}
+            icon={<Target className="h-5 w-5" />}
             title={L('কোনো টার্গেট নির্ধারণ করা হয়নি', 'No targets found')}
             description={L(
               'কর্মচারীদের কাজের টার্গেট দিতে উপরের "নতুন টার্গেট দিন" বাটনে চাপুন।',
@@ -857,7 +862,7 @@ export default function AdminTargetsPage() {
           />
         ) : (
           <div className="overflow-x-auto">
-            <table className="table-pro">
+            <table className="table-pro min-w-[960px]">
               <thead>
                 <tr>
                   <th>{L('কর্মচারী (Employee)', 'Employee')}</th>
@@ -865,8 +870,8 @@ export default function AdminTargetsPage() {
                   <th>{L('সময়কাল', 'Period')}</th>
                   <th className="text-right">{L('টার্গেট লক্ষ্য', 'Target Value')}</th>
                   <th className="w-56">{L('চলমান অগ্রগতি (Progress)', 'Live Progress')}</th>
-                  <th className="text-center">{L('স্ট্যাটাস', 'Status')}</th>
-                  <th className="text-right">{L('অ্যাকশন', 'Actions')}</th>
+                  <th>{L('স্ট্যাটাস', 'Status')}</th>
+                  <th className="text-right"><span className="sr-only">{L('অ্যাকশন', 'Actions')}</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -885,18 +890,18 @@ export default function AdminTargetsPage() {
                   const isMet = achievedNum >= targetNum && targetNum > 0;
 
                   return (
-                    <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={t.id}>
                       {/* Employee Column */}
                       <td onClick={() => handleOpenEdit(t)} className="cursor-pointer" title={L('টার্গেট পরিবর্তন করতে ক্লিক করুন', 'Click to edit target')}>
                         <div className="flex items-center gap-2.5">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-brand-700 font-bold text-xs">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">
                             {emp?.name ? emp.name.slice(0, 1).toUpperCase() : 'E'}
                           </div>
-                          <div>
-                            <div className="font-semibold text-slate-800 hover:text-brand-700">
+                          <div className="min-w-0">
+                            <div className="font-medium text-slate-900 hover:text-brand-700">
                               {emp?.name || L('সাধারণ / গ্রুপ লক্ষ্য', 'Unassigned / General')}
                             </div>
-                            <div className="text-xs text-slate-400">{emp?.email || t.section?.name}</div>
+                            <div className="text-xs text-slate-500">{emp?.email || t.section?.name}</div>
                           </div>
                         </div>
                       </td>
@@ -910,7 +915,7 @@ export default function AdminTargetsPage() {
                             <span>{t.section?.name || L('সব গ্রুপ', 'All Groups')}</span>
                           </div>
                         ) : (
-                          <div className="text-xs text-slate-400">
+                          <div className="text-xs text-slate-500">
                             {L('সাধারণ লক্ষ্য', 'General Target')}
                           </div>
                         )}
@@ -918,8 +923,8 @@ export default function AdminTargetsPage() {
 
                       {/* Period Badge */}
                       <td onClick={() => handleOpenEdit(t)} className="cursor-pointer">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
-                          <Calendar className="h-3 w-3 text-slate-500" />
+                        <span className="badge badge-gray whitespace-nowrap">
+                          <Calendar className="h-3 w-3" />
                           {t.period_type === 'DAILY'
                             ? L('দৈনিক (প্রতিদিন)', 'Daily')
                             : t.period_type === 'WEEKLY'
@@ -929,11 +934,11 @@ export default function AdminTargetsPage() {
                       </td>
 
                       {/* Target Value (Click to edit) */}
-                      <td className="text-right font-mono font-bold text-slate-900">
+                      <td className="text-right font-semibold tabular-nums text-slate-900">
                         <button
                           type="button"
                           onClick={() => handleOpenEdit(t)}
-                          className="cursor-pointer font-bold px-2 py-1 rounded hover:bg-slate-200/60 transition-colors inline-flex items-center gap-1"
+                          className="-mr-2 inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-lg px-2 py-1 transition-colors hover:bg-slate-100"
                           title={L('টার্গেট পরিবর্তন করতে ক্লিক করুন', 'Click to edit target')}
                         >
                           <span>
@@ -948,30 +953,30 @@ export default function AdminTargetsPage() {
                       {/* Progress Bar & Counter */}
                       <td>
                         <div className="space-y-1">
-                          <div className="flex items-center justify-between text-xs font-medium">
-                            <span className="text-slate-600 font-mono">
+                          <div className="flex items-center justify-between gap-2 text-xs font-medium tabular-nums">
+                            <span className="text-slate-600">
                               {cfg.isCurrency ? formatMoney(achievedNum) : formatNum(achievedNum)} /{' '}
                               {cfg.isCurrency ? formatMoney(targetNum) : formatNum(targetNum)}
                             </span>
                             <span
-                              className={`font-bold ${
+                              className={`font-semibold ${
                                 isMet
-                                  ? 'text-emerald-600'
+                                  ? 'text-emerald-700'
                                   : percentage >= 50
-                                  ? 'text-sky-600'
-                                  : 'text-amber-600'
+                                  ? 'text-slate-900'
+                                  : 'text-amber-700'
                               }`}
                             >
                               {formatNum(percentage)}%
                             </span>
                           </div>
-                          <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                             <div
-                              className={`h-full transition-all duration-300 rounded-full ${
+                              className={`h-full rounded-full transition-all duration-300 ${
                                 isMet
                                   ? 'bg-emerald-500'
                                   : percentage >= 50
-                                  ? 'bg-sky-500'
+                                  ? 'bg-brand-500'
                                   : 'bg-amber-500'
                               }`}
                               style={{ width: `${percentage}%` }}
@@ -981,19 +986,19 @@ export default function AdminTargetsPage() {
                       </td>
 
                       {/* Status */}
-                      <td className="text-center">
+                      <td className="whitespace-nowrap">
                         {isMet ? (
-                          <span className="badge badge-green inline-flex items-center gap-1">
+                          <span className="badge badge-green">
                             <Check className="h-3 w-3" />
                             {L('পূরণ হয়েছে', 'Target Met')}
                           </span>
                         ) : percentage > 0 ? (
-                          <span className="badge badge-blue inline-flex items-center gap-1">
+                          <span className="badge badge-blue">
                             <TrendingUp className="h-3 w-3" />
                             {L('চলমান', 'In Progress')}
                           </span>
                         ) : (
-                          <span className="badge badge-gray inline-flex items-center gap-1">
+                          <span className="badge badge-gray">
                             {L('শুরু হয়নি', 'Not Started')}
                           </span>
                         )}
@@ -1005,16 +1010,18 @@ export default function AdminTargetsPage() {
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(t)}
-                            className="btn-icon"
+                            className="btn-icon h-8 w-8"
                             title={L('সম্পাদনা', 'Edit target')}
+                            aria-label={L('সম্পাদনা', 'Edit target')}
                           >
                             <Edit2 className="h-4 w-4" />
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDelete(t.id)}
-                            className="btn-icon text-rose-600 hover:bg-rose-50"
+                            className="btn-icon h-8 w-8 hover:bg-rose-50 hover:text-rose-600"
                             title={L('মুছুন', 'Delete target')}
+                            aria-label={L('মুছুন', 'Delete target')}
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -1032,19 +1039,19 @@ export default function AdminTargetsPage() {
       {/* Assign / Edit Target Modal */}
       {showModal && (
         <div className="modal-backdrop">
-          <div className="modal-panel max-w-2xl max-h-[92vh] flex flex-col p-0">
-            <div className="card-header p-5 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700 shrink-0">
-                  <Briefcase className="h-5 w-5" />
+          <div className="modal-panel flex flex-col overflow-hidden sm:max-w-2xl" role="dialog" aria-modal="true" aria-labelledby="target-modal-title">
+            <div className="card-header shrink-0 flex-nowrap items-start">
+              <div className="flex min-w-0 items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-600/10">
+                  <Briefcase className="h-4 w-4" />
                 </div>
-                <div>
-                  <h3 className="card-title text-base sm:text-lg">
+                <div className="min-w-0">
+                  <h3 id="target-modal-title" className="card-title">
                     {editingTarget
                       ? L('কর্মচারীর কাজ ও টার্গেট সম্পাদনা করুন', 'Edit Employee Jobs & Targets')
                       : L('কর্মচারীকে এক বা একাধিক কাজ নির্ধারণ করুন', 'Assign Jobs & Targets to Employee')}
                   </h3>
-                  <p className="card-subtitle text-xs">
+                  <p className="card-subtitle mt-0.5">
                     {L(
                       'কর্মচারী নির্বাচন করে একসাথে এক বা একাধিক কাজের ধরন ও লক্ষ্যমাত্রা নির্ধারণ করুন',
                       'Select employee and assign multiple jobs & target quotas together'
@@ -1055,24 +1062,24 @@ export default function AdminTargetsPage() {
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
-                className="btn-icon"
-                aria-label="Close"
+                className="btn-icon shrink-0"
+                aria-label={L('বন্ধ করুন', 'Close')}
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-5">
+            <form onSubmit={handleSubmit} className="flex-1 space-y-5 overflow-y-auto px-5 pt-5">
               {errorMsg && (
-                <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700 flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
+                <div className="alert alert-error" role="alert">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>{errorMsg}</span>
                 </div>
               )}
 
               {/* 1. Select Existing Employee */}
               <div>
-                <label className="label font-semibold">
+                <label className="label">
                   {L('কর্মচারী নির্বাচন করুন (Employee) *', 'Select Employee *')}
                 </label>
                 <select
@@ -1093,7 +1100,7 @@ export default function AdminTargetsPage() {
                 </select>
 
                 {form.employee_id && (
-                  <div className="flex items-center justify-between mt-1.5 px-0.5 text-xs text-slate-500">
+                  <div className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
                     <span>
                       {L(
                         `এই কর্মচারীর বর্তমানে ${
@@ -1111,7 +1118,7 @@ export default function AdminTargetsPage() {
                     <button
                       type="button"
                       onClick={() => handleLoadEmployeeExistingJobs(form.employee_id)}
-                      className="text-emerald-700 hover:text-emerald-800 font-semibold underline cursor-pointer"
+                      className="cursor-pointer font-medium text-brand-700 hover:text-brand-800 hover:underline"
                     >
                       {L('বিদ্যমান কাজগুলো লোড করুন', 'Load Existing Jobs')}
                     </button>
@@ -1120,15 +1127,15 @@ export default function AdminTargetsPage() {
               </div>
 
               {/* 2. Target Period & Date in 2 columns */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="label font-semibold">
+                  <label className="label">
                     {L('সময়কাল (Period) *', 'Period *')}
                   </label>
                   <select
                     value={form.period_type}
                     onChange={(e) => setForm({ ...form, period_type: e.target.value })}
-                    className="input bg-white"
+                    className="input"
                   >
                     <option value="DAILY">{L('প্রতিদিন (Daily)', 'Daily')}</option>
                     <option value="WEEKLY">{L('সাপ্তাহিক (Weekly)', 'Weekly')}</option>
@@ -1137,7 +1144,7 @@ export default function AdminTargetsPage() {
                 </div>
 
                 <div>
-                  <label className="label font-semibold">
+                  <label className="label">
                     {form.period_type === 'DAILY'
                       ? L('কার্যকর তারিখ (Date)', 'Effective Date')
                       : L('শুরুর তারিখ / মাস (Start Date / Month)', 'Start Date / Month')}
@@ -1146,24 +1153,24 @@ export default function AdminTargetsPage() {
                     type="date"
                     value={form.period_start}
                     onChange={(e) => setForm({ ...form, period_start: e.target.value })}
-                    className="input bg-white"
+                    className="input"
                   />
                 </div>
               </div>
 
               {/* 3. Assigned Jobs List (Multiple Jobs) */}
               <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
                   <div className="flex items-center gap-2">
-                    <ListPlus className="h-4 w-4 text-emerald-600" />
-                    <span className="font-bold text-slate-800 text-sm">
+                    <ListPlus className="h-4 w-4 text-slate-400" />
+                    <span className="text-sm font-semibold text-slate-900">
                       {L('কাজের তালিকা ও লক্ষ্যমাত্রা (Jobs & Quotas)', 'Jobs & Quotas')}
                     </span>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                    <span className="badge badge-gray tabular-nums">
                       {jobs.length} {L('টি কাজ', 'Jobs')}
                     </span>
                   </div>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-slate-500">
                     {L('একত্রে একাধিক কাজ যোগ করতে পারেন', 'Add multiple jobs for this employee')}
                   </span>
                 </div>
@@ -1182,19 +1189,19 @@ export default function AdminTargetsPage() {
                     return (
                       <div
                         key={idx}
-                        className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 space-y-3 relative hover:border-slate-300 transition-colors shadow-sm"
+                        className="relative space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4 transition-colors hover:border-slate-300"
                       >
                         {/* Job Item Header */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-slate-200 text-slate-700 font-bold text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-xs font-semibold tabular-nums text-slate-600 ring-1 ring-inset ring-slate-200">
                               {idx + 1}
                             </span>
-                            <span className="font-semibold text-slate-800 text-xs sm:text-sm">
+                            <span className="text-sm font-medium text-slate-900">
                               {L(`কাজ #${idx + 1}`, `Job #${idx + 1}`)}: {L(cfg.bn, cfg.en)}
                             </span>
                             {job.id && (
-                              <span className="text-[10px] bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded font-medium">
+                              <span className="badge badge-blue">
                                 {L('বিদ্যমান', 'Existing')}
                               </span>
                             )}
@@ -1204,8 +1211,9 @@ export default function AdminTargetsPage() {
                             <button
                               type="button"
                               onClick={() => handleRemoveJob(idx)}
-                              className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition-colors cursor-pointer"
+                              className="btn-icon h-8 w-8 shrink-0 hover:bg-rose-50 hover:text-rose-600"
                               title={L('এই কাজটি মুছুন', 'Remove this job')}
+                              aria-label={L('এই কাজটি মুছুন', 'Remove this job')}
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
@@ -1216,13 +1224,13 @@ export default function AdminTargetsPage() {
                         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
                           {/* Task / Metric Dropdown */}
                           <div className={job.metric_type === 'POSTS_DONE' ? 'sm:col-span-5' : 'sm:col-span-8'}>
-                            <label className="text-[11px] font-medium text-slate-600 block mb-1">
+                            <label className="label">
                               {L('কাজের ধরন (Task / Metric) *', 'Task / Metric *')}
                             </label>
                             <select
                               value={job.metric_type}
                               onChange={(e) => handleUpdateJob(idx, 'metric_type', e.target.value)}
-                              className="input bg-white text-xs sm:text-sm"
+                              className="input"
                               required
                             >
                               {Object.entries(METRIC_CONFIG).map(([key, mcfg]) => (
@@ -1236,13 +1244,13 @@ export default function AdminTargetsPage() {
                           {/* Group Section (if POSTS_DONE) */}
                           {job.metric_type === 'POSTS_DONE' && (
                             <div className="sm:col-span-4">
-                              <label className="text-[11px] font-medium text-slate-600 block mb-1">
+                              <label className="label">
                                 {L('গ্রুপ / সাব-গ্রুপ (Section)', 'Group Section')}
                               </label>
                               <select
                                 value={job.section_id}
                                 onChange={(e) => handleUpdateJob(idx, 'section_id', e.target.value)}
-                                className="input bg-white text-xs sm:text-sm"
+                                className="input"
                               >
                                 <option value="">{L('-- সব গ্রুপ (All) --', '-- All Groups --')}</option>
                                 {sections.map((sec) => (
@@ -1256,7 +1264,7 @@ export default function AdminTargetsPage() {
 
                           {/* Target Value Input */}
                           <div className={job.metric_type === 'POSTS_DONE' ? 'sm:col-span-3' : 'sm:col-span-4'}>
-                            <label className="text-[11px] font-medium text-slate-600 block mb-1">
+                            <label className="label">
                               {L('টার্গেট সংখ্যা (Quota) *', 'Target Quota *')}
                             </label>
                             <div className="relative">
@@ -1266,11 +1274,11 @@ export default function AdminTargetsPage() {
                                 step="1"
                                 value={job.target_value}
                                 onChange={(e) => handleUpdateJob(idx, 'target_value', e.target.value)}
-                                className="input bg-white font-mono text-xs sm:text-sm pr-10"
+                                className="input pr-12 tabular-nums"
                                 placeholder="5"
                                 required
                               />
-                              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400 pointer-events-none">
+                              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
                                 {L(cfg.unitBn, cfg.unitEn)}
                               </span>
                             </div>
@@ -1285,17 +1293,17 @@ export default function AdminTargetsPage() {
                 <button
                   type="button"
                   onClick={handleAddJob}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border-2 border-dashed border-emerald-300 hover:border-emerald-500 bg-emerald-50/40 hover:bg-emerald-50 text-emerald-700 font-semibold text-xs sm:text-sm transition-all shadow-sm cursor-pointer mt-2"
+                  className="btn w-full border border-dashed border-slate-300 bg-white text-slate-700 hover:border-brand-500 hover:bg-brand-50 hover:text-brand-800"
                 >
                   <Plus className="h-4 w-4" />
                   <span>{L('+ আরও একটি কাজ যোগ করুন', '+ Add Another Job / Task')}</span>
                 </button>
 
                 {/* Multiple Jobs & Auto-Merge Pro-Tip */}
-                <div className="rounded-xl bg-emerald-50/70 border border-emerald-100 p-3 text-xs text-emerald-900 flex items-start gap-2.5 mt-2">
-                  <Sparkles className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="alert alert-info text-xs">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0" />
                   <div className="space-y-1">
-                    <div className="font-semibold text-emerald-950">
+                    <div className="font-medium">
                       {L('স্বয়ংক্রিয় মার্জ সক্রিয় (Auto-Merge Active):', 'Automatic Merge Active:')}
                     </div>
                     <div>
@@ -1309,18 +1317,18 @@ export default function AdminTargetsPage() {
               </div>
 
               {/* Modal Footer */}
-              <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4 mt-6">
+              <div className="sticky bottom-0 -mx-5 flex items-center justify-end gap-2 border-t border-slate-100 bg-white px-5 py-4">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="btn btn-secondary cursor-pointer"
+                  className="btn btn-secondary"
                 >
                   {L('বাতিল', 'Cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="btn btn-primary cursor-pointer flex items-center gap-1.5"
+                  className="btn btn-primary"
                 >
                   {submitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

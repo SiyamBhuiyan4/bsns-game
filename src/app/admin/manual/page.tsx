@@ -56,7 +56,7 @@ export default function AdminManualPage() {
   const MODE_LABELS: { mode: Mode; label: string }[] = [
     { mode: 'bn', label: L('বাংলা') },
     { mode: 'en', label: 'English' },
-    { mode: 'both', label: 'Both' },
+    { mode: 'both', label: L('দুটোই', 'Both') },
   ];
   const SECTIONS: ManualSection[] = [
     {
@@ -290,7 +290,7 @@ export default function AdminManualPage() {
               : L('অ্যাডমিন প্যানেল কীভাবে কাজ করে, ধাপে ধাপে। / How the admin panel works.')
         }
         actions={
-          <div role="group" aria-label="Language" className="segmented">
+          <div role="group" aria-label={L('ভাষা', 'Language')} className="segmented">
             {MODE_LABELS.map((item) => {
               const active = mode === item.mode;
               return (
@@ -309,12 +309,12 @@ export default function AdminManualPage() {
         }
       />
 
-      <div className="space-y-6">
-        <nav aria-label="Contents" className="card">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:items-start">
+        <nav aria-label={L('সূচিপত্র', 'Contents')} className="card lg:sticky lg:top-20">
           <div className="card-header">
             <h2 className="card-title">{mode === 'en' ? 'Contents' : L('সূচিপত্র')}</h2>
           </div>
-          <ol className="grid grid-cols-1 gap-x-4 gap-y-1 p-3 sm:grid-cols-2">
+          <ol className="grid grid-cols-1 gap-x-4 gap-y-0.5 p-2 sm:grid-cols-2 lg:grid-cols-1">
             {SECTIONS.map((s, i) => (
               <li key={s.id}>
                 <a
@@ -329,12 +329,13 @@ export default function AdminManualPage() {
           </ol>
         </nav>
 
+        <div className="min-w-0 space-y-6">
         {SECTIONS.map((section, index) => {
           const Icon = section.icon;
           return (
             <section key={section.id} id={section.id} className="card scroll-mt-24">
               <div className="card-header justify-start">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 ring-1 ring-brand-600/10">
                   <Icon className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
@@ -378,9 +379,10 @@ export default function AdminManualPage() {
           );
         })}
 
-        <p className="pb-4 text-center text-xs text-slate-400">
+        <p className="pb-4 text-center text-xs text-slate-500">
           {mode === 'en' ? 'Need more help? Ask the admin team.' : mode === 'bn' ? L('আরও সাহায্য লাগলে অ্যাডমিন টিমকে জানান।') : L('আরও সাহায্য লাগলে অ্যাডমিন টিমকে জানান। / Need more help? Ask the admin team.')}
         </p>
+        </div>
       </div>
     </div>
   );

@@ -3,25 +3,23 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
-  FileSpreadsheet,
   Calendar,
   AlertCircle,
   CheckCircle2,
-  Download,
   Users,
   DollarSign,
   Award,
   MessageSquare,
   X,
   BarChart3,
-  Loader2,
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
 import { formatTaka, getDhakaDateString, getDhakaOffsetDateString } from '@/lib/date';
 import { useLanguage } from '@/components/LanguageContext';
-import { SkeletonTable } from '@/components/ui/Skeleton';
+import { SkeletonStatCards, SkeletonTable } from '@/components/ui/Skeleton';
+import { ReportExportButtons, ReportPageSkeleton } from '@/components/admin/ReportKit';
 
 interface DailyEmployeeReport {
   employee_id: string;
@@ -126,6 +124,40 @@ function AdminDailyReportContent() {
   const summary = reportData?.summary;
   const employees = reportData?.employees || [];
 
+  const isToday = selectedDate === getDhakaDateString();
+  const execRows: { label: string; value: React.ReactNode; tone?: string; note?: React.ReactNode }[] = [
+    {
+      label: L("নতুন লিড"),
+      value: <>{reportData?.executive_table?.new_leads ?? summary?.team_new_clients ?? 0} {L("টি")}</>,
+    },
+    {
+      label: L("নিশ্চিত অর্ডার"),
+      value: <>{reportData?.executive_table?.confirmed_orders ?? summary?.team_b2b ?? 0} {L("টি")}</>,
+    },
+    {
+      label: L("মোট বিক্রি"),
+      value: formatTaka(reportData?.executive_table?.total_sales ?? summary?.team_sales ?? 0),
+      tone: 'text-brand-700',
+    },
+    {
+      label: L("বিজ্ঞাপনের খরচ"),
+      value: formatTaka(reportData?.executive_table?.ad_spend ?? 0),
+    },
+    {
+      label: L("ফলোআপ সম্পন্ন"),
+      value: <>{reportData?.executive_table?.followups_done ?? summary?.team_followups ?? 0} {L("টি")}</>,
+    },
+    {
+      label: L("বড় B2B অনুসন্ধান"),
+      value: <>{reportData?.executive_table?.b2b_inquiries_count ?? summary?.team_b2b ?? 0} {L("টি")}</>,
+      note: (
+        <>
+          {L("(সম্ভাব্য মূল্য:")} {formatTaka(reportData?.executive_table?.b2b_inquiries_value ?? 0)})
+        </>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -133,38 +165,26 @@ function AdminDailyReportContent() {
         title={L("দৈনিক রিপোর্ট")}
         subtitle={L("প্রতিটি সদস্যের লক্ষ্য অর্জন ও স্কোর")}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+          <div className="no-print flex flex-wrap items-center gap-2">
+            <div className="segmented" role="group" aria-label={L('দ্রুত তারিখ', 'Quick dates')}>
               <button
                 type="button"
+                data-active={selectedDate === getDhakaDateString()}
                 onClick={() => setSelectedDate(getDhakaDateString())}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
-                  selectedDate === getDhakaDateString()
-                    ? 'bg-brand-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
               >
                 {L("আজ (Today)")}
               </button>
               <button
                 type="button"
+                data-active={selectedDate === getDhakaOffsetDateString(1)}
                 onClick={() => setSelectedDate(getDhakaOffsetDateString(1))}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
-                  selectedDate === getDhakaOffsetDateString(1)
-                    ? 'bg-brand-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
               >
                 {L("গতকাল (Yesterday)")}
               </button>
               <button
                 type="button"
+                data-active={selectedDate === getDhakaOffsetDateString(2)}
                 onClick={() => setSelectedDate(getDhakaOffsetDateString(2))}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
-                  selectedDate === getDhakaOffsetDateString(2)
-                    ? 'bg-brand-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
               >
                 {L("পরশু")}
               </button>
@@ -178,38 +198,28 @@ function AdminDailyReportContent() {
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="input w-auto pl-9"
+                className="input w-auto pl-9 tabular-nums"
               />
             </div>
-            <a
-              href={`/api/reports/daily/export?type=excel&date=${selectedDate}`}
-              download
-              className="btn btn-secondary"
-            >
-              <FileSpreadsheet className="h-4 w-4" />
-              Excel
-            </a>
-            <a
-              href={`/api/reports/daily/export?type=pdf&date=${selectedDate}`}
-              download
-              className="btn btn-secondary"
-            >
-              <Download className="h-4 w-4" />
-              PDF
-            </a>
+            <ReportExportButtons
+              excelHref={`/api/reports/daily/export?type=excel&date=${selectedDate}`}
+              pdfHref={`/api/reports/daily/export?type=pdf&date=${selectedDate}`}
+            />
           </div>
         }
       />
 
       {errorMsg && (
-        <div className="alert alert-error">
-          <AlertCircle className="h-4 w-4 shrink-0" />
+        <div className="alert alert-error" role="alert">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
+      {!summary && loading && <SkeletonStatCards count={4} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" />}
+
       {summary && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="stagger grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             label={L("মোট বিক্রয়")}
             value={formatTaka(summary.team_sales)}
@@ -223,132 +233,98 @@ function AdminDailyReportContent() {
               <span className="flex items-baseline gap-2">
                 {summary.team_avg_score}
                 <span className="text-sm font-medium text-slate-400">{L("/ ১০০")}</span>
-                <span className={`badge ${summary.team_avg_score >= 80 ? 'badge-green' : 'badge-red'}`}>
-                  {summary.team_avg_score >= 80 ? 'পাস' : 'ফেল'}
+                <span className={`badge self-center ${summary.team_avg_score >= 80 ? 'badge-green' : 'badge-red'}`}>
+                  {summary.team_avg_score >= 80 ? L('পাস', 'Pass') : L('ফেল', 'Fail')}
                 </span>
               </span>
             }
             note={L(`${summary.passing_count} পাস · ${summary.failing_count} উন্নতি প্রয়োজন`)}
             icon={<Award className="h-4 w-4" />}
-            tone="blue"
+            tone="gray"
           />
           <StatCard
             label={L("গ্রুপ পোস্ট")}
             value={summary.team_posts}
             note={L("অনুমোদিত গ্রুপে পোস্ট")}
             icon={<CheckCircle2 className="h-4 w-4" />}
-            tone="amber"
+            tone="gray"
           />
           <StatCard
             label={L("গ্রাহক ও অর্ডার")}
-            value={`${summary.team_new_clients} নতুন / ${summary.team_b2b} B2B`}
+            value={`${summary.team_new_clients} ${L('নতুন', 'new')} / ${summary.team_b2b} B2B`}
             note={L(`রিটেনশন: ${summary.team_retention} · ফলো-আপ: ${summary.team_followups}`)}
             icon={<Users className="h-4 w-4" />}
-            tone="violet"
+            tone="gray"
           />
         </div>
       )}
 
-      {/* Executive Daily Summary Table (দৈনিক রিপোর্টের নমুনা) */}
-      <div className="card overflow-hidden">
-        <div className="card-header bg-slate-50/70 border-b border-slate-100 flex items-center justify-between">
-          <div>
-            <h2 className="card-title text-base font-bold text-slate-900 flex items-center gap-2">
-              <FileSpreadsheet className="h-4 w-4 text-brand-600" />
-              {L("দৈনিক রিপোর্ট (সারসংক্ষেপ)")}
-            </h2>
-            <p className="card-subtitle text-xs text-slate-500">
+      {/* Executive daily summary */}
+      <section className="card overflow-hidden print:break-inside-avoid">
+        <div className="card-header">
+          <div className="min-w-0">
+            <h2 className="card-title">{L("দৈনিক রিপোর্ট (সারসংক্ষেপ)")}</h2>
+            <p className="card-subtitle tabular-nums">
               {L("তারিখ:")} {selectedDate} {L("· মূল ব্যবসায়িক সূচক ও অগ্রাধিকার")}
             </p>
           </div>
-          <span className="badge badge-green text-xs font-semibold">{L("আজকের তথ্য")}</span>
+          {isToday && <span className="badge badge-brand">{L("আজকের তথ্য")}</span>}
         </div>
-        <div className="overflow-x-auto">
-          <table className="table-pro">
-            <thead>
-              <tr className="bg-slate-50">
-                <th className="w-1/3 text-slate-700 font-semibold">{L("বিষয়")}</th>
-                <th className="text-slate-700 font-semibold">{L("আজকের তথ্য")}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
-              <tr>
-                <td className="font-medium text-slate-800">{L("নতুন লিড")}</td>
-                <td className="font-semibold text-slate-900 tabular-nums">
-                  {reportData?.executive_table?.new_leads ?? summary?.team_new_clients ?? 0} {L("টি")}
-                </td>
-              </tr>
-              <tr>
-                <td className="font-medium text-slate-800">{L("নিশ্চিত অর্ডার")}</td>
-                <td className="font-semibold text-brand-700 tabular-nums">
-                  {reportData?.executive_table?.confirmed_orders ?? summary?.team_b2b ?? 0} {L("টি")}
-                </td>
-              </tr>
-              <tr>
-                <td className="font-medium text-slate-800">{L("মোট বিক্রি")}</td>
-                <td className="font-bold text-brand-700 tabular-nums">
-                  {formatTaka(reportData?.executive_table?.total_sales ?? summary?.team_sales ?? 0)}
-                </td>
-              </tr>
-              <tr>
-                <td className="font-medium text-slate-800">{L("বিজ্ঞাপনের খরচ")}</td>
-                <td className="font-semibold text-rose-600 tabular-nums">
-                  {formatTaka(reportData?.executive_table?.ad_spend ?? 0)}
-                </td>
-              </tr>
-              <tr>
-                <td className="font-medium text-slate-800">{L("ফলোআপ সম্পন্ন")}</td>
-                <td className="font-semibold text-slate-900 tabular-nums">
-                  {reportData?.executive_table?.followups_done ?? summary?.team_followups ?? 0} {L("টি")}
-                </td>
-              </tr>
-              <tr>
-                <td className="font-medium text-slate-800">{L("বড় B2B অনুসন্ধান")}</td>
-                <td className="font-semibold text-slate-900 tabular-nums">
-                  {reportData?.executive_table?.b2b_inquiries_count ?? summary?.team_b2b ?? 0} {L("টি")}{' '}
-                  <span className="text-xs text-slate-500 font-normal">
-                    {L("(সম্ভাব্য মূল্য:")} {formatTaka(reportData?.executive_table?.b2b_inquiries_value ?? 0)})
-                  </span>
-                </td>
-              </tr>
-              <tr>
-                <td className="font-medium text-slate-800 align-top">{L("প্রধান সমস্যা")}</td>
-                <td className="text-slate-700 text-xs">
-                  {reportData?.executive_table?.main_issues && reportData.executive_table.main_issues.length > 0 ? (
-                    <ul className="list-disc list-inside space-y-1">
-                      {reportData.executive_table.main_issues.map((issue, idx) => (
-                        <li key={idx} className="leading-relaxed">{issue}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <span className="text-slate-400 italic">{L("কোনো প্রধান সমস্যা উল্লেখিত হয়নি")}</span>
-                  )}
-                </td>
-              </tr>
-              <tr>
-                <td className="font-medium text-slate-800 align-top">{L("আগামী দিনের অগ্রাধিকার")}</td>
-                <td className="text-slate-700 text-xs">
-                  {reportData?.executive_table?.next_priorities && reportData.executive_table.next_priorities.length > 0 ? (
-                    <ul className="list-disc list-inside space-y-1">
-                      {reportData.executive_table.next_priorities.map((prio, idx) => (
-                        <li key={idx} className="leading-relaxed font-medium text-slate-800">{prio}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <span className="text-slate-400 italic">{L("কোনো অগ্রাধিকার তালিকাভুক্ত হয়নি")}</span>
-                  )}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
 
-      <div className="card">
+        {loading && !reportData ? (
+          <div className="grid grid-cols-1 gap-px bg-slate-100 sm:grid-cols-2 lg:grid-cols-3" aria-hidden>
+            {execRows.map((r) => (
+              <div key={r.label} className="space-y-2 bg-white px-5 py-4">
+                <div className="skeleton h-3 w-24" />
+                <div className="skeleton h-5 w-20" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <dl className="grid grid-cols-1 gap-px bg-slate-100 sm:grid-cols-2 lg:grid-cols-3">
+            {execRows.map((r) => (
+              <div key={r.label} className="bg-white px-5 py-4">
+                <dt className="text-xs font-medium text-slate-500">{r.label}</dt>
+                <dd className={`mt-1 text-lg font-semibold tabular-nums ${r.tone ?? 'text-slate-900'}`}>{r.value}</dd>
+                {r.note && <dd className="mt-0.5 text-xs text-slate-500 tabular-nums">{r.note}</dd>}
+              </div>
+            ))}
+          </dl>
+        )}
+
+        <div className="grid grid-cols-1 gap-px border-t border-slate-100 bg-slate-100 md:grid-cols-2">
+          <div className="bg-white px-5 py-4">
+            <h3 className="text-xs font-medium text-slate-500">{L("প্রধান সমস্যা")}</h3>
+            {reportData?.executive_table?.main_issues && reportData.executive_table.main_issues.length > 0 ? (
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-slate-700 marker:text-slate-300">
+                {reportData.executive_table.main_issues.map((issue, idx) => (
+                  <li key={idx} className="leading-relaxed">{issue}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-2 text-sm text-slate-400">{L("কোনো প্রধান সমস্যা উল্লেখিত হয়নি")}</p>
+            )}
+          </div>
+          <div className="bg-white px-5 py-4">
+            <h3 className="text-xs font-medium text-slate-500">{L("আগামী দিনের অগ্রাধিকার")}</h3>
+            {reportData?.executive_table?.next_priorities && reportData.executive_table.next_priorities.length > 0 ? (
+              <ol className="mt-2 list-decimal space-y-1 pl-4 text-sm text-slate-800 marker:text-slate-400">
+                {reportData.executive_table.next_priorities.map((prio, idx) => (
+                  <li key={idx} className="leading-relaxed">{prio}</li>
+                ))}
+              </ol>
+            ) : (
+              <p className="mt-2 text-sm text-slate-400">{L("কোনো অগ্রাধিকার তালিকাভুক্ত হয়নি")}</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="card overflow-hidden">
         <div className="card-header">
           <div>
             <h2 className="card-title">{L("সদস্যভিত্তিক পারফরম্যান্স (")}{employees.length})</h2>
-            <p className="card-subtitle">{L("তারিখ:")} {selectedDate}</p>
+            <p className="card-subtitle tabular-nums">{L("তারিখ:")} {selectedDate}</p>
           </div>
         </div>
 
@@ -361,22 +337,22 @@ function AdminDailyReportContent() {
             description={L("এই তারিখে কোনো রিপোর্ট নেই।")}
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="table-pro">
+          <div className="max-h-[70vh] overflow-auto print:max-h-none print:overflow-visible [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-slate-50">
+            <table className="table-pro min-w-[1080px] [&_td]:whitespace-nowrap">
               <thead>
                 <tr>
                   <th>{L("নাম")}</th>
                   <th>{L("সেকশন")}</th>
-                  <th className="text-center">{L("পোস্ট")}</th>
+                  <th className="text-right">{L("পোস্ট")}</th>
                   <th className="text-right">{L("বিক্রয় (৳)")}</th>
                   <th className="text-right">{L("মুনাফা (৳)")}</th>
-                  <th className="text-center">{L("নতুন ক্রেতা")}</th>
-                  <th className="text-center">B2B</th>
-                  <th className="text-center">{L("রিটেনশন")}</th>
-                  <th className="text-center">{L("ফলো-আপ")}</th>
+                  <th className="text-right">{L("নতুন ক্রেতা")}</th>
+                  <th className="text-right">B2B</th>
+                  <th className="text-right">{L("রিটেনশন")}</th>
+                  <th className="text-right">{L("ফলো-আপ")}</th>
                   <th className="text-right">{L("স্কোর")}</th>
-                  <th className="text-center">{L("স্ট্যাটাস")}</th>
-                  <th className="text-center">{L("প্রতিফলন")}</th>
+                  <th>{L("স্ট্যাটাস")}</th>
+                  <th className="no-print text-right">{L("প্রতিফলন")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -384,14 +360,14 @@ function AdminDailyReportContent() {
                   const isFail = emp.is_failing;
                   return (
                     <tr key={emp.employee_id}>
-                      <td className="whitespace-nowrap">
+                      <td>
                         <span className="font-medium text-slate-900">{emp.name}</span>
                         <span className="block text-xs text-slate-500">{emp.email}</span>
                       </td>
-                      <td className="max-w-[140px] truncate text-slate-600">
-                        {emp.sections.length > 0 ? emp.sections.join(', ') : '-'}
+                      <td className="max-w-[160px] truncate text-slate-600" title={emp.sections.join(', ')}>
+                        {emp.sections.length > 0 ? emp.sections.join(', ') : '–'}
                       </td>
-                      <td className="text-center tabular-nums">
+                      <td className="text-right tabular-nums">
                         {emp.metrics.POSTS_DONE}
                         {emp.targets.POSTS_DONE && (
                           <span className="text-xs text-slate-400">
@@ -403,19 +379,19 @@ function AdminDailyReportContent() {
                         {formatTaka(emp.metrics.SALES_AMOUNT)}
                       </td>
                       <td className="text-right tabular-nums">{formatTaka(emp.metrics.PROFIT_AMOUNT)}</td>
-                      <td className="text-center tabular-nums">{emp.metrics.NEW_CLIENTS}</td>
-                      <td className="text-center tabular-nums">{emp.metrics.B2B_ORDERS}</td>
-                      <td className="text-center tabular-nums">{emp.metrics.RETENTION_COUNT}</td>
-                      <td className="text-center tabular-nums">{emp.metrics.FOLLOWUPS_DONE}</td>
+                      <td className="text-right tabular-nums">{emp.metrics.NEW_CLIENTS}</td>
+                      <td className="text-right tabular-nums">{emp.metrics.B2B_ORDERS}</td>
+                      <td className="text-right tabular-nums">{emp.metrics.RETENTION_COUNT}</td>
+                      <td className="text-right tabular-nums">{emp.metrics.FOLLOWUPS_DONE}</td>
                       <td className="text-right font-semibold tabular-nums text-slate-900">{emp.score}</td>
-                      <td className="text-center">
+                      <td>
                         {isFail ? (
                           <span className="badge badge-red">{L("উন্নতি প্রয়োজন")}</span>
                         ) : (
                           <span className="badge badge-green">{L("পাস")}</span>
                         )}
                       </td>
-                      <td className="text-center">
+                      <td className="no-print text-right">
                         {emp.daily_text?.main_issue || emp.daily_text?.next_priorities ? (
                           <button
                             onClick={() =>
@@ -431,7 +407,7 @@ function AdminDailyReportContent() {
                             {L("দেখুন")}
                           </button>
                         ) : (
-                          <span className="text-slate-300">-</span>
+                          <span className="text-slate-300">–</span>
                         )}
                       </td>
                     </tr>
@@ -441,15 +417,15 @@ function AdminDailyReportContent() {
             </table>
           </div>
         )}
-      </div>
+      </section>
 
       {selectedReflection && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true">
-          <div className="modal-panel">
+        <div className="modal-backdrop">
+          <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="daily-reflection-title">
             <div className="card-header">
-              <div>
-                <h3 className="card-title">{L("দৈনিক প্রতিফলন:")} {selectedReflection.name}</h3>
-                <p className="card-subtitle">{L("তারিখ:")} {selectedDate}</p>
+              <div className="min-w-0">
+                <h3 id="daily-reflection-title" className="card-title">{L("দৈনিক প্রতিফলন:")} {selectedReflection.name}</h3>
+                <p className="card-subtitle tabular-nums">{L("তারিখ:")} {selectedDate}</p>
               </div>
               <button
                 onClick={() => setSelectedReflection(null)}
@@ -463,13 +439,13 @@ function AdminDailyReportContent() {
             <div className="card-body space-y-4 text-sm">
               <div>
                 <span className="label">{L("প্রধান সমস্যা / বাধা")}</span>
-                <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 leading-relaxed text-slate-800">
+                <p className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-3 leading-relaxed text-slate-800">
                   {selectedReflection.main_issue || L('কোনো সমস্যা উল্লেখ করা হয়নি।')}
                 </p>
               </div>
               <div>
                 <span className="label">{L("আগামীকালের ৩টি অগ্রাধিকার")}</span>
-                <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 leading-relaxed text-slate-800">
+                <p className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50 p-3 leading-relaxed text-slate-800">
                   {selectedReflection.next_priorities || L('কোনো অগ্রাধিকার উল্লেখ করা হয়নি।')}
                 </p>
               </div>
@@ -489,13 +465,7 @@ function AdminDailyReportContent() {
 
 export default function AdminDailyReportPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex h-64 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
-        </div>
-      }
-    >
+    <Suspense fallback={<ReportPageSkeleton />}>
       <AdminDailyReportContent />
     </Suspense>
   );
