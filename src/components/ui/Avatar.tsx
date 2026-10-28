@@ -46,7 +46,12 @@ export function avatarInitial(name: string): string {
   return first ? first.toUpperCase() : '?';
 }
 
-/** Animated profile picture: a slowly turning gradient ring with a breathing glow. */
+/**
+ * Profile picture: the name's first letter on its colour, floating gently on a
+ * 2.3s cycle with a breathing glow. `animated` adds the turning ring used on
+ * the profile card. Each name starts at its own point in the cycle, so a list
+ * of avatars does not bob in lockstep.
+ */
 export default function Avatar({
   name,
   size = 44,
@@ -59,24 +64,31 @@ export default function Avatar({
   /** Fixed palette index; null picks the tone from the name. */
   tone?: number | null;
 }) {
-  const tone = AVATAR_PALETTE[toneIndex ?? avatarIndex(name)];
+  const index = toneIndex ?? avatarIndex(name);
+  const tone = AVATAR_PALETTE[index];
+  const delay = `-${((avatarIndex(name) * 37) % 23) / 10}s`;
   return (
-    <span className="avatar-wrap relative inline-flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
+    <span
+      className="avatar-wrap avatar-float relative inline-flex shrink-0 items-center justify-center"
+      style={{ width: size, height: size, animationDelay: delay, ['--float' as string]: `${Math.max(2, Math.round(size * 0.08))}px` }}
+      aria-hidden
+      title={name}
+    >
       <span
-        aria-hidden
-        className={`absolute inset-0 rounded-full ${animated ? 'avatar-ring' : ''}`}
+        className={`avatar-glow absolute inset-0 rounded-full ${animated ? 'avatar-ring' : ''}`}
         style={{
           background: animated
             ? `conic-gradient(from 0deg, ${tone.from}, ${tone.to}, ${tone.from})`
             : `linear-gradient(135deg, ${tone.from}, ${tone.to})`,
+          animationDelay: delay,
           ['--glow' as string]: tone.glow,
         }}
       />
       <span
         className="relative flex items-center justify-center rounded-full font-bold text-white"
         style={{
-          width: size - 5,
-          height: size - 5,
+          width: size - Math.max(3, Math.round(size * 0.1)),
+          height: size - Math.max(3, Math.round(size * 0.1)),
           background: `linear-gradient(135deg, ${tone.from}, ${tone.to})`,
           fontSize: size * 0.42,
           textShadow: '0 1px 2px rgba(0,0,0,0.25)',

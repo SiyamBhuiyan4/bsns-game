@@ -411,6 +411,7 @@ export default function AdminSettingsPage() {
               <p className="hint mb-3 mt-0">{L("এই স্কোরের নিচে কর্মী &ldquo;উন্নতি প্রয়োজন&rdquo; চিহ্নিত হবে")}</p>
               <div className="flex items-center gap-4">
                 <div className="flex-1">
+                  <div className="range-push" style={{ ['--fill' as string]: `${Math.round((settings.failing_threshold || 0) * 100)}%` }}>
                   <input
                     type="range"
                     min="0"
@@ -421,8 +422,9 @@ export default function AdminSettingsPage() {
                     onChange={(e) =>
                       setSettings((s) => ({ ...s, failing_threshold: parseFloat(e.target.value) || 0 }))
                     }
-                    className="w-full cursor-pointer accent-brand-600"
+                    className="w-full cursor-pointer"
                   />
+                  </div>
                   <div className="mt-1 flex justify-between text-[11px] text-slate-400">
                     <span>{L("০%")}</span>
                     <span>{L("৫০%")}</span>

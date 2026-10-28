@@ -533,14 +533,30 @@ body {
   0%, 100% { box-shadow: 0 0 0 0 var(--glow), 0 4px 14px -4px var(--glow); }
   50% { box-shadow: 0 0 0 6px transparent, 0 6px 22px -2px var(--glow); }
 }
-.avatar-ring {
-  animation: avatar-spin 6s linear infinite, avatar-glow 2.6s ease-in-out infinite;
+@keyframes avatar-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, calc(var(--float, 3px) * -1), 0); }
+}
+/* Every avatar floats on a 2.3s cycle... */
+.avatar-float {
+  animation: avatar-float 2.3s ease-in-out infinite;
+  will-change: transform;
+}
+/* ...and glows in its own colour, in time with the float. */
+.avatar-glow {
+  animation: avatar-glow 2.3s ease-in-out infinite;
   filter: saturate(1.15);
 }
+/* The profile card's ring also turns. */
+.avatar-ring {
+  animation: avatar-spin 6s linear infinite, avatar-glow 2.3s ease-in-out infinite;
+}
 .avatar-wrap:hover .avatar-ring {
-  animation-duration: 2s, 1.2s;
+  animation-duration: 2s, 1.15s;
 }
 @media (prefers-reduced-motion: reduce) {
+  .avatar-float,
+  .avatar-glow,
   .avatar-ring { animation: none; }
 }
 
@@ -673,4 +689,122 @@ body {
 /* With .bg-canvas see-through, the root element carries the base colour. */
 html {
   background-color: var(--background);
+}
+
+/* ============================================================================
+   "Pushing" progress: moving stripes + a light sweep on every filled bar
+   ========================================================================== */
+@keyframes push-stripes {
+  from { background-position: 0 0; }
+  to { background-position: 28px 0; }
+}
+@keyframes push-sweep {
+  0% { transform: translateX(-100%); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateX(250%); opacity: 0; }
+}
+
+/* Sliders: green fill up to the handle, the native input on top for dragging. */
+.range-push {
+  position: relative;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+}
+.range-push::before,
+.range-push::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  height: 0.5rem;
+  border-radius: 999px;
+  pointer-events: none;
+}
+.range-push::before {
+  right: 0;
+  background-color: var(--color-slate-200);
+}
+.range-push::after {
+  width: var(--fill, 0%);
+  background-image:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.28) 0 7px, transparent 7px 14px),
+    linear-gradient(90deg, #34d399, #10b981 60%, #059669);
+  background-size: 28px 100%, 100% 100%;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.45);
+  animation: push-stripes 0.9s linear infinite;
+  transition: width 0.25s var(--ease-out-soft);
+}
+.range-push input[type='range'] {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+.range-push input[type='range']::-webkit-slider-runnable-track {
+  height: 0.5rem;
+  background: transparent;
+}
+.range-push input[type='range']::-moz-range-track {
+  height: 0.5rem;
+  background: transparent;
+}
+.range-push input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: -0.3rem;
+  height: 1.1rem;
+  width: 1.1rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 3px solid #059669;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18), 0 2px 6px rgba(5, 150, 105, 0.4);
+  transition: transform 0.15s var(--ease-out-soft);
+}
+.range-push input[type='range']::-moz-range-thumb {
+  height: 1.1rem;
+  width: 1.1rem;
+  border-radius: 999px;
+  background: #fff;
+  border: 3px solid #059669;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18), 0 2px 6px rgba(5, 150, 105, 0.4);
+}
+.range-push input[type='range']:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+/* Progress bars across the app: a thin rounded track whose child carries an
+   inline width is a progress fill. It keeps its own colour (green / amber /
+   red still mean something) and gains the pushing motion. */
+:is(.h-1, .h-1\.5, .h-2, .h-2\.5, .h-3).overflow-hidden.rounded-full > [style*='width'] {
+  position: relative;
+  overflow: hidden;
+}
+/* Stripes on an overlay, so a bar's own colour or gradient stays underneath. */
+:is(.h-1, .h-1\.5, .h-2, .h-2\.5, .h-3).overflow-hidden.rounded-full > [style*='width']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.25) 0 7px, transparent 7px 14px);
+  background-size: 28px 100%;
+  animation: push-stripes 0.9s linear infinite;
+}
+:is(.h-1, .h-1\.5, .h-2, .h-2\.5, .h-3).overflow-hidden.rounded-full > [style*='width']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: push-sweep 2.3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .range-push::after,
+  :is(.h-1, .h-1\.5, .h-2, .h-2\.5, .h-3).overflow-hidden.rounded-full > [style*='width']::before,
+  :is(.h-1, .h-1\.5, .h-2, .h-2\.5, .h-3).overflow-hidden.rounded-full > [style*='width']::after {
+    animation: none;
+  }
 }

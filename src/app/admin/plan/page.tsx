@@ -1089,6 +1089,7 @@ export default function AdminPlanPage() {
                                   <label htmlFor={`task-progress-${task.id}`}>{L('অগ্রগতি', 'Progress')}</label>
                                   <span className="tabular-nums font-semibold text-slate-900">{fmtNum(task.progress_percent)}%</span>
                                 </div>
+                                <div className="range-push" style={{ ['--fill' as string]: `${task.progress_percent}%` }}>
                                 <input
                                   id={`task-progress-${task.id}`}
                                   type="range"
@@ -1117,6 +1118,7 @@ export default function AdminPlanPage() {
                                   }
                                   className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-slate-200 accent-brand-600"
                                 />
+                                </div>
                               </div>
 
                               {/* Action Buttons */}

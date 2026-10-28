@@ -36,6 +36,7 @@ import {
 } from '@/lib/dashboard';
 import { toBengaliDigits } from '@/lib/formatter';
 import EmptyState from '@/components/ui/EmptyState';
+import Avatar from '@/components/ui/Avatar';
 
 export type DetailSectionData =
   | { type: 'standard'; section: SectionOverviewItem }
@@ -52,23 +53,8 @@ interface SectionDetailModalProps {
 }
 
 // One calm, neutral tone for initials keeps long tables easy to scan.
-const AVATAR_COLORS = ['bg-slate-100 text-slate-600 border-transparent'];
 
-function getAvatarColor(name: string): string {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  const index = Math.abs(hash) % AVATAR_COLORS.length;
-  return AVATAR_COLORS[index];
-}
 
-function getInitials(name: string): string {
-  if (!name) return '?';
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 export default function SectionDetailModal({
   isOpen,
@@ -903,13 +889,7 @@ export default function SectionDetailModal({
                             {/* Employee column */}
                             <td>
                               <div className="flex items-center gap-3">
-                                <div
-                                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${getAvatarColor(
-                                    emp.name
-                                  )}`}
-                                >
-                                  {getInitials(emp.name)}
-                                </div>
+                                <Avatar name={emp.name} size={32} animated={false} />
                                 <div className="min-w-0">
                                   <div className="truncate font-medium text-slate-900">
                                     {emp.name}
@@ -1161,13 +1141,7 @@ export default function SectionDetailModal({
                             </td>
                             <td>
                               <div className="flex items-center gap-2">
-                                <div
-                                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${getAvatarColor(
-                                    log.employeeName
-                                  )}`}
-                                >
-                                  {getInitials(log.employeeName)}
-                                </div>
+                                <Avatar name={log.employeeName} size={32} animated={false} />
                                 <div>
                                   <span className="block truncate font-medium text-slate-900">
                                     {log.employeeName}
@@ -1249,13 +1223,7 @@ export default function SectionDetailModal({
                             </td>
                             <td>
                               <div className="flex items-center gap-2">
-                                <div
-                                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${getAvatarColor(
-                                    comp.employeeName
-                                  )}`}
-                                >
-                                  {getInitials(comp.employeeName)}
-                                </div>
+                                <Avatar name={comp.employeeName} size={32} animated={false} />
                                 <span className="font-medium text-slate-900 truncate">
                                   {comp.employeeName}
                                 </span>
