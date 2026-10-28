@@ -855,7 +855,7 @@ export default function AdminLeadsPage() {
 
       {/* Admin Detail Drawer */}
       {selectedLeadId && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-[2px]">
+        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex justify-end bg-slate-900/40 backdrop-blur-[2px]">
           <div className="flex h-full w-full max-w-md flex-col bg-white shadow-xl">
             <div className="card-header">
               <h3 className="card-title">{L('লিড বিবরণ', 'Lead details')}</h3>

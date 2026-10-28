@@ -228,15 +228,15 @@ body {
 }
 
 @layer utilities {
-  .animate-fade-up { animation: fade-up 0.4s var(--ease-out-soft) both; }
-  .animate-fade-in { animation: fade-in 0.3s var(--ease-out-soft) both; }
-  .animate-scale-in { animation: scale-in 0.22s var(--ease-out-soft) both; }
-  .animate-slide-in-left { animation: slide-in-left 0.28s var(--ease-out-soft) both; }
-  .animate-slide-up-sheet { animation: slide-up-sheet 0.3s var(--ease-out-soft) both; }
+  .animate-fade-up { animation: fade-up 0.4s var(--ease-out-soft) backwards; }
+  .animate-fade-in { animation: fade-in 0.3s var(--ease-out-soft) backwards; }
+  .animate-scale-in { animation: scale-in 0.22s var(--ease-out-soft) backwards; }
+  .animate-slide-in-left { animation: slide-in-left 0.28s var(--ease-out-soft) backwards; }
+  .animate-slide-up-sheet { animation: slide-up-sheet 0.3s var(--ease-out-soft) backwards; }
   .animate-pulse-ring { animation: pulse-ring 1.8s var(--ease-out-soft) infinite; }
 
   /* Stagger children of a list or grid so a page settles instead of snapping. */
-  .stagger > * { animation: fade-up 0.4s var(--ease-out-soft) both; }
+  .stagger > * { animation: fade-up 0.4s var(--ease-out-soft) backwards; }
   .stagger > *:nth-child(1) { animation-delay: 0.02s; }
   .stagger > *:nth-child(2) { animation-delay: 0.06s; }
   .stagger > *:nth-child(3) { animation-delay: 0.1s; }
@@ -250,7 +250,9 @@ body {
   .hover-lift {
     transition: transform 0.2s var(--ease-out-soft), box-shadow 0.2s var(--ease-out-soft);
   }
-  .hover-lift:hover {
+  /* Skipped while a modal is open inside the card: a transformed ancestor would
+     pin the modal to the card instead of the screen. */
+  .hover-lift:hover:not(:has(.modal-backdrop, .fixed)) {
     transform: translate3d(0, -2px, 0);
     box-shadow: var(--shadow-card-hover);
   }
@@ -396,7 +398,7 @@ body {
   /* Alerts */
   .alert {
     @apply flex items-start gap-2.5 rounded-xl border px-3.5 py-3 text-sm;
-    animation: fade-up 0.3s var(--ease-out-soft) both;
+    animation: fade-up 0.3s var(--ease-out-soft) backwards;
   }
   .alert-error { @apply border-rose-200 bg-rose-50 text-rose-800; }
   .alert-success { @apply border-emerald-200 bg-emerald-50 text-emerald-800; }
@@ -419,21 +421,19 @@ body {
 
   /* Modal */
   .modal-backdrop {
-    @apply fixed inset-0 z-50 flex items-end justify-center bg-slate-900/50 p-0 backdrop-blur-sm sm:items-center sm:p-4;
-    animation: fade-in 0.2s var(--ease-out-soft) both;
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm;
+    overscroll-behavior: contain;
+    animation: fade-in 0.2s var(--ease-out-soft) backwards;
   }
   :root[data-theme='dark'] .modal-backdrop {
     background-color: rgba(3, 7, 12, 0.72);
   }
   .modal-panel {
-    @apply max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white sm:max-w-lg sm:rounded-2xl;
+    @apply w-full overflow-y-auto rounded-2xl bg-white sm:max-w-lg;
+    max-height: calc(100dvh - 2rem);
+    overscroll-behavior: contain;
     box-shadow: var(--shadow-overlay);
-    animation: slide-up-sheet 0.28s var(--ease-out-soft) both;
-  }
-  @media (min-width: 640px) {
-    .modal-panel {
-      animation: scale-in 0.22s var(--ease-out-soft) both;
-    }
+    animation: scale-in 0.22s var(--ease-out-soft) backwards;
   }
 }
 
@@ -541,3 +541,13 @@ body {
 :root[data-font='noto'] body { font-family: var(--font-noto-bengali), 'Noto Sans Bengali', sans-serif; }
 :root[data-font='inter'] body { font-family: var(--font-inter), 'Inter', sans-serif; }
 :root[data-font='hind'] body { font-family: var(--font-hind-siliguri), 'Hind Siliguri', sans-serif; }
+
+/* ============================================================================
+   Scroll lock: the page behind an open modal does not move
+   ========================================================================== */
+html:has(.modal-backdrop),
+html:has([aria-modal='true']),
+html:has(.modal-backdrop) body,
+html:has([aria-modal='true']) body {
+  overflow: hidden;
+}
