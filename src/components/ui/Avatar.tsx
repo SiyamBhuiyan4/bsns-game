@@ -47,14 +47,30 @@ export function avatarInitial(name: string): string {
 }
 
 /** Animated profile picture: a slowly turning gradient ring with a breathing glow. */
-export default function Avatar({ name, size = 44 }: { name: string; size?: number }) {
-  const tone = AVATAR_PALETTE[avatarIndex(name)];
+export default function Avatar({
+  name,
+  size = 44,
+  animated = true,
+  tone: toneIndex = null,
+}: {
+  name: string;
+  size?: number;
+  animated?: boolean;
+  /** Fixed palette index; null picks the tone from the name. */
+  tone?: number | null;
+}) {
+  const tone = AVATAR_PALETTE[toneIndex ?? avatarIndex(name)];
   return (
     <span className="avatar-wrap relative inline-flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
       <span
         aria-hidden
-        className="avatar-ring absolute inset-0 rounded-full"
-        style={{ background: `conic-gradient(from 0deg, ${tone.from}, ${tone.to}, ${tone.from})`, ['--glow' as string]: tone.glow }}
+        className={`absolute inset-0 rounded-full ${animated ? 'avatar-ring' : ''}`}
+        style={{
+          background: animated
+            ? `conic-gradient(from 0deg, ${tone.from}, ${tone.to}, ${tone.from})`
+            : `linear-gradient(135deg, ${tone.from}, ${tone.to})`,
+          ['--glow' as string]: tone.glow,
+        }}
       />
       <span
         className="relative flex items-center justify-center rounded-full font-bold text-white"

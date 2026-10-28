@@ -97,6 +97,9 @@ async function writePinned(snapshot: Snapshot, previousMessageId: number | null)
 }
 
 /** Return the current snapshot. Cached for `maxAgeMs` to avoid hitting Telegram on every read. */
+// Concurrent reads on one instance share a single download instead of each fetching the whole file.
+let inflightRead: Promise<Snapshot> | null = null;
+
 export async function readSnapshot(maxAgeMs = 5_000): Promise<Snapshot> {
   if (!hasTelegramConfig()) {
     if (!globalForStore.telegramStore) {
@@ -106,9 +109,17 @@ export async function readSnapshot(maxAgeMs = 5_000): Promise<Snapshot> {
   }
   const cache = globalForStore.telegramStore;
   if (cache && Date.now() - cache.loadedAt < maxAgeMs) return cache.snapshot;
-  const { snapshot, messageId } = await fetchPinned();
-  globalForStore.telegramStore = { snapshot, messageId, loadedAt: Date.now() };
-  return snapshot;
+  if (inflightRead) return inflightRead;
+
+  inflightRead = fetchPinned()
+    .then(({ snapshot, messageId }) => {
+      globalForStore.telegramStore = { snapshot, messageId, loadedAt: Date.now() };
+      return snapshot;
+    })
+    .finally(() => {
+      inflightRead = null;
+    });
+  return inflightRead;
 }
 
 type Job = {

@@ -9,6 +9,7 @@ import LanguageToggle from '@/components/LanguageToggle';
 import ThemeToggle from '@/components/ThemeToggle';
 import Avatar from '@/components/ui/Avatar';
 import FontPicker from '@/components/FontPicker';
+import ProfileMenu, { readAvatarPrefs, type AvatarPrefs } from '@/components/ProfileMenu';
 import { useLanguage } from '@/components/LanguageContext';
 
 export type NavItem = { href: string; key: string; labelBn: string; labelEn: string; icon: LucideIcon };
@@ -112,15 +113,20 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
     </Link>
   );
 
+  const [avatarPrefs, setAvatarPrefs] = useState<AvatarPrefs>({ style: 'animated', tone: null });
+  useEffect(() => setAvatarPrefs(readAvatarPrefs()), []);
+
   const userCard = vibrant ? (
     <div className="border-t border-slate-200 p-3">
-      <div className="profile-card hover-lift flex items-center gap-3 rounded-2xl px-3 py-3 shadow-sm">
-        <Avatar name={session.name} size={46} />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold text-slate-900">{session.name}</span>
-          <span className="block truncate text-xs text-slate-500">{session.email}</span>
-        </span>
-      </div>
+      <ProfileMenu prefs={avatarPrefs} onChange={setAvatarPrefs}>
+        <div className="profile-card hover-lift flex items-center gap-3 rounded-2xl px-3 py-3 shadow-sm">
+          <Avatar name={session.name} size={46} animated={avatarPrefs.style === 'animated'} tone={avatarPrefs.tone} />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-semibold text-slate-900">{session.name}</span>
+            <span className="block truncate text-xs text-slate-500">{session.email}</span>
+          </span>
+        </div>
+      </ProfileMenu>
     </div>
   ) : (
     <div className="border-t border-slate-200 p-3">
