@@ -8,6 +8,7 @@ import {
   type DigitStyle,
   type Theme,
 } from '@/components/LanguageContext';
+import QueryProvider from '@/components/QueryProvider';
 import { COOKIE_LANG_KEY, COOKIE_DIGIT_KEY, COOKIE_THEME_KEY } from '@/lib/i18n/cookies';
 
 const hindSiliguri = Hind_Siliguri({
@@ -66,7 +67,7 @@ export default async function RootLayout({
     >
       <body className="min-h-screen bg-canvas text-ink antialiased overflow-x-hidden max-w-full font-bengali">
         <LanguageProvider initialLang={lang} initialDigitStyle={digitStyle} initialTheme={theme}>
-          {children}
+          <QueryProvider>{children}</QueryProvider>
         </LanguageProvider>
       </body>
     </html>

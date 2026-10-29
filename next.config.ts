@@ -52,6 +52,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   experimental: {
     cpus: 1,
+    // Keep recently visited sections in the client router cache so going back is instant.
+    staleTimes: { dynamic: 30, static: 180 },
   },
   async headers() {
     return [
