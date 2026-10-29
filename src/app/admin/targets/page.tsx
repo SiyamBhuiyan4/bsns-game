@@ -1,6 +1,7 @@
 'use client';
 
 import { useLanguage } from '@/components/LanguageContext';
+import TargetTodayStatus, { WEEKDAYS } from '@/components/TargetTodayStatus';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Target,
@@ -55,6 +56,7 @@ interface SectionTarget {
   period_type: string;
   period_start: string | null;
   period_end: string | null;
+  off_days?: number[];
   section: { id: string; name: string };
   creator: { id: string; name: string; email: string };
   employee?: { id: string; name: string; email: string } | null;
@@ -62,6 +64,19 @@ interface SectionTarget {
 }
 
 
+
+/** A 7-day custom range is shown and edited as a weekly target. */
+function periodOf(t: { period_type: string; period_start: string | null; period_end: string | null }): string {
+  if (t.period_type === 'CUSTOM' && t.period_start && t.period_end) {
+    const days = (Date.parse(t.period_end.slice(0, 10)) - Date.parse(t.period_start.slice(0, 10))) / 86400000;
+    if (days === 6) return 'WEEKLY';
+  }
+  return t.period_type;
+}
+
+function plusDays(date: string, n: number): string {
+  return new Date(Date.parse(date + 'T00:00:00Z') + n * 86400000).toISOString().slice(0, 10);
+}
 
 export default function AdminTargetsPage() {
   const { lang, formatNum, formatMoney, L } = useLanguage();
@@ -161,7 +176,10 @@ export default function AdminTargetsPage() {
     employee_id: '',
     period_type: 'DAILY',
     period_start: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
+    period_end: '',
+    off_days: [] as number[],
   });
+  const [statusKey, setStatusKey] = useState(0);
 
   const [jobs, setJobs] = useState<JobFormItem[]>([]);
 
@@ -251,6 +269,8 @@ export default function AdminTargetsPage() {
       employee_id: initialEmpId,
       period_type: 'DAILY',
       period_start: new Date().toISOString().slice(0, 10),
+      period_end: '',
+      off_days: [],
     });
     setJobs([
       {
@@ -269,15 +289,17 @@ export default function AdminTargetsPage() {
     const empId = t.employee_id || t.employee?.id || '';
     setForm({
       employee_id: empId,
-      period_type: t.period_type,
+      period_type: periodOf(t),
       period_start: t.period_start ? t.period_start.slice(0, 10) : new Date().toISOString().slice(0, 10),
+      period_end: t.period_end ? t.period_end.slice(0, 10) : '',
+      off_days: t.off_days ?? [],
     });
 
     // Find all targets of this same employee with the same period
     const empTargets = targets.filter(
       (other) =>
         (other.employee_id || other.employee?.id) === empId &&
-        other.period_type === t.period_type
+        periodOf(other) === periodOf(t)
     );
 
     const rawList =
@@ -377,7 +399,7 @@ export default function AdminTargetsPage() {
   const handleLoadEmployeeExistingJobs = (empId: string) => {
     if (!empId) return;
     const empTargets = targets.filter(
-      (t) => (t.employee_id || t.employee?.id) === empId && t.period_type === form.period_type
+      (t) => (t.employee_id || t.employee?.id) === empId && periodOf(t) === form.period_type
     );
     if (empTargets.length > 0) {
       const rawList = empTargets.map((item) => ({
@@ -423,6 +445,14 @@ export default function AdminTargetsPage() {
       }
     }
 
+    // A week is stored as a 7-day range from the chosen start date.
+    const periodEnd =
+      form.period_type === 'WEEKLY' ? plusDays(form.period_start, 6) : form.period_type === 'CUSTOM' ? form.period_end : '';
+    if (form.period_type === 'CUSTOM' && (!form.period_end || form.period_end < form.period_start)) {
+      setErrorMsg(L('শেষের তারিখ শুরুর তারিখের পরে দিন', 'Pick an end date on or after the start date'));
+      return;
+    }
+
     setSubmitting(true);
     setErrorMsg('');
     try {
@@ -431,8 +461,10 @@ export default function AdminTargetsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           employee_id: form.employee_id,
-          period_type: form.period_type,
+          period_type: form.period_type === 'WEEKLY' ? 'CUSTOM' : form.period_type,
           period_start: form.period_start || null,
+          period_end: periodEnd || null,
+          off_days: form.off_days,
           jobs: mergedList.map((j) => ({
             id: j.id,
             metric_type: j.metric_type,
@@ -457,6 +489,7 @@ export default function AdminTargetsPage() {
       );
 
       fetchTargetsOnly();
+      setStatusKey((k) => k + 1);
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err: any) {
       setErrorMsg(err.message || L('টার্গেট সংরক্ষণ ব্যর্থ হয়েছে', 'Failed to save targets'));
@@ -492,7 +525,7 @@ export default function AdminTargetsPage() {
         const empId = t.employee_id || t.employee?.id;
         if (empId !== filterEmployee) return false;
       }
-      if (filterPeriod !== 'ALL' && t.period_type !== filterPeriod) return false;
+      if (filterPeriod !== 'ALL' && periodOf(t) !== filterPeriod) return false;
       if (selectedMetrics.length > 0 && !selectedMetrics.includes(t.metric_type)) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -601,6 +634,11 @@ export default function AdminTargetsPage() {
       </div>
       )}
 
+      <TargetTodayStatus
+        refreshKey={statusKey}
+        metricLabel={(m) => (METRIC_CONFIG[m] ? L(METRIC_CONFIG[m].bn, METRIC_CONFIG[m].en) : m)}
+      />
+
       {/* Advanced Multi-Option Filter Toolbar */}
       <div className="card space-y-4 p-4 sm:p-5">
         <div className="grid grid-cols-1 items-end gap-4 sm:grid-cols-12">
@@ -664,6 +702,7 @@ export default function AdminTargetsPage() {
               <option value="DAILY">{L('দৈনিক (Daily)', 'Daily')}</option>
               <option value="WEEKLY">{L('সাপ্তাহিক (Weekly)', 'Weekly')}</option>
               <option value="MONTHLY">{L('মাসিক (Monthly)', 'Monthly')}</option>
+              <option value="CUSTOM">{L('নির্দিষ্ট সময়সীমা', 'Date range')}</option>
             </select>
           </div>
 
@@ -924,12 +963,25 @@ export default function AdminTargetsPage() {
                       <td onClick={() => handleOpenEdit(t)} className="cursor-pointer">
                         <span className="badge badge-gray whitespace-nowrap">
                           <Calendar className="h-3 w-3" />
-                          {t.period_type === 'DAILY'
+                          {periodOf(t) === 'DAILY'
                             ? L('দৈনিক (প্রতিদিন)', 'Daily')
-                            : t.period_type === 'WEEKLY'
+                            : periodOf(t) === 'WEEKLY'
                             ? L('সাপ্তাহিক', 'Weekly')
+                            : periodOf(t) === 'CUSTOM'
+                            ? L('নির্দিষ্ট সময়সীমা', 'Date range')
                             : L('মাসিক', 'Monthly')}
                         </span>
+                        {t.period_type !== 'DAILY' && t.period_start && (
+                          <div className="mt-1 text-xs tabular-nums text-slate-500">
+                            {t.period_start.slice(0, 10)}
+                            {t.period_end ? ` → ${t.period_end.slice(0, 10)}` : ''}
+                          </div>
+                        )}
+                        {(t.off_days?.length ?? 0) > 0 && (
+                          <div className="text-xs text-slate-500">
+                            {L('ছুটি', 'Off')}: {t.off_days!.map((d) => L(WEEKDAYS[d].bn, WEEKDAYS[d].en)).join(', ')}
+                          </div>
+                        )}
                       </td>
 
                       {/* Target Value (Click to edit) */}
@@ -1104,12 +1156,12 @@ export default function AdminTargetsPage() {
                       {L(
                         `এই কর্মচারীর বর্তমানে ${
                           targets.filter(
-                            (t) => (t.employee_id || t.employee?.id) === form.employee_id && t.period_type === form.period_type
+                            (t) => (t.employee_id || t.employee?.id) === form.employee_id && periodOf(t) === form.period_type
                           ).length
                         }টি কাজ নির্ধারিত আছে`,
                         `Currently has ${
                           targets.filter(
-                            (t) => (t.employee_id || t.employee?.id) === form.employee_id && t.period_type === form.period_type
+                            (t) => (t.employee_id || t.employee?.id) === form.employee_id && periodOf(t) === form.period_type
                           ).length
                         } assigned jobs`
                       )}
@@ -1139,6 +1191,7 @@ export default function AdminTargetsPage() {
                     <option value="DAILY">{L('প্রতিদিন (Daily)', 'Daily')}</option>
                     <option value="WEEKLY">{L('সাপ্তাহিক (Weekly)', 'Weekly')}</option>
                     <option value="MONTHLY">{L('মাসিক (Monthly)', 'Monthly')}</option>
+                    <option value="CUSTOM">{L('নির্দিষ্ট সময়সীমা', 'Date range')}</option>
                   </select>
                 </div>
 
@@ -1155,6 +1208,62 @@ export default function AdminTargetsPage() {
                     className="input"
                   />
                 </div>
+
+                {form.period_type === 'CUSTOM' && (
+                  <div className="sm:col-start-2">
+                    <label className="label">{L('শেষের তারিখ *', 'End date *')}</label>
+                    <input
+                      type="date"
+                      value={form.period_end}
+                      min={form.period_start}
+                      onChange={(e) => setForm({ ...form, period_end: e.target.value })}
+                      className="input"
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+
+              {form.period_type !== 'DAILY' && (
+                <p className="-mt-2 text-xs text-slate-500">
+                  {form.period_type === 'WEEKLY'
+                    ? L(`${form.period_start} থেকে ${plusDays(form.period_start, 6)} পর্যন্ত`, `Runs ${form.period_start} to ${plusDays(form.period_start, 6)}`)
+                    : form.period_type === 'MONTHLY'
+                    ? L('শুরুর তারিখ থেকে মাসের শেষ দিন পর্যন্ত', 'Runs from the start date to the end of that month')
+                    : L('এই সময়ের মধ্যে কাজটি প্রতিদিনের ভাগে ভাগ হবে', 'The amount is split into a daily share across this range')}
+                </p>
+              )}
+
+              {/* Off days */}
+              <div>
+                <label className="label">{L('ছুটির দিন', 'Off days')}</label>
+                <div className="flex flex-wrap gap-2">
+                  {WEEKDAYS.map((d, i) => {
+                    const on = form.off_days.includes(i);
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() =>
+                          setForm({
+                            ...form,
+                            off_days: on ? form.off_days.filter((x) => x !== i) : [...form.off_days, i].sort(),
+                          })
+                        }
+                        className={`btn btn-sm ${on ? 'btn-primary' : 'btn-secondary'}`}
+                      >
+                        {L(d.bn, d.en)}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-1.5 text-xs text-slate-500">
+                  {L(
+                    'ছুটির দিনে কিছু বাধ্যতামূলক নয়। প্রতিদিন একটি ভাগ বাধ্যতামূলক, বাকিটা ঐচ্ছিক; সপ্তাহের শেষ কাজের দিনে বাকি সব বাধ্যতামূলক হবে।',
+                    "Nothing is mandatory on an off day. Each working day has a mandatory share and the rest is optional; whatever is left becomes mandatory on the week's last working day."
+                  )}
+                </p>
               </div>
 
               {/* 3. Assigned Jobs List (Multiple Jobs) */}

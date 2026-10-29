@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import {
-  BarChart3, Users, Layers, Target, FileText, CalendarCheck, Sprout, UserPlus, CalendarClock,
+  BarChart3, Users, Layers, Target, FileText, CalendarCheck, Sprout, UserPlus,
 } from 'lucide-react';
 import AppShell, { type NavGroup } from '@/components/AppShell';
 import { useLanguage } from '@/components/LanguageContext';
@@ -35,8 +35,7 @@ export default function AdminShell({ session, children }: { session: { name: str
         { href: '/admin/employees', key: 'admin_nav.team', labelBn: L('কর্মচারী'), labelEn: 'Employees', icon: Users },
         { href: '/admin/leads', key: 'admin_nav.leads', labelBn: L('কাস্টমার ও লিড'), labelEn: 'Customers & Leads', icon: UserPlus },
         { href: '/admin/sections', key: 'admin_nav.groups', labelBn: L('গ্রুপ ও লিংক'), labelEn: 'Groups & Links', icon: Layers },
-        { href: '/admin/targets', key: 'admin_nav.targets', labelBn: L('টার্গেট বণ্টন'), labelEn: 'Targets', icon: Target },
-        { href: '/admin/task-quotas', key: 'admin_nav.task_quotas', labelBn: 'কাজের কোটা', labelEn: 'Task Quotas', icon: CalendarClock },
+        { href: '/admin/targets', key: 'admin_nav.targets', labelBn: L('কাজ ও টার্গেট'), labelEn: 'Tasks & Targets', icon: Target },
         { href: '/admin/reports/daily', key: 'admin_nav.reports', labelBn: L('রিপোর্ট'), labelEn: 'Reports', icon: FileText },
         { href: '/admin/plan', key: 'admin_nav.plan', labelBn: L('কর্মপরিকল্পনা'), labelEn: 'Action Plan', icon: CalendarCheck },
       ],

@@ -1,55 +1,53 @@
 /**
  * Task quota scheduling.
  *
- * An admin gives an employee a quota of tasks per DAILY, WEEKLY or MONTHLY
- * period, plus the weekdays they are off. Every day this turns into:
+ * An admin assigns an employee an amount of work over a date range (a day, a
+ * week, a month or any custom range), plus the weekdays they are off. Every day
+ * this turns into:
  *
- * - mandatory: the even daily share (`floor(quota / working days)`, at least 1),
+ * - mandatory: the even daily share (`floor(amount / working days)`, at least 1),
  *   which must be done today;
- * - normal: the rest of the week's remaining quota, optional today.
+ * - normal: the rest of the current week's remaining quota, optional today.
  *
  * Doing more than the mandatory share counts toward the week, so later days get
- * lighter. On the last working day of the week everything still remaining
- * becomes mandatory. Example: 8 tasks over a 7-day week -> 1 a day for six days,
- * and 2 on the last day if the employee did exactly 1 a day.
+ * lighter. On the last working day of each week everything still owed for that
+ * week becomes mandatory. Example: 8 tasks over a 7-day week -> 1 a day for six
+ * days, and 2 on the last day if the employee did exactly 1 a day.
  *
- * MONTHLY quotas are spread over the month's working days. Each week receives
- * its cumulative share minus what was already done earlier in the month, so a
- * shortfall moves into the next week and the month's last working day closes
- * the full quota. WEEKLY quotas start fresh every week.
+ * Ranges longer than a week are split into 7-day weeks counted from the range
+ * start. Each week receives its cumulative share of the amount minus what was
+ * already done earlier in the range, so a shortfall moves into the next week and
+ * the range's last working day closes the full amount.
  *
- * Weeks run Sunday to Saturday. All dates are Asia/Dhaka calendar days as
- * `yyyy-MM-dd` strings.
+ * All dates are Asia/Dhaka calendar days as `yyyy-MM-dd` strings.
  */
 
-export type QuotaPeriod = 'DAILY' | 'WEEKLY' | 'MONTHLY';
-
 export interface QuotaRule {
-  period: QuotaPeriod;
   amount: number;
   /** Weekdays off, 0 = Sunday ... 6 = Saturday. */
   offDays: number[];
-  /** Day the quota was assigned. Work done before it does not count toward it. */
-  startDate?: string;
+  /** First and last day the amount is owed over. A daily target uses today for both. */
+  start: string;
+  end: string;
 }
 
 export interface DayRequirement {
   date: string;
   isOffDay: boolean;
-  /** First and last day of the window the quota is being closed over. */
+  /** First and last day of the week the quota is being closed over. */
   windowStart: string;
   windowEnd: string;
-  /** Quota owed over the window, after earlier carry-over (MONTHLY) is applied. */
+  /** Quota owed over the week, after carry-over from earlier weeks is applied. */
   windowQuota: number;
   doneBeforeToday: number;
   doneToday: number;
   /** Total mandatory for today, and how much of it is still open. */
   mandatory: number;
   mandatoryLeft: number;
-  /** Optional work available today: the rest of the window's quota. */
+  /** Optional work available today: the rest of the week's quota. */
   normal: number;
   normalLeft: number;
-  /** Everything still owed in the window, counting today's progress. */
+  /** Everything still owed in the week, counting today's progress. */
   remaining: number;
   workingDaysLeft: number;
   isLastWorkingDay: boolean;
@@ -67,7 +65,7 @@ function fromUtc(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10);
 }
 
-function addDays(date: string, n: number): string {
+export function addDays(date: string, n: number): string {
   return fromUtc(toUtc(date) + n * DAY_MS);
 }
 
@@ -81,12 +79,8 @@ function daysBetween(start: string, end: string): string[] {
   return out;
 }
 
-function weekBounds(date: string): { start: string; end: string } {
-  const start = addDays(date, -weekday(date));
-  return { start, end: addDays(start, 6) };
-}
-
-function monthBounds(date: string): { start: string; end: string } {
+/** First and last day of the calendar month containing `date`. */
+export function monthBounds(date: string): { start: string; end: string } {
   const [y, m] = date.split('-').map(Number);
   const last = new Date(Date.UTC(y, m, 0)).getUTCDate();
   const mm = String(m).padStart(2, '0');
@@ -104,52 +98,38 @@ function baseShare(quota: number, workingDays: number): number {
 }
 
 /**
- * Today's requirement under a quota rule.
+ * Today's requirement under a quota rule, or null when today is outside its range.
  *
- * @param doneByDate completed tasks per Dhaka date (undone ones excluded)
+ * @param doneByDate completed work per Dhaka date (undone tasks excluded)
  */
-export function dayRequirement(rule: QuotaRule, today: string, allDone: Record<string, number>): DayRequirement {
-  const doneByDate = rule.startDate
-    ? Object.fromEntries(Object.entries(allDone).filter(([d]) => d >= rule.startDate!))
-    : allDone;
+export function dayRequirement(
+  rule: QuotaRule,
+  today: string,
+  doneByDate: Record<string, number>
+): DayRequirement | null {
+  if (today < rule.start || today > rule.end) return null;
+
   const amount = Math.max(0, Math.floor(rule.amount));
   const off = new Set(rule.offDays.filter((d) => d >= 0 && d <= 6));
   const isWorking = (d: string) => !off.has(weekday(d));
   const isOffDay = !isWorking(today);
   const doneToday = doneByDate[today] ?? 0;
 
-  let windowStart: string;
-  let windowEnd: string;
-  let windowQuota: number;
-  let dailyBase: number;
+  // The 7-day week, counted from the range start, that today falls in.
+  const weekIndex = Math.floor((toUtc(today) - toUtc(rule.start)) / (7 * DAY_MS));
+  const windowStart = addDays(rule.start, weekIndex * 7);
+  const weekEnd = addDays(windowStart, 6);
+  const windowEnd = weekEnd < rule.end ? weekEnd : rule.end;
 
-  if (rule.period === 'DAILY') {
-    windowStart = windowEnd = today;
-    windowQuota = isOffDay ? 0 : amount;
-    dailyBase = windowQuota;
-  } else if (rule.period === 'WEEKLY') {
-    ({ start: windowStart, end: windowEnd } = weekBounds(today));
-    const working = daysBetween(windowStart, windowEnd).filter(isWorking);
-    windowQuota = amount;
-    dailyBase = baseShare(amount, working.length);
-  } else {
-    const month = monthBounds(today);
-    const week = weekBounds(today);
-    windowStart = week.start > month.start ? week.start : month.start;
-    windowEnd = week.end < month.end ? week.end : month.end;
-
-    const monthWorking = daysBetween(month.start, month.end).filter(isWorking);
-    const workingThroughWindow = monthWorking.filter((d) => d <= windowEnd).length;
-    const owedThroughWindow = monthWorking.length
-      ? Math.round((amount * workingThroughWindow) / monthWorking.length)
-      : 0;
-    const doneEarlierInMonth = sumDone(
-      doneByDate,
-      daysBetween(month.start, addDays(windowStart, -1)).filter((d) => d >= month.start)
-    );
-    windowQuota = Math.max(0, owedThroughWindow - doneEarlierInMonth);
-    dailyBase = baseShare(amount, monthWorking.length);
-  }
+  const rangeWorking = daysBetween(rule.start, rule.end).filter(isWorking);
+  const workingThroughWindow = rangeWorking.filter((d) => d <= windowEnd).length;
+  const owedThroughWindow = rangeWorking.length
+    ? Math.round((amount * workingThroughWindow) / rangeWorking.length)
+    : 0;
+  const doneEarlierInRange =
+    windowStart > rule.start ? sumDone(doneByDate, daysBetween(rule.start, addDays(windowStart, -1))) : 0;
+  const windowQuota = Math.max(0, owedThroughWindow - doneEarlierInRange);
+  const dailyBase = baseShare(amount, rangeWorking.length);
 
   const windowDays = daysBetween(windowStart, windowEnd);
   const workingInWindow = windowDays.filter(isWorking);
@@ -161,7 +141,7 @@ export function dayRequirement(rule: QuotaRule, today: string, allDone: Record<s
 
   let mandatory: number;
   if (isOffDay) mandatory = 0;
-  else if (rule.period === 'DAILY' || isLastWorkingDay) mandatory = owedFromToday;
+  else if (isLastWorkingDay) mandatory = owedFromToday;
   else mandatory = Math.min(dailyBase, owedFromToday);
 
   const normal = Math.max(0, owedFromToday - mandatory);
@@ -186,11 +166,4 @@ export function dayRequirement(rule: QuotaRule, today: string, allDone: Record<s
     isLastWorkingDay,
     dailyBase,
   };
-}
-
-/** The earliest date whose completions can affect today's requirement. */
-export function lookbackStart(rule: QuotaRule, today: string): string {
-  if (rule.period === 'DAILY') return today;
-  if (rule.period === 'WEEKLY') return weekBounds(today).start;
-  return monthBounds(today).start;
 }

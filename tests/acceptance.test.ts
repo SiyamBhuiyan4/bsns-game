@@ -403,6 +403,7 @@ not-a-valid-http-url,Invalid URL Row`;
       period_type: PeriodType.MONTHLY,
       period_start: new Date('2026-10-01T00:00:00Z'),
       period_end: new Date('2026-10-31T23:59:59Z'),
+      off_days: [],
       set_by: 'admin-id',
       created_at: new Date(),
       updated_at: new Date(),

@@ -14,6 +14,7 @@ describe('Target Periods & Pro-Rating Engine (Section 5 & Acceptance Test 8)', (
   ): SectionTarget => ({
     id: 't-1',
     section_id: 'sec-1',
+    off_days: [],
     metric_type: 'POSTS_DONE' as MetricType,
     target_value: new Decimal(100),
     period_type: 'MONTHLY' as PeriodType,

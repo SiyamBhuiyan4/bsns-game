@@ -5,10 +5,12 @@ import { CalendarClock, CheckCircle2, Coffee, Flame } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
 
 interface Status {
-  quotaId: string;
+  targetId: string;
+  metricType: string;
   sectionName: string | null;
-  period: 'DAILY' | 'WEEKLY' | 'MONTHLY';
   amount: number;
+  rangeStart: string;
+  rangeEnd: string;
   isOffDay: boolean;
   mandatory: number;
   mandatoryLeft: number;
@@ -21,16 +23,26 @@ interface Status {
   isLastWorkingDay: boolean;
 }
 
-/** Today's mandatory and optional tasks, from the quotas an admin assigned. Renders nothing without one. */
+const METRICS: Record<string, [string, string]> = {
+  POSTS_DONE: ['গ্রুপ পোস্ট / লিংক', 'Group posts / links'],
+  NEW_LEADS: ['নতুন লিড', 'New leads'],
+  CONFIRMED_ORDERS: ['কনফার্মড অর্ডার', 'Confirmed orders'],
+  SALES_AMOUNT: ['বিক্রয়', 'Sales'],
+  NEW_CLIENTS: ['নতুন ক্রেতা', 'New clients'],
+  FOLLOWUPS_DONE: ['ইনবক্স ফলো-আপ', 'Inbox follow-ups'],
+  PROFIT_AMOUNT: ['মুনাফা', 'Profit'],
+};
+
+/** Today's mandatory and optional share of each task an admin assigned. Renders nothing without one. */
 export default function TaskQuotaCard() {
   const { L } = useLanguage();
   const [quotas, setQuotas] = useState<Status[] | null>(null);
 
   useEffect(() => {
     const ctrl = new AbortController();
-    fetch('/api/employee/task-quota', { signal: ctrl.signal })
-      .then((r) => (r.ok ? r.json() : { quotas: [] }))
-      .then((d) => setQuotas(d.quotas ?? []))
+    fetch('/api/targets/today', { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : { statuses: [] }))
+      .then((d) => setQuotas(d.statuses ?? []))
       .catch(() => undefined);
     return () => ctrl.abort();
   }, []);
@@ -60,8 +72,7 @@ export default function TaskQuotaCard() {
   }
   if (quotas.length === 0) return null;
 
-  const periodLabel = (p: Status['period']) =>
-    p === 'DAILY' ? L('দৈনিক', 'Daily') : p === 'WEEKLY' ? L('সাপ্তাহিক', 'Weekly') : L('মাসিক', 'Monthly');
+  const metricLabel = (m: string) => (METRICS[m] ? L(METRICS[m][0], METRICS[m][1]) : m);
 
   return (
     <div className={`stagger grid gap-4 ${quotas.length > 1 ? 'lg:grid-cols-2' : ''}`}>
@@ -72,7 +83,7 @@ export default function TaskQuotaCard() {
         const normalPct = q.normal > 0 ? Math.min(100, Math.round((normalDone / q.normal) * 100)) : 0;
         const mandatoryComplete = q.mandatoryLeft === 0;
         return (
-          <section key={q.quotaId} className="card relative overflow-hidden">
+          <section key={q.targetId} className="card relative overflow-hidden">
             {/* Thin colour rail: violet while work is open, green once the mandatory part is done. */}
             <span
               aria-hidden
@@ -88,12 +99,15 @@ export default function TaskQuotaCard() {
                 <div className="min-w-0">
                   <h2 className="card-title">{L('আজকের কাজ', "Today's tasks")}</h2>
                   <p className="card-subtitle truncate">
-                    {periodLabel(q.period)} <span className="tabular-nums">{q.amount}</span> ·{' '}
-                    {q.sectionName ?? L('সব সেকশন', 'All sections')}
+                    {metricLabel(q.metricType)} <span className="tabular-nums">{q.amount}</span>
+                    {q.sectionName ? ` · ${q.sectionName}` : ''} ·{' '}
+                    <span className="tabular-nums">
+                      {q.rangeStart === q.rangeEnd ? L('প্রতিদিন', 'Every day') : `${q.rangeStart} → ${q.rangeEnd}`}
+                    </span>
                   </p>
                 </div>
               </div>
-              {q.isLastWorkingDay && !q.isOffDay && (
+              {q.isLastWorkingDay && !q.isOffDay && q.rangeStart !== q.rangeEnd && (
                 <span className="badge badge-amber">
                   <Flame className="h-3 w-3" /> {L('কোটা পূরণের শেষ দিন', 'Last day to close the quota')}
                 </span>

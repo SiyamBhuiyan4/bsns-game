@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import prisma from '@/lib/prisma';
-import { quotaStatuses } from '@/lib/task-quota-server';
+import { targetStatuses } from '@/lib/task-quota-server';
 
-describe('quotaStatuses against the store', () => {
-  it('counts completed links per day and applies the weekly rule', async () => {
+describe('targetStatuses against the store', () => {
+  it('counts completed links per day and splits a weekly target', async () => {
     const emp = await prisma.user.create({
       data: { name: 'Quota Tester', email: `quota-${Date.now()}@test.local`, password_hash: 'x', role: 'EMPLOYEE' },
     });
@@ -20,16 +20,21 @@ describe('quotaStatuses against the store', () => {
       });
     }
 
-    await prisma.taskQuota.create({
-      data: { employee_id: emp.id, section_id: section.id, period: 'WEEKLY', amount: 8, off_days: [], created_by: admin.id },
+    await prisma.sectionTarget.create({
+      data: {
+        employee_id: emp.id, section_id: section.id, metric_type: 'POSTS_DONE', target_value: 8,
+        period_type: 'CUSTOM', period_start: new Date('2026-11-01'), period_end: new Date('2026-11-07'),
+        off_days: [], set_by: admin.id,
+      } as any,
     });
 
-    const [status] = await quotaStatuses([emp.id], '2026-11-02');
+    const [status] = await targetStatuses([emp.id], '2026-11-02');
     expect(status.doneBeforeToday).toBe(1);
     expect(status.doneToday).toBe(1);
     expect(status.mandatory).toBe(1);
     expect(status.mandatoryLeft).toBe(0);
     expect(status.remaining).toBe(6);
     expect(status.sectionName).toBe(section.name);
+    expect(await targetStatuses([emp.id], '2026-11-08')).toEqual([]);
   });
 });

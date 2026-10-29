@@ -22,6 +22,7 @@ const bulkJobsSchema = z.object({
   period_type: z.nativeEnum(PeriodType).default(PeriodType.DAILY),
   period_start: z.string().nullable().optional(),
   period_end: z.string().nullable().optional(),
+  off_days: z.array(z.number().int().min(0).max(6)).max(6).default([]),
   jobs: z.array(
     z.object({
       id: z.string().optional(),
@@ -96,15 +97,12 @@ export async function GET(req: NextRequest) {
             achieved_value = await prisma.linkCompletion.count({ where: completionWhere });
           } else {
             const entryWhere: any = {
-              date: { gte: pStart, lte: pEnd },
+              metric_type: t.metric_type,
+              entry_date: { gte: pStart, lte: pEnd },
             };
             if (t.employee_id) entryWhere.employee_id = t.employee_id;
             const entries = await prisma.dailyEntry.findMany({ where: entryWhere });
-            const key = t.metric_type.toLowerCase();
-            achieved_value = entries.reduce(
-              (acc, e: any) => acc + (Number(e[key]) || 0),
-              0
-            );
+            achieved_value = entries.reduce((acc, e: any) => acc + (Number(e.value) || 0), 0);
           }
         } catch {
           achieved_value = 0;
@@ -141,10 +139,14 @@ export async function POST(req: NextRequest) {
       }
 
       const { employee_id, period_type, period_start, period_end, jobs } = parsedBulk.data;
+      const off_days = [...new Set(parsedBulk.data.off_days)].sort();
       const pStart = period_start ? new Date(period_start) : null;
       let pEnd = period_end ? new Date(period_end) : null;
       if (period_type === PeriodType.MONTHLY && pStart && !pEnd) {
         pEnd = endOfMonth(pStart);
+      }
+      if (period_type === PeriodType.CUSTOM && (!pStart || !pEnd || pStart > pEnd)) {
+        return NextResponse.json({ error: 'Custom period requires a start date on or before the end date' }, { status: 400 });
       }
 
       // 1. Auto-merge any duplicate jobs in the incoming payload (e.g. 2 + 3 = 5)
@@ -196,6 +198,7 @@ export async function POST(req: NextRequest) {
                 period_type,
                 period_start: pStart,
                 period_end: pEnd,
+                off_days,
                 set_by: session.id,
               },
               include: { section: true, employee: true },
@@ -220,6 +223,7 @@ export async function POST(req: NextRequest) {
                 period_type,
                 period_start: pStart,
                 period_end: pEnd,
+                off_days,
                 set_by: session.id,
               },
               include: { section: true, employee: true },

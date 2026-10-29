@@ -10,8 +10,7 @@ type ModelName =
   | 'user' | 'groupSection' | 'groupLink' | 'csvUploadBatch' | 'assignment' | 'linkCompletion'
   | 'product' | 'dailyProductSale' | 'campaign' | 'dailyEntry' | 'dailyText' | 'lead' | 'leadNote'
   | 'sectionTarget' | 'budgetLimit' | 'scoringSettings' | 'weeklyReport' | 'weeklyReportAnswer'
-  | 'monthlyReport' | 'plan' | 'planPhase' | 'planTask' | 'planMilestone' | 'auditLog' | 'agentPhrase'
-  | 'taskQuota';
+  | 'monthlyReport' | 'plan' | 'planPhase' | 'planTask' | 'planMilestone' | 'auditLog' | 'agentPhrase';
 
 type ModelDef = {
   table: string; // Pascal name used in relations
@@ -151,19 +150,9 @@ const MODELS: Record<ModelName, ModelDef> = {
       author: { to: 'user', fk: 'author_id' },
     },
   },
-  taskQuota: {
-    table: 'TaskQuota', dates: ['created_at', 'updated_at'], hasUpdatedAt: true,
-    defaults: { section_id: null, off_days: [], is_active: true, created_at: NOW },
-    unique: [['employee_id', 'section_id']],
-    relations: {
-      employee: { to: 'user', fk: 'employee_id' },
-      section: { to: 'groupSection', fk: 'section_id' },
-      creator: { to: 'user', fk: 'created_by' },
-    },
-  },
   sectionTarget: {
     table: 'SectionTarget', dates: ['period_start', 'period_end', 'created_at', 'updated_at'], hasUpdatedAt: true,
-    defaults: { period_type: 'MONTHLY', period_start: null, period_end: null, employee_id: null, created_at: NOW }, unique: [],
+    defaults: { period_type: 'MONTHLY', period_start: null, period_end: null, employee_id: null, off_days: [], created_at: NOW }, unique: [],
     relations: {
       section: { to: 'groupSection', fk: 'section_id' },
       creator: { to: 'user', fk: 'set_by' },

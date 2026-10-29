@@ -9,6 +9,7 @@
  * Bangla message built on the server still switches language on screen.
  */
 export const EN: Record<string, string> = {
+  'কাজ ও টার্গেট': 'Tasks & Targets',
   'নতুন কর্মী সফলভাবে যোগ করা হয়েছে (Employee created)': 'Employee created',
   'ফেসবুক বিজ্ঞাপন (FB Ads)': 'FB Ads',
   'নতুন কাস্টমার (New Customer)': 'New Customer',
