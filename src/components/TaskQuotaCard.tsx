@@ -35,7 +35,7 @@ const METRICS: Record<string, [string, string]> = {
 
 /** Today's mandatory and optional share of each task an admin assigned. Renders nothing without one. */
 export default function TaskQuotaCard() {
-  const { L } = useLanguage();
+  const { L, formatNum, formatMoney } = useLanguage();
   const [quotas, setQuotas] = useState<Status[] | null>(null);
 
   useEffect(() => {
@@ -43,7 +43,10 @@ export default function TaskQuotaCard() {
     fetch('/api/targets/today', { signal: ctrl.signal })
       .then((r) => (r.ok ? r.json() : { statuses: [] }))
       .then((d) => setQuotas(d.statuses ?? []))
-      .catch(() => undefined);
+      // A failed lookup hides the card rather than leaving a skeleton up forever.
+      .catch(() => {
+        if (!ctrl.signal.aborted) setQuotas([]);
+      });
     return () => ctrl.abort();
   }, []);
 
@@ -73,6 +76,13 @@ export default function TaskQuotaCard() {
   if (quotas.length === 0) return null;
 
   const metricLabel = (m: string) => (METRICS[m] ? L(METRICS[m][0], METRICS[m][1]) : m);
+  const amountText = (m: string, v: number) => (m.endsWith('_AMOUNT') ? formatMoney(v) : formatNum(v));
+  /** yyyy-mm-dd -> "12 Oct" in the chosen language; anything unparseable is shown as is. */
+  const shortDate = (iso: string) => {
+    const d = new Date(`${iso}T00:00:00+06:00`);
+    if (Number.isNaN(d.getTime())) return iso;
+    return new Intl.DateTimeFormat(L('bn-BD', 'en-GB'), { day: 'numeric', month: 'short', timeZone: 'Asia/Dhaka' }).format(d);
+  };
 
   return (
     <div className={`stagger grid gap-4 ${quotas.length > 1 ? 'lg:grid-cols-2' : ''}`}>
@@ -93,16 +103,18 @@ export default function TaskQuotaCard() {
             />
             <div className="card-header">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700">
+                <span className={`icon-tile ${mandatoryComplete ? '' : 'icon-tile-violet'}`}>
                   <CalendarClock className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
                   <h2 className="card-title">{L('আজকের কাজ', "Today's tasks")}</h2>
                   <p className="card-subtitle truncate">
-                    {metricLabel(q.metricType)} <span className="tabular-nums">{q.amount}</span>
+                    {metricLabel(q.metricType)} <span className="tabular-nums">{amountText(q.metricType, q.amount)}</span>
                     {q.sectionName ? ` · ${q.sectionName}` : ''} ·{' '}
                     <span className="tabular-nums">
-                      {q.rangeStart === q.rangeEnd ? L('প্রতিদিন', 'Every day') : `${q.rangeStart} → ${q.rangeEnd}`}
+                      {q.rangeStart === q.rangeEnd
+                        ? L('প্রতিদিন', 'Every day')
+                        : `${shortDate(q.rangeStart)} → ${shortDate(q.rangeEnd)}`}
                     </span>
                   </p>
                 </div>
@@ -136,13 +148,13 @@ export default function TaskQuotaCard() {
                         <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                       ) : (
                         <span className="text-xs font-medium text-violet-700 tabular-nums">
-                          {q.mandatoryLeft} {L('বাকি', 'left')}
+                          {formatNum(q.mandatoryLeft)} {L('বাকি', 'left')}
                         </span>
                       )}
                     </div>
                     <div className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                      {mandatoryDone}
-                      <span className="text-base font-normal text-slate-400">/{q.mandatory}</span>
+                      {formatNum(mandatoryDone)}
+                      <span className="text-base font-normal text-slate-400">/{formatNum(q.mandatory)}</span>
                     </div>
                     <div
                       className="mt-2 h-2 overflow-hidden rounded-full bg-white/80"
@@ -167,16 +179,16 @@ export default function TaskQuotaCard() {
                   </div>
 
                   {/* Optional */}
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+                  <div className="rounded-xl border border-sky-200 bg-sky-50/40 p-4">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-semibold text-slate-700">{L('সাধারণ (ঐচ্ছিক)', 'Normal (optional)')}</span>
-                      <span className="text-xs text-slate-500 tabular-nums">
-                        {q.normalLeft} {L('বাকি', 'left')}
+                      <span className="text-xs font-semibold text-slate-700">{L('সাধারণ · ঐচ্ছিক', 'Normal · optional')}</span>
+                      <span className="text-xs font-medium text-sky-700 tabular-nums">
+                        {formatNum(q.normalLeft)} {L('বাকি', 'left')}
                       </span>
                     </div>
                     <div className="mt-1 text-2xl font-semibold tracking-tight text-slate-900 tabular-nums">
-                      {normalDone}
-                      <span className="text-base font-normal text-slate-400">/{q.normal}</span>
+                      {formatNum(normalDone)}
+                      <span className="text-base font-normal text-slate-400">/{formatNum(q.normal)}</span>
                     </div>
                     <div
                       className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200/70"
@@ -184,7 +196,7 @@ export default function TaskQuotaCard() {
                       aria-valuemin={0}
                       aria-valuemax={100}
                       aria-valuenow={normalPct}
-                      aria-label={L('সাধারণ (ঐচ্ছিক)', 'Normal (optional)')}
+                      aria-label={L('সাধারণ · ঐচ্ছিক', 'Normal · optional')}
                     >
                       <div className="h-full rounded-full bg-sky-500 transition-all duration-700" style={{ width: `${normalPct}%` }} />
                     </div>
@@ -195,8 +207,8 @@ export default function TaskQuotaCard() {
 
             <p className="border-t border-slate-100 bg-slate-50/60 px-5 py-3 text-xs text-slate-500">
               {L(
-                `${q.windowEnd} এর মধ্যে বাকি ${q.remaining}টি · ${q.workingDaysLeft} কাজের দিন বাকি। সাধারণ কাজ না করলে শেষ দিনে সব বাধ্যতামূলক হবে।`,
-                `${q.remaining} left by ${q.windowEnd} · ${q.workingDaysLeft} working days to go. Normal tasks you skip become mandatory on the last day.`
+                `${shortDate(q.windowEnd)} এর মধ্যে বাকি ${amountText(q.metricType, q.remaining)} · ${formatNum(q.workingDaysLeft)} কাজের দিন বাকি। সাধারণ কাজ না করলে শেষ দিনে সব বাধ্যতামূলক হবে।`,
+                `${amountText(q.metricType, q.remaining)} left by ${shortDate(q.windowEnd)} · ${formatNum(q.workingDaysLeft)} working days to go. Normal tasks you skip become mandatory on the last day.`
               )}
             </p>
           </section>

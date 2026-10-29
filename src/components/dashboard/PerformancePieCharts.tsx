@@ -17,6 +17,7 @@ import {
   TeamScoreShareItem,
 } from '@/lib/dashboard';
 import { useLanguage } from '@/components/LanguageContext';
+import Avatar from '@/components/ui/Avatar';
 import EmptyState from '@/components/ui/EmptyState';
 
 interface PerformancePieChartsProps {
@@ -279,10 +280,10 @@ export default function PerformancePieCharts({
   ];
 
   const chipClass = (isSelected: boolean) =>
-    `inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+    `inline-flex min-h-9 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
       isSelected
-        ? 'border-slate-900 bg-slate-900 text-white'
-        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
+        ? 'border-transparent bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm shadow-emerald-500/30'
+        : 'border-slate-200 bg-white text-slate-700 hover:border-brand-300 hover:bg-brand-50/40'
     }`;
   const chipCountClass = (isSelected: boolean) =>
     `rounded-full px-1.5 py-px text-[11px] tabular-nums ${
@@ -294,7 +295,7 @@ export default function PerformancePieCharts({
       {/* Header & mode switcher */}
       <div className="card-header">
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-inset ring-brand-600/10">
+          <div className="icon-tile icon-tile-violet">
             <PieIcon className="h-4 w-4" />
           </div>
           <div className="min-w-0">
@@ -458,6 +459,7 @@ export default function PerformancePieCharts({
                   className={chipClass(isSelected)}
                 >
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
+                  <Avatar name={emp.name} size={22} animated={false} />
                   <span>{emp.name}</span>
                   <span className={chipCountClass(isSelected)}>{formatNum(emp.targetProgressPercent)}%</span>
                 </button>

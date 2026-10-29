@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
+import { getDhakaDateString } from '@/lib/date';
 
 export async function POST(
   _request: NextRequest,
@@ -42,32 +43,14 @@ export async function POST(
       );
     }
 
-    // 2. Check if already completed (active)
-    const existingActive = await prisma.linkCompletion.findFirst({
-      where: {
-        group_link_id: linkId,
-        employee_id: session.userId,
-        undone_at: null,
-      },
-    });
-
-    if (existingActive) {
-      return NextResponse.json({
-        success: true,
-        alreadyDone: true,
-        completionId: existingActive.id,
-        completedAt: existingActive.completed_at,
-      });
-    }
-
-    // 2.5. Check section post limit for this employee
     const allowExtra =
       _request.nextUrl.searchParams.get('allowExtra') === 'true' ||
       _request.nextUrl.searchParams.get('extra') === 'true';
 
-    let isExtraWork = false;
+    // 2. Daily post limit for this section: the assignment's post_limit, else a DAILY
+    // POSTS_DONE target for the section (a weekly or monthly amount is not a per-day cap).
     const assignment = link.section?.assignments?.[0];
-    let postLimit = assignment?.post_limit ?? null;
+    let postLimit: number | null = assignment?.post_limit ?? null;
 
     if (!postLimit && prisma.sectionTarget) {
       const target = await prisma.sectionTarget.findFirst({
@@ -75,6 +58,7 @@ export async function POST(
           employee_id: session.userId,
           section_id: link.section_id,
           metric_type: 'POSTS_DONE',
+          period_type: 'DAILY',
         },
       });
       if (target) {
@@ -82,50 +66,75 @@ export async function POST(
       }
     }
 
-    if (postLimit && postLimit > 0) {
-      const now = new Date();
-      const dhakaOffsetMs = 6 * 60 * 60 * 1000;
-      const dhakaNow = new Date(now.getTime() + dhakaOffsetMs);
-      const startOfDhakaDay = new Date(
-        Date.UTC(dhakaNow.getUTCFullYear(), dhakaNow.getUTCMonth(), dhakaNow.getUTCDate()) -
-          dhakaOffsetMs
-      );
+    const startOfDhakaDay = new Date(`${getDhakaDateString()}T00:00:00+06:00`);
 
-      const sectionCompletions = await prisma.linkCompletion.count({
+    // 3. Check-and-create in one transaction: writes run one at a time, so a double
+    // click cannot record the same link twice or slip past the daily limit.
+    const outcome = await prisma.$transaction(async (tx) => {
+      const existingActive = await tx.linkCompletion.findFirst({
         where: {
+          group_link_id: linkId,
           employee_id: session.userId,
           undone_at: null,
-          completed_at: { gte: startOfDhakaDay },
-          group_link: { section_id: link.section_id },
         },
       });
-
-      if (sectionCompletions >= postLimit) {
-        if (!allowExtra) {
-          return NextResponse.json(
-            {
-              error: `"${link.section.name}" এ আপনার আজকের পোস্ট সীমা (${postLimit}টি) পূরণ হয়ে গেছে। অতিরিক্ত পোস্ট করতে বোনাস অনুমোদন সক্রিয় করুন।`,
-              limitReached: true,
-              postLimit,
-              completedToday: sectionCompletions,
-              canDoExtra: true,
-            },
-            { status: 400 }
-          );
-        }
-        isExtraWork = true;
+      if (existingActive) {
+        return { kind: 'already' as const, completion: existingActive };
       }
+
+      let isExtraWork = false;
+      if (postLimit && postLimit > 0) {
+        const sectionCompletions = await tx.linkCompletion.count({
+          where: {
+            employee_id: session.userId,
+            undone_at: null,
+            completed_at: { gte: startOfDhakaDay },
+            group_link: { section_id: link.section_id },
+          },
+        });
+
+        if (sectionCompletions >= postLimit) {
+          if (!allowExtra) {
+            return { kind: 'limit' as const, postLimit, completedToday: sectionCompletions };
+          }
+          isExtraWork = true;
+        }
+      }
+
+      const completion = await tx.linkCompletion.create({
+        data: {
+          group_link_id: linkId,
+          employee_id: session.userId,
+          completed_at: new Date(),
+          undone_at: null,
+        },
+      });
+      return { kind: 'created' as const, completion, isExtraWork };
+    });
+
+    if (outcome.kind === 'already') {
+      return NextResponse.json({
+        success: true,
+        alreadyDone: true,
+        completionId: outcome.completion.id,
+        completedAt: outcome.completion.completed_at,
+      });
     }
 
-    // 3. Create or re-activate completion
-    const completion = await prisma.linkCompletion.create({
-      data: {
-        group_link_id: linkId,
-        employee_id: session.userId,
-        completed_at: new Date(),
-        undone_at: null,
-      },
-    });
+    if (outcome.kind === 'limit') {
+      return NextResponse.json(
+        {
+          error: `"${link.section.name}" এ আপনার আজকের পোস্ট সীমা (${outcome.postLimit}টি) পূরণ হয়ে গেছে। অতিরিক্ত পোস্ট করতে বোনাস অনুমোদন সক্রিয় করুন।`,
+          limitReached: true,
+          postLimit: outcome.postLimit,
+          completedToday: outcome.completedToday,
+          canDoExtra: true,
+        },
+        { status: 400 }
+      );
+    }
+
+    const { completion, isExtraWork } = outcome;
 
     return NextResponse.json({
       success: true,

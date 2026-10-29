@@ -67,7 +67,7 @@ export default function DashboardHeaderStats({
             : L('কর্মী পারফরম্যান্স ও সেকশন কাজের সার্বিক ড্যাশবোর্ড', 'Employee Performance & Section Overview Dashboard')
         }
         actions={
-          <span className="badge badge-gray py-1 tabular-nums">
+          <span className="badge badge-blue py-1 tabular-nums">
             <Clock className="h-3.5 w-3.5" />
             {L(`ঢাকা: ${formatDigits(todayStr)}`, `Dhaka: ${todayStr}`)}
           </span>
@@ -83,13 +83,17 @@ export default function DashboardHeaderStats({
             tone="brand"
             value={
               <>
-                {formatNum(employeeScore ?? 100)}{' '}
+                {employeeScore === undefined ? '—' : formatNum(employeeScore)}{' '}
                 <span className="text-sm font-normal text-slate-500">
                   / {formatNum(100)}
                 </span>
               </>
             }
-            note={L('চলতি পারফরম্যান্স রেটিং', 'Current performance rating')}
+            note={
+              employeeScore === undefined
+                ? L('এই সময়ে এখনো কোনো স্কোর নেই', 'No score yet for this period')
+                : L('চলতি পারফরম্যান্স রেটিং', 'Current performance rating')
+            }
           />
         ) : (
           <StatCard

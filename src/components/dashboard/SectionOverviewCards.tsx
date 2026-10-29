@@ -30,85 +30,17 @@ export interface SectionOverviewCardsProps {
   groupSectionsOverview?: GroupSectionOverviewItem[];
 }
 
-interface SectionStyleConfig {
-  bgLight: string;
-  textColor: string;
-  borderColor: string;
-  ringColor: string;
-  progressBarColor: string;
-}
-
-const SECTION_STYLES: Record<string, SectionStyleConfig> = {
-  POSTS_DONE: {
-    bgLight: 'bg-sky-50',
-    textColor: 'text-sky-700',
-    borderColor: 'border-sky-200',
-    ringColor: 'ring-sky-600/20',
-    progressBarColor: 'bg-sky-600',
-  },
-  NEW_LEADS: {
-    bgLight: 'bg-amber-50',
-    textColor: 'text-amber-700',
-    borderColor: 'border-amber-200',
-    ringColor: 'ring-amber-600/20',
-    progressBarColor: 'bg-amber-500',
-  },
-  CONFIRMED_ORDERS: {
-    bgLight: 'bg-emerald-50',
-    textColor: 'text-emerald-700',
-    borderColor: 'border-emerald-200',
-    ringColor: 'ring-emerald-600/20',
-    progressBarColor: 'bg-emerald-600',
-  },
-  ORDERS_CONFIRMED: {
-    bgLight: 'bg-emerald-50',
-    textColor: 'text-emerald-700',
-    borderColor: 'border-emerald-200',
-    ringColor: 'ring-emerald-600/20',
-    progressBarColor: 'bg-emerald-600',
-  },
-  SALES_AMOUNT: {
-    bgLight: 'bg-brand-50',
-    textColor: 'text-brand-800',
-    borderColor: 'border-brand-200',
-    ringColor: 'ring-brand-600/20',
-    progressBarColor: 'bg-brand-600',
-  },
-  NEW_CLIENTS: {
-    bgLight: 'bg-emerald-50',
-    textColor: 'text-emerald-700',
-    borderColor: 'border-emerald-200',
-    ringColor: 'ring-emerald-600/20',
-    progressBarColor: 'bg-emerald-600',
-  },
-  FOLLOWUPS_DONE: {
-    bgLight: 'bg-violet-50',
-    textColor: 'text-violet-700',
-    borderColor: 'border-violet-200',
-    ringColor: 'ring-violet-600/20',
-    progressBarColor: 'bg-violet-600',
-  },
-  MESSAGES_REPLIED: {
-    bgLight: 'bg-violet-50',
-    textColor: 'text-violet-700',
-    borderColor: 'border-violet-200',
-    ringColor: 'ring-violet-600/20',
-    progressBarColor: 'bg-violet-600',
-  },
-  PROFIT_AMOUNT: {
-    bgLight: 'bg-violet-50',
-    textColor: 'text-violet-800',
-    borderColor: 'border-violet-200',
-    ringColor: 'ring-violet-600/20',
-    progressBarColor: 'bg-violet-600',
-  },
-  GROUP_DEFAULT: {
-    bgLight: 'bg-sky-50',
-    textColor: 'text-sky-700',
-    borderColor: 'border-sky-200',
-    ringColor: 'ring-sky-600/20',
-    progressBarColor: 'bg-sky-600',
-  },
+/** Gradient icon tile per section (classes in globals.css). */
+const SECTION_TILES: Record<string, string> = {
+  POSTS_DONE: 'icon-tile-sky',
+  NEW_LEADS: 'icon-tile-amber',
+  CONFIRMED_ORDERS: '',
+  ORDERS_CONFIRMED: '',
+  SALES_AMOUNT: '',
+  NEW_CLIENTS: '',
+  FOLLOWUPS_DONE: 'icon-tile-violet',
+  MESSAGES_REPLIED: 'icon-tile-violet',
+  PROFIT_AMOUNT: 'icon-tile-rose',
 };
 
 export default function SectionOverviewCards({
@@ -298,7 +230,6 @@ export default function SectionOverviewCards({
         <div className="stagger grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {/* 1. Core performance sections */}
           {filteredCoreSections.map((sec) => {
-            const styles = SECTION_STYLES[sec.key] || SECTION_STYLES.GROUP_DEFAULT;
             const hasTarget = sec.totalTarget > 0;
             const percentage = sec.averagePercentage !== undefined
               ? sec.averagePercentage
@@ -321,9 +252,7 @@ export default function SectionOverviewCards({
               >
                 <div>
                   <div className="flex items-center gap-3">
-                    <div
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset ${styles.bgLight} ${styles.textColor} ${styles.ringColor}`}
-                    >
+                    <div className={`icon-tile ${SECTION_TILES[sec.key] ?? 'icon-tile-sky'}`}>
                       {renderSectionIcon(sec.key)}
                     </div>
                     <h3 className="min-w-0 truncate text-sm font-semibold text-slate-900">
@@ -427,7 +356,6 @@ export default function SectionOverviewCards({
           {/* 2. Group link sections (only in the main grid when the Groups filter is chosen) */}
           {filterType === 'groups' &&
             filteredGroupSections.map((groupSec) => {
-              const styles = SECTION_STYLES.GROUP_DEFAULT;
               const total = groupSec.totalLinks || 1;
               const completed = groupSec.completedLinksCount || 0;
               const percentage = Math.min(100, Math.round((completed / total) * 100));
@@ -449,9 +377,7 @@ export default function SectionOverviewCards({
                 >
                   <div>
                     <div className="flex items-center gap-3">
-                      <div
-                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset ${styles.bgLight} ${styles.textColor} ${styles.ringColor}`}
-                      >
+                      <div className="icon-tile icon-tile-sky">
                         <Layers className="h-5 w-5" />
                       </div>
                       <div className="min-w-0">
@@ -512,7 +438,7 @@ export default function SectionOverviewCards({
             <div className="min-w-0">
               <h3 className="card-title flex items-center gap-2">
                 {L('গ্রুপ লিঙ্ক পোস্টিং এর সাব-গ্রুপসমূহ', 'Group Link Posting - Sub-Groups')}
-                <span className="badge badge-gray tabular-nums">{formatNum(groupSectionsOverview.length)}</span>
+                <span className="badge badge-blue tabular-nums">{formatNum(groupSectionsOverview.length)}</span>
               </h3>
               <p className="card-subtitle mt-0.5">
                 {L(

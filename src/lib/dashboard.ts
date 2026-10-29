@@ -1,7 +1,13 @@
 import prisma from '@/lib/prisma';
 import { getDhakaDateString, parseDateOnly, formatDhakaDateTime } from '@/lib/date';
 import { calculateEffectiveTargetsForRange } from '@/lib/targets';
-import { calculateEmployeeScore, selectEmployeeTargets, readSectionWeights } from '@/lib/scoring';
+import {
+  calculateEmployeeScore,
+  daysInRange,
+  postsTargetWithLimitFallback,
+  selectEmployeeTargets,
+  readSectionWeights,
+} from '@/lib/scoring';
 import { makeTranslator, type Lang } from '@/lib/i18n/translate';
 import { MetricType, PlanStatus } from '@prisma/client';
 import { subDays, format, parseISO, differenceInCalendarDays, eachDayOfInterval, isValid } from 'date-fns';
@@ -568,6 +574,14 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     }
   }
 
+  // Posts are scored from link completions that were not undone (as on the leaderboard and
+  // performance pages), never from a POSTS_DONE daily entry.
+  const periodPostsByEmp = new Map<string, number>();
+  for (const c of periodLinkCompletions) {
+    periodPostsByEmp.set(c.employee_id, (periodPostsByEmp.get(c.employee_id) || 0) + 1);
+  }
+  const periodDays = daysInRange(startUtcDate, endUtcDate);
+
   // Calculate scores for each active employee
   let topPerformer: { id: string; name: string; score: number; sales: number } | null = null;
   let failingEmployeesCount = 0;
@@ -579,7 +593,7 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
 
     const salesAchieved = m.get(MetricType.SALES_AMOUNT) || 0;
     const profitAchieved = m.get(MetricType.PROFIT_AMOUNT) || 0;
-    const postsAchieved = m.get(MetricType.POSTS_DONE) || 0;
+    const postsAchieved = periodPostsByEmp.get(emp.id) || 0;
     const newClientsAchieved = m.get(MetricType.NEW_CLIENTS) || 0;
     const b2bOrdersAchieved = m.get(MetricType.B2B_ORDERS) || 0;
     const retentionAchieved = m.get(MetricType.RETENTION_COUNT) || 0;
@@ -589,6 +603,11 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     const empSectionIds = assignments.filter((a) => a.employee_id === emp.id).map((a) => a.section_id);
     const empTargetRows = selectEmployeeTargets(allTargets, emp.id, empSectionIds);
     const empTargets = calculateEffectiveTargetsForRange(empTargetRows, startUtcDate, endUtcDate);
+    empTargets.POSTS_DONE = postsTargetWithLimitFallback(
+      empTargets.POSTS_DONE,
+      assignments.filter((a) => a.employee_id === emp.id).map((a) => a.post_limit),
+      periodDays
+    );
 
     // Build metric score input
     const scoreInput: Partial<Record<MetricType, { target: number | null; achieved: number }>> = {

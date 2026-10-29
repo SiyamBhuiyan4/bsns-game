@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
+import { z } from 'zod';
+
+const extraWorkSchema = z.object({
+  url: z.string().trim().min(1).max(2000),
+  title: z.string().trim().max(200).optional().nullable(),
+  section_id: z.string().min(1).max(100),
+});
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
@@ -29,6 +36,8 @@ export async function GET(request: NextRequest) {
           where: {
             employee_id: session.userId,
             metric_type: 'POSTS_DONE',
+            // Only a per-day target is a daily cap; a weekly or monthly amount is not.
+            period_type: 'DAILY',
           },
           select: { section_id: true, target_value: true },
         })
@@ -242,16 +251,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
-    const { url, title, section_id } = body;
-
-    if (!url || typeof url !== 'string' || !url.trim()) {
-      return NextResponse.json({ error: 'লিংক URL প্রদান করুন' }, { status: 400 });
+    const parsed = extraWorkSchema.safeParse(await request.json().catch(() => null));
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'লিংক URL ও সেকশন সঠিকভাবে দিন / Enter a valid link and section' }, { status: 400 });
     }
+    const { url, title, section_id } = parsed.data;
     // Only web links. A javascript: or data: URL would be rendered as a live link in the admin's browser.
     let safeUrl: URL;
     try {
-      safeUrl = new URL(url.trim());
+      safeUrl = new URL(url);
     } catch {
       return NextResponse.json({ error: 'সঠিক লিংক দিন' }, { status: 400 });
     }
@@ -279,39 +287,48 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'এই সেকশনে আপনার কাজের অনুমতি নেই' }, { status: 403 });
     }
 
-    // Find or create group link
-    let link = await prisma.groupLink.findFirst({
-      where: {
-        url: url.trim(),
-        section_id,
-      },
-    });
-
-    if (!link) {
-      link = await prisma.groupLink.create({
-        data: {
-          url: url.trim(),
-          title: title?.trim() || 'অতিরিক্ত কাজ / Extra Post',
+    // Find or create the group link and record the completion in one transaction, so a double
+    // submit neither trips the (section, url) unique rule nor counts the same post twice.
+    const { link, completion, alreadyDone } = await prisma.$transaction(async (tx) => {
+      let link = await tx.groupLink.findFirst({
+        where: {
+          url,
           section_id,
-          is_active: true,
         },
       });
-    }
 
-    // Create completion record
-    const completion = await prisma.linkCompletion.create({
-      data: {
-        group_link_id: link.id,
-        employee_id: session.userId,
-        completed_at: new Date(),
-        undone_at: null,
-      },
+      if (!link) {
+        link = await tx.groupLink.create({
+          data: {
+            url,
+            title: title || 'অতিরিক্ত কাজ / Extra Post',
+            section_id,
+            is_active: true,
+          },
+        });
+      }
+
+      const existing = await tx.linkCompletion.findFirst({
+        where: { group_link_id: link.id, employee_id: session.userId, undone_at: null },
+      });
+      if (existing) return { link, completion: existing, alreadyDone: true };
+
+      const completion = await tx.linkCompletion.create({
+        data: {
+          group_link_id: link.id,
+          employee_id: session.userId,
+          completed_at: new Date(),
+          undone_at: null,
+        },
+      });
+      return { link, completion, alreadyDone: false };
     });
 
     return NextResponse.json({
       success: true,
+      alreadyDone,
       isExtraWork: true,
-      bonusXp: 50,
+      bonusXp: alreadyDone ? 0 : 50,
       link: {
         id: link.id,
         url: link.url,

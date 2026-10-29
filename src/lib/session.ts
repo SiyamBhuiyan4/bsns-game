@@ -1,13 +1,37 @@
 import { cookies } from 'next/headers';
 import { verifyToken, SessionUser } from './auth';
+import prisma from './prisma';
 
 export const COOKIE_NAME = 'auth_token';
+
+/**
+ * An employee token stays valid for 7 days, so the account is checked on every
+ * request: a deactivated, deleted or re-roled employee loses access at once
+ * instead of when the cookie expires. Reads come from the cached store snapshot.
+ */
+export async function isSessionAccountActive(session: SessionUser): Promise<boolean> {
+  if (session.role !== 'EMPLOYEE') return true;
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { is_active: true, role: true },
+  });
+  return !!user && user.is_active !== false && user.role === 'EMPLOYEE';
+}
 
 export async function getSession(): Promise<SessionUser | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;
-  return verifyToken(token);
+  const session = await verifyToken(token);
+  if (!session) return null;
+  try {
+    return (await isSessionAccountActive(session)) ? session : null;
+  } catch (error) {
+    // Store unreachable (a Telegram hiccup): keep the verified session rather than
+    // logging every employee out and clearing their cookie over a transient error.
+    console.error('Session account check failed:', error);
+    return session;
+  }
 }
 
 export async function setSessionCookie(token: string): Promise<void> {

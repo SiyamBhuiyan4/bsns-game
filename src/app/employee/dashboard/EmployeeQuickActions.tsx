@@ -7,9 +7,9 @@ import { useLanguage } from '@/components/LanguageContext';
 type Tone = 'brand' | 'sky' | 'amber';
 
 const CHIP: Record<Tone, string> = {
-  brand: 'bg-brand-50 text-brand-700 ring-brand-600/10',
-  sky: 'bg-sky-50 text-sky-700 ring-sky-600/10',
-  amber: 'bg-amber-50 text-amber-700 ring-amber-600/10',
+  brand: '',
+  sky: 'icon-tile-sky',
+  amber: 'icon-tile-amber',
 };
 
 /** Three shortcuts under the dashboard stats: today's work, leads, leaderboard. */
@@ -51,7 +51,7 @@ export default function EmployeeQuickActions() {
             className="card hover-lift press group flex min-h-[72px] items-center gap-3 p-4"
           >
             <span
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 transition-transform duration-200 group-hover:scale-105 ${CHIP[item.tone]}`}
+              className={`icon-tile h-10 w-10 transition-transform duration-200 group-hover:scale-105 ${CHIP[item.tone]}`}
             >
               <Icon className="h-5 w-5" />
             </span>
@@ -59,7 +59,7 @@ export default function EmployeeQuickActions() {
               <span className="block truncate text-sm font-semibold text-slate-900">{item.title}</span>
               <span className="block truncate text-xs text-slate-500">{item.note}</span>
             </span>
-            <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-slate-600" />
+            <ArrowRight className="h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-brand-600" />
           </Link>
         );
       })}

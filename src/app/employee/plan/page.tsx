@@ -13,13 +13,15 @@ import {
   Info,
   FileText,
   Filter,
-  RefreshCw,
-  AlertCircle,
+  ListChecks,
 } from 'lucide-react';
 import { toBengaliDigits, getDhakaDateString, formatDisplayDate } from '@/lib/date';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
+import ErrorState from '@/components/ui/ErrorState';
+import StatCard from '@/components/ui/StatCard';
+import Avatar from '@/components/ui/Avatar';
 import { useLanguage } from '@/components/LanguageContext';
 import { Skeleton, SkeletonStatCards } from '@/components/ui/Skeleton';
 
@@ -119,12 +121,14 @@ export default function EmployeePlanPage() {
   const [stats, setStats] = useState<PlanStats | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [activePhaseOrder, setActivePhaseOrder] = useState<number>(1);
   const [filterOnlyMyTasks, setFilterOnlyMyTasks] = useState(false);
 
   const fetchPlanData = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       const res = await fetch('/api/plan');
       if (!res.ok) {
         throw new Error(L('প্ল্যান ডাটা লোড করা সম্ভব হয়নি'));
@@ -138,9 +142,11 @@ export default function EmployeePlanPage() {
       }
     } catch (err) {
       console.error(err);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -170,17 +176,29 @@ export default function EmployeePlanPage() {
 
   if (!plan) {
     return (
-      <div className="card">
-        <EmptyState
-          icon={<AlertCircle className="h-5 w-5 text-rose-600" />}
-          title={L('প্ল্যান পাওয়া যায়নি', 'Plan not found')}
-          description={L('সার্ভারে সংযোগ করা যায়নি, আবার চেষ্টা করুন।', 'Could not reach the server, please retry.')}
-          action={
-            <button onClick={fetchPlanData} className="btn btn-primary">
-              <RefreshCw className="h-4 w-4" /> {L('আবার চেষ্টা', 'Retry')}
-            </button>
-          }
+      <div className="space-y-6">
+        <PageHeader
+          icon={<CalendarCheck className="h-5 w-5" />}
+          title={L('কর্মপরিকল্পনা', 'Action Plan')}
+          subtitle={L('দলের ধাপে ধাপে কাজের পরিকল্পনা', "The team's phase-by-phase work plan")}
         />
+        <div className="card">
+          {loadError ? (
+            <ErrorState
+              title={L('প্ল্যান লোড করা যায়নি', 'Could not load the plan')}
+              onRetry={fetchPlanData}
+            />
+          ) : (
+            <EmptyState
+              icon={<CalendarCheck className="h-5 w-5" />}
+              title={L('এখনো কোনো প্ল্যান চালু হয়নি', 'No plan has been started yet')}
+              description={L(
+                'হেড অব মার্কেটিং প্ল্যান চালু করলে আপনার কাজ ও মাইলস্টোন এখানে দেখা যাবে।',
+                'Once the Head of Marketing starts a plan, your tasks and milestones will appear here.'
+              )}
+            />
+          )}
+        </div>
       </div>
     );
   }
@@ -236,7 +254,7 @@ export default function EmployeePlanPage() {
                 {isEn ? `${stats.overdue_tasks} overdue` : L(`${fmtNum(stats.overdue_tasks)}টি বিলম্বিত`)}
               </span>
             ) : (
-              <span className="badge badge-gray">
+              <span className="badge badge-green">
                 <CheckCircle2 className="h-3 w-3" />
                 {L('কোনো ওভারডিউ নেই', 'None overdue')}
               </span>
@@ -248,7 +266,7 @@ export default function EmployeePlanPage() {
       {/* Admin's guidance and the current phase goal */}
       <section className="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 via-white to-sky-50 p-5 shadow-[var(--shadow-card)]">
         <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+          <span className="icon-tile icon-tile-violet h-10 w-10">
             <Award className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
@@ -280,11 +298,39 @@ export default function EmployeePlanPage() {
         </div>
       </section>
 
+      {/* Key numbers */}
+      <div className="stagger grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          label={L('সার্বিক অগ্রগতি', 'Overall progress')}
+          icon={<TrendingUp className="h-4 w-4" />}
+          tone="brand"
+          value={`${fmtNum(stats?.overall_progress || 0)}%`}
+        />
+        <StatCard
+          label={L('মোট টাস্ক', 'Total tasks')}
+          icon={<ListChecks className="h-4 w-4" />}
+          tone="blue"
+          value={fmtNum(stats?.total_tasks || 0)}
+        />
+        <StatCard
+          label={L('সম্পন্ন', 'Completed')}
+          icon={<CheckCircle2 className="h-4 w-4" />}
+          tone="violet"
+          value={fmtNum(stats?.completed_tasks || 0)}
+        />
+        <StatCard
+          label={L('বিলম্বিত', 'Overdue')}
+          icon={<AlertTriangle className="h-4 w-4" />}
+          tone={stats && stats.overdue_tasks > 0 ? 'red' : 'amber'}
+          value={fmtNum(stats?.overdue_tasks || 0)}
+        />
+      </div>
+
       {/* Overall progress */}
       <div className="card card-body">
         <div className="flex items-center justify-between text-sm">
           <span className="flex items-center gap-1.5 font-medium text-slate-700">
-            <TrendingUp className="h-4 w-4 text-slate-400" />
+            <TrendingUp className="h-4 w-4 text-brand-600" />
             {L('সার্বিক অগ্রগতি', 'Overall Progress')}
           </span>
           <span className="text-lg font-semibold text-brand-700 tabular-nums">
@@ -296,10 +342,6 @@ export default function EmployeePlanPage() {
             className="h-full rounded-full bg-brand-600 transition-all duration-500"
             style={{ width: `${stats?.overall_progress || 0}%` }}
           ></div>
-        </div>
-        <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-          <span>{L('মোট টাস্ক', 'Total Tasks')}: {fmtNum(stats?.total_tasks || 0)}</span>
-          <span>{L('সম্পন্ন', 'Completed')}: {fmtNum(stats?.completed_tasks || 0)}</span>
         </div>
       </div>
 
@@ -324,7 +366,7 @@ export default function EmployeePlanPage() {
               }`}
             >
               <div className="flex w-full items-center justify-between gap-2">
-                <span className="badge badge-gray font-medium">
+                <span className="badge badge-blue font-medium tabular-nums">
                   {isEn
                     ? `Days ${phase.day_start} – ${phase.day_end}`
                     : L(`দিন ${fmtNum(phase.day_start)} – ${fmtNum(phase.day_end)}`)}
@@ -367,9 +409,9 @@ export default function EmployeePlanPage() {
           <div className="card">
             <div className="card-header">
               <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+                <span className="icon-tile icon-tile-amber">
                   <Award className="h-4 w-4" />
-                </div>
+                </span>
                 <div className="min-w-0">
                   <p className="card-subtitle">{L('ফেজ', 'Phase')} {fmtNum(activePhase.order_no)} {L('মাইলস্টোন', 'Milestone')}</p>
                   <h3 className="card-title">{activeMilestone?.title_bn || L('মাইলস্টোন বিবরণ', 'Milestone Details')}</h3>
@@ -385,7 +427,9 @@ export default function EmployeePlanPage() {
             <div className="card-body space-y-3 text-sm">
               <div>
                 <div className="text-xs font-medium text-slate-500">{L('প্রত্যাশিত ফলাফল', 'Expected Result')}</div>
-                <div className="mt-0.5 text-slate-800">{activeMilestone?.expected_result}</div>
+                <div className="mt-0.5 text-slate-800">
+                  {activeMilestone?.expected_result || L('এখনো যোগ করা হয়নি', 'Not added yet')}
+                </div>
               </div>
               {activeMilestone?.achieved_result && (
                 <div className="border-t border-slate-100 pt-3">
@@ -404,7 +448,7 @@ export default function EmployeePlanPage() {
                   <span className="truncate">
                     {formatPhaseTitle(isEn ? (activePhase.name_en || activePhase.name_bn) : activePhase.name_bn)} · {L('টাস্ক', 'Tasks')}
                   </span>
-                  <span className="badge badge-gray tabular-nums">{fmtNum(displayTasks.length)}</span>
+                  <span className="badge badge-violet tabular-nums">{fmtNum(displayTasks.length)}</span>
                 </h2>
                 <p className="card-subtitle">{L('এই ফেজের কাজ ও দায়িত্ব', 'Tasks in this phase')}</p>
               </div>
@@ -413,7 +457,7 @@ export default function EmployeePlanPage() {
                 <button
                   onClick={() => setFilterOnlyMyTasks(!filterOnlyMyTasks)}
                   aria-pressed={filterOnlyMyTasks}
-                  className={`btn btn-sm ${filterOnlyMyTasks ? 'btn-primary' : 'btn-secondary'}`}
+                  className={`btn btn-sm min-h-9 ${filterOnlyMyTasks ? 'btn-primary' : 'btn-secondary'}`}
                 >
                   <Filter className="h-3.5 w-3.5" />
                   {filterOnlyMyTasks
@@ -437,10 +481,9 @@ export default function EmployeePlanPage() {
               <ul className="divide-y divide-slate-100">
                 {displayTasks.map((task) => {
                   const todayStr = stats?.today || getDhakaDateString();
+                  const due = task.due_date ? new Date(task.due_date) : null;
                   const isOverdue =
-                    task.status !== 'DONE' &&
-                    task.due_date &&
-                    format(new Date(task.due_date), 'yyyy-MM-dd') < todayStr;
+                    task.status !== 'DONE' && due && !Number.isNaN(due.getTime()) && format(due, 'yyyy-MM-dd') < todayStr;
 
                   const isMyTask = task.owner_id === currentUser?.id;
 
@@ -500,9 +543,14 @@ export default function EmployeePlanPage() {
                         <div className="grid shrink-0 grid-cols-2 gap-4 sm:flex sm:items-center sm:gap-6">
                           <div className="min-w-0 text-xs sm:min-w-32">
                             <span className="mb-0.5 block text-[11px] text-slate-500">{L('দায়িত্বপ্রাপ্ত', 'Owner')}</span>
-                            <div className="truncate font-medium text-slate-800">
-                              {task.owner ? task.owner.name : <span className="italic text-slate-400">{L('অবণ্টিত', 'Unassigned')}</span>}
-                            </div>
+                            {task.owner ? (
+                              <div className="flex min-w-0 items-center gap-2">
+                                <Avatar name={task.owner.name} size={26} animated={false} />
+                                <span className="truncate font-medium text-slate-800">{task.owner.name}</span>
+                              </div>
+                            ) : (
+                              <span className="italic text-slate-400">{L('অবণ্টিত', 'Unassigned')}</span>
+                            )}
                           </div>
 
                           <div className="sm:w-36">

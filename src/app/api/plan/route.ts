@@ -14,6 +14,22 @@ const planSchema = z.object({
   status: z.nativeEnum(PlanStatus).optional(),
 });
 
+/** Employees see who owns a task, not that person's email or phone. */
+function stripContacts<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(stripContacts) as unknown as T;
+  if (!value || typeof value !== 'object' || value instanceof Date) return value;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if ((k === 'owner' || k === 'creator') && v && typeof v === 'object') {
+      const { email: _e, phone: _p, ...rest } = v as Record<string, unknown>;
+      out[k] = rest;
+    } else {
+      out[k] = stripContacts(v);
+    }
+  }
+  return out as T;
+}
+
 /**
  * GET: Return active plan with phases, tasks, milestones, and computed stats.
  * Protected by auth (accessible to ADMIN and EMPLOYEE).
@@ -54,7 +70,7 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      plan: result.plan,
+      plan: session.role === 'ADMIN' ? result.plan : stripContacts(result.plan),
       stats: result.stats,
       metrics: result.metrics,
       employees,

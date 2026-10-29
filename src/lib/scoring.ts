@@ -113,6 +113,29 @@ export function selectEmployeeTargets<T extends { employee_id?: string | null; s
   );
 }
 
+/** Number of calendar days from start to end, inclusive (both UTC-midnight dates). */
+export function daysInRange(startDate: Date, endDate: Date): number {
+  const days = Math.round((endDate.getTime() - startDate.getTime()) / 86_400_000) + 1;
+  return Number.isFinite(days) && days > 0 ? days : 0;
+}
+
+/**
+ * The POSTS_DONE target an employee is scored against over a range. A configured
+ * target always wins; when none exists, the daily section post limits the admin
+ * set on the employee's assignments count as the daily target for each day.
+ * Used by performance, the leaderboard and the dashboard so all three agree.
+ */
+export function postsTargetWithLimitFallback(
+  configuredTarget: number | null | undefined,
+  postLimits: Array<number | null | undefined>,
+  days: number
+): number {
+  const configured = Number(configuredTarget) || 0;
+  if (configured > 0) return configured;
+  const dailyLimit = postLimits.reduce<number>((sum, l) => sum + (Number(l) > 0 ? Number(l) : 0), 0);
+  return dailyLimit > 0 && days > 0 ? dailyLimit * days : 0;
+}
+
 /**
  * Calculates scores for an employee based on achieved vs target values.
  *
@@ -142,11 +165,16 @@ export function calculateEmployeeScore(
   let customMetricWeights: Partial<Record<MetricType, number>> | undefined = options.weights;
   if (!customMetricWeights && options.sectionWeights) {
     const sw = options.sectionWeights;
-    const salesWeight = sw.SALES_PROFIT !== undefined ? Number(sw.SALES_PROFIT) : 30;
-    const contentWeight = sw.CONTENT !== undefined ? Number(sw.CONTENT) : 20;
-    const newBuyersWeight = sw.NEW_BUYERS_B2B !== undefined ? Number(sw.NEW_BUYERS_B2B) : 20;
-    const retentionWeight = sw.RETENTION !== undefined ? Number(sw.RETENTION) : 15;
-    const followupWeight = sw.INBOX_FOLLOWUP !== undefined ? Number(sw.INBOX_FOLLOWUP) : 15;
+    // A blank or non-numeric stored weight falls back to the default instead of turning every score into NaN.
+    const pick = (v: unknown, fallback: number) => {
+      const n = Number(v);
+      return v !== undefined && v !== null && Number.isFinite(n) && n >= 0 ? n : fallback;
+    };
+    const salesWeight = pick(sw.SALES_PROFIT, 30);
+    const contentWeight = pick(sw.CONTENT, 20);
+    const newBuyersWeight = pick(sw.NEW_BUYERS_B2B, 20);
+    const retentionWeight = pick(sw.RETENTION, 15);
+    const followupWeight = pick(sw.INBOX_FOLLOWUP, 15);
 
     customMetricWeights = {
       SALES_AMOUNT: Number((salesWeight / 2).toFixed(2)),
@@ -180,11 +208,13 @@ export function calculateEmployeeScore(
   // First pass: evaluate each metric
   for (const m of metricTypes) {
     const entry = data[m] || { target: null, achieved: 0 };
-    const weight = weights[m] ?? DEFAULT_METRIC_WEIGHTS[m];
-    const target = entry.target;
-    const achieved = Math.max(0, entry.achieved || 0);
+    const rawWeight = Number(weights[m] ?? DEFAULT_METRIC_WEIGHTS[m]);
+    const weight = Number.isFinite(rawWeight) && rawWeight >= 0 ? rawWeight : DEFAULT_METRIC_WEIGHTS[m];
+    const target = entry.target === null || entry.target === undefined ? entry.target : Number(entry.target);
+    const achieved = Math.max(0, Number(entry.achieved) || 0);
 
-    const isNA = target === null || target === undefined || target <= 0;
+    // No target, a zero target or a non-numeric one: nothing to divide by, so the metric is N/A.
+    const isNA = target === null || target === undefined || !Number.isFinite(target) || target <= 0;
 
     let rawAchievement = 0;
     let cappedAchievement = 0;
@@ -192,7 +222,7 @@ export function calculateEmployeeScore(
 
     if (!isNA) {
       activeWeightSum += weight;
-      rawAchievement = achieved / target;
+      rawAchievement = achieved / (target as number);
       cappedAchievement = Math.min(rawAchievement, cap);
       score = cappedAchievement * weight;
     }
@@ -203,7 +233,7 @@ export function calculateEmployeeScore(
       metricType: m,
       bengaliName: L(info.bn),
       sectionName: L(info.sectionBn),
-      target: isNA ? null : target,
+      target: isNA ? null : (target as number),
       achieved,
       weight,
       scaledWeight: weight, // will be adjusted if scaling is needed

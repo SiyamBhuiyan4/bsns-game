@@ -15,9 +15,13 @@ export async function POST(
   const { id: leadId } = await params;
 
   try {
-    const { note } = await request.json();
-    if (!note || note.trim().length === 0) {
+    const body = await request.json().catch(() => null);
+    const note = typeof body?.note === 'string' ? body.note : '';
+    if (note.trim().length === 0) {
       return NextResponse.json({ error: 'নোটের বিবরণ প্রদান করুন' }, { status: 400 });
+    }
+    if (note.length > 2000) {
+      return NextResponse.json({ error: 'নোট ২০০০ অক্ষরের মধ্যে রাখুন / Keep the note under 2000 characters' }, { status: 400 });
     }
 
     const lead = await prisma.lead.findUnique({ where: { id: leadId } });

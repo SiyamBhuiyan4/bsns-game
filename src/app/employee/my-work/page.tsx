@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   CheckSquare,
   Circle,
+  Clock,
   Coins,
   ExternalLink,
   FileText,
@@ -27,8 +28,10 @@ import {
 import { useLanguage } from '@/components/LanguageContext';
 import TaskQuotaCard from '@/components/TaskQuotaCard';
 import EmptyState from '@/components/ui/EmptyState';
+import ErrorState from '@/components/ui/ErrorState';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import PageHeader from '@/components/ui/PageHeader';
-import { formatTaka, getDhakaDateString } from '@/lib/date';
+import { getDhakaDateString } from '@/lib/date';
 
 interface TodoLink {
   id: string;
@@ -85,7 +88,7 @@ interface ProductSaleRow {
 }
 
 function EmployeeMyWorkContent() {
-  const { lang, L } = useLanguage();
+  const { lang, L, formatNum, formatMoney } = useLanguage();
   const searchParams = useSearchParams();
 
   // Active view tab: 'links' (Task 1) | 'daily_entry' (Task 2) | 'completed'
@@ -109,6 +112,8 @@ function EmployeeMyWorkContent() {
   });
   const [undoEnabled, setUndoEnabled] = useState(true);
   const [loadingLinks, setLoadingLinks] = useState(true);
+  const [queueError, setQueueError] = useState(false);
+  const [undoTarget, setUndoTarget] = useState<CompletedLink | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSection, setSelectedSection] = useState('');
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
@@ -137,7 +142,10 @@ function EmployeeMyWorkContent() {
     B2B_INQUIRY_VALUE: 0,
   });
   const [loadingEntry, setLoadingEntry] = useState(false);
+  const [entryError, setEntryError] = useState(false);
   const [savingEntry, setSavingEntry] = useState(false);
+  // Non-blocking sanity warnings shown in a dialog before a save goes through.
+  const [pendingWarnings, setPendingWarnings] = useState<string[] | null>(null);
   const [isLocked, setIsLocked] = useState(false);
   const [canEdit, setCanEdit] = useState(true);
 
@@ -168,6 +176,7 @@ function EmployeeMyWorkContent() {
       const res = await fetch(url, { signal: controller.signal });
       const data = await res.json();
       if (controller.signal.aborted) return;
+      setQueueError(!res.ok);
       if (res.ok) {
         setTodoLinks(data.todoLinks || []);
         setCompletedLinks(data.completedLinks || []);
@@ -178,11 +187,11 @@ function EmployeeMyWorkContent() {
           setExtraSectionId((prev) => prev || data.assignedSections[0].id);
         }
       } else {
-        setErrorMessage(data.error || L('টাস্ক কিউ লোড করা যায়নি'));
+        setErrorMessage(data.error || L('টাস্ক কিউ লোড করা যায়নি', 'Could not load your tasks'));
       }
     } catch {
       if (controller.signal.aborted) return;
-      setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
+      setQueueError(true);
     } finally {
       if (!controller.signal.aborted) setLoadingLinks(false);
     }
@@ -209,6 +218,7 @@ function EmployeeMyWorkContent() {
     const isStale = () => controller.signal.aborted || selectedDateRef.current !== dateStr;
     try {
       setLoadingEntry(true);
+      setEntryError(false);
 
       let prods = productsRef.current;
       if (prods.length === 0) {
@@ -255,7 +265,7 @@ function EmployeeMyWorkContent() {
 
         // Rows from the active product list, plus any saved product not in
         // that list, so a save never drops an existing breakdown row.
-        const existingSales: any[] = data.product_sales || [];
+        const existingSales: Partial<ProductSaleRow>[] = data.product_sales || [];
         const rows: ProductSaleRow[] = prods.map((p: Product) => {
           const found = existingSales.find((es) => es.product_id === p.id);
           return {
@@ -270,7 +280,7 @@ function EmployeeMyWorkContent() {
         for (const es of existingSales) {
           if (!rows.some((r) => r.product_id === es.product_id)) {
             rows.push({
-              product_id: es.product_id,
+              product_id: es.product_id ?? '',
               product_name_bn: es.product_name_bn || '',
               unit: es.unit || '',
               selling_price: Number(es.selling_price) || 0,
@@ -280,9 +290,11 @@ function EmployeeMyWorkContent() {
           }
         }
         setProductSales(rows);
+      } else {
+        setEntryError(true);
       }
     } catch {
-      // silent fallback
+      if (!isStale()) setEntryError(true);
     } finally {
       if (!isStale()) setLoadingEntry(false);
     }
@@ -352,7 +364,7 @@ function EmployeeMyWorkContent() {
         setTodoLinks(previousTodo);
         setCompletedLinks(previousCompleted);
         setProgress(previousProgress);
-        setErrorMessage(data.error || L('সংরক্ষণ ব্যর্থ হয়েছে'));
+        setErrorMessage(data.error || L('সংরক্ষণ ব্যর্থ হয়েছে', 'Could not save'));
       } else {
         setCompletedLinks((prev) =>
           prev.map((item) =>
@@ -372,7 +384,7 @@ function EmployeeMyWorkContent() {
       setTodoLinks(previousTodo);
       setCompletedLinks(previousCompleted);
       setProgress(previousProgress);
-      setErrorMessage(L('নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।'));
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।', 'Network error. Please try again.'));
     } finally {
       setActionLoadingId(null);
     }
@@ -418,7 +430,7 @@ function EmployeeMyWorkContent() {
         setTodoLinks(previousTodo);
         setCompletedLinks(previousCompleted);
         setProgress(previousProgress);
-        setErrorMessage(data.error || L('আনডু করা যায়নি'));
+        setErrorMessage(data.error || L('আনডু করা যায়নি', 'Could not undo'));
       } else {
         setSuccessToast(L('লিংকটি টু-ডু তালিকায় ফিরিয়ে আনা হয়েছে।', 'Link returned to To-Do queue.'));
         setTimeout(() => setSuccessToast(null), 3000);
@@ -427,7 +439,7 @@ function EmployeeMyWorkContent() {
       setTodoLinks(previousTodo);
       setCompletedLinks(previousCompleted);
       setProgress(previousProgress);
-      setErrorMessage(L('নেটওয়ার্ক সমস্যা'));
+      setErrorMessage(L('নেটওয়ার্ক সমস্যা', 'Network problem'));
     } finally {
       setActionLoadingId(null);
     }
@@ -462,7 +474,7 @@ function EmployeeMyWorkContent() {
 
       const data = await res.json();
       if (!res.ok) {
-        setErrorMessage(data.error || L('অতিরিক্ত কাজ সংরক্ষণ ব্যর্থ হয়েছে'));
+        setErrorMessage(data.error || L('অতিরিক্ত কাজ সংরক্ষণ ব্যর্থ হয়েছে', 'Could not save the extra work'));
       } else {
         triggerReward(50, L('🎉 দুর্দান্ত! আপনার অতিরিক্ত পোস্ট যুক্ত ও সম্পন্ন হয়েছে (+৫০ XP)', 'Awesome! Extra bonus post logged successfully (+50 XP)'));
         setShowAddModal(false);
@@ -471,20 +483,38 @@ function EmployeeMyWorkContent() {
         fetchWorkQueue();
       }
     } catch {
-      setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি', 'Network error'));
     } finally {
       setSavingExtra(false);
     }
   };
 
   // Handle Save Daily Entry
-  const handleSaveDailyEntry = async (e: React.FormEvent) => {
+  const handleSaveDailyEntry = (e: React.FormEvent) => {
     e.preventDefault();
     if (!canEdit || isLocked) {
       setErrorMessage(L('এই তারিখের এন্ট্রি সম্পাদনা করা যাবে না।', 'This date entry is locked and cannot be edited.'));
       return;
     }
+    // Same sanity checks the old daily-entry form had; they warn, they never block.
+    const warnings: string[] = [];
+    if ((Number(profitAmount) || 0) > (Number(salesAmount) || 0)) {
+      warnings.push(L('লাভ মোট বিক্রির চেয়ে বেশি দেখাচ্ছে।', 'Profit is higher than total sales.'));
+    }
+    if (totalProductAmount > 0 && (Number(salesAmount) || 0) === 0) {
+      warnings.push(
+        L('পণ্যভিত্তিক বিক্রি আছে, কিন্তু মোট বিক্রি ০।', 'Product sales are filled in but total sales is 0.')
+      );
+    }
+    if (warnings.length > 0) {
+      setPendingWarnings(warnings);
+      return;
+    }
+    void submitDailyEntry();
+  };
 
+  const submitDailyEntry = async () => {
+    setPendingWarnings(null);
     setSavingEntry(true);
     setErrorMessage(null);
 
@@ -520,13 +550,13 @@ function EmployeeMyWorkContent() {
 
       const data = await res.json();
       if (!res.ok) {
-        setErrorMessage(data.error || L('দৈনিক এন্ট্রি সেভ ব্যর্থ হয়েছে'));
+        setErrorMessage(data.error || L('দৈনিক এন্ট্রি সেভ ব্যর্থ হয়েছে', 'Could not save the daily entry'));
       } else {
         triggerReward(50, L('🎉 দুর্দান্ত! আজকের দৈনিক কাজের হিসাব সফলভাবে সেভ হয়েছে (+৫০ XP)', 'Awesome! Today daily work logged successfully (+50 XP)'));
         fetchDailyEntry(selectedDate);
       }
     } catch {
-      setErrorMessage(L('নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।'));
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি। আবার চেষ্টা করুন।', 'Network error. Please try again.'));
     } finally {
       setSavingEntry(false);
     }
@@ -542,6 +572,17 @@ function EmployeeMyWorkContent() {
           : p
       )
     );
+  };
+
+  /** Completion time in Dhaka, e.g. "3:45 PM"; empty for a missing or bad timestamp. */
+  const completedTime = (iso: string) => {
+    const d = new Date(iso);
+    if (!iso || Number.isNaN(d.getTime())) return '';
+    return new Intl.DateTimeFormat(lang === 'bn' ? 'bn-BD' : 'en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: 'Asia/Dhaka',
+    }).format(d);
   };
 
   // Total products amount
@@ -629,7 +670,7 @@ function EmployeeMyWorkContent() {
                   />
                 </svg>
                 <span className="absolute inset-0 flex items-center justify-center text-sm font-semibold text-slate-900 tabular-nums">
-                  {questPercent}%
+                  {formatNum(questPercent)}%
                 </span>
               </div>
               <div className="min-w-0">
@@ -640,7 +681,7 @@ function EmployeeMyWorkContent() {
                   {questPercent === 100
                     ? L('আজকের লক্ষ্য পূরণ হয়েছে, দারুণ কাজ!', "Today's goals are done — great work!")
                     : L(
-                        `আজকের ${questsTotal}টি লক্ষ্যের ${questsCompleted}টি সম্পন্ন`,
+                        `আজকের ${formatNum(questsTotal)}টি লক্ষ্যের ${formatNum(questsCompleted)}টি সম্পন্ন`,
                         `${questsCompleted} of ${questsTotal} daily goals done`
                       )}
                 </h2>
@@ -688,21 +729,21 @@ function EmployeeMyWorkContent() {
             <div className="min-w-0">
               <dt className="truncate text-xs text-slate-500">{L('আজ পোস্ট', 'Posts today')}</dt>
               <dd className="mt-0.5 text-lg font-semibold text-slate-900 tabular-nums">
-                {progress.completedToday}
+                {formatNum(progress.completedToday)}
                 {progress.totalAssigned > 0 && (
-                  <span className="text-sm font-normal text-slate-400"> / {progress.totalAssigned}</span>
+                  <span className="text-sm font-normal text-slate-400"> / {formatNum(progress.totalAssigned)}</span>
                 )}
               </dd>
             </div>
             <div className="min-w-0">
               <dt className="truncate text-xs text-slate-500">{L('বিক্রি', 'Sales')}</dt>
               <dd className="mt-0.5 truncate text-lg font-semibold text-slate-900 tabular-nums">
-                {formatTaka(Number(salesAmount))}
+                {formatMoney(Number(salesAmount) || 0)}
               </dd>
             </div>
             <div className="min-w-0">
               <dt className="truncate text-xs text-slate-500">{L('সম্পন্ন কাজ', 'Completed')}</dt>
-              <dd className="mt-0.5 text-lg font-semibold text-slate-900 tabular-nums">{completedLinks.length}</dd>
+              <dd className="mt-0.5 text-lg font-semibold text-slate-900 tabular-nums">{formatNum(completedLinks.length)}</dd>
             </div>
           </dl>
         </div>
@@ -733,8 +774,12 @@ function EmployeeMyWorkContent() {
               <Icon className="hidden h-4 w-4 shrink-0 sm:block" />
               <span className="truncate">{tab.label}</span>
               {tab.count !== null && (
-                <span className="rounded-md bg-slate-200/70 px-1.5 text-[11px] font-semibold text-slate-600 tabular-nums">
-                  {tab.count}
+                <span
+                  className={`rounded-md px-1.5 text-[11px] font-semibold tabular-nums ${
+                    active ? 'bg-brand-100 text-brand-700' : 'bg-slate-200/70 text-slate-600'
+                  }`}
+                >
+                  {formatNum(tab.count)}
                 </span>
               )}
             </button>
@@ -799,19 +844,20 @@ function EmployeeMyWorkContent() {
                       {sec.isLimitReached ? (
                         <span className="badge badge-amber shrink-0">
                           <Zap className="h-3 w-3" />
-                          {L('কোটা পূর্ণ (বোনাস উন্মুক্ত)', 'Quota Full (Bonus Open)')}
+                          {L('কোটা পূর্ণ · বোনাস খোলা', 'Quota full · bonus open')}
                         </span>
                       ) : (
                         <span className="shrink-0 text-xs text-slate-500">
-                          {L('দৈনিক লক্ষ্য', 'Target')}: <span className="tabular-nums">{sec.postLimit ?? '∞'}</span>
+                          {L('দৈনিক লক্ষ্য', 'Target')}:{' '}
+                          <span className="tabular-nums">{sec.postLimit ? formatNum(sec.postLimit) : '∞'}</span>
                         </span>
                       )}
                     </div>
                     <div className="mt-3 flex items-baseline justify-between gap-2">
                       <span className="text-xs text-slate-500">{L('আজ সম্পন্ন', 'Completed Today')}</span>
                       <span className="text-sm font-semibold text-slate-900 tabular-nums">
-                        {sec.completedToday || 0}
-                        <span className="font-normal text-slate-400"> / {sec.postLimit ?? '∞'}</span>
+                        {formatNum(sec.completedToday || 0)}
+                        <span className="font-normal text-slate-400"> / {sec.postLimit ? formatNum(sec.postLimit) : '∞'}</span>
                       </span>
                     </div>
                     {sec.postLimit ? (
@@ -890,6 +936,11 @@ function EmployeeMyWorkContent() {
                   </div>
                 ))}
               </div>
+            ) : queueError && todoLinks.length === 0 ? (
+              <ErrorState
+                title={L('কাজের তালিকা লোড করা যায়নি', 'Could not load your task list')}
+                onRetry={fetchWorkQueue}
+              />
             ) : todoLinks.length === 0 ? (
               searchQuery || selectedSection ? (
                 <EmptyState
@@ -924,7 +975,7 @@ function EmployeeMyWorkContent() {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
-                        <span className="badge badge-gray">{link.section_name}</span>
+                        <span className="badge badge-blue">{link.section_name}</span>
                         {link.is_limit_reached && (
                           <span className="badge badge-amber">
                             <Zap className="h-3 w-3" />
@@ -995,12 +1046,12 @@ function EmployeeMyWorkContent() {
           TAB 2: DAILY SALES, ORDERS & WORK ENTRY
       ======================================================== */}
       {activeTab === 'daily_entry' && (
-        <form onSubmit={handleSaveDailyEntry} className="space-y-6 pb-20 sm:pb-0">
+        <form onSubmit={handleSaveDailyEntry} className="space-y-6 pb-24 sm:pb-0" aria-busy={loadingEntry}>
           {/* Date + sales */}
           <div className="card">
             <div className="card-header">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-700">
+                <span className="icon-tile icon-tile-sky">
                   <Coins className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
@@ -1048,7 +1099,12 @@ function EmployeeMyWorkContent() {
                 </div>
               )}
 
-              {loadingEntry ? (
+              {entryError && !loadingEntry ? (
+                <ErrorState
+                  title={L('এই তারিখের এন্ট্রি লোড করা যায়নি', 'Could not load the entry for this date')}
+                  onRetry={() => fetchDailyEntry(selectedDate)}
+                />
+              ) : loadingEntry ? (
                 <div role="status" aria-busy="true" className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <span className="sr-only">{L('লোড হচ্ছে...', 'Loading...')}</span>
                   {[0, 1, 2].map((i) => (
@@ -1066,7 +1122,7 @@ function EmployeeMyWorkContent() {
                     </label>
                     <div className="relative">
                       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
-                        {L('৳')}
+                        ৳
                       </span>
                       <input
                         id="mw-sales"
@@ -1086,7 +1142,7 @@ function EmployeeMyWorkContent() {
                     </label>
                     <div className="relative">
                       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
-                        {L('৳')}
+                        ৳
                       </span>
                       <input
                         id="mw-profit"
@@ -1119,7 +1175,7 @@ function EmployeeMyWorkContent() {
             </div>
           </div>
 
-          {loadingEntry ? (
+          {entryError && !loadingEntry ? null : loadingEntry ? (
             <div role="status" aria-busy="true" className="card space-y-4 p-5">
               <div aria-hidden className="skeleton h-4 w-40" />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -1138,7 +1194,7 @@ function EmployeeMyWorkContent() {
               <div className="card">
                 <div className="card-header">
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-700">
+                    <span className="icon-tile icon-tile-violet">
                       <Users className="h-4 w-4" />
                     </span>
                     <h2 className="card-title">{L('ক্রেতা ও ফলোআপ', 'Clients & follow-ups')}</h2>
@@ -1199,7 +1255,7 @@ function EmployeeMyWorkContent() {
                 <div className="card overflow-hidden">
                   <div className="card-header">
                     <div className="flex min-w-0 items-center gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+                      <span className="icon-tile">
                         <ShoppingBag className="h-4 w-4" />
                       </span>
                       <h2 className="card-title">{L('পণ্যভিত্তিক বিক্রির হিসাব', 'Product Sales Breakdown')}</h2>
@@ -1207,7 +1263,7 @@ function EmployeeMyWorkContent() {
                     <span className="text-xs text-slate-500">
                       {L('মোট পণ্য বিক্রি', 'Total')}{' '}
                       <span className="text-sm font-semibold text-brand-700 tabular-nums">
-                        {formatTaka(totalProductAmount)}
+                        {formatMoney(totalProductAmount)}
                       </span>
                     </span>
                   </div>
@@ -1217,27 +1273,26 @@ function EmployeeMyWorkContent() {
                         <div className="min-w-0 flex-1">
                           <div className="truncate text-sm font-medium text-slate-900">{ps.product_name_bn}</div>
                           <div className="text-xs text-slate-500 tabular-nums">
-                            {L('মূল্য: ৳')}
-                            {ps.selling_price} / {ps.unit}
+                            {L('মূল্য', 'Price')}: {formatMoney(ps.selling_price)} / {ps.unit}
                           </div>
                         </div>
                         <div className="w-24 shrink-0">
                           <label htmlFor={`mw-qty-${ps.product_id}`} className="sr-only">
-                            {L('পরিমাণ')}
+                            {L('পরিমাণ', 'Quantity')} · {ps.product_name_bn}
                           </label>
                           <input
                             id={`mw-qty-${ps.product_id}`}
                             type="number"
                             min="0"
                             inputMode="decimal"
-                            placeholder={L('পরিমাণ')}
+                            placeholder={L('পরিমাণ', 'Qty')}
                             value={ps.quantity || ''}
                             onChange={(e) => handleProductQuantityChange(ps.product_id, e.target.value)}
                             className={field}
                           />
                         </div>
                         <div className="w-20 shrink-0 text-right text-sm font-semibold text-slate-900 tabular-nums sm:w-28">
-                          {formatTaka(ps.amount)}
+                          {formatMoney(ps.amount)}
                         </div>
                       </li>
                     ))}
@@ -1249,7 +1304,7 @@ function EmployeeMyWorkContent() {
               <div className="card">
                 <div className="card-header">
                   <div className="flex min-w-0 items-center gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                    <span className="icon-tile icon-tile-amber">
                       <FileText className="h-4 w-4" />
                     </span>
                     <h2 className="card-title">{L('দিনের নোট', 'Notes for the day')}</h2>
@@ -1279,7 +1334,11 @@ function EmployeeMyWorkContent() {
                     className="btn btn-primary min-h-11 w-full px-6 sm:w-auto"
                   >
                     {savingEntry ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    <span>{L('দৈনিক এন্ট্রি সাবমিট করুন (+৫০ XP)', 'Save Daily Log (+50 XP)')}</span>
+                    <span>
+                      {savingEntry
+                        ? L('সেভ হচ্ছে...', 'Saving...')
+                        : L('দৈনিক এন্ট্রি সাবমিট করুন (+৫০ XP)', 'Save Daily Log (+50 XP)')}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1293,7 +1352,22 @@ function EmployeeMyWorkContent() {
       ======================================================== */}
       {activeTab === 'completed' && (
         <div className="card overflow-hidden">
-          {completedLinks.length === 0 ? (
+          {loadingLinks && completedLinks.length === 0 ? (
+            <div role="status" aria-busy="true" className="divide-y divide-slate-100">
+              <span className="sr-only">{L('লোড হচ্ছে...', 'Loading...')}</span>
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-4 sm:px-5">
+                  <div aria-hidden className="skeleton h-8 w-8 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <div aria-hidden className="skeleton h-3 w-24" />
+                    <div aria-hidden className="skeleton h-4 w-2/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : queueError && completedLinks.length === 0 ? (
+            <ErrorState onRetry={fetchWorkQueue} />
+          ) : completedLinks.length === 0 ? (
             <EmptyState
               icon={<CheckCircle2 className="h-5 w-5" />}
               title={L('এখনো কোনো কাজ সম্পন্ন করেননি', 'No completed tasks yet')}
@@ -1313,12 +1387,18 @@ function EmployeeMyWorkContent() {
                   className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5"
                 >
                   <div className="flex min-w-0 flex-1 items-start gap-3">
-                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 text-white shadow-sm shadow-emerald-500/30">
                       <CheckCircle2 className="h-4 w-4" />
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="mb-1 flex flex-wrap items-center gap-1.5">
-                        <span className="text-xs font-medium text-slate-500">{link.section_name}</span>
+                        <span className="badge badge-blue">{link.section_name}</span>
+                        {completedTime(link.completed_at) && (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 tabular-nums">
+                            <Clock className="h-3 w-3" />
+                            {completedTime(link.completed_at)}
+                          </span>
+                        )}
                         {link.is_extra_work && (
                           <span className="badge badge-amber">
                             <Zap className="h-3 w-3" />
@@ -1334,11 +1414,15 @@ function EmployeeMyWorkContent() {
                   {undoEnabled && (
                     <button
                       type="button"
-                      onClick={() => handleUndo(link)}
+                      onClick={() => setUndoTarget(link)}
                       disabled={actionLoadingId === link.id}
                       className="btn btn-secondary min-h-10 w-full shrink-0 sm:w-auto"
                     >
-                      <RotateCcw className="h-4 w-4" />
+                      {actionLoadingId === link.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RotateCcw className="h-4 w-4 text-amber-600" />
+                      )}
                       <span>{L('পূর্বাবস্থায় ফেরান', 'Undo')}</span>
                     </button>
                   )}
@@ -1353,11 +1437,19 @@ function EmployeeMyWorkContent() {
           MODAL: ADD EXTRA WORK / BONUS TASK
       ======================================================== */}
       {showAddModal && (
-        <div className="modal-backdrop">
+        <div
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !savingExtra) setShowAddModal(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && !savingExtra) setShowAddModal(false);
+          }}
+        >
           <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="mw-extra-title">
             <div className="card-header flex-nowrap">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                <span className="icon-tile icon-tile-amber">
                   <Zap className="h-4 w-4" />
                 </span>
                 <h3 id="mw-extra-title" className="card-title">
@@ -1375,6 +1467,12 @@ function EmployeeMyWorkContent() {
             </div>
 
             <form onSubmit={handleAddExtraSubmit} className="card-body space-y-4">
+              {errorMessage && (
+                <div role="alert" className="alert alert-error">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{L(errorMessage)}</span>
+                </div>
+              )}
               <p className="text-sm text-slate-500">
                 {L(
                   'অ্যাডমিনের নির্ধারিত কোটার বাইরে আপনি যেসব গ্রুপ পোস্ট বা কাজ করেছেন, তা এখানে যুক্ত করুন। সাথে সাথে আপনার পয়েন্ট যোগ হবে (+৫০ XP)।',
@@ -1384,7 +1482,7 @@ function EmployeeMyWorkContent() {
 
               <div>
                 <label htmlFor="mw-extra-url" className="label">
-                  {L('কাজের / পোস্টের লিংক (URL)', 'Work / Post URL')} <span className="text-rose-500">*</span>
+                  {L('কাজের / পোস্টের লিংক', 'Work / post link')} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   id="mw-extra-url"
@@ -1427,13 +1525,22 @@ function EmployeeMyWorkContent() {
                     </option>
                   ))}
                 </select>
+                {assignedSections.length === 0 && (
+                  <p className="hint text-amber-700">
+                    {L('আপনাকে এখনো কোনো সেকশন দেওয়া হয়নি। অ্যাডমিনের সাথে যোগাযোগ করুন।', 'No section is assigned to you yet. Please ask your admin.')}
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
                 <button type="button" onClick={() => setShowAddModal(false)} className="btn btn-secondary min-h-10">
                   {L('বাতিল', 'Cancel')}
                 </button>
-                <button type="submit" disabled={savingExtra || !extraUrl.trim()} className="btn btn-primary min-h-10">
+                <button
+                  type="submit"
+                  disabled={savingExtra || !extraUrl.trim() || assignedSections.length === 0}
+                  className="btn btn-primary min-h-10"
+                >
                   {savingExtra ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
                   <span>{L('বোনাস কাজ সাবমিট করুন (+৫০ XP)', 'Submit Bonus Task (+50 XP)')}</span>
                 </button>
@@ -1442,6 +1549,41 @@ function EmployeeMyWorkContent() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={undoTarget !== null}
+        tone="warning"
+        title={L('এই কাজটি আনডু করবেন?', 'Undo this completed task?')}
+        message={L(
+          'লিংকটি আবার টু-ডু তালিকায় ফিরে যাবে এবং এর জন্য পাওয়া পয়েন্ট বাদ যাবে।',
+          'The link goes back to your to-do list and the points earned for it are removed.'
+        )}
+        confirmLabel={L('হ্যাঁ, আনডু করুন', 'Yes, undo')}
+        onCancel={() => setUndoTarget(null)}
+        onConfirm={() => {
+          const link = undoTarget;
+          setUndoTarget(null);
+          if (link) void handleUndo(link);
+        }}
+      />
+
+      <ConfirmDialog
+        open={pendingWarnings !== null}
+        tone="warning"
+        title={L('সেভ করার আগে একবার দেখে নিন', 'Please double-check before saving')}
+        message={
+          <ul className="list-disc space-y-1 pl-4">
+            {(pendingWarnings || []).map((w) => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+        }
+        confirmLabel={L('তবুও সেভ করুন', 'Save anyway')}
+        cancelLabel={L('ঠিক করি', 'Let me fix it')}
+        busy={savingEntry}
+        onCancel={() => setPendingWarnings(null)}
+        onConfirm={() => void submitDailyEntry()}
+      />
     </div>
   );
 }

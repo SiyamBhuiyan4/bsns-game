@@ -8,19 +8,24 @@ import { BuyerType, LeadStatus } from '@prisma/client';
 import { z } from 'zod';
 
 const updateLeadSchema = z.object({
-  name: z.string().min(2).optional(),
-  phone: z.string().optional(),
-  address: z.string().optional().nullable(),
+  name: z.string().trim().min(2).max(120).optional(),
+  phone: z.string().max(30).optional(),
+  address: z.string().max(500).optional().nullable(),
   buyer_type: z.nativeEnum(BuyerType).optional(),
-  product_id: z.string().optional().nullable(),
-  campaign_id: z.string().optional().nullable(),
-  source_channel: z.string().optional(),
+  product_id: z.string().max(100).optional().nullable(),
+  campaign_id: z.string().max(100).optional().nullable(),
+  source_channel: z.string().max(100).optional(),
   status: z.nativeEnum(LeadStatus).optional(),
   quality_rating: z.number().int().min(1).max(5).optional().nullable(),
   expected_value: z.number().min(0).optional().nullable(),
   order_amount: z.number().min(0).optional().nullable(),
-  lost_reason: z.string().optional().nullable(),
-  next_followup_date: z.string().optional().nullable(),
+  lost_reason: z.string().max(500).optional().nullable(),
+  next_followup_date: z
+    .string()
+    .max(40)
+    .refine((v) => v === '' || !isNaN(new Date(v).getTime()), 'সঠিক ফলোআপ তারিখ দিন / Invalid follow-up date')
+    .optional()
+    .nullable(),
 });
 
 export async function GET(
@@ -142,6 +147,16 @@ export async function PUT(
       normalizedPhone = normalizePhone(data.phone);
       if (!isValidBdPhone(normalizedPhone)) {
         return NextResponse.json({ error: 'সঠিক বাংলাদেশী মোবাইল নম্বর দিন' }, { status: 400 });
+      }
+      // Same rule as creating a lead: one customer per mobile number.
+      if (normalizedPhone !== currentLead.phone) {
+        const clash = await prisma.lead.findFirst({ where: { phone: normalizedPhone, id: { not: id } } });
+        if (clash) {
+          return NextResponse.json(
+            { error: 'এই মোবাইল নম্বরটি অন্য কাস্টমারের জন্য ইতিমধ্যে আছে / This number already belongs to another customer' },
+            { status: 400 }
+          );
+        }
       }
     }
 

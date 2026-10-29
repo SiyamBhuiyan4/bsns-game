@@ -81,8 +81,8 @@ let mockScoringSettings: any = {
   undo_enabled: true,
 };
 
-vi.mock('@/lib/prisma', () => ({
-  default: {
+vi.mock('@/lib/prisma', () => {
+  const client: any = {
     assignment: {
       findMany: vi.fn(async ({ where }: any) => {
         return mockAssignments.filter((a) => a.employee_id === where.employee_id);
@@ -146,12 +146,25 @@ vi.mock('@/lib/prisma', () => ({
         }
         return item;
       }),
+      updateMany: vi.fn(async ({ where, data }: any) => {
+        const items = mockCompletions.filter(
+          (c) =>
+            (!where.group_link_id || c.group_link_id === where.group_link_id) &&
+            (!where.employee_id || c.employee_id === where.employee_id) &&
+            (where.undone_at !== null || c.undone_at === null)
+        );
+        items.forEach((item) => Object.assign(item, data));
+        return { count: items.length };
+      }),
     },
     scoringSettings: {
       findUnique: vi.fn(async () => mockScoringSettings),
     },
-  },
-}));
+  };
+  // Writes in the real store run one at a time; here the callback just gets the same client.
+  client.$transaction = vi.fn(async (fn: any) => fn(client));
+  return { default: client };
+});
 
 // Import Handlers
 import { GET as getWorkQueue } from '../src/app/api/employee/work/route';

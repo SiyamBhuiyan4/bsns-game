@@ -1,4 +1,5 @@
-import { requireEmployee } from '@/lib/session';
+import { redirect } from 'next/navigation';
+import { getSession } from '@/lib/session';
 import { getAdminDashboardData, DashboardPeriodKey } from '@/lib/dashboard';
 import DashboardPeriodSelector from '@/components/dashboard/DashboardPeriodSelector';
 import DashboardHeaderStats from '@/components/dashboard/DashboardHeaderStats';
@@ -15,7 +16,8 @@ interface PageProps {
 }
 
 export default async function EmployeeDashboardPage(props: PageProps) {
-  const session = await requireEmployee();
+  const session = await getSession();
+  if (!session || session.role !== 'EMPLOYEE') redirect('/api/auth/logout');
 
   // Next.js 15 searchParams resolution
   const searchParams = props.searchParams ? await props.searchParams : {};

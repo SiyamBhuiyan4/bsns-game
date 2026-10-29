@@ -815,3 +815,29 @@ html {
     animation: none;
   }
 }
+
+/* ============================================================================
+   Gradient icon tiles for card headers (same tones as StatCard)
+   ========================================================================== */
+.icon-tile {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.75rem;
+  color: #fff;
+  background-image: linear-gradient(135deg, #34d399, #0d9488);
+  box-shadow: 0 4px 10px -3px rgba(16, 185, 129, 0.45);
+}
+.icon-tile-sky { background-image: linear-gradient(135deg, #38bdf8, #6366f1); box-shadow: 0 4px 10px -3px rgba(14, 165, 233, 0.45); }
+.icon-tile-violet { background-image: linear-gradient(135deg, #a78bfa, #d946ef); box-shadow: 0 4px 10px -3px rgba(139, 92, 246, 0.45); }
+.icon-tile-amber { background-image: linear-gradient(135deg, #fbbf24, #f97316); box-shadow: 0 4px 10px -3px rgba(245, 158, 11, 0.45); }
+.icon-tile-rose { background-image: linear-gradient(135deg, #fb7185, #db2777); box-shadow: 0 4px 10px -3px rgba(244, 63, 94, 0.45); }
+
+/* Card-like elements acting as buttons get the same focus ring as .btn. */
+[role='button'].card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-brand-500) 40%, transparent), var(--shadow-card);
+}

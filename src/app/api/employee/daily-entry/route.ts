@@ -27,17 +27,22 @@ const dailyEntrySubmitSchema = z.object({
   }),
   product_sales: z.array(
     z.object({
-      product_id: z.string().uuid(),
+      product_id: z.string().min(1).max(100),
       quantity: z.number().min(0),
       amount: z.number().min(0),
     })
-  ).optional().default([]),
+  ).max(500).optional().default([]),
+  // Omitted fields keep what is already saved: My Work sends only next_priorities and no
+  // metric notes, and must not wipe the main issue or notes written on the Daily Entry page.
   daily_text: z.object({
     main_issue: z.string().max(500).optional().nullable(),
     next_priorities: z.string().max(500).optional().nullable(),
   }).optional().default({}),
-  metric_notes: z.record(z.string(), z.string().max(300)).optional().default({}),
+  metric_notes: z.record(z.string(), z.string().max(300)).optional(),
 });
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const isValidDateStr = (v: string) => DATE_RE.test(v) && !isNaN(parseDateOnly(v).getTime());
 
 export async function GET(req: NextRequest) {
   try {
@@ -63,6 +68,9 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const dateStr = searchParams.get('date') || getDhakaDateString();
+    if (!isValidDateStr(dateStr)) {
+      return NextResponse.json({ error: 'সঠিক তারিখ দিন (YYYY-MM-DD) / Invalid date' }, { status: 400 });
+    }
     const targetEmployeeId = session.id;
 
     // Get scoring settings for edit window
@@ -169,12 +177,15 @@ export async function GET(req: NextRequest) {
       lock_notice: !isAllowed ? L(LOCK_NOTICE) : null,
       can_edit: isAllowed,
       metrics: metricsMap,
+      // Live count of task-queue completions for the day; metrics.POSTS_DONE is the saved
+      // figure once the employee has adjusted and saved it.
+      queue_posts: postsCount,
       product_sales: productSales.map((ps) => ({
         product_id: ps.product_id,
-        product_name_bn: ps.product.name_bn,
-        product_name_en: ps.product.name_en,
-        unit: ps.product.unit,
-        selling_price: Number(ps.product.selling_price),
+        product_name_bn: ps.product?.name_bn ?? '',
+        product_name_en: ps.product?.name_en ?? '',
+        unit: ps.product?.unit ?? '',
+        selling_price: Number(ps.product?.selling_price ?? 0),
         quantity: Number(ps.quantity),
         amount: Number(ps.amount),
       })),
@@ -210,7 +221,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { entry_date, metrics, product_sales, daily_text, metric_notes } = parsed.data;
+    const { entry_date, metrics, daily_text } = parsed.data;
+    if (!isValidDateStr(entry_date)) {
+      return NextResponse.json({ error: 'সঠিক তারিখ দিন (YYYY-MM-DD) / Invalid date' }, { status: 400 });
+    }
+
+    // One row per product: duplicate rows for a product are added together (the store keeps
+    // one sale per employee, day and product, so two rows would fail the whole save).
+    const productTotals = new Map<string, { product_id: string; quantity: number; amount: number }>();
+    for (const ps of parsed.data.product_sales) {
+      if (!(ps.quantity > 0 || ps.amount > 0)) continue;
+      const prev = productTotals.get(ps.product_id);
+      productTotals.set(ps.product_id, {
+        product_id: ps.product_id,
+        quantity: (prev?.quantity ?? 0) + ps.quantity,
+        amount: (prev?.amount ?? 0) + ps.amount,
+      });
+    }
+    const product_sales = [...productTotals.values()];
+
+    // Every product must exist (an inactive one is fine: an older day may still list it).
+    if (product_sales.length > 0) {
+      const known = await prisma.product.findMany({
+        where: { id: { in: product_sales.map((p) => p.product_id) } },
+        select: { id: true },
+      });
+      const knownIds = new Set(known.map((p: { id: string }) => p.id));
+      if (product_sales.some((p) => !knownIds.has(p.product_id))) {
+        return NextResponse.json({ error: 'অজানা পণ্য / Unknown product' }, { status: 400 });
+      }
+    }
 
     // Check edit window (today and yesterday only)
     const settings = await prisma.scoringSettings.findUnique({ where: { id: 'default' } });
@@ -280,11 +320,23 @@ export async function POST(req: NextRequest) {
         : null,
     };
 
+    // Notes not sent keep their saved text; sent notes replace it (an empty string clears it).
+    const metric_notes: Record<string, string> = parsed.data.metric_notes
+      ? parsed.data.metric_notes
+      : Object.fromEntries(Object.entries(oldMetrics).map(([k, v]) => [k, v.note ?? '']));
+
+    const mainIssue =
+      daily_text.main_issue !== undefined ? daily_text.main_issue || null : oldDailyText?.main_issue ?? null;
+    const nextPriorities =
+      daily_text.next_priorities !== undefined
+        ? daily_text.next_priorities || null
+        : oldDailyText?.next_priorities ?? null;
+
     const newValues = {
       metrics,
       metric_notes,
-      product_sales: product_sales.filter((p) => p.quantity > 0 || p.amount > 0),
-      daily_text,
+      product_sales,
+      daily_text: { main_issue: mainIssue, next_priorities: nextPriorities },
     };
 
     // Save/upsert all metrics within a transaction (re-saving updates existing rows)
@@ -341,7 +393,7 @@ export async function POST(req: NextRequest) {
           },
         });
 
-        const validProducts = product_sales.filter((ps) => ps.quantity > 0 || ps.amount > 0);
+        const validProducts = product_sales;
         if (validProducts.length > 0) {
           await Promise.all(
             validProducts.map((ps) =>
@@ -367,14 +419,14 @@ export async function POST(req: NextRequest) {
             },
           },
           update: {
-            main_issue: daily_text.main_issue || null,
-            next_priorities: daily_text.next_priorities || null,
+            main_issue: mainIssue,
+            next_priorities: nextPriorities,
           },
           create: {
             employee_id: session.id,
             entry_date: parsedDate,
-            main_issue: daily_text.main_issue || null,
-            next_priorities: daily_text.next_priorities || null,
+            main_issue: mainIssue,
+            next_priorities: nextPriorities,
           },
         });
       },

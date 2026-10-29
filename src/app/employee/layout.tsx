@@ -10,7 +10,8 @@ export default async function EmployeeLayout({
   const session = await getSession();
 
   if (!session) {
-    redirect('/login');
+    // Clears a cookie that still verifies but belongs to a deactivated account, then goes to /login.
+    redirect('/api/auth/logout');
   }
 
   if (session.role !== 'EMPLOYEE') {

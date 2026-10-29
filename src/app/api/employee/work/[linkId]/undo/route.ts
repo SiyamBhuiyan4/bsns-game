@@ -59,11 +59,18 @@ export async function POST(
       );
     }
 
-    // 3. Mark undone
-    const updated = await prisma.linkCompletion.update({
-      where: { id: activeCompletion.id },
-      data: { undone_at: new Date() },
+    // 3. Mark undone. Every active completion of this link is cleared, so a duplicate left by
+    // an old double click cannot keep the link stuck in the completed list.
+    const undoneAt = new Date();
+    await prisma.linkCompletion.updateMany({
+      where: {
+        group_link_id: linkId,
+        employee_id: session.userId,
+        undone_at: null,
+      },
+      data: { undone_at: undoneAt },
     });
+    const updated = { ...activeCompletion, undone_at: undoneAt };
 
     // 4. Audit Log
     await createAuditLog({

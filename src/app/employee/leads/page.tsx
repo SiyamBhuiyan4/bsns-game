@@ -20,11 +20,16 @@ import {
   ShieldCheck,
   Lock,
   X,
+  Users,
+  ShoppingBag,
+  Coins,
 } from 'lucide-react';
-import { format } from 'date-fns';
 import PageHeader from '@/components/ui/PageHeader';
 import { useLanguage } from '@/components/LanguageContext';
 import EmptyState from '@/components/ui/EmptyState';
+import ErrorState from '@/components/ui/ErrorState';
+import StatCard from '@/components/ui/StatCard';
+import Avatar from '@/components/ui/Avatar';
 import { SkeletonTable } from '@/components/ui/Skeleton';
 import { formatBstDateTime } from '@/lib/date';
 
@@ -72,16 +77,35 @@ interface LeadDetailData extends LeadItem {
   }>;
 }
 
+/** Lead sources: the stored value is the Bangla name (the admin channel filter matches on it). */
+const SOURCE_OPTIONS: [string, string][] = [
+  ['ফেসবুক গ্রুপ', 'Facebook group'],
+  ['ফেসবুক বিজ্ঞাপন', 'Facebook ads'],
+  ['গুগল বিজ্ঞাপন', 'Google ads'],
+  ['হোয়াটসঅ্যাপ', 'WhatsApp'],
+  ['সরাসরি ফোন', 'Phone call'],
+  ['রেফারেল', 'Referral'],
+  ['ইউটিউব', 'YouTube'],
+  ['অন্যান্য', 'Other'],
+];
+
 export default function EmployeeLeadsPage() {
-  const { lang, L } = useLanguage();
+  const { lang, L, formatNum, formatMoney } = useLanguage();
   const [leads, setLeads] = useState<LeadItem[]>([]);
   const [products, setProducts] = useState<ProductRef[]>([]);
   const [campaigns, setCampaigns] = useState<CampaignRef[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const [activeTab, setActiveTab] = useState<string>('ALL');
   const [showUnfinishedOnly, setShowUnfinishedOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  // The list refetches once typing pauses, not on every key press.
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(id);
+  }, [searchQuery]);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -94,7 +118,7 @@ export default function EmployeeLeadsPage() {
   const [addBuyerType, setAddBuyerType] = useState<'FARMER' | 'WHOLESALER' | 'RESTAURANT' | 'DEALER' | 'RETAIL' | 'OTHER'>('RETAIL');
   const [addProductId, setAddProductId] = useState('');
   const [addCampaignId, setAddCampaignId] = useState('');
-  const [addSource, setAddSource] = useState('ফেসবুক গ্রুপ (FB Group)');
+  const [addSource, setAddSource] = useState(SOURCE_OPTIONS[0][0]);
   const [addExpectedValue, setAddExpectedValue] = useState('');
   const [addNextFollowup, setAddNextFollowup] = useState('');
   const [addNote, setAddNote] = useState('');
@@ -129,25 +153,37 @@ export default function EmployeeLeadsPage() {
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const [leadDetail, setLeadDetail] = useState<LeadDetailData | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState(false);
   const [newNoteText, setNewNoteText] = useState('');
   const [noteSubmitting, setNoteSubmitting] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('add') === '1') setIsAddOpen(true);
     const p = params.get('period');
-    if (p && ['1d', '3d', '7d', '30d', 'all', 'custom'].includes(p)) setDatePreset(p as any);
+    if (p && ['1d', '3d', '7d', '30d', 'all', 'custom'].includes(p)) setDatePreset(p as typeof datePreset);
     const start = params.get('startDate') || params.get('from');
     if (start) setCustomStartDate(start);
     const end = params.get('endDate') || params.get('to');
     if (end) setCustomEndDate(end);
     const q = params.get('q');
-    if (q) setSearchQuery(q);
+    if (q) {
+      setSearchQuery(q);
+      setDebouncedQuery(q);
+    }
   }, []);
+
+  // A success note clears itself after a few seconds.
+  useEffect(() => {
+    if (!successMessage) return;
+    const id = setTimeout(() => setSuccessMessage(null), 4000);
+    return () => clearTimeout(id);
+  }, [successMessage]);
 
   const fetchLeads = useCallback(async () => {
     try {
-      let url = `/api/leads?q=${encodeURIComponent(searchQuery)}`;
+      let url = `/api/leads?q=${encodeURIComponent(debouncedQuery)}`;
       if (activeTab !== 'ALL') {
         url += `&status=${activeTab}`;
       }
@@ -162,6 +198,7 @@ export default function EmployeeLeadsPage() {
       }
       const res = await fetch(url);
       const data = await res.json();
+      setLoadError(!res.ok);
       if (res.ok) {
         setLeads(data.leads || []);
         if (typeof data.can_view_all_customers === 'boolean') {
@@ -169,11 +206,11 @@ export default function EmployeeLeadsPage() {
         }
       }
     } catch {
-      setErrorMessage(L('লিড লোড করা যায়নি'));
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
-  }, [activeTab, showUnfinishedOnly, searchQuery, datePreset, customStartDate, customEndDate]);
+  }, [activeTab, showUnfinishedOnly, debouncedQuery, datePreset, customStartDate, customEndDate]);
 
   const fetchMetadata = async () => {
     try {
@@ -205,9 +242,13 @@ export default function EmployeeLeadsPage() {
         const res = await fetch(`/api/leads/check-phone?phone=${encodeURIComponent(cleaned)}`);
         const data = await res.json();
         if (data.exists) {
-          const ownerDisplay = data.ownerName || L('অন্য কর্মী');
-          const msg = L(`পুরাতন কাস্টমার (Old Customer: ${data.leadName || 'বিদ্যমান'}, যোগ করেছেন: ${ownerDisplay})`);
-          setPhoneWarning(L(`এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার: ${data.leadName || ''}, যোগ করেছেন: ${ownerDisplay})। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।`));
+          const ownerDisplay = data.ownerName || L('অন্য কর্মী', 'another employee');
+          const nameDisplay = data.leadName || L('নাম নেই', 'no name');
+          const msg = L(
+            `পুরাতন কাস্টমার: ${nameDisplay} · যোগ করেছেন: ${ownerDisplay}`,
+            `Existing customer: ${nameDisplay} · added by ${ownerDisplay}`
+          );
+          setPhoneWarning(msg);
           setPhoneCheckResult({
             checked: true,
             isExisting: true,
@@ -220,7 +261,7 @@ export default function EmployeeLeadsPage() {
           setPhoneCheckResult({
             checked: true,
             isExisting: false,
-            message: L('নতুন কাস্টমার (New Customer)'),
+            message: L('নতুন কাস্টমার', 'New customer'),
           });
         } else {
           setPhoneWarning(null);
@@ -240,7 +281,16 @@ export default function EmployeeLeadsPage() {
   const handleAddLead = async (e: React.FormEvent) => {
     e.preventDefault();
     if (phoneCheckResult?.isExisting) {
-      setErrorMessage(L('এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার)। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।'));
+      setErrorMessage(
+        L(
+          'এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে আছে। একই কাস্টমার দুবার যোগ করা যাবে না।',
+          'This mobile number is already in the database. The same customer cannot be added twice.'
+        )
+      );
+      return;
+    }
+    if (addPhone.replace(/[\s-]/g, '').length < 11) {
+      setErrorMessage(L('সঠিক ১১ সংখ্যার মোবাইল নম্বর দিন।', 'Enter a valid 11-digit mobile number.'));
       return;
     }
     setAddSubmitting(true);
@@ -266,21 +316,22 @@ export default function EmployeeLeadsPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage(L('নতুন লিড সফলভাবে যুক্ত হয়েছে'));
+        setSuccessMessage(L('নতুন লিড সফলভাবে যুক্ত হয়েছে', 'New lead added'));
         setIsAddOpen(false);
         setAddName('');
         setAddPhone('');
         setAddAddress('');
         setAddExpectedValue('');
         setAddNote('');
+        setAddNextFollowup('');
         setPhoneWarning(null);
         setPhoneCheckResult(null);
         fetchLeads();
       } else {
-        setErrorMessage(data.error || L('এই মোবাইল নম্বরটি ইতিমধ্যে ডেটাবেসে বিদ্যমান (পুরাতন কাস্টমার)। ডুপ্লিকেট কাস্টমার যোগ করা যাবে না।'));
+        setErrorMessage(data.error || L('লিড সংরক্ষণ করা যায়নি', 'Could not save the lead'));
       }
     } catch {
-      setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
+      setErrorMessage(L('নেটওয়ার্ক ত্রুটি', 'Network error'));
     } finally {
       setAddSubmitting(false);
     }
@@ -306,16 +357,16 @@ export default function EmployeeLeadsPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setSuccessMessage(L('লিড স্ট্যাটাস সফলভাবে আপডেট হয়েছে'));
+        setSuccessMessage(L('লিড স্ট্যাটাস সফলভাবে আপডেট হয়েছে', 'Lead stage updated'));
         setStatusLead(null);
         setOrderAmount('');
         setLostReason('');
         fetchLeads();
       } else {
-        setStatusError(data.error || L('আপডেট ব্যর্থ হয়েছে'));
+        setStatusError(data.error || L('আপডেট ব্যর্থ হয়েছে', 'Update failed'));
       }
     } catch {
-      setStatusError(L('নেটওয়ার্ক ত্রুটি'));
+      setStatusError(L('নেটওয়ার্ক ত্রুটি', 'Network error'));
     } finally {
       setStatusSubmitting(false);
     }
@@ -324,24 +375,48 @@ export default function EmployeeLeadsPage() {
   // Detail & Notes Drawer
   const openDetail = async (id: string) => {
     setSelectedLeadId(id);
+    setLeadDetail(null);
     setDetailLoading(true);
+    setDetailError(false);
+    setNoteError(null);
     try {
       const res = await fetch(`/api/leads/${id}`);
       const data = await res.json();
-      if (res.ok) {
+      if (res.ok && data.lead) {
         setLeadDetail(data.lead);
+      } else {
+        setDetailError(true);
       }
     } catch {
-      // ignore
+      setDetailError(true);
     } finally {
       setDetailLoading(false);
     }
   };
 
+  const closeDetail = () => {
+    setSelectedLeadId(null);
+    setLeadDetail(null);
+    setNoteError(null);
+  };
+
+  // Escape closes whichever overlay is on top.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (statusLead && !statusSubmitting) setStatusLead(null);
+      else if (isAddOpen && !addSubmitting) setIsAddOpen(false);
+      else if (selectedLeadId && !noteSubmitting) closeDetail();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [statusLead, statusSubmitting, isAddOpen, addSubmitting, selectedLeadId, noteSubmitting]);
+
   const handleAddNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedLeadId || !newNoteText.trim()) return;
     setNoteSubmitting(true);
+    setNoteError(null);
 
     try {
       const res = await fetch(`/api/leads/${selectedLeadId}/notes`, {
@@ -357,15 +432,36 @@ export default function EmployeeLeadsPage() {
         });
         setNewNoteText('');
         fetchLeads();
+      } else if (!res.ok) {
+        setNoteError(data.error || L('নোট সংরক্ষণ করা যায়নি', 'Could not save the note'));
       }
     } catch {
-      // ignore
+      setNoteError(L('নেটওয়ার্ক ত্রুটি', 'Network error'));
     } finally {
       setNoteSubmitting(false);
     }
   };
 
   const unfinishedCount = leads.filter((l) => l.is_unfinished).length;
+  const orderedLeads = leads.filter((l) => l.status === 'ORDERED');
+  const orderedValue = orderedLeads.reduce((sum, l) => sum + (Number(l.order_amount) || 0), 0);
+  const sourceLabel = (v: string) => {
+    const hit = SOURCE_OPTIONS.find(([bn]) => v === bn || v.startsWith(`${bn} (`));
+    return hit ? L(hit[0], hit[1]) : v;
+  };
+  /** Note time in Dhaka, in the chosen language; nothing for a bad timestamp. */
+  const noteTime = (iso: string) => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    return new Intl.DateTimeFormat(lang === 'bn' ? 'bn-BD' : 'en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: 'Asia/Dhaka',
+    }).format(d);
+  };
 
   const getStatusBadge = (st: string) => {
     switch (st) {
@@ -403,10 +499,10 @@ export default function EmployeeLeadsPage() {
 
   const renderValue = (l: LeadItem) =>
     l.status === 'ORDERED' && l.order_amount ? (
-      <span className="font-medium text-brand-700">{L("৳")} {l.order_amount.toLocaleString('en-IN')}</span>
+      <span className="font-semibold text-brand-700">{formatMoney(l.order_amount)}</span>
     ) : l.expected_value ? (
       <span className="text-slate-600">
-        {L("৳")} {l.expected_value.toLocaleString('en-IN')} <span className="text-xs text-slate-400">({L('সম্ভাব্য', 'est.')})</span>
+        {formatMoney(l.expected_value)} <span className="text-xs text-slate-400">({L('সম্ভাব্য', 'est.')})</span>
       </span>
     ) : (
       <span className="text-slate-400">—</span>
@@ -433,13 +529,45 @@ export default function EmployeeLeadsPage() {
         }
       />
 
+      {!loading && !loadError && leads.length > 0 && (
+        <div className="stagger grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <StatCard
+            label={L('এই তালিকায় লিড', 'Leads in view')}
+            icon={<Users className="h-4 w-4" />}
+            tone="blue"
+            value={formatNum(leads.length)}
+          />
+          <StatCard
+            label={L('অর্ডার হয়েছে', 'Ordered')}
+            icon={<ShoppingBag className="h-4 w-4" />}
+            tone="brand"
+            value={formatNum(orderedLeads.length)}
+          />
+          <StatCard
+            label={L('ফলোআপ বাকি', 'Need follow-up')}
+            icon={<AlertTriangle className="h-4 w-4" />}
+            tone="amber"
+            value={formatNum(unfinishedCount)}
+          />
+          <StatCard
+            label={L('অর্ডারের মোট মূল্য', 'Order value')}
+            icon={<Coins className="h-4 w-4" />}
+            tone="violet"
+            value={formatMoney(orderedValue)}
+          />
+        </div>
+      )}
+
       {unfinishedCount > 0 && (
         <div className="alert alert-warning flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-2.5">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
               <div className="font-medium">
-                {L(`৩+ দিন অর্ডার ছাড়া অপেক্ষমাণ: ${unfinishedCount}`, `Waiting 3+ days: ${unfinishedCount}`)}
+                {L(
+                  `৩+ দিন অর্ডার ছাড়া অপেক্ষমাণ: ${formatNum(unfinishedCount)}`,
+                  `Waiting 3+ days: ${formatNum(unfinishedCount)}`
+                )}
               </div>
               <div className="mt-0.5 text-xs">
                 {L('যোগ্য লিড, গত ৩ দিনে অর্ডার হয়নি। এখনই ফলোআপ করুন।', 'Qualified leads with no order in the last 3 days. Follow up now.')}
@@ -448,15 +576,15 @@ export default function EmployeeLeadsPage() {
           </div>
           <button
             onClick={() => setShowUnfinishedOnly(!showUnfinishedOnly)}
-            className="btn btn-secondary btn-sm self-start sm:self-auto"
+            className="btn btn-secondary btn-sm min-h-9 self-start sm:self-auto"
           >
             {showUnfinishedOnly ? L('সকল লিড', 'Show all') : L('শুধু এগুলো', 'Show these')}
           </button>
         </div>
       )}
 
-      {errorMessage && (
-        <div className="alert alert-error items-center justify-between">
+      {errorMessage && !isAddOpen && (
+        <div role="alert" className="alert alert-error items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{L(errorMessage)}</span>
@@ -472,7 +600,7 @@ export default function EmployeeLeadsPage() {
       )}
 
       {successMessage && (
-        <div className="alert alert-success items-center justify-between">
+        <div role="status" className="alert alert-success items-center justify-between">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
             <span>{L(successMessage)}</span>
@@ -497,12 +625,12 @@ export default function EmployeeLeadsPage() {
           {canViewAllCustomers ? (
             <span className="badge badge-green">
               <ShieldCheck className="h-3 w-3" />
-              {L('সম্পূর্ণ কাস্টমার ডেটাবেস দেখার অনুমতি সক্রিয় (Full Access)', 'Full Customer Database Access Granted')}
+              {L('সব কাস্টমার দেখার অনুমতি আছে', 'Full customer access')}
             </span>
           ) : (
-            <span className="badge badge-gray">
+            <span className="badge badge-blue">
               <Lock className="h-3 w-3" />
-              {L('নিজস্ব কাস্টমার তালিকা (Own Customers Only)', 'Viewing Own Customers Only')}
+              {L('শুধু নিজের কাস্টমার', 'Your customers only')}
             </span>
           )}
         </div>
@@ -520,11 +648,11 @@ export default function EmployeeLeadsPage() {
                 key={p.id}
                 type="button"
                 aria-pressed={datePreset === p.id}
-                onClick={() => setDatePreset(p.id as any)}
+                onClick={() => setDatePreset(p.id as typeof datePreset)}
                 className={`press min-h-10 whitespace-nowrap rounded-xl px-3 text-xs font-medium transition sm:min-h-8 ${
                   datePreset === p.id
-                    ? 'bg-brand-600 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-sm shadow-emerald-500/30'
+                    : 'bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-700'
                 }`}
               >
                 {p.label}
@@ -635,6 +763,8 @@ export default function EmployeeLeadsPage() {
               <SkeletonTable rows={6} cols={6} label={L('লোড হচ্ছে...', 'Loading...')} />
             </div>
           </>
+        ) : loadError && leads.length === 0 ? (
+          <ErrorState title={L('লিড লোড করা যায়নি', 'Could not load your leads')} onRetry={fetchLeads} />
         ) : leads.length === 0 ? (
           <EmptyState
             icon={<UserPlus className="h-5 w-5" />}
@@ -662,16 +792,20 @@ export default function EmployeeLeadsPage() {
               {leads.map((l) => (
                 <li key={l.id} className={`px-4 py-3.5 ${l.is_unfinished ? 'bg-amber-50/40' : ''}`}>
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <button
-                        onClick={() => openDetail(l.id)}
-                        className="block max-w-full truncate text-left text-sm font-medium text-slate-900 hover:text-brand-700"
-                      >
-                        {l.name}
-                      </button>
-                      <div className="mt-0.5 flex items-center gap-1.5 font-mono text-xs text-slate-500">
-                        <Phone className="h-3 w-3 text-slate-400" />
-                        <span>{l.masked_phone}</span>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Avatar name={l.name} size={36} animated={false} />
+                      <div className="min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => openDetail(l.id)}
+                          className="block max-w-full truncate text-left text-sm font-medium text-slate-900 hover:text-brand-700"
+                        >
+                          {l.name}
+                        </button>
+                        <div className="mt-0.5 flex items-center gap-1.5 font-mono text-xs text-slate-500">
+                          <Phone className="h-3 w-3 text-slate-400" />
+                          <span>{l.masked_phone}</span>
+                        </div>
                       </div>
                     </div>
                     {getStatusBadge(l.status)}
@@ -680,25 +814,32 @@ export default function EmployeeLeadsPage() {
                     <span>{getBuyerTypeLabel(l.buyer_type)}</span>
                     {l.product && <span>{l.product.name_bn}</span>}
                     {l.is_unfinished && (
-                      <span className="badge badge-amber">{l.days_since_update} {L('দিন অপেক্ষমাণ', 'days waiting')}</span>
+                      <span className="badge badge-amber tabular-nums">
+                        {formatNum(l.days_since_update)} {L('দিন অপেক্ষমাণ', 'days waiting')}
+                      </span>
                     )}
                   </div>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
                     <Clock className="h-3 w-3 text-slate-400" />
                     <span>{formatBstDateTime(l.created_at, lang)}</span>
                     {canViewAllCustomers && l.owner_name && (
-                      <span className="font-medium text-slate-700">({L('যোগ করেছেন:', 'By:')} {l.owner_name})</span>
+                      <span className="inline-flex items-center gap-1 font-medium text-slate-700">
+                        · <Avatar name={l.owner_name} size={18} animated={false} /> {l.owner_name}
+                      </span>
                     )}
                   </div>
                   <div className="mt-1 text-sm tabular-nums">{renderValue(l)}</div>
                   <div className="mt-3 grid grid-cols-2 gap-2">
-                    <button onClick={() => openStatus(l)} className="btn btn-secondary min-h-10">
+                    <button type="button" onClick={() => openStatus(l)} className="btn btn-secondary min-h-10">
                       <span>{L('স্টেজ', 'Stage')}</span>
-                      <ChevronRight className="h-4 w-4" />
+                      <ChevronRight className="h-4 w-4 text-brand-600" />
                     </button>
-                    <button onClick={() => openDetail(l.id)} className="btn btn-secondary min-h-10">
-                      <MessageSquare className="h-4 w-4" />
-                      <span>{L('নোট', 'Notes')}{l.notes_count > 0 ? ` (${l.notes_count})` : ''}</span>
+                    <button type="button" onClick={() => openDetail(l.id)} className="btn btn-secondary min-h-10">
+                      <MessageSquare className="h-4 w-4 text-sky-600" />
+                      <span>
+                        {L('নোট', 'Notes')}
+                        {l.notes_count > 0 ? ` (${formatNum(l.notes_count)})` : ''}
+                      </span>
                     </button>
                   </div>
                 </li>
@@ -711,7 +852,7 @@ export default function EmployeeLeadsPage() {
                 <thead>
                   <tr>
                     <th>{L('ক্রেতা', 'Customer')}</th>
-                    <th>{L('যোগ করার সময় (BST)', 'Added (BST)')}</th>
+                    <th>{L('যোগ করার সময়', 'Added')}</th>
                     <th>{L('ধরন', 'Type')}</th>
                     <th>{L('পণ্য', 'Product')}</th>
                     <th>{L('স্টেজ', 'Stage')}</th>
@@ -725,20 +866,28 @@ export default function EmployeeLeadsPage() {
                   {leads.map((l) => (
                     <tr key={l.id} className={l.is_unfinished ? 'bg-amber-50/40' : ''}>
                       <td>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <button
-                            onClick={() => openDetail(l.id)}
-                            className="text-left font-medium text-slate-900 hover:text-brand-700 hover:underline"
-                          >
-                            {l.name}
-                          </button>
-                          {l.is_unfinished && (
-                            <span className="badge badge-amber">{l.days_since_update} {L('দিন অপেক্ষমাণ', 'days waiting')}</span>
-                          )}
-                        </div>
-                        <div className="mt-0.5 flex items-center gap-1.5 font-mono text-xs text-slate-500">
-                          <Phone className="h-3 w-3 text-slate-400" />
-                          <span>{l.masked_phone}</span>
+                        <div className="flex items-center gap-3">
+                          <Avatar name={l.name} size={34} animated={false} />
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => openDetail(l.id)}
+                                className="text-left font-medium text-slate-900 hover:text-brand-700 hover:underline"
+                              >
+                                {l.name}
+                              </button>
+                              {l.is_unfinished && (
+                                <span className="badge badge-amber tabular-nums">
+                                  {formatNum(l.days_since_update)} {L('দিন অপেক্ষমাণ', 'days waiting')}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-0.5 flex items-center gap-1.5 font-mono text-xs text-slate-500">
+                              <Phone className="h-3 w-3 text-slate-400" />
+                              <span>{l.masked_phone}</span>
+                            </div>
+                          </div>
                         </div>
                       </td>
                       <td className="text-xs text-slate-600 whitespace-nowrap">
@@ -747,8 +896,9 @@ export default function EmployeeLeadsPage() {
                           <span>{formatBstDateTime(l.created_at, lang)}</span>
                         </div>
                         {canViewAllCustomers && l.owner_name && (
-                          <div className="mt-0.5 text-[10px] text-slate-500">
-                            {L('যোগ করেছেন:', 'By:')} <span className="font-semibold text-slate-800">{l.owner_name}</span>
+                          <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-500">
+                            <Avatar name={l.owner_name} size={18} animated={false} />
+                            <span className="font-semibold text-slate-800">{l.owner_name}</span>
                           </div>
                         )}
                       </td>
@@ -758,18 +908,19 @@ export default function EmployeeLeadsPage() {
                       <td className="text-right tabular-nums">{renderValue(l)}</td>
                       <td className="whitespace-nowrap text-right">
                         <div className="inline-flex items-center gap-1.5">
-                          <button onClick={() => openStatus(l)} className="btn btn-secondary btn-sm">
+                          <button type="button" onClick={() => openStatus(l)} className="btn btn-secondary btn-sm min-h-9">
                             <span>{L('স্টেজ', 'Stage')}</span>
-                            <ChevronRight className="h-3.5 w-3.5" />
+                            <ChevronRight className="h-3.5 w-3.5 text-brand-600" />
                           </button>
                           <button
+                            type="button"
                             onClick={() => openDetail(l.id)}
-                            className="btn btn-ghost btn-sm"
+                            className="btn btn-ghost btn-sm min-h-9 text-sky-700"
                             title={L('বিস্তারিত ও নোট', 'Details and notes')}
                             aria-label={L('বিস্তারিত ও নোট', 'Details and notes')}
                           >
                             <MessageSquare className="h-3.5 w-3.5" />
-                            {l.notes_count > 0 && <span className="tabular-nums">{l.notes_count}</span>}
+                            {l.notes_count > 0 && <span className="tabular-nums">{formatNum(l.notes_count)}</span>}
                           </button>
                         </div>
                       </td>
@@ -784,11 +935,16 @@ export default function EmployeeLeadsPage() {
 
       {/* Modal: Add Lead */}
       {isAddOpen && (
-        <div className="modal-backdrop">
+        <div
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !addSubmitting) setIsAddOpen(false);
+          }}
+        >
           <div className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="add-lead-title">
             <div className="card-header flex-nowrap">
               <div className="flex min-w-0 items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+                <span className="icon-tile">
                   <UserPlus className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
@@ -807,16 +963,22 @@ export default function EmployeeLeadsPage() {
             </div>
 
             <form onSubmit={handleAddLead} className="card-body space-y-4 pb-0">
+              {errorMessage && (
+                <div role="alert" className="alert alert-error">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{L(errorMessage)}</span>
+                </div>
+              )}
               <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{L('ক্রেতা', 'Customer')}</p>
               <div>
                 <label htmlFor="add-name" className="label">
-                  {L('ক্রেতার নাম *', 'Name *')}
+                  {L('ক্রেতার নাম', 'Name')} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   id="add-name"
                   type="text"
                   required
-                  placeholder={L("যেমন: মো: আরিফুল ইসলাম")}
+                  placeholder={L('যেমন: মো: আরিফুল ইসলাম', 'e.g. Md. Ariful Islam')}
                   value={addName}
                   onChange={(e) => setAddName(e.target.value)}
                   className="input"
@@ -825,13 +987,16 @@ export default function EmployeeLeadsPage() {
 
               <div>
                 <label htmlFor="add-phone" className="label">
-                  {L('মোবাইল নম্বর * (অদ্বিতীয় / Unique)', 'Phone * (Unique in DB)')}
+                  {L('মোবাইল নম্বর', 'Mobile number')} <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <input
                     id="add-phone"
                     type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
                     required
+                    aria-describedby="add-phone-hint"
                     placeholder="017XXXXXXXX"
                     value={addPhone}
                     onChange={(e) => handlePhoneChange(e.target.value)}
@@ -848,11 +1013,16 @@ export default function EmployeeLeadsPage() {
                   )}
                 </div>
 
+                {!phoneCheckResult?.checked && (
+                  <p id="add-phone-hint" className="hint">
+                    {L('১১ সংখ্যা দিলে আমরা দেখে নিই নম্বরটি আগে থেকে আছে কি না।', "Once you type 11 digits we check it isn't already saved.")}
+                  </p>
+                )}
                 {/* Live Feedback Status (Requirement 1) */}
                 {phoneCheckResult?.checked && !phoneCheckResult.isExisting && (
                   <div className="mt-2 flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-800">
                     <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-                    <span>{L('নতুন কাস্টমার (New Customer)', 'New Customer')}</span>
+                    <span>{L('নতুন কাস্টমার', 'New customer')}</span>
                   </div>
                 )}
 
@@ -879,7 +1049,7 @@ export default function EmployeeLeadsPage() {
                 <input
                   id="add-address"
                   type="text"
-                  placeholder={L("যেমন: মিরপুর ১০, ঢাকা")}
+                  placeholder={L('যেমন: মিরপুর ১০, ঢাকা', 'e.g. Mirpur 10, Dhaka')}
                   value={addAddress}
                   onChange={(e) => setAddAddress(e.target.value)}
                   className="input"
@@ -892,7 +1062,7 @@ export default function EmployeeLeadsPage() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label htmlFor="add-type" className="label">
-                    {L('ক্রেতার ধরন *', 'Buyer type *')}
+                    {L('ক্রেতার ধরন', 'Buyer type')} <span className="text-rose-500">*</span>
                   </label>
                   <select
                     id="add-type"
@@ -930,17 +1100,21 @@ export default function EmployeeLeadsPage() {
 
                 <div>
                   <label htmlFor="add-source" className="label">
-                    {L('সোর্স *', 'Source *')}
+                    {L('সোর্স', 'Source')} <span className="text-rose-500">*</span>
                   </label>
-                  <input
+                  <select
                     id="add-source"
-                    type="text"
                     required
-                    placeholder={L("ফেসবুক গ্রুপ / অ্যাড / কল")}
                     value={addSource}
                     onChange={(e) => setAddSource(e.target.value)}
                     className="input"
-                  />
+                  >
+                    {SOURCE_OPTIONS.map(([bn, en]) => (
+                      <option key={bn} value={bn}>
+                        {L(bn, en)}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -970,7 +1144,8 @@ export default function EmployeeLeadsPage() {
                     id="add-value"
                     type="number"
                     min="0"
-                    placeholder={L("যেমন: 5000")}
+                    inputMode="decimal"
+                    placeholder={L('যেমন: ৫০০০', 'e.g. 5000')}
                     value={addExpectedValue}
                     onChange={(e) => setAddExpectedValue(e.target.value)}
                     className="input tabular-nums"
@@ -998,7 +1173,7 @@ export default function EmployeeLeadsPage() {
                 <textarea
                   id="add-note"
                   rows={2}
-                  placeholder={L("ক্রেতার চাহিদা বা যোগাযোগের বিবরণ...")}
+                  placeholder={L('ক্রেতার চাহিদা বা যোগাযোগের বিবরণ...', 'What the customer wants, how you reached them...')}
                   value={addNote}
                   onChange={(e) => setAddNote(e.target.value)}
                   className="input"
@@ -1006,16 +1181,21 @@ export default function EmployeeLeadsPage() {
               </div>
 
               <div className="sticky bottom-0 -mx-5 flex flex-col-reverse gap-2 border-t border-slate-100 bg-white px-5 py-4 sm:flex-row sm:justify-end">
-                <button type="button" onClick={() => setIsAddOpen(false)} className="btn btn-secondary min-h-10">
+                <button
+                  type="button"
+                  onClick={() => setIsAddOpen(false)}
+                  disabled={addSubmitting}
+                  className="btn btn-secondary min-h-10"
+                >
                   {L('বাতিল', 'Cancel')}
                 </button>
                 <button
                   type="submit"
-                  disabled={addSubmitting || !!phoneCheckResult?.isExisting}
+                  disabled={addSubmitting || checkingPhone || !!phoneCheckResult?.isExisting}
                   className="btn btn-primary min-h-10"
                 >
-                  {addSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {L('সংরক্ষণ', 'Save')}
+                  {addSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                  {addSubmitting ? L('সংরক্ষণ হচ্ছে...', 'Saving...') : L('লিড সংরক্ষণ করুন', 'Save lead')}
                 </button>
               </div>
             </form>
@@ -1025,15 +1205,31 @@ export default function EmployeeLeadsPage() {
 
       {/* Modal: Update Lead Status */}
       {statusLead && (
-        <div className="modal-backdrop">
-          <div className="modal-panel sm:max-w-md" role="dialog" aria-modal="true">
-            <div className="card-header">
-              <div className="min-w-0">
-                <h3 className="card-title">{L('স্টেজ পরিবর্তন', 'Change stage')}</h3>
-                <p className="card-subtitle truncate">
-                  {statusLead.name} · <span className="font-mono">{statusLead.masked_phone}</span>
-                </p>
+        <div
+          className="modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !statusSubmitting) setStatusLead(null);
+          }}
+        >
+          <div className="modal-panel sm:max-w-md" role="dialog" aria-modal="true" aria-labelledby="status-title">
+            <div className="card-header flex-nowrap">
+              <div className="flex min-w-0 items-center gap-3">
+                <Avatar name={statusLead.name} size={36} animated={false} />
+                <div className="min-w-0">
+                  <h3 id="status-title" className="card-title">{L('স্টেজ পরিবর্তন', 'Change stage')}</h3>
+                  <p className="card-subtitle truncate">
+                    {statusLead.name} · <span className="font-mono">{statusLead.masked_phone}</span>
+                  </p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setStatusLead(null)}
+                className="btn-icon h-10 w-10 shrink-0"
+                aria-label={L('বন্ধ করুন', 'Close')}
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
             <form onSubmit={handleUpdateStatus} className="card-body space-y-4">
@@ -1046,7 +1242,7 @@ export default function EmployeeLeadsPage() {
 
               <div>
                 <label htmlFor="status-target" className="label">
-                  {L('নতুন স্টেজ *', 'New stage *')}
+                  {L('নতুন স্টেজ', 'New stage')} <span className="text-rose-500">*</span>
                 </label>
                 <select
                   id="status-target"
@@ -1066,7 +1262,7 @@ export default function EmployeeLeadsPage() {
                 <div>
                   <label htmlFor="status-amount" className="label flex items-center gap-1.5">
                     <DollarSign className="h-3.5 w-3.5 text-slate-400" />
-                    {L('অর্ডারের মূল্য (৳) *', 'Order amount (৳) *')}
+                    {L('অর্ডারের মূল্য (৳)', 'Order amount (৳)')} <span className="text-rose-500">*</span>
                   </label>
                   <input
                     id="status-amount"
@@ -1074,7 +1270,8 @@ export default function EmployeeLeadsPage() {
                     step="0.01"
                     min="1"
                     required
-                    placeholder={L("যেমন: 2500.00")}
+                    inputMode="decimal"
+                    placeholder={L('যেমন: ২৫০০', 'e.g. 2500')}
                     value={orderAmount}
                     onChange={(e) => setOrderAmount(e.target.value)}
                     className="input tabular-nums"
@@ -1087,13 +1284,13 @@ export default function EmployeeLeadsPage() {
                 <div>
                   <label htmlFor="status-reason" className="label flex items-center gap-1.5">
                     <XCircle className="h-3.5 w-3.5 text-slate-400" />
-                    {L('বাতিলের কারণ *', 'Lost reason *')}
+                    {L('বাতিলের কারণ', 'Lost reason')} <span className="text-rose-500">*</span>
                   </label>
                   <textarea
                     id="status-reason"
                     rows={2}
                     required
-                    placeholder={L("যেমন: মূল্য বেশি / অন্যখান থেকে কিনেছে")}
+                    placeholder={L('যেমন: মূল্য বেশি / অন্যখান থেকে কিনেছে', 'e.g. price too high / bought elsewhere')}
                     value={lostReason}
                     onChange={(e) => setLostReason(e.target.value)}
                     className="input"
@@ -1103,12 +1300,21 @@ export default function EmployeeLeadsPage() {
               )}
 
               <div className="flex flex-col-reverse gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
-                <button type="button" onClick={() => setStatusLead(null)} className="btn btn-secondary min-h-10">
+                <button
+                  type="button"
+                  onClick={() => setStatusLead(null)}
+                  disabled={statusSubmitting}
+                  className="btn btn-secondary min-h-10"
+                >
                   {L('বাতিল', 'Cancel')}
                 </button>
-                <button type="submit" disabled={statusSubmitting} className="btn btn-primary min-h-10">
-                  {statusSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {L('আপডেট', 'Update')}
+                <button
+                  type="submit"
+                  disabled={statusSubmitting || targetStatus === statusLead.status}
+                  className={`btn min-h-10 ${targetStatus === 'LOST' ? 'btn-danger' : 'btn-primary'}`}
+                >
+                  {statusSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  {targetStatus === 'LOST' ? L('বাতিল হিসেবে চিহ্নিত করুন', 'Mark as lost') : L('আপডেট করুন', 'Update')}
                 </button>
               </div>
             </form>
@@ -1118,16 +1324,27 @@ export default function EmployeeLeadsPage() {
 
       {/* Lead Detail & Notes Drawer */}
       {selectedLeadId && (
-        <div role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex justify-end overlay-dim backdrop-blur-[2px]">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="lead-detail-title"
+          className="modal-backdrop justify-end p-0 sm:p-0"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeDetail();
+          }}
+        >
           <div className="flex h-full w-full max-w-md flex-col bg-white shadow-[var(--shadow-overlay)] animate-fade-in">
-            <div className="card-header">
-              <h3 className="card-title">{L('লিড বিবরণ', 'Lead details')}</h3>
+            <div className="card-header flex-nowrap">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="icon-tile icon-tile-sky">
+                  <MessageSquare className="h-4 w-4" />
+                </span>
+                <h3 id="lead-detail-title" className="card-title">{L('লিড বিবরণ ও নোট', 'Lead details & notes')}</h3>
+              </div>
               <button
-                onClick={() => {
-                  setSelectedLeadId(null);
-                  setLeadDetail(null);
-                }}
-                className="btn-icon"
+                type="button"
+                onClick={closeDetail}
+                className="btn-icon h-10 w-10 shrink-0"
                 aria-label={L('বন্ধ করুন', 'Close')}
               >
                 <X className="h-5 w-5" />
@@ -1135,7 +1352,12 @@ export default function EmployeeLeadsPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              {detailLoading || !leadDetail ? (
+              {detailError && !detailLoading ? (
+                <ErrorState
+                  title={L('লিডের বিবরণ লোড করা যায়নি', 'Could not load this lead')}
+                  onRetry={() => selectedLeadId && openDetail(selectedLeadId)}
+                />
+              ) : detailLoading || !leadDetail ? (
                 <div role="status" aria-busy="true" className="card-body space-y-5">
                   <span className="sr-only">{L('লোড হচ্ছে...', 'Loading...')}</span>
                   <div className="space-y-2">
@@ -1159,17 +1381,21 @@ export default function EmployeeLeadsPage() {
               ) : (
                 <div className="card-body space-y-5">
                   <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="text-[15px] font-semibold text-slate-900">{leadDetail.name}</span>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Avatar name={leadDetail.name} size={44} />
+                        <span className="truncate text-[15px] font-semibold text-slate-900">{leadDetail.name}</span>
+                      </div>
                       {getStatusBadge(leadDetail.status)}
                     </div>
 
                     <a
                       href={`tel:${leadDetail.phone}`}
-                      className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-sm font-medium text-slate-900 hover:bg-slate-100"
+                      className="flex min-h-10 items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/60 px-3 py-2 font-mono text-sm font-medium text-slate-900 hover:bg-emerald-50"
                     >
                       <Phone className="h-4 w-4 text-brand-600" />
                       <span>{leadDetail.phone}</span>
+                      <span className="ml-auto font-sans text-xs font-medium text-brand-700">{L('কল করুন', 'Call')}</span>
                     </a>
 
                     <dl className="grid grid-cols-2 gap-3 text-xs">
@@ -1183,7 +1409,7 @@ export default function EmployeeLeadsPage() {
                       </div>
                       <div>
                         <dt className="text-slate-500">{L('সোর্স', 'Source')}</dt>
-                        <dd className="font-medium text-slate-900">{leadDetail.source_channel}</dd>
+                        <dd className="font-medium text-slate-900">{sourceLabel(leadDetail.source_channel)}</dd>
                       </div>
                       <div>
                         <dt className="text-slate-500">{L('ক্যাম্পেইন', 'Campaign')}</dt>
@@ -1196,10 +1422,16 @@ export default function EmployeeLeadsPage() {
                         </div>
                       )}
                       <div className="col-span-2">
-                        <dt className="text-slate-500">{L('যুক্ত করেছেন (কর্মী)', 'Added by (Employee)')}</dt>
-                        <dd className="font-semibold text-slate-900 flex items-center gap-1.5 mt-0.5">
-                          <span className="badge badge-blue text-[10px] font-normal">{L('কর্মী', 'Employee')}</span>
-                          <span>{leadDetail.owner_name}</span>
+                        <dt className="text-slate-500">{L('যোগ করেছেন', 'Added by')}</dt>
+                        <dd className="mt-1 flex items-center gap-2 font-semibold text-slate-900">
+                          {leadDetail.owner_name ? (
+                            <>
+                              <Avatar name={leadDetail.owner_name} size={24} animated={false} />
+                              <span>{leadDetail.owner_name}</span>
+                            </>
+                          ) : (
+                            '—'
+                          )}
                         </dd>
                       </div>
                     </dl>
@@ -1214,11 +1446,14 @@ export default function EmployeeLeadsPage() {
                     ) : (
                       <div className="space-y-2">
                         {leadDetail.notes.map((n) => (
-                          <div key={n.id} className="rounded-lg border border-slate-200 p-3 text-sm">
-                            <p className="leading-relaxed text-slate-800">{n.note}</p>
-                            <div className="mt-1.5 flex items-center justify-between text-[11px] text-slate-400">
-                              <span>{n.author.name}</span>
-                              <span>{format(new Date(n.created_at), 'dd MMM yyyy, hh:mm a')}</span>
+                          <div key={n.id} className="rounded-lg border border-slate-200 border-l-4 border-l-sky-400 p-3 text-sm">
+                            <p className="leading-relaxed whitespace-pre-wrap text-slate-800">{n.note}</p>
+                            <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-slate-400">
+                              <span className="flex min-w-0 items-center gap-1.5">
+                                <Avatar name={n.author?.name || '?'} size={18} animated={false} />
+                                <span className="truncate font-medium text-slate-600">{n.author?.name}</span>
+                              </span>
+                              <span className="shrink-0 tabular-nums">{noteTime(n.created_at)}</span>
                             </div>
                           </div>
                         ))}
@@ -1230,7 +1465,16 @@ export default function EmployeeLeadsPage() {
             </div>
 
             {leadDetail && (
-              <form onSubmit={handleAddNote} className="flex gap-2 border-t border-slate-100 p-4">
+              <form
+                onSubmit={handleAddNote}
+                className="space-y-2 border-t border-slate-100 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+              >
+                {noteError && (
+                  <p role="alert" className="text-xs font-medium text-rose-600">
+                    {L(noteError)}
+                  </p>
+                )}
+                <div className="flex gap-2">
                 <label htmlFor="new-note" className="sr-only">
                   {L('নতুন নোট', 'New note')}
                 </label>
@@ -1245,12 +1489,13 @@ export default function EmployeeLeadsPage() {
                 />
                 <button
                   type="submit"
-                  disabled={noteSubmitting}
+                  disabled={noteSubmitting || !newNoteText.trim()}
                   className="btn btn-primary min-h-10"
                   aria-label={L('নোট পাঠান', 'Send note')}
                 >
-                  <Send className="h-4 w-4" />
+                  {noteSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </button>
+                </div>
               </form>
             )}
           </div>

@@ -1379,12 +1379,12 @@ export default function SectionDetailModal({
                     onChange={(e) => setCustBuyerType(e.target.value)}
                     className="input"
                   >
-                    <option value="RETAIL">{L('খুচরা (Retail)', 'Retail')}</option>
-                    <option value="WHOLESALER">{L('পাইকারি (Wholesale)', 'Wholesale')}</option>
-                    <option value="DEALER">{L('ডিলার (Dealer)', 'Dealer')}</option>
-                    <option value="RESTAURANT">{L('রেস্টুরেন্ট (Restaurant)', 'Restaurant')}</option>
-                    <option value="FARMER">{L('খামারি / কৃষক (Farmer)', 'Farmer')}</option>
-                    <option value="OTHER">{L('অন্যান্য (Other)', 'Other')}</option>
+                    <option value="RETAIL">{L('খুচরা', 'Retail')}</option>
+                    <option value="WHOLESALER">{L('পাইকারি', 'Wholesale')}</option>
+                    <option value="DEALER">{L('ডিলার', 'Dealer')}</option>
+                    <option value="RESTAURANT">{L('রেস্টুরেন্ট', 'Restaurant')}</option>
+                    <option value="FARMER">{L('খামারি / কৃষক', 'Farmer')}</option>
+                    <option value="OTHER">{L('অন্যান্য', 'Other')}</option>
                   </select>
                 </div>
 

@@ -4,26 +4,32 @@ import { getSession } from '@/lib/session';
 import { createAuditLog } from '@/lib/audit';
 import { normalizePhone, isValidBdPhone, maskPhone } from '@/lib/phone';
 import { BuyerType, LeadStatus, MetricType, Prisma } from '@prisma/client';
-import { getDhakaDateString, getDhakaStartOfDay, getDhakaEndOfDay, formatBstDateTime } from '@/lib/date';
-import { parseISO } from 'date-fns';
+import { getDhakaDateString, getDhakaStartOfDay, getDhakaEndOfDay, formatBstDateTime, parseDateOnly } from '@/lib/date';
 import { z } from 'zod';
 
+const followupDate = z
+  .string()
+  .max(40)
+  .refine((v) => v === '' || !isNaN(new Date(v).getTime()), 'সঠিক ফলোআপ তারিখ দিন / Invalid follow-up date')
+  .optional()
+  .nullable();
+
 const createLeadSchema = z.object({
-  name: z.string().min(2, 'ক্রেতা বা লিডের নাম প্রদান করুন'),
-  phone: z.string(),
-  address: z.string().optional().nullable(),
+  name: z.string().trim().min(2, 'ক্রেতা বা লিডের নাম প্রদান করুন').max(120),
+  phone: z.string().max(30),
+  address: z.string().max(500).optional().nullable(),
   buyer_type: z.nativeEnum(BuyerType).optional().default('RETAIL'),
-  product_id: z.string().optional().nullable(),
-  campaign_id: z.string().optional().nullable(),
-  source_channel: z.string().min(1, 'সোর্স চ্যানেল উল্লেখ করুন (যেমন: ফেসবুক গ্রুপ, বিজ্ঞাপন)'),
-  owner_id: z.string().optional().nullable(),
+  product_id: z.string().max(100).optional().nullable(),
+  campaign_id: z.string().max(100).optional().nullable(),
+  source_channel: z.string().trim().min(1, 'সোর্স চ্যানেল উল্লেখ করুন (যেমন: ফেসবুক গ্রুপ, বিজ্ঞাপন)').max(100),
+  owner_id: z.string().max(100).optional().nullable(),
   status: z.nativeEnum(LeadStatus).optional().default('NEW'),
   quality_rating: z.number().int().min(1).max(5).optional().nullable(),
   expected_value: z.number().min(0).optional().nullable(),
   order_amount: z.number().min(0).optional().nullable(),
-  lost_reason: z.string().optional().nullable(),
-  next_followup_date: z.string().optional().nullable(),
-  initial_note: z.string().optional().nullable(),
+  lost_reason: z.string().max(500).optional().nullable(),
+  next_followup_date: followupDate,
+  initial_note: z.string().max(2000).optional().nullable(),
 });
 
 export async function GET(request: NextRequest) {
@@ -287,8 +293,9 @@ export async function POST(request: NextRequest) {
       // Auto-increment NEW_CLIENTS count for creator employee:
       // "je banabe tar new client count plus hobe"
       try {
-        const todayDhakaStr = getDhakaDateString();
-        const todayDate = parseISO(todayDhakaStr);
+        // UTC midnight of today's Dhaka date, the same key the daily entry form uses
+        // (parseISO would give server-local midnight and file it under the wrong day).
+        const todayDate = parseDateOnly(getDhakaDateString());
 
         const existingClientEntry = await tx.dailyEntry.findUnique({
           where: {

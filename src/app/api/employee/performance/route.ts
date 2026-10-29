@@ -3,7 +3,13 @@ import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { getDhakaDateString, parseDateOnly } from '@/lib/date';
 import { calculateEffectiveTargetsForRange } from '@/lib/targets';
-import { calculateEmployeeScore, selectEmployeeTargets } from '@/lib/scoring';
+import {
+  calculateEmployeeScore,
+  daysInRange,
+  postsTargetWithLimitFallback,
+  readSectionWeights,
+  selectEmployeeTargets,
+} from '@/lib/scoring';
 import { readLangFromRequest } from '@/lib/i18n/request-lang';
 import { MetricType } from '@prisma/client';
 import { subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parseISO, format } from 'date-fns';
@@ -20,15 +26,22 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const period = searchParams.get('period') || 'monthly'; // 'daily', 'weekly', 'monthly'
-    const dateParam = searchParams.get('date') || getDhakaDateString();
+    // A malformed date would make every date-fns call throw; fall back to today in Dhaka.
+    const rawDate = searchParams.get('date');
+    const dateParam =
+      rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) && !isNaN(parseDateOnly(rawDate).getTime())
+        ? rawDate
+        : getDhakaDateString();
 
     let targetEmployeeId = session.userId;
     if (session.role === 'ADMIN' && searchParams.get('employee_id')) {
       targetEmployeeId = searchParams.get('employee_id')!;
     }
 
-    // Determine date range in Dhaka
+    // Determine date range in Dhaka. Bounds are UTC-midnight dates like DailyEntry.entry_date,
+    // whatever the server's own timezone is.
     const refDate = parseISO(dateParam);
+    const ymd = (d: Date) => format(d, 'yyyy-MM-dd');
     let startDate: Date;
     let endDate: Date;
 
@@ -36,11 +49,11 @@ export async function GET(req: NextRequest) {
       startDate = parseDateOnly(dateParam);
       endDate = startDate;
     } else if (period === 'weekly') {
-      startDate = startOfWeek(refDate, { weekStartsOn: 0 }); // Sunday
-      endDate = endOfWeek(refDate, { weekStartsOn: 0 });
+      startDate = parseDateOnly(ymd(startOfWeek(refDate, { weekStartsOn: 0 }))); // Sunday
+      endDate = parseDateOnly(ymd(endOfWeek(refDate, { weekStartsOn: 0 })));
     } else {
-      startDate = startOfMonth(refDate);
-      endDate = endOfMonth(refDate);
+      startDate = parseDateOnly(ymd(startOfMonth(refDate)));
+      endDate = parseDateOnly(ymd(endOfMonth(refDate)));
     }
 
     // Targets are pro-rated over the period, so only compare against the days
@@ -69,20 +82,14 @@ export async function GET(req: NextRequest) {
     // Effective targets for the date range
     const effectiveTargets = calculateEffectiveTargetsForRange(targets, startDate, endDate);
 
-    // Fallback & exact quota assignment logic:
-    // If admin set assignment post_limit, use exact daily post limit for daily view
-    const totalAssignedDailyPosts = assignments.reduce((sum, a) => sum + (a.post_limit || 0), 0);
-    if (totalAssignedDailyPosts > 0) {
-      if (period === 'daily') {
-        effectiveTargets[MetricType.POSTS_DONE] = totalAssignedDailyPosts;
-      } else if (!effectiveTargets[MetricType.POSTS_DONE] || effectiveTargets[MetricType.POSTS_DONE] === 0) {
-        if (period === 'weekly') {
-          effectiveTargets[MetricType.POSTS_DONE] = totalAssignedDailyPosts * 7;
-        } else {
-          effectiveTargets[MetricType.POSTS_DONE] = totalAssignedDailyPosts * 30;
-        }
-      }
-    }
+    // No POSTS_DONE target: the daily section post limits stand in for one, for each day
+    // in the range (the same rule the leaderboard and dashboard use).
+    const postLimits = assignments.map((a) => a.post_limit);
+    effectiveTargets[MetricType.POSTS_DONE] = postsTargetWithLimitFallback(
+      effectiveTargets[MetricType.POSTS_DONE],
+      postLimits,
+      daysInRange(startDate, endDate)
+    );
 
     // 3. Aggregate employee achievements over the range
     // A. Posts done
@@ -125,10 +132,7 @@ export async function GET(req: NextRequest) {
     const scoringSettings = await prisma.scoringSettings.findUnique({ where: { id: 'default' } });
     const cap = scoringSettings ? Number(scoringSettings.achievement_cap) : 1.0;
     const failingThreshold = scoringSettings ? Number(scoringSettings.failing_threshold) : 0.8;
-    const sectionWeights =
-      scoringSettings?.section_weights && typeof scoringSettings.section_weights === 'object'
-        ? (scoringSettings.section_weights as Record<string, number>)
-        : undefined;
+    const sectionWeights = readSectionWeights(scoringSettings);
 
     // 5. Calculate Score
     const scoringInput = {
@@ -169,9 +173,35 @@ export async function GET(req: NextRequest) {
       lang,
     });
 
-    // 6. Trend data: calculate last 14 days daily scores
+    // 6. Trend data: calculate last 14 days daily scores (two reads for the whole window)
     const trendDays: { date: string; score: number; sales: number; posts: number }[] = [];
     const todayDhaka = parseISO(getDhakaDateString());
+    const trendFirstStr = format(subDays(todayDhaka, 13), 'yyyy-MM-dd');
+    const trendLastStr = format(todayDhaka, 'yyyy-MM-dd');
+    const [trendEntries, trendCompletions] = await Promise.all([
+      prisma.dailyEntry.findMany({
+        where: {
+          employee_id: targetEmployeeId,
+          entry_date: { gte: parseDateOnly(trendFirstStr), lte: parseDateOnly(trendLastStr) },
+        },
+      }),
+      prisma.linkCompletion.findMany({
+        where: {
+          employee_id: targetEmployeeId,
+          completed_at: {
+            gte: new Date(`${trendFirstStr}T00:00:00+06:00`),
+            lte: new Date(`${trendLastStr}T23:59:59.999+06:00`),
+          },
+          undone_at: null,
+        },
+        select: { completed_at: true },
+      }),
+    ]);
+    const postsByDay = new Map<string, number>();
+    for (const c of trendCompletions) {
+      const day = getDhakaDateString(new Date(c.completed_at));
+      postsByDay.set(day, (postsByDay.get(day) || 0) + 1);
+    }
 
     for (let i = 13; i >= 0; i--) {
       const dayDate = subDays(todayDhaka, i);
@@ -179,22 +209,10 @@ export async function GET(req: NextRequest) {
       const dayStart = parseDateOnly(dayStr);
 
       const dayEffectiveTargets = calculateEffectiveTargetsForRange(targets, dayStart, dayStart);
-      const dayEntries = await prisma.dailyEntry.findMany({
-        where: { employee_id: targetEmployeeId, entry_date: dayStart },
-      });
-
-      const dayStartUtc = new Date(`${dayStr}T00:00:00+06:00`);
-      const dayEndUtc = new Date(`${dayStr}T23:59:59.999+06:00`);
-      const dayPosts = await prisma.linkCompletion.count({
-        where: {
-          employee_id: targetEmployeeId,
-          completed_at: { gte: dayStartUtc, lte: dayEndUtc },
-          undone_at: null,
-        },
-      });
+      dayEffectiveTargets.POSTS_DONE = postsTargetWithLimitFallback(dayEffectiveTargets.POSTS_DONE, postLimits, 1);
 
       const dayAch: Record<string, number> = {
-        POSTS_DONE: dayPosts,
+        POSTS_DONE: postsByDay.get(dayStr) || 0,
         SALES_AMOUNT: 0,
         PROFIT_AMOUNT: 0,
         NEW_CLIENTS: 0,
@@ -202,8 +220,11 @@ export async function GET(req: NextRequest) {
         RETENTION_COUNT: 0,
         FOLLOWUPS_DONE: 0,
       };
-      for (const e of dayEntries) {
-        dayAch[e.metric_type] = Number(e.value);
+      for (const e of trendEntries) {
+        // Posts come from link completions only; a POSTS_DONE daily entry is a manual note, not the count.
+        if (e.metric_type === MetricType.POSTS_DONE) continue;
+        if (new Date(e.entry_date).toISOString().slice(0, 10) !== dayStr) continue;
+        dayAch[e.metric_type] = (dayAch[e.metric_type] || 0) + Number(e.value);
       }
 
       const dayScoringInput = {
@@ -243,7 +264,7 @@ export async function GET(req: NextRequest) {
     for (const ps of productSales) {
       if (!productTotals[ps.product_id]) {
         productTotals[ps.product_id] = {
-          name_bn: ps.product.name_bn,
+          name_bn: ps.product?.name_bn ?? '',
           quantity: 0,
           amount: 0,
         };

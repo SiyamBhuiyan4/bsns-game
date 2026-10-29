@@ -3,7 +3,14 @@ import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { getDhakaDateString, parseDateOnly } from '@/lib/date';
 import { calculateEffectiveTargetsForRange } from '@/lib/targets';
-import { calculateTotalScore, calculateSectionScore, selectEmployeeTargets, readSectionWeights } from '@/lib/scoring';
+import {
+  calculateTotalScore,
+  calculateSectionScore,
+  daysInRange,
+  postsTargetWithLimitFallback,
+  selectEmployeeTargets,
+  readSectionWeights,
+} from '@/lib/scoring';
 import { makeTranslator } from '@/lib/i18n/translate';
 import { readLangFromRequest } from '@/lib/i18n/request-lang';
 import { MetricType } from '@prisma/client';
@@ -63,9 +70,18 @@ export async function GET(req: NextRequest) {
     } else if (period === 'custom') {
       const startParam = searchParams.get('startDate') || searchParams.get('start_date');
       const endParam = searchParams.get('endDate') || searchParams.get('end_date');
-      if (startParam && endParam && /^\d{4}-\d{2}-\d{2}$/.test(startParam) && /^\d{4}-\d{2}-\d{2}$/.test(endParam)) {
+      const valid = (v: string | null): v is string =>
+        !!v && /^\d{4}-\d{2}-\d{2}$/.test(v) && !isNaN(parseDateOnly(v).getTime());
+      if (valid(startParam) && valid(endParam)) {
         startDate = parseDateOnly(startParam);
         endDate = parseDateOnly(endParam);
+        // A reversed range would make the per-day target walk throw; a huge one would walk
+        // every day for every employee. Swap, and keep at most a year.
+        if (startDate > endDate) [startDate, endDate] = [endDate, startDate];
+        const maxDays = 366;
+        if (daysInRange(startDate, endDate) > maxDays) {
+          startDate = new Date(endDate.getTime() - (maxDays - 1) * 86_400_000);
+        }
       } else {
         startDate = parseDateOnly(`${todayStr.slice(0, 7)}-01`);
         endDate = parseDateOnly(format(endOfMonth(parseISO(todayStr)), 'yyyy-MM-dd'));
@@ -91,7 +107,7 @@ export async function GET(req: NextRequest) {
       },
       include: {
         assignments_as_employee: {
-          select: { section_id: true },
+          select: { section_id: true, post_limit: true },
         },
       },
       orderBy: { name: 'asc' },
@@ -152,6 +168,11 @@ export async function GET(req: NextRequest) {
       const assignedSectionIds = emp.assignments_as_employee.map((a: any) => a.section_id);
       const empTargets = selectEmployeeTargets(allTargets, emp.id, assignedSectionIds);
       const effectiveTargets = calculateEffectiveTargetsForRange(empTargets, startDate, endDate);
+      effectiveTargets[MetricType.POSTS_DONE] = postsTargetWithLimitFallback(
+        effectiveTargets[MetricType.POSTS_DONE],
+        emp.assignments_as_employee.map((a: any) => a.post_limit),
+        daysInRange(startDate, endDate)
+      );
 
       const empDaily = employeeDailyMetrics[emp.id] || {};
       const postsDone = postCounts[emp.id] || 0;

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Trophy, AlertCircle, ArrowUp, Crown, Users } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Trophy, ArrowUp, Crown, Users } from 'lucide-react';
 import { toBengaliDigits } from '@/lib/date';
 import PageHeader from '@/components/ui/PageHeader';
 import EmptyState from '@/components/ui/EmptyState';
+import ErrorState from '@/components/ui/ErrorState';
 import Avatar from '@/components/ui/Avatar';
 import { readAvatarPrefs, type AvatarPrefs } from '@/components/ProfileMenu';
 import { useLanguage } from '@/components/LanguageContext';
@@ -39,7 +40,7 @@ const MEDALS: Record<number, string> = {
 };
 
 export default function EmployeeLeaderboardPage() {
-  const { L, digitStyle } = useLanguage();
+  const { L, digitStyle, formatNum } = useLanguage();
   const PERIOD_OPTIONS: { id: PeriodType; label: string }[] = [
     { id: 'today', label: L('আজ', 'Today') },
     { id: 'yesterday', label: L('গতকাল', 'Yesterday') },
@@ -51,22 +52,29 @@ export default function EmployeeLeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Latest request wins, so a quick tap through the periods cannot show an older answer.
+  const requestRef = useRef(0);
   const fetchLeaderboard = useCallback(async (selectedPeriod: PeriodType) => {
+    const id = ++requestRef.current;
     try {
       setLoading(true);
       setErrorMsg('');
       const res = await fetch(`/api/employee/leaderboard?period=${selectedPeriod}`);
       if (!res.ok) {
-        throw new Error(L('লিডারবোর্ড তথ্য লোড করতে ব্যর্থ হয়েছে'));
+        throw new Error(L('লিডারবোর্ড তথ্য লোড করতে ব্যর্থ হয়েছে', 'Could not load the leaderboard'));
       }
       const data = await res.json();
+      if (id !== requestRef.current) return;
       const list: LeaderboardItem[] = Array.isArray(data) ? data : data.leaderboard || [];
       setLeaderboard(list);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : L('ত্রুটি হয়েছে'));
+      if (id !== requestRef.current) return;
+      setLeaderboard([]);
+      setErrorMsg(err instanceof Error ? err.message : L('ত্রুটি হয়েছে', 'Something went wrong'));
     } finally {
-      setLoading(false);
+      if (id === requestRef.current) setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -167,13 +175,6 @@ export default function EmployeeLeaderboardPage() {
         }
       />
 
-      {errorMsg && (
-        <div className="alert alert-error">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{errorMsg}</span>
-        </div>
-      )}
-
       {/* Your position */}
       {loading ? (
         <div className="card flex items-center gap-4 p-5" aria-hidden>
@@ -208,17 +209,21 @@ export default function EmployeeLeaderboardPage() {
                 <span className="text-3xl font-semibold tracking-tight text-slate-900 tabular-nums">
                   {num(currentEmployee.total_score.toFixed(2))}
                 </span>
-                <span className="pb-1 text-xs text-slate-500 sm:pb-0">{L('/ ১০০ পয়েন্ট')}</span>
+                <span className="pb-1 text-xs text-slate-500 sm:pb-0">
+                  / {formatNum(100)} {L('পয়েন্ট', 'pts')}
+                </span>
               </div>
             </div>
 
             <div className="mt-4 flex items-start gap-2 rounded-xl border border-slate-200/80 bg-white/70 px-3.5 py-2.5 text-sm text-slate-700">
               <ArrowUp className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
               <span>
-                {currentEmployee.gap_text ||
-                  L(`পরবর্তী স্থান দখলের ব্যবধান: ${toBengaliDigits(
-                    (currentEmployee.gap_to_next ?? 0).toFixed(2)
-                  )} পয়েন্ট`)}
+                {currentEmployee.rank === 1
+                  ? L('আপনি এখন শীর্ষে! জায়গাটা ধরে রাখুন।', "You're at the top! Keep it up.")
+                  : L(
+                      `পরের র‍্যাঙ্কে উঠতে আর ${num((currentEmployee.gap_to_next ?? 0).toFixed(2))} পয়েন্ট দরকার`,
+                      `${num((currentEmployee.gap_to_next ?? 0).toFixed(2))} more points to move up a rank`
+                    )}
               </span>
             </div>
           </section>
@@ -261,12 +266,12 @@ export default function EmployeeLeaderboardPage() {
       <section className="card overflow-hidden">
         <div className="card-header">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-700">
+            <span className="icon-tile icon-tile-violet">
               <Users className="h-4 w-4" />
             </span>
             <h2 className="card-title">{L('সম্পূর্ণ র‍্যাঙ্কিং', 'Full ranking')}</h2>
           </div>
-          <span className="badge badge-gray tabular-nums">
+          <span className="badge badge-violet tabular-nums">
             {L('মোট মার্কেটার', 'Marketers')}: {num(leaderboard.length)}
           </span>
         </div>
@@ -283,18 +288,27 @@ export default function EmployeeLeaderboardPage() {
               </div>
             ))}
           </div>
+        ) : errorMsg ? (
+          <ErrorState title={errorMsg} onRetry={() => fetchLeaderboard(period)} />
         ) : leaderboard.length === 0 ? (
           <EmptyState
             icon={<Trophy className="h-5 w-5 text-amber-500" />}
             title={L('কোনো প্রতিযোগী পাওয়া যায়নি', 'No competitors found')}
-            description={L('এই সময়কালের জন্য কোনো স্কোর রেকর্ড পাওয়া যায়নি।', 'No leaderboard scores recorded for this period.')}
+            description={L('এই সময়কালের জন্য কোনো স্কোর রেকর্ড পাওয়া যায়নি। অন্য সময়কাল বেছে দেখুন।', 'No scores recorded for this period yet. Try another period.')}
+            action={
+              period !== 'thisMonth' ? (
+                <button type="button" onClick={() => setPeriod('thisMonth')} className="btn btn-secondary min-h-10">
+                  {L('এই মাস দেখুন', 'View this month')}
+                </button>
+              ) : undefined
+            }
           />
         ) : (
           <div className="overflow-x-auto">
             <table className="table-pro">
               <thead>
                 <tr>
-                  <th className="w-14 text-center">{L('র‍্যাঙ্ক')}</th>
+                  <th className="w-14 text-center">{L('র‍্যাঙ্ক', 'Rank')}</th>
                   <th>{L('মার্কেটার', 'Marketer')}</th>
                   {SECTION_COLS.map((c) => (
                     <th key={c.key} className="hidden text-center md:table-cell">
@@ -305,8 +319,10 @@ export default function EmployeeLeaderboardPage() {
                     </th>
                   ))}
                   <th className="text-right">
-                    {L('মোট স্কোর')}
-                    <span className="block text-[10px] font-normal normal-case text-slate-400">{L('(/১০০ pt)')}</span>
+                    {L('মোট স্কোর', 'Total score')}
+                    <span className="block text-[10px] font-normal normal-case text-slate-400">
+                      / {formatNum(100)} {L('পয়েন্ট', 'pts')}
+                    </span>
                   </th>
                 </tr>
               </thead>

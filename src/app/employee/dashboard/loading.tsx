@@ -1,15 +1,20 @@
+'use client';
+
 import { Skeleton, SkeletonStatCards } from '@/components/ui/Skeleton';
+import { useLanguage } from '@/components/LanguageContext';
 
 /**
  * Shown while the server renders the employee dashboard: header, quick stats,
  * the three shortcut tiles, the period bar, then the section cards.
  */
 export default function EmployeeDashboardLoading() {
+  const { L } = useLanguage();
   return (
     <div className="space-y-6" role="status" aria-busy="true">
+      <span className="sr-only">{L('ড্যাশবোর্ড লোড হচ্ছে...', 'Loading dashboard...')}</span>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex items-start gap-3">
-          <Skeleton className="h-10 w-10 rounded-xl" />
+          <Skeleton className="h-11 w-11 rounded-2xl" />
           <div className="space-y-2">
             <Skeleton className="h-6 w-48" />
             <Skeleton className="h-3.5 w-64" />

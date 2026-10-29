@@ -15,7 +15,7 @@ export default function EmptyState({
   return (
     <div className="animate-fade-up flex flex-col items-center justify-center px-6 py-12 text-center">
       {icon && (
-        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 ring-1 ring-slate-200/70">
+        <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-50 via-sky-50 to-violet-50 text-brand-600 ring-1 ring-brand-200/60">
           {icon}
         </div>
       )}

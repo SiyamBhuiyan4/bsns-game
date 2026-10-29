@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Calendar } from 'lucide-react';
+import React, { useState, useTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { Calendar, Loader2 } from 'lucide-react';
 import { DashboardPeriodKey } from '@/lib/dashboard';
 import { useLanguage } from '@/components/LanguageContext';
 
@@ -26,8 +26,12 @@ export default function DashboardPeriodSelector({
   currentTo,
 }: Props) {
   const router = useRouter();
+  // Stay on whichever dashboard rendered this (admin or employee).
+  const pathname = usePathname() || '/admin/dashboard';
   const searchParams = useSearchParams();
-  const { lang, L } = useLanguage();
+  const [isPending, startTransition] = useTransition();
+  const go = (url: string) => startTransition(() => router.push(url));
+  const { L } = useLanguage();
   const PERIOD_OPTIONS: PeriodOption[] = [
     { key: 'today', labelBn: L('আজ'), labelEn: 'Today' },
     { key: 'yesterday', labelBn: L('গতকাল'), labelEn: 'Yesterday' },
@@ -62,7 +66,7 @@ export default function DashboardPeriodSelector({
     params.set('period', period);
     params.delete('from');
     params.delete('to');
-    router.push(`/admin/dashboard?${params.toString()}`);
+    go(`${pathname}?${params.toString()}`);
   };
 
   const handleCustomApply = (e: React.FormEvent) => {
@@ -83,14 +87,25 @@ export default function DashboardPeriodSelector({
     params.set('period', 'custom');
     params.set('from', finalFrom);
     params.set('to', finalTo);
-    router.push(`/admin/dashboard?${params.toString()}`);
+    go(`${pathname}?${params.toString()}`);
   };
 
   return (
-    <div className="card flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between">
+    <div
+      className="card flex flex-col gap-3 px-4 py-3 lg:flex-row lg:items-center lg:justify-between"
+      aria-busy={isPending}
+    >
       <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-        <Calendar className="h-4 w-4 text-slate-400" />
+        <span className="icon-tile icon-tile-sky h-8 w-8 rounded-lg">
+          <Calendar className="h-4 w-4" />
+        </span>
         <span>{L('সময়কাল', 'Time Period')}</span>
+        {isPending && (
+          <span role="status" className="inline-flex items-center gap-1 text-xs font-normal text-slate-500">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-600" />
+            {L('লোড হচ্ছে...', 'Loading...')}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -112,14 +127,14 @@ export default function DashboardPeriodSelector({
         </div>
 
         {isCustomOpen && (
-          <form onSubmit={handleCustomApply} className="flex flex-wrap items-center gap-2">
+          <form onSubmit={handleCustomApply} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:flex sm:flex-wrap">
             <input
               type="date"
               aria-label={L('শুরুর তারিখ', 'Start Date')}
               value={fromDate}
               max={toDate || undefined}
               onChange={(e) => setFromDate(e.target.value)}
-              className="input w-auto py-1.5 text-xs"
+              className="input min-h-10 w-full py-1.5 text-sm sm:min-h-0 sm:w-auto sm:text-xs"
               required
             />
             <span className="text-xs text-slate-400">{L('থেকে', 'to')}</span>
@@ -129,10 +144,10 @@ export default function DashboardPeriodSelector({
               value={toDate}
               min={fromDate || undefined}
               onChange={(e) => setToDate(e.target.value)}
-              className="input w-auto py-1.5 text-xs"
+              className="input min-h-10 w-full py-1.5 text-sm sm:min-h-0 sm:w-auto sm:text-xs"
               required
             />
-            <button type="submit" className="btn btn-primary btn-sm">
+            <button type="submit" disabled={isPending} className="btn btn-primary btn-sm col-span-3 min-h-10 sm:min-h-0">
               {L('দেখুন', 'Apply')}
             </button>
           </form>

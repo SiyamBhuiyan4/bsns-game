@@ -46,7 +46,7 @@ export default function ThreeDPieChart({
   showCenterTotal = true,
   centerLabel,
   valueFormatter = (v) => v.toLocaleString(),
-  emptyMessage = 'কোনো তথ্য নেই (No data)',
+  emptyMessage,
 }: ThreeDPieChartProps) {
   const { L } = useLanguage();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -93,7 +93,7 @@ export default function ThreeDPieChart({
         <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-400">
           <PieChart className="h-5 w-5" aria-hidden />
         </div>
-        <p className="text-sm font-medium text-slate-700">{emptyMessage}</p>
+        <p className="text-sm font-medium text-slate-700">{emptyMessage ?? L('কোনো তথ্য নেই', 'No data')}</p>
         <p className="mt-1 text-xs text-slate-500">{L("এই সময়ে কোনো রেকর্ড নেই")}</p>
       </div>
     );

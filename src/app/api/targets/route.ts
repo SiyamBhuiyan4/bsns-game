@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { createAuditLog } from '@/lib/audit';
 import { checkTargetOverlap } from '@/lib/targets';
+import { getDhakaDateString, parseDateOnly } from '@/lib/date';
 import { MetricType, PeriodType, Prisma } from '@prisma/client';
 import { endOfMonth } from 'date-fns';
 import { z } from 'zod';
@@ -65,40 +66,47 @@ export async function GET(req: NextRequest) {
       orderBy: [{ period_start: 'desc' }, { created_at: 'desc' }],
     });
 
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    // Progress windows are Asia/Dhaka calendar days whatever the server timezone is.
+    // Daily entries are keyed by UTC-midnight dates; link completions are real instants.
+    const todayStr = getDhakaDateString();
+    const monthStartStr = `${todayStr.slice(0, 7)}-01`;
+    const [yy, mm] = todayStr.split('-').map(Number);
+    const monthEndStr = new Date(Date.UTC(yy, mm, 0)).toISOString().slice(0, 10);
+    const ymdOf = (d: Date | string) => new Date(d).toISOString().slice(0, 10);
 
     const targetsWithProgress = await Promise.all(
       targets.map(async (t) => {
         let achieved_value = 0;
         try {
-          const pStart =
+          const startStr =
             t.period_type === PeriodType.DAILY
-              ? todayStart
+              ? todayStr
               : t.period_start
-              ? new Date(t.period_start)
-              : monthStart;
-          const pEnd =
+              ? ymdOf(t.period_start)
+              : monthStartStr;
+          const endStr =
             t.period_type === PeriodType.DAILY
-              ? todayEnd
+              ? todayStr
               : t.period_end
-              ? new Date(t.period_end)
-              : monthEnd;
+              ? ymdOf(t.period_end)
+              : t.period_type === PeriodType.MONTHLY && t.period_start
+              ? new Date(Date.UTC(+startStr.slice(0, 4), +startStr.slice(5, 7), 0)).toISOString().slice(0, 10)
+              : monthEndStr;
 
           if (t.metric_type === MetricType.POSTS_DONE) {
             const completionWhere: any = {
               undone_at: null,
-              completed_at: { gte: pStart, lte: pEnd },
+              completed_at: {
+                gte: new Date(`${startStr}T00:00:00+06:00`),
+                lte: new Date(`${endStr}T23:59:59.999+06:00`),
+              },
             };
             if (t.employee_id) completionWhere.employee_id = t.employee_id;
             achieved_value = await prisma.linkCompletion.count({ where: completionWhere });
           } else {
             const entryWhere: any = {
               metric_type: t.metric_type,
-              entry_date: { gte: pStart, lte: pEnd },
+              entry_date: { gte: parseDateOnly(startStr), lte: parseDateOnly(endStr) },
             };
             if (t.employee_id) entryWhere.employee_id = t.employee_id;
             const entries = await prisma.dailyEntry.findMany({ where: entryWhere });
