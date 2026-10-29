@@ -46,6 +46,25 @@ describe('weekly quota', () => {
   });
 });
 
+describe('quota assigned mid-week', () => {
+  // Fri and Sat off, assigned on Thursday 5 November, the last working day.
+  const rule: QuotaRule = { period: 'WEEKLY', amount: 8, offDays: [5, 6], startDate: '2026-11-05' };
+
+  it('ignores work done before the quota was assigned', () => {
+    const r = dayRequirement(rule, '2026-11-05', { '2026-11-02': 1 });
+    expect(r.doneBeforeToday).toBe(0);
+    expect(r.isLastWorkingDay).toBe(true);
+    expect(r.mandatory).toBe(8);
+    expect(r.remaining).toBe(8);
+  });
+
+  it('counts work from the assignment day on', () => {
+    const r = dayRequirement(rule, '2026-11-05', { '2026-11-02': 1, '2026-11-05': 3 });
+    expect(r.doneToday).toBe(3);
+    expect(r.remaining).toBe(5);
+  });
+});
+
 describe('off days', () => {
   // Friday (5) off: six working days, Saturday is the last.
   const rule: QuotaRule = { period: 'WEEKLY', amount: 8, offDays: [5] };

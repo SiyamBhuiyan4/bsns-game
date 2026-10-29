@@ -22,9 +22,16 @@ export async function quotaStatuses(employeeIds?: string[], today = getDhakaDate
 
   const rules = quotas.map((q: any) => ({
     q,
-    rule: { period: q.period as QuotaPeriod, amount: Number(q.amount), offDays: (q.off_days ?? []) as number[] },
+    rule: { period: q.period as QuotaPeriod, amount: Number(q.amount), offDays: (q.off_days ?? []) as number[],
+      startDate: q.created_at ? getDhakaDateString(new Date(q.created_at)) : undefined,
+    },
   }));
-  const earliest = rules.map(({ rule }) => lookbackStart(rule, today)).sort()[0];
+  const earliest = rules
+    .map(({ rule }) => {
+      const start = lookbackStart(rule, today);
+      return rule.startDate && rule.startDate > start ? rule.startDate : start;
+    })
+    .sort()[0];
 
   const completions = await prisma.linkCompletion.findMany({
     where: {

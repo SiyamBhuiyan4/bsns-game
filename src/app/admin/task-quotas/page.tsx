@@ -24,6 +24,7 @@ interface QuotaRow {
   normal: number;
   normalLeft: number;
   doneToday: number;
+  doneBeforeToday: number;
   remaining: number;
   windowEnd: string;
   isLastWorkingDay: boolean;
@@ -253,6 +254,7 @@ export default function TaskQuotasPage() {
                   <th>{L('আজ বাধ্যতামূলক', 'Mandatory today')}</th>
                   <th className="text-right">{L('আজ সাধারণ', 'Normal today')}</th>
                   <th className="text-right">{L('আজ সম্পন্ন', 'Done today')}</th>
+                  <th className="text-right">{L('এই সপ্তাহে সম্পন্ন', 'Done this week')}</th>
                   <th className="text-right">{L('বাকি', 'Remaining')}</th>
                   <th className="w-12"><span className="sr-only">{L('কাজ', 'Actions')}</span></th>
                 </tr>
@@ -287,6 +289,7 @@ export default function TaskQuotasPage() {
                     </td>
                     <td className="text-right tabular-nums">{q.normal - q.normalLeft}/{q.normal}</td>
                     <td className="text-right tabular-nums">{q.doneToday}</td>
+                    <td className="text-right tabular-nums">{q.doneBeforeToday + q.doneToday}</td>
                     <td className="text-right tabular-nums">
                       <span className="font-medium text-slate-900">{q.remaining}</span>
                       <div className="text-xs text-slate-500">{L('শেষ', 'by')} {q.windowEnd}</div>

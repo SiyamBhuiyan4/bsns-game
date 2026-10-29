@@ -29,6 +29,8 @@ export interface QuotaRule {
   amount: number;
   /** Weekdays off, 0 = Sunday ... 6 = Saturday. */
   offDays: number[];
+  /** Day the quota was assigned. Work done before it does not count toward it. */
+  startDate?: string;
 }
 
 export interface DayRequirement {
@@ -106,7 +108,10 @@ function baseShare(quota: number, workingDays: number): number {
  *
  * @param doneByDate completed tasks per Dhaka date (undone ones excluded)
  */
-export function dayRequirement(rule: QuotaRule, today: string, doneByDate: Record<string, number>): DayRequirement {
+export function dayRequirement(rule: QuotaRule, today: string, allDone: Record<string, number>): DayRequirement {
+  const doneByDate = rule.startDate
+    ? Object.fromEntries(Object.entries(allDone).filter(([d]) => d >= rule.startDate!))
+    : allDone;
   const amount = Math.max(0, Math.floor(rule.amount));
   const off = new Set(rule.offDays.filter((d) => d >= 0 && d <= 6));
   const isWorking = (d: string) => !off.has(weekday(d));
