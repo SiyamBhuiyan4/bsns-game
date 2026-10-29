@@ -25,7 +25,7 @@ import StatCard from '@/components/ui/StatCard';
 import EmptyState from '@/components/ui/EmptyState';
 import { SkeletonStatCards, SkeletonTable } from '@/components/ui/Skeleton';
 import { useLanguage } from '@/components/LanguageContext';
-import Avatar from '@/components/ui/Avatar';
+import Avatar, { AVATAR_PALETTE, avatarIndex } from '@/components/ui/Avatar';
 
 interface Section {
   id: string;
@@ -415,8 +415,8 @@ export default function SectionsPage() {
                 <tr>
                   <th>{t('sec.col_name', 'সেকশন', 'Section')}</th>
                   <th>{t('sec.col_desc', 'বিবরণ', 'Description')}</th>
-                  <th className="text-right">{t('sec.col_links', 'লিংক (সক্রিয়/মোট)', 'Links (active/total)')}</th>
-                  <th className="text-right">{t('sec.col_team', 'কর্মী', 'Employees')}</th>
+                  <th>{t('sec.col_links', 'লিংক (সক্রিয়/মোট)', 'Links (active/total)')}</th>
+                  <th>{t('sec.col_team', 'কর্মী', 'Employees')}</th>
                   <th>{t('sec.col_status', 'স্ট্যাটাস', 'Status')}</th>
                   <th className="text-right">
                     <span className="sr-only">{t('sec.col_actions', 'কার্যক্রম', 'Actions')}</span>
@@ -424,28 +424,45 @@ export default function SectionsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredSections.map((sec) => (
-                  <tr key={sec.id}>
-                    <td className="font-medium text-slate-900">
-                      <Link href={`/admin/sections/${sec.id}`} className="hover:text-brand-700 hover:underline">
-                        {sec.name}
+                {filteredSections.map((sec) => {
+                  const tone = AVATAR_PALETTE[avatarIndex(sec.name)];
+                  const linkPct = sec.total_links > 0 ? Math.round((sec.active_links / sec.total_links) * 100) : 0;
+                  return (
+                  <tr key={sec.id} className="group">
+                    <td>
+                      <Link href={`/admin/sections/${sec.id}`} className="flex items-center gap-3">
+                        <span
+                          aria-hidden
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-sm transition-transform duration-200 group-hover:scale-105"
+                          style={{ backgroundImage: `linear-gradient(135deg, ${tone.from}, ${tone.to})`, boxShadow: `0 4px 12px -4px ${tone.glow}` }}
+                        >
+                          <Layers className="h-4 w-4" />
+                        </span>
+                        <span className="font-semibold capitalize text-slate-900 group-hover:text-brand-700">{sec.name}</span>
                       </Link>
                     </td>
-                    <td className="max-w-xs truncate text-slate-500">{sec.description || '—'}</td>
-                    <td className="text-right tabular-nums">
-                      <span className="font-medium text-slate-900">{sec.active_links}</span>
-                      <span className="text-slate-400"> / {sec.total_links}</span>
+                    <td className="max-w-xs truncate text-slate-500">
+                      {sec.description || <span className="text-xs italic text-slate-400">{t('sec.no_desc', 'বিবরণ নেই', 'No description')}</span>}
                     </td>
-                    <td className="text-right tabular-nums">
+                    <td className="w-44">
+                      <div className="flex items-baseline gap-1 tabular-nums">
+                        <span className="font-semibold text-slate-900">{sec.active_links}</span>
+                        <span className="text-xs text-slate-400">/ {sec.total_links}</span>
+                      </div>
+                      <div className="mt-1.5 h-1.5 w-28 overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-teal-500" style={{ width: `${linkPct}%` }} />
+                      </div>
+                    </td>
+                    <td>
                       <button
                         type="button"
                         onClick={() => handleOpenAssign(sec)}
-                        className="btn btn-ghost btn-sm tabular-nums"
+                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700 ring-1 ring-inset ring-sky-600/15 transition-colors hover:bg-sky-100 tabular-nums"
                         title={t('sec.assign_employees', 'কর্মী এসাইন করুন', 'Assign employees')}
                         aria-label={`${t('sec.assign_employees', 'কর্মী এসাইন করুন', 'Assign employees')}: ${sec.assigned_employees}`}
                       >
-                        <Users className="h-3.5 w-3.5 text-slate-400" />
-                        <span className="font-medium text-slate-900">{sec.assigned_employees}</span>
+                        <Users className="h-3.5 w-3.5" />
+                        {sec.assigned_employees}
                       </button>
                     </td>
                     <td>
@@ -468,7 +485,7 @@ export default function SectionsPage() {
                         <button
                           type="button"
                           onClick={() => handleOpenAssign(sec)}
-                          className="btn-icon h-8 w-8"
+                          className="btn-icon h-8 w-8 hover:bg-sky-50 hover:text-sky-600"
                           title={t('sec.assign_employees', 'কর্মী এসাইন করুন', 'Assign employees')}
                           aria-label={t('sec.assign_employees', 'কর্মী এসাইন করুন', 'Assign employees')}
                         >
@@ -478,7 +495,7 @@ export default function SectionsPage() {
                         {/* Upload CSV */}
                         <Link
                           href={`/admin/sections/${sec.id}/upload`}
-                          className="btn-icon h-8 w-8"
+                          className="btn-icon h-8 w-8 hover:bg-emerald-50 hover:text-emerald-600"
                           title={t('sec.upload_csv', 'CSV আপলোড', 'Upload CSV')}
                           aria-label={t('sec.upload_csv', 'CSV আপলোড', 'Upload CSV')}
                         >
@@ -495,7 +512,7 @@ export default function SectionsPage() {
                             setEditActive(sec.is_active);
                             setErrorMessage(null);
                           }}
-                          className="btn-icon h-8 w-8"
+                          className="btn-icon h-8 w-8 hover:bg-violet-50 hover:text-violet-600"
                           title={t('common.edit', 'সম্পাদনা', 'Edit')}
                           aria-label={t('common.edit', 'সম্পাদনা', 'Edit')}
                         >
@@ -518,7 +535,8 @@ export default function SectionsPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
