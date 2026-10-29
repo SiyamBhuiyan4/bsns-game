@@ -70,12 +70,20 @@ export async function GET(
       }
     }
 
-    // Full unmasked phone is returned on single detail page for authorized user (Admin or Lead Owner)
+    // Full unmasked phone is returned on single detail page for authorized user (Admin or Lead Owner).
+    // Everyone else gets the masked number, and no colleague contact details, prices or budgets.
+    const isAdmin = session.role === 'ADMIN';
+    const isOwner = lead.owner_id === session.userId;
+    const { owner, campaign, product, ...rest } = lead as any;
     return NextResponse.json({
       lead: {
-        ...lead,
+        ...rest,
+        phone: isAdmin || isOwner ? lead.phone : maskPhone(lead.phone),
+        owner: owner ? (isAdmin ? owner : { id: owner.id, name: owner.name }) : null,
+        campaign: campaign ? (isAdmin ? campaign : { id: campaign.id, name: campaign.name }) : null,
+        product: product ? (isAdmin ? product : { id: product.id, name_bn: product.name_bn, name_en: product.name_en }) : null,
         owner_name: lead.owner?.name,
-        owner_email: lead.owner?.email,
+        owner_email: isAdmin ? lead.owner?.email : undefined,
         order_amount: lead.order_amount ? Number(lead.order_amount) : null,
         expected_value: lead.expected_value ? Number(lead.expected_value) : null,
         masked_phone: maskPhone(lead.phone),

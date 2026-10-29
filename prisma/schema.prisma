@@ -129,6 +129,7 @@ model User {
   phone         String?
   is_active     Boolean      @default(true)
   can_view_all_customers Boolean @default(false)
+  password_changed_at    DateTime? // sessions issued before this are rejected
   created_at    DateTime     @default(now())
   updated_at    DateTime     @updatedAt
 

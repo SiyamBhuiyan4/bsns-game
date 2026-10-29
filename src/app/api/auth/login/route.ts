@@ -4,6 +4,10 @@ import prisma from '@/lib/prisma';
 import { verifyPassword, signToken } from '@/lib/auth';
 import { setSessionCookie } from '@/lib/session';
 import { checkRateLimit, resetRateLimit } from '@/lib/rate-limit';
+import { clientIp } from '@/lib/client-ip';
+
+// bcrypt hash of a random string nobody knows; compared against when the account does not exist.
+const DUMMY_HASH = '$2b$12$dzRpfAKNFDfY.qT324ZcseEfW3mnouJmZP/W6VnCIDChJDoZxdQIq';
 import { createAuditLog } from '@/lib/audit';
 
 const loginSchema = z.object({
@@ -14,10 +18,9 @@ const loginSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // 1. IP extraction and Rate Limiting
-    const forwardedFor = request.headers.get('x-forwarded-for');
-    const realIp = request.headers.get('x-real-ip');
-    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : (realIp?.trim() || '127.0.0.1');
-    
+    // The leftmost X-Forwarded-For entry is whatever the client sent; clientIp reads the one the platform set.
+    const ip = clientIp(request);
+
     const rateCheck = checkRateLimit(ip, 5, 60 * 1000);
     if (!rateCheck.allowed) {
       return NextResponse.json(
@@ -49,57 +52,65 @@ export async function POST(request: NextRequest) {
     }
 
     const { email, password } = parseResult.data;
+    const accountKey = `acct:${email.toLowerCase().trim()}`;
+
+    // Per-account limit as well, so one email cannot be guessed from many addresses.
+    const accountCheck = checkRateLimit(accountKey, 10, 15 * 60 * 1000);
+    if (!accountCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: `অতিরিক্ত চেষ্টার কারণে লগইন সাময়িক বন্ধ আছে। দয়া করে ${accountCheck.resetSeconds} সেকেন্ড পর চেষ্টা করুন। (Too many attempts. Please try again in ${accountCheck.resetSeconds}s)`,
+        },
+        { status: 429, headers: { 'Retry-After': String(accountCheck.resetSeconds) } }
+      );
+    }
 
     // 3. Lookup user
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase().trim() },
     });
 
-    // Admins sign in through the separate passcode page (/admin-login)
-    if (!user || user.role === 'ADMIN') {
+    // 4. Verify password. A missing or admin account still pays for one bcrypt check, so the
+    // response time does not reveal which emails exist. Admins sign in through /admin-login.
+    const candidate = user && user.role !== 'ADMIN' ? user : null;
+    const isPasswordValid = await verifyPassword(password, candidate?.password_hash ?? DUMMY_HASH);
+    if (!candidate || !isPasswordValid) {
       return NextResponse.json(
         { error: 'ইমেইল বা পাসওয়ার্ড সঠিক নয় / Invalid email or password' },
         { status: 401 }
       );
     }
 
-    if (!user.is_active) {
+    // Only someone who knows the password learns the account is switched off.
+    if (!candidate.is_active) {
       return NextResponse.json(
         { error: 'আপনার অ্যাকাউন্টটি নিষ্ক্রিয় করা হয়েছে। অ্যাডমিনের সাথে যোগাযোগ করুন। / Your account is deactivated.' },
         { status: 403 }
       );
     }
 
-    // 4. Verify password
-    const isPasswordValid = await verifyPassword(password, user.password_hash);
-    if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: 'ইমেইল বা পাসওয়ার্ড সঠিক নয় / Invalid email or password' },
-        { status: 401 }
-      );
-    }
-
     // Reset rate limit on success
     resetRateLimit(ip);
+    resetRateLimit(accountKey);
 
     // 5. Generate token & set cookie
     const token = await signToken({
-      userId: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      phone: user.phone,
+      userId: candidate.id,
+      name: candidate.name,
+      email: candidate.email,
+      role: candidate.role,
+      phone: candidate.phone,
     });
 
     await setSessionCookie(token);
 
     // 6. Log audit
     await createAuditLog({
-      actorId: user.id,
+      actorId: candidate.id,
       action: 'LOGIN',
       entity: 'User',
-      entityId: user.id,
-      payload: { email: user.email, role: user.role, ip },
+      entityId: candidate.id,
+      payload: { email: candidate.email, role: candidate.role, ip },
     });
 
     const redirectUrl = '/employee/dashboard';
@@ -107,11 +118,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        phone: user.phone,
+        id: candidate.id,
+        name: candidate.name,
+        email: candidate.email,
+        role: candidate.role,
+        phone: candidate.phone,
       },
       redirectUrl,
     });

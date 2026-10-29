@@ -664,7 +664,7 @@ const passwordCommand: AgentCommand = {
     const password_hash = await hashPassword(newPassword);
     await prisma.user.update({
       where: { id: employee.id },
-      data: { password_hash },
+      data: { password_hash, password_changed_at: new Date() },
     });
 
     await createAuditLog({

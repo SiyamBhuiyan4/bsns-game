@@ -209,7 +209,7 @@ export async function POST(req: NextRequest) {
                 off_days,
                 set_by: session.id,
               },
-              include: { section: true, employee: true },
+              include: { section: true, employee: { select: { id: true, name: true, email: true } } },
             });
 
             // Clean up any duplicate records in DB for this exact same target
@@ -234,7 +234,7 @@ export async function POST(req: NextRequest) {
                 off_days,
                 set_by: session.id,
               },
-              include: { section: true, employee: true },
+              include: { section: true, employee: { select: { id: true, name: true, email: true } } },
             });
           }
 
@@ -342,7 +342,7 @@ export async function POST(req: NextRequest) {
               period_end: pEnd,
               set_by: session.id,
             },
-            include: { section: true, employee: true },
+            include: { section: true, employee: { select: { id: true, name: true, email: true } } },
           });
 
           if (metric_type === MetricType.POSTS_DONE && employee_id && section_id) {
@@ -403,7 +403,7 @@ export async function POST(req: NextRequest) {
       },
       include: {
         section: true,
-        employee: true,
+        employee: { select: { id: true, name: true, email: true } },
       },
     });
 

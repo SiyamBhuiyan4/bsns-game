@@ -128,7 +128,11 @@ export async function GET(request: NextRequest) {
       conditions.push({
         OR: [
           { name: { contains: searchQuery, mode: 'insensitive' } },
-          { phone: { contains: searchQuery } },
+          // Non-admins see masked numbers, so a partial-number search would let them
+          // recover the hidden digits one at a time; they can only match a full number.
+          session.role === 'ADMIN'
+            ? { phone: { contains: searchQuery } }
+            : { phone: normalizePhone(searchQuery) },
           { source_channel: { contains: searchQuery, mode: 'insensitive' } },
         ],
       });
@@ -171,7 +175,7 @@ export async function GET(request: NextRequest) {
         campaign: l.campaign,
         source_channel: l.source_channel,
         owner_name: l.owner.name,
-        owner_email: l.owner.email,
+        owner_email: isAdmin ? l.owner.email : undefined,
         status: l.status,
         quality_rating: l.quality_rating,
         expected_value: l.expected_value ? Number(l.expected_value) : null,

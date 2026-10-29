@@ -102,7 +102,7 @@ describe('Customer & Lead System Enhancements (BST Dates, Phone Uniqueness, Data
       expect(data.valid).toBe(true);
     });
 
-    it('returns exists: true with leadName and ownerName for an existing customer phone', async () => {
+    it("tells another employee only that the number exists, not whose customer it is", async () => {
       mockSessionUser.id = employeeB.id;
       mockSessionUser.userId = employeeB.id;
       mockSessionUser.role = 'EMPLOYEE';
@@ -113,8 +113,9 @@ describe('Customer & Lead System Enhancements (BST Dates, Phone Uniqueness, Data
 
       expect(res.status).toBe(200);
       expect(data.exists).toBe(true);
-      expect(data.leadName).toBe('Rahim Traders');
-      expect(data.ownerName).toBe('Employee Alpha');
+      expect(data.leadName).toBeUndefined();
+      expect(data.ownerName).toBeUndefined();
+      expect(data.leadId).toBeUndefined();
     });
 
     it('POST /api/leads blocks creation if phone number already exists', async () => {

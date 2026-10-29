@@ -34,6 +34,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ exists: false, valid: true });
     }
 
+    // An employee learns only that the number is taken unless the customer is their own;
+    // otherwise typing numbers here would reveal other people's customers.
+    const isOwnLead = existing.owner_id === session.userId;
+    if (session.role !== 'ADMIN' && !isOwnLead) {
+      return NextResponse.json({ exists: true, valid: true, isOwnLead: false });
+    }
+
     return NextResponse.json({
       exists: true,
       valid: true,
@@ -42,7 +49,7 @@ export async function GET(request: NextRequest) {
       ownerName: existing.owner?.name || L('সিস্টেম'),
       ownerEmail: session.role === 'ADMIN' ? existing.owner?.email : undefined,
       status: existing.status,
-      isOwnLead: existing.owner_id === session.userId,
+      isOwnLead,
       createdAt: existing.created_at,
     });
   } catch (error) {

@@ -37,6 +37,9 @@ async function verifyAuth(request: NextRequest): Promise<TokenPayload | null> {
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
+/** API paths reachable without a session. */
+const PUBLIC_API = ['/api/auth/login', '/api/auth/admin-login', '/api/auth/logout', '/api/cron'];
+
 
 /**
  * Cross-site request check for anything that writes.
@@ -95,7 +98,25 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // A ceiling on reads too, so one IP cannot scrape every list in a loop.
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/cron') && !MUTATING.has(request.method)) {
+    const read = checkRateLimit(`read:${clientIp(request)}`, 240, 60 * 1000);
+    if (!read.allowed) {
+      return NextResponse.json(
+        { error: 'অনেক বেশি অনুরোধ, কিছুক্ষণ পর চেষ্টা করুন / Too many requests' },
+        { status: 429, headers: { 'Retry-After': String(read.resetSeconds) } }
+      );
+    }
+  }
+
   const user = await verifyAuth(request);
+
+  // Every API route needs a valid session except signing in and out and the cron jobs
+  // (which check their own secret). Routes check again themselves; this is the backstop
+  // so a route that forgets its check still answers nothing without a login.
+  if (pathname.startsWith('/api/') && !user && !PUBLIC_API.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
+    return NextResponse.json({ error: 'লগইন করা নেই / Unauthorized' }, { status: 401 });
+  }
 
   // Protect /api/admin/* API routes
   if (pathname.startsWith('/api/admin')) {

@@ -13,9 +13,15 @@ export async function isSessionAccountActive(session: SessionUser): Promise<bool
   if (session.role !== 'EMPLOYEE') return true;
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { is_active: true, role: true },
+    select: { is_active: true, role: true, password_changed_at: true },
   });
-  return !!user && user.is_active !== false && user.role === 'EMPLOYEE';
+  if (!user || user.is_active === false || user.role !== 'EMPLOYEE') return false;
+  // A password reset signs out every session that was opened with the old password.
+  if (user.password_changed_at && session.iat !== undefined) {
+    const changedAt = Math.floor(new Date(user.password_changed_at).getTime() / 1000);
+    if (session.iat < changedAt) return false;
+  }
+  return true;
 }
 
 export async function getSession(): Promise<SessionUser | null> {

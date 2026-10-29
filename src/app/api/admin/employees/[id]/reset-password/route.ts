@@ -36,7 +36,7 @@ export async function POST(
 
     await prisma.user.update({
       where: { id },
-      data: { password_hash },
+      data: { password_hash, password_changed_at: new Date() },
     });
 
     await createAuditLog({

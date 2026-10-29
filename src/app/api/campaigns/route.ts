@@ -35,6 +35,10 @@ export async function GET(req: NextRequest) {
   if (!session) {
     return NextResponse.json({ error: 'লগইন করা নেই' }, { status: 401 });
   }
+  // Budgets, spend and owners are admin information.
+  if (session.role !== 'ADMIN') {
+    return NextResponse.json({ error: 'অনুমতি নেই / Forbidden' }, { status: 403 });
+  }
 
   try {
     const campaigns = await prisma.campaign.findMany({

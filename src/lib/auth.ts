@@ -12,6 +12,8 @@ export interface SessionUser {
   email: string;
   role: 'ADMIN' | 'EMPLOYEE';
   phone?: string | null;
+  /** When the token was issued, in seconds since the epoch. */
+  iat?: number;
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -50,6 +52,7 @@ export async function verifyToken(token: string): Promise<SessionUser | null> {
       email: payload.email as string,
       role: payload.role as 'ADMIN' | 'EMPLOYEE',
       phone: (payload.phone as string) || null,
+      iat: typeof payload.iat === 'number' ? payload.iat : undefined,
     };
   } catch {
     return null;

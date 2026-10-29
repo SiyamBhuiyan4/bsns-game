@@ -25,6 +25,13 @@ describe('getSession account check', () => {
     expect((await getSession())?.userId).toBe(emp.id);
   });
 
+  it('rejects a token issued before the password was reset, and accepts a new one', async () => {
+    await prisma.user.update({ where: { id: emp.id }, data: { password_changed_at: new Date(Date.now() + 2000) } });
+    expect(await getSession()).toBeNull();
+    await prisma.user.update({ where: { id: emp.id }, data: { password_changed_at: new Date(Date.now() - 60_000) } });
+    expect((await getSession())?.userId).toBe(emp.id);
+  });
+
   it('rejects the same token once the employee is deactivated', async () => {
     await prisma.user.update({ where: { id: emp.id }, data: { is_active: false } });
     expect(await getSession()).toBeNull();

@@ -417,8 +417,9 @@ export async function getAdminDashboardData(filter: DashboardFilter = {}): Promi
     allGroupLinks,
     assignments,
   ] = await Promise.all([
+    // An employee's own dashboard must not carry colleagues' names and emails to the browser.
     prisma.user.findMany({
-      where: { role: 'EMPLOYEE', is_active: true },
+      where: { role: 'EMPLOYEE', is_active: true, ...(filter.employeeId ? { id: filter.employeeId } : {}) },
       select: { id: true, name: true, email: true },
       orderBy: { name: 'asc' },
     }),

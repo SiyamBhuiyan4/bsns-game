@@ -27,6 +27,9 @@ export async function GET(req: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    if (session.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'অনুমতি নেই / Forbidden' }, { status: 403 });
+    }
 
     const { searchParams } = new URL(req.url);
     const month = searchParams.get('month') || getDhakaDateString().slice(0, 7);

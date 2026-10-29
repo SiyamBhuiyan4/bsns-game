@@ -218,11 +218,9 @@ export default function EmployeeLeadsPage() {
         const data = await res.json();
         if (data.exists) {
           const ownerDisplay = data.ownerName || L('অন্য কর্মী', 'another employee');
-          const nameDisplay = data.leadName || L('নাম নেই', 'no name');
-          const msg = L(
-            `পুরাতন কাস্টমার: ${nameDisplay} · যোগ করেছেন: ${ownerDisplay}`,
-            `Existing customer: ${nameDisplay} · added by ${ownerDisplay}`
-          );
+          const msg = data.leadName
+            ? L(`পুরাতন কাস্টমার: ${data.leadName} · যোগ করেছেন: ${ownerDisplay}`, `Existing customer: ${data.leadName} · added by ${ownerDisplay}`)
+            : L('এই নম্বরটি আগে থেকেই সেভ করা আছে', 'This number is already saved');
           setPhoneWarning(msg);
           setPhoneCheckResult({
             checked: true,

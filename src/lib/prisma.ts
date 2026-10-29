@@ -25,7 +25,7 @@ const NOW = () => new Date();
 
 const MODELS: Record<ModelName, ModelDef> = {
   user: {
-    table: 'User', dates: ['created_at', 'updated_at'], hasUpdatedAt: true,
+    table: 'User', dates: ['created_at', 'updated_at', 'password_changed_at'], hasUpdatedAt: true,
     defaults: { role: 'EMPLOYEE', phone: null, is_active: true, created_at: NOW },
     unique: [['email']],
     relations: {
