@@ -11,8 +11,8 @@ import {
   XCircle,
   AlertCircle,
   Loader2,
-  Copy,
   Check,
+  EyeOff,
   Search,
   Phone,
   Mail,
@@ -97,9 +97,12 @@ export default function EmployeesPage() {
 
   // Reset Password Modal
   const [resetEmp, setResetEmp] = useState<EmployeeItem | null>(null);
-  const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetDone, setResetDone] = useState(false);
   const [resetSubmitting, setResetSubmitting] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   // Employee Work Profile Modal
   const [workModalEmp, setWorkModalEmp] = useState<EmployeeItem | null>(null);
@@ -279,32 +282,48 @@ export default function EmployeesPage() {
     }
   };
 
-  const handleResetPassword = async () => {
+  const openReset = (emp: EmployeeItem) => {
+    setResetEmp(emp);
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setResetError(null);
+    setResetDone(false);
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!resetEmp) return;
+    if (newPassword.length < 6) {
+      setResetError(t('emp.pw_short', 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে', 'Password must be at least 6 characters'));
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setResetError(t('emp.pw_mismatch', 'দুটি পাসওয়ার্ড মেলেনি', 'The two passwords do not match'));
+      return;
+    }
     setResetSubmitting(true);
-    setTempPassword(null);
+    setResetError(null);
 
     try {
       const res = await fetch(`/api/admin/employees/${resetEmp.id}/reset-password`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        setTempPassword(data.temporaryPassword);
+        setResetDone(true);
+        setNewPassword('');
+        setConfirmPassword('');
       } else {
-        setErrorMessage(data.error || L('পাসওয়ার্ড রিসেট ব্যর্থ হয়েছে'));
+        setResetError(data.error || L('পাসওয়ার্ড রিসেট ব্যর্থ হয়েছে'));
       }
     } catch {
-      setErrorMessage(L('নেটওয়ার্ক ত্রুটি'));
+      setResetError(L('নেটওয়ার্ক ত্রুটি'));
     } finally {
       setResetSubmitting(false);
     }
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   const filteredEmployees = employees.filter(
@@ -512,11 +531,7 @@ export default function EmployeesPage() {
 
                         {/* Reset Password */}
                         <button
-                          onClick={() => {
-                            setResetEmp(emp);
-                            setTempPassword(null);
-                            setErrorMessage(null);
-                          }}
+                          onClick={() => openReset(emp)}
                           className="btn-icon h-8 w-8"
                           title={t('emp.reset', 'পাসওয়ার্ড রিসেট', 'Reset password')}
                           aria-label={t('emp.reset', 'পাসওয়ার্ড রিসেট', 'Reset password')}
@@ -881,57 +896,90 @@ export default function EmployeesPage() {
               </div>
             </div>
 
-            {tempPassword ? (
+            {resetDone ? (
               <>
-                <div className="card-body space-y-3">
-                  <label className="label">{t('emp.temp_pw', 'সাময়িক পাসওয়ার্ড', 'Temporary password')}</label>
-                  <div className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                    <span className="font-mono text-base font-semibold text-slate-900 break-all">{tempPassword}</span>
-                    <button onClick={() => copyToClipboard(tempPassword)} className="btn btn-secondary btn-sm">
-                      {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                      {copied ? t('common.copied', 'কপি হয়েছে', 'Copied') : t('common.copy', 'কপি', 'Copy')}
-                    </button>
-                  </div>
-                  <div className="alert alert-warning">
-                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>{t('emp.temp_pw_note', 'এটি একবারই দেখানো হবে। কর্মীকে পৌঁছে দিন।', 'Shown only once. Share it with the employee.')}</span>
+                <div className="card-body">
+                  <div className="alert alert-success">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>
+                      {t(
+                        'emp.pw_set',
+                        'নতুন পাসওয়ার্ড সেট হয়েছে। আগের পাসওয়ার্ড আর কাজ করবে না। কর্মীকে নতুনটি জানিয়ে দিন।',
+                        'New password set. The old one no longer works. Let the employee know the new one.'
+                      )}
+                    </span>
                   </div>
                 </div>
-
                 <div className="flex justify-end border-t border-slate-100 px-5 py-4">
-                  <button
-                    onClick={() => {
-                      setResetEmp(null);
-                      setTempPassword(null);
-                    }}
-                    className="btn btn-secondary"
-                  >
+                  <button type="button" onClick={() => setResetEmp(null)} className="btn btn-secondary">
                     {t('common.close', 'বন্ধ করুন', 'Close')}
                   </button>
                 </div>
               </>
             ) : (
-              <>
-                <div className="card-body">
-                  <p className="text-sm text-slate-600">
-                    {t(
-                      'emp.reset_desc',
-                      'একটি নতুন সাময়িক পাসওয়ার্ড তৈরি হবে এবং আগের পাসওয়ার্ড বাতিল হবে।',
-                      'A new temporary password will be generated and the old one will stop working.'
-                    )}
-                  </p>
+              <form onSubmit={handleResetPassword}>
+                <div className="card-body space-y-4">
+                  <div>
+                    <label htmlFor="reset-new-pw" className="label">
+                      {t('emp.new_pw', 'নতুন পাসওয়ার্ড', 'New password')}
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="reset-new-pw"
+                        type={showPassword ? 'text' : 'password'}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="input pr-10"
+                        autoComplete="new-password"
+                        minLength={6}
+                        maxLength={128}
+                        required
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        className="btn-icon absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2"
+                        aria-label={showPassword ? t('emp.hide_pw', 'পাসওয়ার্ড লুকান', 'Hide password') : t('emp.show_pw', 'পাসওয়ার্ড দেখুন', 'Show password')}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">{t('emp.pw_hint', 'কমপক্ষে ৬ অক্ষর', 'At least 6 characters')}</p>
+                  </div>
+                  <div>
+                    <label htmlFor="reset-confirm-pw" className="label">
+                      {t('emp.confirm_pw', 'পাসওয়ার্ড আবার লিখুন', 'Confirm password')}
+                    </label>
+                    <input
+                      id="reset-confirm-pw"
+                      type={showPassword ? 'text' : 'password'}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="input"
+                      autoComplete="new-password"
+                      maxLength={128}
+                      required
+                    />
+                  </div>
+                  {resetError && (
+                    <div className="alert alert-error">
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span>{resetError}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4">
                   <button type="button" onClick={() => setResetEmp(null)} className="btn btn-secondary">
                     {t('common.cancel', 'বাতিল', 'Cancel')}
                   </button>
-                  <button type="button" onClick={handleResetPassword} disabled={resetSubmitting} className="btn btn-primary">
-                    {resetSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                    {t('emp.generate', 'পাসওয়ার্ড তৈরি', 'Generate')}
+                  <button type="submit" disabled={resetSubmitting} className="btn btn-primary">
+                    {resetSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                    {t('emp.set_pw', 'পাসওয়ার্ড সেট করুন', 'Set password')}
                   </button>
                 </div>
-              </>
+              </form>
             )}
           </div>
         </div>

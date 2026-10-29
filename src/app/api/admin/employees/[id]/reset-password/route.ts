@@ -1,12 +1,15 @@
-import { randomInt } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/session';
 import { hashPassword } from '@/lib/auth';
 import { createAuditLog } from '@/lib/audit';
+import { z } from 'zod';
 
+const bodySchema = z.object({ password: z.string().min(6).max(128) });
+
+/** Set an employee's password to one the admin chose. */
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
@@ -15,6 +18,13 @@ export async function POST(
   }
 
   const { id } = await params;
+  const parsed = bodySchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'পাসওয়ার্ড ৬ থেকে ১২৮ অক্ষরের হতে হবে / Password must be 6 to 128 characters' },
+      { status: 400 }
+    );
+  }
 
   try {
     const employee = await prisma.user.findUnique({ where: { id } });
@@ -22,14 +32,7 @@ export async function POST(
       return NextResponse.json({ error: 'কর্মী পাওয়া যায়নি' }, { status: 404 });
     }
 
-    // Generate random 8-character temporary password
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
-    let tempPassword = '';
-    for (let i = 0; i < 10; i++) {
-      tempPassword += chars.charAt(randomInt(chars.length));
-    }
-
-    const password_hash = await hashPassword(tempPassword);
+    const password_hash = await hashPassword(parsed.data.password);
 
     await prisma.user.update({
       where: { id },
@@ -46,8 +49,7 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      temporaryPassword: tempPassword,
-      message: 'সাময়িক পাসওয়ার্ড তৈরি করা হয়েছে। এটি শুধুমাত্র একবার দেখানো হবে।',
+      message: 'নতুন পাসওয়ার্ড সেট হয়েছে / New password set',
     });
   } catch (error) {
     console.error('Password reset error:', error);

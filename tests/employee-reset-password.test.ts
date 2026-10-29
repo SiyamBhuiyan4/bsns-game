@@ -86,6 +86,16 @@ describe('Admin Reset Password Route & Security Verification', () => {
     expect(body.error).toContain('Unauthorized');
   });
 
+  it('rejects a missing or too-short password with 400', async () => {
+    currentSession = { userId: 'admin-1', role: 'ADMIN', name: 'Admin User', email: 'admin@example.com' };
+    for (const body of [undefined, JSON.stringify({}), JSON.stringify({ password: '12345' })]) {
+      const req = new NextRequest('http://localhost:3000/api/admin/employees/emp-1/reset-password', { method: 'POST', body });
+      const res = await POST(req, { params: Promise.resolve({ id: 'emp-1' }) });
+      expect(res.status).toBe(400);
+    }
+    expect(updatedUser).toBeNull();
+  });
+
   it('returns 404 when employee is not found', async () => {
     currentSession = {
       userId: 'admin-1',
@@ -95,6 +105,7 @@ describe('Admin Reset Password Route & Security Verification', () => {
     };
     const req = new NextRequest('http://localhost:3000/api/admin/employees/unknown-id/reset-password', {
       method: 'POST',
+      body: JSON.stringify({ password: 'chosen-pass-1' }),
     });
     const res = await POST(req, { params: Promise.resolve({ id: 'unknown-id' }) });
     expect(res.status).toBe(404);
@@ -109,12 +120,13 @@ describe('Admin Reset Password Route & Security Verification', () => {
     };
     const req = new NextRequest('http://localhost:3000/api/admin/employees/admin-1/reset-password', {
       method: 'POST',
+      body: JSON.stringify({ password: 'chosen-pass-1' }),
     });
     const res = await POST(req, { params: Promise.resolve({ id: 'admin-1' }) });
     expect(res.status).toBe(404);
   });
 
-  it('successfully resets password, hashes with bcrypt cost 12, logs audit, and returns temp password', async () => {
+  it('sets the admin-chosen password, hashes with bcrypt cost 12, logs audit, and never echoes it', async () => {
     currentSession = {
       userId: 'admin-1',
       role: 'ADMIN',
@@ -123,15 +135,14 @@ describe('Admin Reset Password Route & Security Verification', () => {
     };
     const req = new NextRequest('http://localhost:3000/api/admin/employees/emp-1/reset-password', {
       method: 'POST',
+      body: JSON.stringify({ password: 'chosen-pass-1' }),
     });
     const res = await POST(req, { params: Promise.resolve({ id: 'emp-1' }) });
     expect(res.status).toBe(200);
 
     const body = await res.json();
     expect(body.success).toBe(true);
-    expect(body.temporaryPassword).toBeDefined();
-    expect(typeof body.temporaryPassword).toBe('string');
-    expect(body.temporaryPassword.length).toBe(10);
+    expect(body.temporaryPassword).toBeUndefined();
 
     // Verify password update in db
     expect(updatedUser).toBeDefined();
@@ -143,7 +154,7 @@ describe('Admin Reset Password Route & Security Verification', () => {
     expect(rounds).toBe(12);
 
     // Verify temporary password can be verified against the new hash
-    const isValid = await bcrypt.compare(body.temporaryPassword, updatedUser.password_hash);
+    const isValid = await bcrypt.compare('chosen-pass-1', updatedUser.password_hash);
     expect(isValid).toBe(true);
 
     // Verify Audit Log
