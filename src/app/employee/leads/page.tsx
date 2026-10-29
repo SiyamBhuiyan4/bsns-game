@@ -92,8 +92,6 @@ const SOURCE_OPTIONS: [string, string][] = [
 export default function EmployeeLeadsPage() {
   const { lang, L, formatNum, formatMoney } = useLanguage();
   const [leads, setLeads] = useState<LeadItem[]>([]);
-  const [products, setProducts] = useState<ProductRef[]>([]);
-  const [campaigns, setCampaigns] = useState<CampaignRef[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
@@ -115,13 +113,6 @@ export default function EmployeeLeadsPage() {
   const [addName, setAddName] = useState('');
   const [addPhone, setAddPhone] = useState('');
   const [addAddress, setAddAddress] = useState('');
-  const [addBuyerType, setAddBuyerType] = useState<'FARMER' | 'WHOLESALER' | 'RESTAURANT' | 'DEALER' | 'RETAIL' | 'OTHER'>('RETAIL');
-  const [addProductId, setAddProductId] = useState('');
-  const [addCampaignId, setAddCampaignId] = useState('');
-  const [addSource, setAddSource] = useState(SOURCE_OPTIONS[0][0]);
-  const [addExpectedValue, setAddExpectedValue] = useState('');
-  const [addNextFollowup, setAddNextFollowup] = useState('');
-  const [addNote, setAddNote] = useState('');
   const [addSubmitting, setAddSubmitting] = useState(false);
 
   // Permissions & Calendar Date Presets
@@ -212,24 +203,8 @@ export default function EmployeeLeadsPage() {
     }
   }, [activeTab, showUnfinishedOnly, debouncedQuery, datePreset, customStartDate, customEndDate]);
 
-  const fetchMetadata = async () => {
-    try {
-      const [prodRes, campRes] = await Promise.all([
-        fetch('/api/products'),
-        fetch('/api/campaigns'),
-      ]);
-      const prodData = await prodRes.json();
-      const campData = await campRes.json();
-      if (prodRes.ok) setProducts(prodData.products || []);
-      if (campRes.ok) setCampaigns(campData.campaigns || []);
-    } catch {
-      // ignore
-    }
-  };
-
   useEffect(() => {
     fetchLeads();
-    fetchMetadata();
   }, [fetchLeads]);
 
   // Live Phone Duplicate Check (Requirement 1)
@@ -289,6 +264,10 @@ export default function EmployeeLeadsPage() {
       );
       return;
     }
+    if (!addAddress.trim()) {
+      setErrorMessage(L('এলাকা / লোকেশন দিন।', 'Enter the location.'));
+      return;
+    }
     if (addPhone.replace(/[\s-]/g, '').length < 11) {
       setErrorMessage(L('সঠিক ১১ সংখ্যার মোবাইল নম্বর দিন।', 'Enter a valid 11-digit mobile number.'));
       return;
@@ -303,14 +282,7 @@ export default function EmployeeLeadsPage() {
         body: JSON.stringify({
           name: addName,
           phone: addPhone,
-          address: addAddress,
-          buyer_type: addBuyerType,
-          product_id: addProductId || null,
-          campaign_id: addCampaignId || null,
-          source_channel: addSource,
-          expected_value: addExpectedValue ? parseFloat(addExpectedValue) : null,
-          next_followup_date: addNextFollowup || null,
-          initial_note: addNote || null,
+          address: addAddress.trim(),
         }),
       });
 
@@ -321,9 +293,6 @@ export default function EmployeeLeadsPage() {
         setAddName('');
         setAddPhone('');
         setAddAddress('');
-        setAddExpectedValue('');
-        setAddNote('');
-        setAddNextFollowup('');
         setPhoneWarning(null);
         setPhoneCheckResult(null);
         fetchLeads();
@@ -475,17 +444,6 @@ export default function EmployeeLeadsPage() {
         return <span className="badge badge-green">{L('অর্ডার', 'Ordered')}</span>;
       case 'LOST':
         return <span className="badge badge-red">{L('বাতিল', 'Lost')}</span>;
-    }
-  };
-
-  const getBuyerTypeLabel = (bt: string) => {
-    switch (bt) {
-      case 'FARMER': return L('কৃষক', 'Farmer');
-      case 'WHOLESALER': return L('পাইকার', 'Wholesaler');
-      case 'RESTAURANT': return L('রেস্টুরেন্ট', 'Restaurant');
-      case 'DEALER': return L('ডিলার', 'Dealer');
-      case 'RETAIL': return L('খুচরা', 'Retail');
-      default: return L('অন্যান্য', 'Other');
     }
   };
 
@@ -811,7 +769,7 @@ export default function EmployeeLeadsPage() {
                     {getStatusBadge(l.status)}
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                    <span>{getBuyerTypeLabel(l.buyer_type)}</span>
+                    {l.address && <span>{l.address}</span>}
                     {l.product && <span>{l.product.name_bn}</span>}
                     {l.is_unfinished && (
                       <span className="badge badge-amber tabular-nums">
@@ -853,7 +811,7 @@ export default function EmployeeLeadsPage() {
                   <tr>
                     <th>{L('ক্রেতা', 'Customer')}</th>
                     <th>{L('যোগ করার সময়', 'Added')}</th>
-                    <th>{L('ধরন', 'Type')}</th>
+                    <th>{L('লোকেশন', 'Location')}</th>
                     <th>{L('পণ্য', 'Product')}</th>
                     <th>{L('স্টেজ', 'Stage')}</th>
                     <th className="text-right">{L('মূল্য', 'Value')}</th>
@@ -902,7 +860,7 @@ export default function EmployeeLeadsPage() {
                           </div>
                         )}
                       </td>
-                      <td className="text-xs">{getBuyerTypeLabel(l.buyer_type)}</td>
+                      <td className="max-w-[12rem] truncate text-xs">{l.address || '—'}</td>
                       <td className="text-xs">{l.product ? l.product.name_bn : '—'}</td>
                       <td>{getStatusBadge(l.status)}</td>
                       <td className="text-right tabular-nums">{renderValue(l)}</td>
@@ -969,7 +927,9 @@ export default function EmployeeLeadsPage() {
                   <span>{L(errorMessage)}</span>
                 </div>
               )}
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">{L('ক্রেতা', 'Customer')}</p>
+              <p className="text-xs text-slate-500">
+                {L('শুধু নাম, মোবাইল নম্বর আর লোকেশন দিলেই হবে।', 'Just the name, mobile number and location.')}
+              </p>
               <div>
                 <label htmlFor="add-name" className="label">
                   {L('ক্রেতার নাম', 'Name')} <span className="text-rose-500">*</span>
@@ -1044,138 +1004,16 @@ export default function EmployeeLeadsPage() {
 
               <div>
                 <label htmlFor="add-address" className="label">
-                  {L('ঠিকানা', 'Address')}
+                  {L('লোকেশন', 'Location')} <span className="text-rose-500">*</span>
                 </label>
                 <input
                   id="add-address"
                   type="text"
+                  required
+                  maxLength={500}
                   placeholder={L('যেমন: মিরপুর ১০, ঢাকা', 'e.g. Mirpur 10, Dhaka')}
                   value={addAddress}
                   onChange={(e) => setAddAddress(e.target.value)}
-                  className="input"
-                />
-              </div>
-
-              <p className="border-t border-slate-100 pt-4 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
-                {L('লিডের বিবরণ', 'Lead details')}
-              </p>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="add-type" className="label">
-                    {L('ক্রেতার ধরন', 'Buyer type')} <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    id="add-type"
-                    value={addBuyerType}
-                    onChange={(e) => setAddBuyerType(e.target.value as LeadItem['buyer_type'])}
-                    className="input"
-                  >
-                    <option value="RETAIL">{L('খুচরা', 'Retail')}</option>
-                    <option value="WHOLESALER">{L('পাইকার', 'Wholesaler')}</option>
-                    <option value="FARMER">{L('কৃষক', 'Farmer')}</option>
-                    <option value="RESTAURANT">{L('রেস্টুরেন্ট', 'Restaurant')}</option>
-                    <option value="DEALER">{L('ডিলার', 'Dealer')}</option>
-                    <option value="OTHER">{L('অন্যান্য', 'Other')}</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="add-product" className="label">
-                    {L('আগ্রহী পণ্য', 'Product')}
-                  </label>
-                  <select
-                    id="add-product"
-                    value={addProductId}
-                    onChange={(e) => setAddProductId(e.target.value)}
-                    className="input"
-                  >
-                    <option value="">{L('নির্বাচন করুন', 'Select...')}</option>
-                    {products.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name_bn}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="add-source" className="label">
-                    {L('সোর্স', 'Source')} <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    id="add-source"
-                    required
-                    value={addSource}
-                    onChange={(e) => setAddSource(e.target.value)}
-                    className="input"
-                  >
-                    {SOURCE_OPTIONS.map(([bn, en]) => (
-                      <option key={bn} value={bn}>
-                        {L(bn, en)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="add-campaign" className="label">
-                    {L('ক্যাম্পেইন', 'Campaign')}
-                  </label>
-                  <select
-                    id="add-campaign"
-                    value={addCampaignId}
-                    onChange={(e) => setAddCampaignId(e.target.value)}
-                    className="input"
-                  >
-                    <option value="">{L('ক্যাম্পেইন নেই', 'None')}</option>
-                    {campaigns.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="add-value" className="label">
-                    {L('সম্ভাব্য মূল্য (৳)', 'Expected (৳)')}
-                  </label>
-                  <input
-                    id="add-value"
-                    type="number"
-                    min="0"
-                    inputMode="decimal"
-                    placeholder={L('যেমন: ৫০০০', 'e.g. 5000')}
-                    value={addExpectedValue}
-                    onChange={(e) => setAddExpectedValue(e.target.value)}
-                    className="input tabular-nums"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="add-followup" className="label">
-                    {L('পরবর্তী ফলোআপ', 'Next follow-up')}
-                  </label>
-                  <input
-                    id="add-followup"
-                    type="date"
-                    value={addNextFollowup}
-                    onChange={(e) => setAddNextFollowup(e.target.value)}
-                    className="input"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="add-note" className="label">
-                  {L('প্রাথমিক নোট', 'Initial note')}
-                </label>
-                <textarea
-                  id="add-note"
-                  rows={2}
-                  placeholder={L('ক্রেতার চাহিদা বা যোগাযোগের বিবরণ...', 'What the customer wants, how you reached them...')}
-                  value={addNote}
-                  onChange={(e) => setAddNote(e.target.value)}
                   className="input"
                 />
               </div>
@@ -1400,8 +1238,8 @@ export default function EmployeeLeadsPage() {
 
                     <dl className="grid grid-cols-2 gap-3 text-xs">
                       <div>
-                        <dt className="text-slate-500">{L('ধরন', 'Type')}</dt>
-                        <dd className="font-medium text-slate-900">{getBuyerTypeLabel(leadDetail.buyer_type)}</dd>
+                        <dt className="text-slate-500">{L('লোকেশন', 'Location')}</dt>
+                        <dd className="font-medium text-slate-900">{leadDetail.address || '—'}</dd>
                       </div>
                       <div>
                         <dt className="text-slate-500">{L('পণ্য', 'Product')}</dt>
@@ -1415,12 +1253,6 @@ export default function EmployeeLeadsPage() {
                         <dt className="text-slate-500">{L('ক্যাম্পেইন', 'Campaign')}</dt>
                         <dd className="font-medium text-slate-900">{leadDetail.campaign ? leadDetail.campaign.name : '—'}</dd>
                       </div>
-                      {leadDetail.address && (
-                        <div className="col-span-2">
-                          <dt className="text-slate-500">{L('ঠিকানা', 'Address')}</dt>
-                          <dd className="font-medium text-slate-900">{leadDetail.address}</dd>
-                        </div>
-                      )}
                       <div className="col-span-2">
                         <dt className="text-slate-500">{L('যোগ করেছেন', 'Added by')}</dt>
                         <dd className="mt-1 flex items-center gap-2 font-semibold text-slate-900">

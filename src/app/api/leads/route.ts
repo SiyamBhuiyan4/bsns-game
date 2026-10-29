@@ -21,7 +21,8 @@ const createLeadSchema = z.object({
   buyer_type: z.nativeEnum(BuyerType).optional().default('RETAIL'),
   product_id: z.string().max(100).optional().nullable(),
   campaign_id: z.string().max(100).optional().nullable(),
-  source_channel: z.string().trim().min(1, 'সোর্স চ্যানেল উল্লেখ করুন (যেমন: ফেসবুক গ্রুপ, বিজ্ঞাপন)').max(100),
+  // The employee quick-add form sends only name, phone and location.
+  source_channel: z.string().trim().max(100).optional().transform((v) => v || 'অন্যান্য'),
   owner_id: z.string().max(100).optional().nullable(),
   status: z.nativeEnum(LeadStatus).optional().default('NEW'),
   quality_rating: z.number().int().min(1).max(5).optional().nullable(),
