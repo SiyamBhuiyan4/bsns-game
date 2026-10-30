@@ -56,21 +56,21 @@ interface PaginationMeta {
 export default function AuditLogPage() {
   const { L } = useLanguage();
   const ACTION_LABELS: Record<string, { labelBn: string; color: string }> = {
-    CREATE: { labelBn: L('তৈরি'), color: 'badge-green' },
-    UPDATE: { labelBn: L('আপডেট'), color: 'badge-blue' },
-    DELETE: { labelBn: L('ডিলিট'), color: 'badge-red' },
-    LOGIN: { labelBn: L('লগইন'), color: 'badge-gray' },
-    UPLOAD: { labelBn: L('আপলোড'), color: 'badge-gray' },
-    ASSIGN: { labelBn: L('অ্যাসাইন'), color: 'badge-blue' },
-    TARGET_SET: { labelBn: L('টার্গেট সেট'), color: 'badge-gray' },
-    BUDGET_SET: { labelBn: L('বাজেট সেট'), color: 'badge-gray' },
-    ENTRY_SAVE: { labelBn: L('এন্ট্রি সেভ'), color: 'badge-green' },
-    LEAD_UPDATE: { labelBn: L('লিড আপডেট'), color: 'badge-blue' },
-    UNDO: { labelBn: L('আনডু'), color: 'badge-amber' },
-    REPORT_PUBLISH: { labelBn: L('রিপোর্ট প্রকাশ'), color: 'badge-brand' },
-    REPORT_FINALIZE: { labelBn: L('রিপোর্ট চূড়ান্ত'), color: 'badge-brand' },
-    PLAN_UPDATE: { labelBn: L('প্ল্যান আপডেট'), color: 'badge-blue' },
-    EXPORT: { labelBn: L('এক্সপোর্ট'), color: 'badge-gray' },
+    CREATE: { labelBn: L('তৈরি', 'Create'), color: 'badge-green' },
+    UPDATE: { labelBn: L('আপডেট', 'Update'), color: 'badge-blue' },
+    DELETE: { labelBn: L('ডিলিট', 'Delete'), color: 'badge-red' },
+    LOGIN: { labelBn: L('লগইন', 'Login'), color: 'badge-gray' },
+    UPLOAD: { labelBn: L('আপলোড', 'Upload'), color: 'badge-gray' },
+    ASSIGN: { labelBn: L('অ্যাসাইন', 'Assign'), color: 'badge-blue' },
+    TARGET_SET: { labelBn: L('টার্গেট সেট', 'Target Set'), color: 'badge-gray' },
+    BUDGET_SET: { labelBn: L('বাজেট সেট', 'Budget Set'), color: 'badge-gray' },
+    ENTRY_SAVE: { labelBn: L('এন্ট্রি সেভ', 'Entry Save'), color: 'badge-green' },
+    LEAD_UPDATE: { labelBn: L('লিড আপডেট', 'Lead Update'), color: 'badge-blue' },
+    UNDO: { labelBn: L('আনডু', 'Undo'), color: 'badge-amber' },
+    REPORT_PUBLISH: { labelBn: L('রিপোর্ট প্রকাশ', 'Report Publish'), color: 'badge-brand' },
+    REPORT_FINALIZE: { labelBn: L('রিপোর্ট চূড়ান্ত', 'Report Finalize'), color: 'badge-brand' },
+    PLAN_UPDATE: { labelBn: L('প্ল্যান আপডেট', 'Plan Update'), color: 'badge-blue' },
+    EXPORT: { labelBn: L('এক্সপোর্ট', 'Export'), color: 'badge-gray' },
   };
 
   const [logs, setLogs] = useState<AuditLogItem[]>([]);
