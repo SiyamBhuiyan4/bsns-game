@@ -112,6 +112,17 @@ const AGENT_TOOLS = [
     }
   },
   {
+    name: 'check_employee_exists',
+    description: 'Checks if an employee with a given name or email exists in the system.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        query: { type: 'STRING', description: 'Name or email of the employee to check' }
+      },
+      required: ['query']
+    }
+  },
+  {
     name: 'create_employee',
     description: 'Creates a new employee profile or prepares a preview confirmation. Requires name, password (minimum 6 chars) and optional email & phone.',
     parameters: {
@@ -311,6 +322,31 @@ export async function runGeminiAgent(
         };
       }
 
+      case 'check_employee_exists': {
+        const search = (args.query || args.name || '').trim();
+        const employees = await prisma.user.findMany({
+          where: {
+            role: 'EMPLOYEE',
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { email: { contains: search, mode: 'insensitive' } },
+            ]
+          }
+        });
+        if (employees.length > 0) {
+          const names = employees.map(e => `${e.name} (${e.email})`).join(', ');
+          return {
+            reply: `হ্যাঁ, "${search}" নামে কর্মী আছেন:\n${names}\n\nYes, employee exists: ${names}`,
+            link: { href: `/admin/employees?q=${encodeURIComponent(search)}`, labelBn: 'টিম পেজে দেখুন', labelEn: 'View in Team Page' }
+          };
+        } else {
+          return {
+            reply: `না, "${search}" নামে কোনো কর্মী খুঁজে পাওয়া যায়নি।\nNo employee found with name "${search}".`,
+            link: { href: '/admin/employees', labelBn: 'টিম পেজে যান', labelEn: 'Go to Team Page' }
+          };
+        }
+      }
+
       case 'create_employee': {
         const cmdArgs = [
           `name=${args.name}`,
@@ -417,14 +453,11 @@ export async function runGeminiAgent(
     }
   }
 
-  // If Gemini provided a direct textual explanation
+  // If Gemini provided a direct textual answer/explanation
   const textPart = parts.find((p: any) => p.text);
   if (textPart?.text) {
-    const navResult = await navigate(message);
     return {
-      reply: textPart.text,
-      link: navResult.link,
-      suggestions: navResult.suggestions
+      reply: textPart.text
     };
   }
 
