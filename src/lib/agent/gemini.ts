@@ -15,8 +15,11 @@ export interface GeminiAgentOutput extends AgentResult {
   navigate?: boolean;
 }
 
+// Lowest-cost & highest free-tier quota models prioritized first:
+// gemini-3.5-flash-lite has the highest RPM/RPD limits and the lowest cost per token.
 const CANDIDATE_MODELS = [
   'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
   'gemini-3.5-flash',
   'gemini-3.8-flash'
 ];
