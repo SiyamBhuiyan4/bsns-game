@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ArrowRight,
@@ -267,39 +267,29 @@ export default function AgentChat() {
   // Voice text (speech-to-text) and Text-to-speech audio playback state
   const [isListening, setIsListening] = useState(false);
   const [speakingId, setSpeakingId] = useState<number | null>(null);
+  const [voiceLang, setVoiceLang] = useState<'bn-BD' | 'en-US'>('bn-BD');
   const recognitionRef = useRef<any>(null);
   const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const isListeningRef = useRef(false);
+  const baseTextRef = useRef('');
+  const autoStopTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Clean up speech recognition and synthesis when modal closes
-  useEffect(() => {
-    if (!open) {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-      setSpeakingId(null);
-      activeUtteranceRef.current = null;
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch {}
-      }
-      setIsListening(false);
+  const stopListening = useCallback(() => {
+    isListeningRef.current = false;
+    setIsListening(false);
+    if (autoStopTimerRef.current) {
+      clearTimeout(autoStopTimerRef.current);
+      autoStopTimerRef.current = null;
     }
-  }, [open]);
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {}
+    }
+  }, []);
 
-  // Speech-to-text toggle
-  const toggleListening = () => {
+  const startListening = useCallback((langCode: 'bn-BD' | 'en-US' = voiceLang) => {
     if (typeof window === 'undefined') return;
-
-    if (isListening) {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch {}
-      }
-      setIsListening(false);
-      return;
-    }
 
     // Stop active speech playback so mic does not catch assistant audio
     if ('speechSynthesis' in window) {
@@ -320,50 +310,122 @@ export default function AgentChat() {
       return;
     }
 
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch {}
+    }
+
+    // Capture the existing text in input box before recording begins
+    setInput((currentVal) => {
+      baseTextRef.current = currentVal.trim();
+      return currentVal;
+    });
+    isListeningRef.current = true;
+    setIsListening(true);
+
     try {
       const recognition = new SpeechRecognitionClass();
-      recognition.lang = lang === 'en' ? 'en-US' : 'bn-BD';
-      recognition.continuous = false;
-      recognition.interimResults = false;
+      recognition.lang = langCode;
+      recognition.continuous = true; // Long-duration continuous listening
+      recognition.interimResults = true; // Real-time feedback
+      recognition.maxAlternatives = 1;
 
       recognition.onstart = () => {
         setIsListening(true);
+        isListeningRef.current = true;
       };
 
       recognition.onresult = (event: any) => {
-        const transcript = event.results?.[0]?.[0]?.transcript || '';
-        if (transcript) {
-          setInput((prev) => {
-            const trimmed = prev.trim();
-            return trimmed ? `${trimmed} ${transcript}` : transcript;
-          });
-          inputRef.current?.focus();
+        let finalStr = '';
+        let interimStr = '';
+        for (let i = 0; i < event.results.length; ++i) {
+          const item = event.results[i];
+          if (item.isFinal) {
+            finalStr += (finalStr ? ' ' : '') + (item[0]?.transcript || '').trim();
+          } else {
+            interimStr += (interimStr ? ' ' : '') + (item[0]?.transcript || '').trim();
+          }
         }
+
+        const speechPart = [finalStr, interimStr].filter(Boolean).join(' ');
+        const fullText = [baseTextRef.current, speechPart].filter(Boolean).join(' ');
+        setInput(fullText);
+        inputRef.current?.focus();
       };
 
       recognition.onerror = (event: any) => {
         console.warn('[SpeechRecognition] error:', event.error);
-        setIsListening(false);
         if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          stopListening();
           alert(
             lang === 'en'
               ? 'Microphone permission was denied. Please allow microphone access in your browser settings.'
               : 'মাইক্রোফোনের অনুমতি পাওয়া যায়নি। ব্রাউজার সেটিংসে গিয়ে মাইক্রোফোন অ্যাক্সেস অন করুন।'
           );
+        } else if (event.error === 'no-speech') {
+          // No speech detected in this window; ignore, keep listening
         }
       };
 
       recognition.onend = () => {
+        // If user didn't stop listening, auto-restart to sustain unlimited length
+        if (isListeningRef.current) {
+          setInput((currentVal) => {
+            baseTextRef.current = currentVal.trim();
+            return currentVal;
+          });
+          try {
+            recognition.start();
+            return;
+          } catch (err) {
+            console.warn('[SpeechRecognition] auto-restart error:', err);
+          }
+        }
         setIsListening(false);
+        isListeningRef.current = false;
       };
 
       recognitionRef.current = recognition;
       recognition.start();
+
+      // Extended safety timeout: 3 minutes continuous recording
+      if (autoStopTimerRef.current) clearTimeout(autoStopTimerRef.current);
+      autoStopTimerRef.current = setTimeout(() => {
+        stopListening();
+      }, 180000);
     } catch (err) {
       console.warn('[SpeechRecognition] start error:', err);
-      setIsListening(false);
+      stopListening();
     }
-  };
+  }, [lang, stopListening, voiceLang]);
+
+  const toggleListening = useCallback(() => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening(voiceLang);
+    }
+  }, [isListening, startListening, stopListening, voiceLang]);
+
+  const changeVoiceLang = useCallback((newLang: 'bn-BD' | 'en-US') => {
+    setVoiceLang(newLang);
+    if (isListeningRef.current) {
+      startListening(newLang);
+    }
+  }, [startListening]);
+
+  // Clean up speech recognition and synthesis when modal closes
+  useEffect(() => {
+    if (!open) {
+      stopListening();
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      setSpeakingId(null);
+      activeUtteranceRef.current = null;
+    }
+  }, [open, stopListening]);
 
   // Text-to-speech toggle for reading assistant bubbles aloud
   const toggleSpeak = (id: number, text: string) => {
@@ -490,6 +552,9 @@ export default function AgentChat() {
   };
 
   const send = (overrideText?: string) => {
+    if (isListeningRef.current) {
+      stopListening();
+    }
     const text = (overrideText || input).trim();
     if (!text || loading) return;
     setInput('');
@@ -824,8 +889,28 @@ export default function AgentChat() {
             <div ref={listEndRef} />
           </div>
 
-          {/* Quick hints ticker */}
-          <div className="no-scrollbar flex gap-1.5 overflow-x-auto border-t border-slate-200 bg-white px-3 pt-2.5 pb-1">
+          {/* Quick hints ticker & Voice language selector */}
+          <div className="no-scrollbar flex gap-1.5 overflow-x-auto border-t border-slate-200 bg-white px-3 pt-2.5 pb-1 items-center">
+            {/* Voice Language Selector Badge */}
+            <button
+              type="button"
+              onClick={() => changeVoiceLang(voiceLang === 'bn-BD' ? 'en-US' : 'bn-BD')}
+              className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold transition-all flex items-center gap-1 border cursor-pointer ${
+                voiceLang === 'bn-BD'
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                  : 'border-blue-300 bg-blue-50 text-blue-800 hover:bg-blue-100'
+              }`}
+              title={
+                voiceLang === 'bn-BD'
+                  ? 'ভয়েস ভাষা: বাংলা (ক্লিক করে English করুন)'
+                  : 'Voice Language: English (click to switch to Bangla)'
+              }
+            >
+              <span>{voiceLang === 'bn-BD' ? '🇧🇩 ভয়েস: বাংলা' : '🇺🇸 Voice: English'}</span>
+            </button>
+
+            <span className="h-3 w-px bg-slate-200 shrink-0" aria-hidden="true" />
+
             {HINTS.map((hint) => (
               <button
                 key={hint}
@@ -843,23 +928,34 @@ export default function AgentChat() {
 
           {/* Active Listening Voice Banner */}
           {isListening && (
-            <div className="flex items-center justify-between bg-rose-50 border-t border-rose-200/80 px-3 py-1.5 text-xs text-rose-700 animate-fade-in">
+            <div className="flex items-center justify-between bg-rose-50 border-t border-rose-200/80 px-3 py-1.5 text-xs text-rose-800 animate-fade-in">
               <div className="flex items-center gap-2">
-                <span className="relative flex h-2 w-2">
+                <span className="relative flex h-2.5 w-2.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
                 </span>
                 <span className="font-medium text-[11px] sm:text-xs">
-                  {L('শুনছি... কথা বলুন (বাংলা বা ইংরেজি)', 'Listening... speak now (Bengali or English)')}
+                  {voiceLang === 'bn-BD'
+                    ? 'শুনছি... বাংলায় কথা বলুন (দীর্ঘ সময় কথা বলতে পারবেন)'
+                    : 'Listening... speak in English (long speech enabled)'}
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={toggleListening}
-                className="text-[11px] font-semibold text-rose-800 hover:underline cursor-pointer"
-              >
-                {L('বাতিল', 'Cancel')}
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => changeVoiceLang(voiceLang === 'bn-BD' ? 'en-US' : 'bn-BD')}
+                  className="rounded px-1.5 py-0.5 bg-white border border-rose-300 text-[10px] font-semibold text-rose-800 hover:bg-rose-100 cursor-pointer"
+                >
+                  {voiceLang === 'bn-BD' ? 'English এ বলুন' : 'বাংলায় বলুন'}
+                </button>
+                <button
+                  type="button"
+                  onClick={stopListening}
+                  className="rounded bg-rose-600 text-white px-2 py-0.5 text-[11px] font-semibold hover:bg-rose-700 cursor-pointer shadow-xs"
+                >
+                  {L('সম্পন্ন', 'Done')}
+                </button>
+              </div>
             </div>
           )}
 
@@ -877,7 +973,9 @@ export default function AgentChat() {
               onKeyDown={onKeyDown}
               placeholder={
                 isListening
-                  ? L('কথা বলুন, স্বয়ংক্রিয়ভাবে টেক্সট হবে...', 'Listening to your voice...')
+                  ? voiceLang === 'bn-BD'
+                    ? 'বাংলায় কথা বলুন, দীর্ঘ সময় কথা বলতে পারবেন...'
+                    : 'Listening in English, speak continuously...'
                   : L('বার্তা লিখুন বা মাইকে কথা বলুন...', 'Type or click mic to speak...')
               }
               className="input max-h-32 min-h-[40px] flex-1 resize-none py-2 text-xs sm:text-sm bg-slate-50/70 focus:bg-white"
@@ -893,8 +991,10 @@ export default function AgentChat() {
               }
               title={
                 isListening
-                  ? L('ভয়েস বন্ধ করুন', 'Stop listening')
-                  : L('ভয়েস টাইপিং (মাইক্রোফোন)', 'Voice input')
+                  ? L('ভয়েস বন্ধ করুন (Done)', 'Stop listening')
+                  : voiceLang === 'bn-BD'
+                  ? 'বাংলায় ভয়েস টাইপিং করুন (আনলিমিটেড দৈর্ঘ্য)'
+                  : 'Voice typing in English (unlimited duration)'
               }
               className={`h-10 w-10 shrink-0 rounded-xl transition flex items-center justify-center cursor-pointer ${
                 isListening
