@@ -6,6 +6,7 @@ import { requireAdmin } from '@/lib/session';
 import { parseMessage } from '@/lib/agent/router';
 import { executeCommand, type AgentResult } from '@/lib/agent/commands';
 import { navigate, type NavLink } from '@/lib/agent/navigator';
+import { runGeminiAgent } from '@/lib/agent/gemini';
 import { getJwtSecret } from '@/lib/env';
 
 export const runtime = 'nodejs';
@@ -80,17 +81,24 @@ export async function POST(request: NextRequest) {
       ? await executeCommand(opened.command, opened.args, ctx)
       : { reply: 'এই অনুরোধের মেয়াদ শেষ বা অবৈধ। আবার কমান্ড লিখুন।\nThis request expired or is invalid. Please send the command again.' };
   } else {
-    const parsed = parseMessage(message);
-    if (parsed.command !== null) {
-      result = await executeCommand(parsed.command, parsed.args, ctx);
-      if (parsed.command === 'team' || parsed.command === 'password') {
-        result.link = { href: '/admin/employees', labelBn: 'টিম পেজে দেখুন', labelEn: 'View in Team page' };
-      } else if (parsed.command === 'groups' || parsed.command === 'links') {
-        result.link = { href: '/admin/sections', labelBn: 'গ্রুপ পেজে দেখুন', labelEn: 'View in Groups page' };
-      }
+    // 1. First try autonomous Gemini agent (understands Bangla, English, Banglish and executes tools)
+    const geminiResult = await runGeminiAgent({ message, actorId: session.userId });
+    if (geminiResult) {
+      result = geminiResult;
     } else {
-      // Plain text never executes anything: it only points the admin to the right page.
-      result = await navigate(message);
+      // 2. Fallback to hashtag commands & local router
+      const parsed = parseMessage(message);
+      if (parsed.command !== null) {
+        result = await executeCommand(parsed.command, parsed.args, ctx);
+        if (parsed.command === 'team' || parsed.command === 'password') {
+          result.link = { href: '/admin/employees', labelBn: 'টিম পেজে দেখুন', labelEn: 'View in Team page' };
+        } else if (parsed.command === 'groups' || parsed.command === 'links') {
+          result.link = { href: '/admin/sections', labelBn: 'গ্রুপ পেজে দেখুন', labelEn: 'View in Groups page' };
+        }
+      } else {
+        // Plain text never executes anything: it only points the admin to the right page.
+        result = await navigate(message);
+      }
     }
   }
 
