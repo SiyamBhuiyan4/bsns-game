@@ -12,6 +12,7 @@ import {
   MessageSquare,
   X,
   BarChart3,
+  Search,
 } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
@@ -91,6 +92,21 @@ function AdminDailyReportContent() {
       setSelectedDate(dateParam);
     }
   }, [dateParam]);
+
+  const [searchQuery, setSearchQuery] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      return p.get('q') || p.get('employee') || '';
+    }
+    return '';
+  });
+
+  useEffect(() => {
+    const q = searchParams.get('q') || searchParams.get('employee');
+    if (q !== null && q !== undefined) {
+      setSearchQuery(q);
+    }
+  }, [searchParams]);
   const [reportData, setReportData] = useState<DailyReportResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
@@ -123,6 +139,15 @@ function AdminDailyReportContent() {
 
   const summary = reportData?.summary;
   const employees = reportData?.employees || [];
+  const filteredEmployees = employees.filter((emp) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      emp.name.toLowerCase().includes(q) ||
+      emp.email.toLowerCase().includes(q) ||
+      emp.sections.some((s) => s.toLowerCase().includes(q))
+    );
+  });
 
   const isToday = selectedDate === getDhakaDateString();
   const execRows: { label: string; value: React.ReactNode; tone?: string; note?: React.ReactNode }[] = [
@@ -321,20 +346,44 @@ function AdminDailyReportContent() {
       </section>
 
       <section className="card overflow-hidden">
-        <div className="card-header">
+        <div className="card-header flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="card-title">{L("সদস্যভিত্তিক পারফরম্যান্স (")}{employees.length})</h2>
+            <h2 className="card-title">
+              {L("সদস্যভিত্তিক পারফরম্যান্স (")}{filteredEmployees.length}
+              {searchQuery && ` / মোট ${employees.length}`}
+              {")"}
+            </h2>
             <p className="card-subtitle tabular-nums">{L("তারিখ:")} {selectedDate}</p>
+          </div>
+          <div className="no-print relative w-full sm:w-64">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder={L("নাম বা ইমেইল দিয়ে খুঁজুন...", "Filter by name or email...")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input h-9 w-full pl-9 pr-8 text-xs"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                aria-label={L("মুছুন", "Clear")}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         </div>
 
         {loading ? (
           <SkeletonTable rows={6} cols={6} label={L("লোড হচ্ছে...")} />
-        ) : employees.length === 0 ? (
+        ) : filteredEmployees.length === 0 ? (
           <EmptyState
             icon={<Users className="h-5 w-5" />}
-            title={L("কোনো তথ্য পাওয়া যায়নি")}
-            description={L("এই তারিখে কোনো রিপোর্ট নেই।")}
+            title={searchQuery ? L("কোনো ফলাফল পাওয়া যায়নি") : L("কোনো তথ্য পাওয়া যায়নি")}
+            description={searchQuery ? L(`"${searchQuery}" এর জন্য কোনো কর্মী মেলেনি।`) : L("এই তারিখে কোনো রিপোর্ট নেই।")}
           />
         ) : (
           <div className="max-h-[70vh] overflow-auto print:max-h-none print:overflow-visible [&_thead_th]:sticky [&_thead_th]:top-0 [&_thead_th]:z-10 [&_thead_th]:bg-slate-50">
@@ -356,7 +405,7 @@ function AdminDailyReportContent() {
                 </tr>
               </thead>
               <tbody>
-                {employees.map((emp) => {
+                {filteredEmployees.map((emp) => {
                   const isFail = emp.is_failing;
                   return (
                     <tr key={emp.employee_id}>

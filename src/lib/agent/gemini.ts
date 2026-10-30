@@ -3,6 +3,17 @@ import path from 'path';
 import prisma from '@/lib/prisma';
 import { executeCommand, type AgentResult } from '@/lib/agent/commands';
 import { navigate, type NavLink } from '@/lib/agent/navigator';
+import { resolveDateString } from '@/lib/agent/date-parser';
+import {
+  getDhakaDateString,
+  parseDateOnly,
+  formatTaka,
+  toBengaliDigits,
+  formatBstDateTime,
+} from '@/lib/date';
+import { calculateEffectiveTargetsForRange } from '@/lib/targets';
+import { calculateEmployeeScore, selectEmployeeTargets, readSectionWeights } from '@/lib/scoring';
+import { MetricType, AuditAction } from '@prisma/client';
 
 export interface ChatHistoryTurn {
   role: 'user' | 'assistant';
@@ -22,12 +33,12 @@ export interface GeminiAgentOutput extends AgentResult {
 }
 
 // Lowest-cost & highest free-tier quota models prioritized first:
-// gemini-3.5-flash-lite has the highest RPM/RPD limits and the lowest cost per token.
+// gemini-3.5-flash-lite has the highest RPM/RPD limits and lowest cost per token.
 const CANDIDATE_MODELS = [
   'gemini-3.5-flash-lite',
   'gemini-3.1-flash-lite',
   'gemini-3.5-flash',
-  'gemini-3.8-flash'
+  'gemini-3.8-flash',
 ];
 
 /**
@@ -63,11 +74,90 @@ function getGeminiApiKey(): string {
   return '';
 }
 
-// Function Calling declarations covering the whole web application
+// Function Calling declarations covering the entire business suite
 const AGENT_TOOLS = [
   {
+    name: 'get_employee_assigned_tasks',
+    description:
+      'Fetches and displays the specific sections, link tasks, daily post limits, and targets assigned to an employee. ALWAYS call this tool when the user asks to see tasks or sections assigned to an employee (e.g. "or upor assign kora task dekhte chaitasi", "siyam er task dekhao", "show his assigned tasks", "what tasks are assigned to him"). Remember: pronouns like "or" (ওর), "tar" (তার), "him" refer to the employee discussed previously!',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        employee: {
+          type: 'STRING',
+          description:
+            'The name or email of the employee. If referring to someone mentioned in previous turns (e.g. "or", "him"), supply their name directly (e.g. "siyam").',
+        },
+      },
+      required: ['employee'],
+    },
+  },
+  {
+    name: 'get_employee_report',
+    description:
+      'Fetches and calculates the detailed performance report for a specific employee on a specific date (posts done, sales, profit, new clients, B2B, targets, score, pass/fail status, and daily reflection/issues). Call this when user asks for an employee\'s report (e.g. "siyam er kalker report dekhao", "yesterday report of siyam", "show his daily report", "siyam er ajker obostha").',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        employee: {
+          type: 'STRING',
+          description:
+            'The name or email of the employee (e.g. "siyam", "abu"). Resolve pronouns ("or", "tar") to the discussed person.',
+        },
+        date: {
+          type: 'STRING',
+          description:
+            'The target date or relative date phrase: "yesterday", "kalker", "today", "ajker", "poroshur", or YYYY-MM-DD.',
+        },
+      },
+      required: ['employee'],
+    },
+  },
+  {
+    name: 'get_audit_logs',
+    description:
+      'Queries system audit activity logs (who logged in, who created/updated employees, sections, links, targets, leads, passwords). Call this when user asks "ke login korse", "audit log dekhao", "who changed what", "show recent activity".',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        actor: { type: 'STRING', description: 'Optional user name or email filter' },
+        action: { type: 'STRING', description: 'Optional action filter like LOGIN, CREATE, UPDATE, DELETE, ASSIGN' },
+        limit: { type: 'INTEGER', description: 'Number of logs to fetch (default 8)' },
+      },
+    },
+  },
+  {
+    name: 'get_lead_stats',
+    description:
+      'Queries customer leads pipeline, conversion numbers, total sales from orders, expected values, and stalled qualified leads. Call when user asks "leads kemon", "customer obostha", "koyta order hoise".',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        period: { type: 'STRING', description: '"today", "yesterday", "7d", "30d", or "all"' },
+        marketer: { type: 'STRING', description: 'Optional employee / marketer name' },
+      },
+    },
+  },
+  {
+    name: 'list_products',
+    description: 'Lists all available products in catalog with selling prices and units.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {},
+    },
+  },
+  {
+    name: 'list_campaigns',
+    description: 'Lists active marketing campaigns, budgets, and channel sources.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {},
+    },
+  },
+  {
     name: 'navigate_to_page',
-    description: 'Directly opens and navigates the user to any page/feature across the web app whenever the user wants to see, view, open, or go to a page (e.g. employee list / team, dashboard, sections/groups, products, campaigns, leads, targets & budgets, daily report, 90-day plan, audit log, settings, manual).',
+    description:
+      'Directly opens and navigates the user to a page across the web app whenever the user wants to visit, open, or switch to a page (e.g. employees / team, dashboard, sections/groups, products, campaigns, leads, targets, daily report, 90-day plan, audit log, settings, manual).',
     parameters: {
       type: 'OBJECT',
       properties: {
@@ -87,29 +177,31 @@ const AGENT_TOOLS = [
             'plan',
             'audit',
             'settings',
-            'manual'
+            'manual',
           ],
-          description: 'The specific page to navigate to: team (employees), groups (sections/links), leads, products, campaigns, targets, dashboard, reports_daily, plan, audit, settings, manual.'
-        }
+          description:
+            'The specific page to navigate to: team (employees), groups (sections/links), leads, products, campaigns, targets, dashboard, reports_daily, plan, audit, settings, manual.',
+        },
       },
-      required: ['page_intent']
-    }
+      required: ['page_intent'],
+    },
   },
   {
     name: 'get_status_summary',
-    description: 'Fetches today\'s live operational statistics: number of active employees, total sections, total links, and total completed links for today.',
+    description:
+      'Fetches today\'s live operational statistics: number of active employees, total sections, total links, and total completed links for today.',
     parameters: {
       type: 'OBJECT',
-      properties: {}
-    }
+      properties: {},
+    },
   },
   {
     name: 'list_employees',
     description: 'Lists all employees with their emails, IDs, and active status.',
     parameters: {
       type: 'OBJECT',
-      properties: {}
-    }
+      properties: {},
+    },
   },
   {
     name: 'check_employee_exists',
@@ -117,24 +209,25 @@ const AGENT_TOOLS = [
     parameters: {
       type: 'OBJECT',
       properties: {
-        query: { type: 'STRING', description: 'Name or email of the employee to check' }
+        query: { type: 'STRING', description: 'Name or email of the employee to check' },
       },
-      required: ['query']
-    }
+      required: ['query'],
+    },
   },
   {
     name: 'create_employee',
-    description: 'Creates a new employee profile or prepares a preview confirmation. Requires name, password (minimum 6 chars) and optional email & phone.',
+    description:
+      'Creates a new employee profile with safe preview confirmation. Requires name and password.',
     parameters: {
       type: 'OBJECT',
       properties: {
         name: { type: 'STRING', description: 'Name of the employee' },
         password: { type: 'STRING', description: 'Initial login password (min 6 chars)' },
-        email: { type: 'STRING', description: 'Optional email address (defaults to name@company.com if omitted)' },
-        phone: { type: 'STRING', description: 'Optional phone number' }
+        email: { type: 'STRING', description: 'Optional email address' },
+        phone: { type: 'STRING', description: 'Optional phone number' },
       },
-      required: ['name', 'password']
-    }
+      required: ['name', 'password'],
+    },
   },
   {
     name: 'reset_employee_password',
@@ -143,18 +236,18 @@ const AGENT_TOOLS = [
       type: 'OBJECT',
       properties: {
         target: { type: 'STRING', description: 'Employee name or email address' },
-        new_password: { type: 'STRING', description: 'The new password (min 6 chars)' }
+        new_password: { type: 'STRING', description: 'The new password (min 6 chars)' },
       },
-      required: ['target', 'new_password']
-    }
+      required: ['target', 'new_password'],
+    },
   },
   {
     name: 'list_sections',
     description: 'Lists all group sections in the system along with active status.',
     parameters: {
       type: 'OBJECT',
-      properties: {}
-    }
+      properties: {},
+    },
   },
   {
     name: 'create_section',
@@ -162,10 +255,10 @@ const AGENT_TOOLS = [
     parameters: {
       type: 'OBJECT',
       properties: {
-        name: { type: 'STRING', description: 'Section name (2-100 characters)' }
+        name: { type: 'STRING', description: 'Section name (2-100 characters)' },
       },
-      required: ['name']
-    }
+      required: ['name'],
+    },
   },
   {
     name: 'add_section_links',
@@ -177,11 +270,11 @@ const AGENT_TOOLS = [
         urls: {
           type: 'ARRAY',
           items: { type: 'STRING' },
-          description: 'List of URL strings to add'
-        }
+          description: 'List of URL strings to add',
+        },
       },
-      required: ['section_name', 'urls']
-    }
+      required: ['section_name', 'urls'],
+    },
   },
   {
     name: 'assign_employee_to_section',
@@ -190,10 +283,10 @@ const AGENT_TOOLS = [
       type: 'OBJECT',
       properties: {
         employee: { type: 'STRING', description: 'Employee name or email' },
-        section_name: { type: 'STRING', description: 'Section name to assign to' }
+        section_name: { type: 'STRING', description: 'Section name to assign to' },
       },
-      required: ['employee', 'section_name']
-    }
+      required: ['employee', 'section_name'],
+    },
   },
   {
     name: 'set_employee_permission',
@@ -202,24 +295,69 @@ const AGENT_TOOLS = [
       type: 'OBJECT',
       properties: {
         employee: { type: 'STRING', description: 'Employee name or email' },
-        grant: { type: 'BOOLEAN', description: 'true to grant view all customers, false to revoke' }
+        grant: { type: 'BOOLEAN', description: 'true to grant view all customers, false to revoke' },
       },
-      required: ['employee', 'grant']
-    }
-  }
+      required: ['employee', 'grant'],
+    },
+  },
 ];
 
 const SYSTEM_INSTRUCTION = `
-You are the Executive AI Agent for "Game of Business" (Marketing Performance System).
+You are the Executive AI Agent for "Game of Business" (Marketing Performance Management System).
 You understand English, Bengali (বাংলা), and Banglish seamlessly.
-You have full authority to assist the admin, inspect database state, navigate pages, and execute administrative actions.
+You have full authority to assist the admin, inspect database records, calculate performance, navigate pages, and execute administrative actions.
 
-When the user asks or instructs:
-1. Always understand the user's intent in English, Bengali, or Banglish (e.g. "kormi banao", "notun section add koro", "ajker obostha bolo", "where are leads", "show team").
-2. Call the most relevant tool to get live data, create records, or navigate to the correct page.
-3. If an action mutates sensitive data (like creating an employee or changing a password), trigger the respective tool so the system creates a safe preview confirmation for the admin.
-4. Always provide helpful bilingual context (Bengali + English).
+CRITICAL BEHAVIOR RULES:
+1. Multi-turn Entity Memory & Pronouns:
+   - In Bengali/Banglish: "or" (ওর), "tar" (তার), "o" (ও), "uni" (উনি), "his", "him", "her", "that person" REFER TO THE PERSON DISCUSSED IN THE IMMEDIATELY PRECEDING TURNS.
+   - Example:
+     Turn 1: User says "siyam kar nam bolo to" -> Agent answers about "siyam".
+     Turn 2: User says "to ami or upor assign kora task dekhte chaitasi" -> "or" MEANS "siyam"!
+     You MUST call get_employee_assigned_tasks(employee: "siyam").
+     NEVER navigate to generic "groups" or "team" when the user wants to see an employee's assigned tasks or performance!
+   - Example:
+     User says "siyam er kalker report dekhao" -> Call get_employee_report(employee: "siyam", date: "yesterday").
+     User says "ami or report dekhte chaisi specifically" -> Call get_employee_report(employee: "siyam", date: "yesterday").
+
+2. Provide Specific Data First:
+   - When the user asks for specific reports, tasks, audit trails, leads, or employee status, ALWAYS call the corresponding specific tool (get_employee_assigned_tasks, get_employee_report, get_audit_logs, get_lead_stats) so the user gets actual data and answers in the chat!
+   - Do NOT just navigate away to a generic page unless the user solely instructed to open or view a page without data query intent.
+
+3. Dates & Relative Time:
+   - "kalker", "kalke", "yesterday", "গতকাল" means yesterday (Asia/Dhaka).
+   - "ajker", "aj", "today", "আজ" means today (Asia/Dhaka).
+   - "poroshur", "poroshu", "day before yesterday", "গত পরশু" means 2 days ago.
+
+4. Bilingual Output:
+   - Always respond clearly with helpful Bengali and English details.
 `;
+
+/**
+ * Fallback helper to discover the last employee mentioned in history turns
+ */
+function findLastMentionedEmployee(history: ChatHistoryTurn[], fallback: string): string {
+  const pronounTokens = new Set([
+    'or', 'tar', 'o', 'uni', 'take', 'tader', 'him', 'her', 'his', 'he', 'she', 'they', 'them',
+    'কর্মী', 'ওর', 'তার', 'তাকে', 'তাদের', 'তিনি', 'উনি'
+  ]);
+  const trimmedFallback = fallback.trim();
+  if (trimmedFallback && !pronounTokens.has(trimmedFallback.toLowerCase())) {
+    return trimmedFallback;
+  }
+
+  for (let i = history.length - 1; i >= 0; i--) {
+    const text = history[i].text;
+    // Check for common names, emails, or name tokens in recent history
+    const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i);
+    if (emailMatch) return emailMatch[0];
+
+    const nameMatch = text.match(/(?:siyam|siam|abu|sumaiya|hasan|jamal|rahim|karim|tanvir|nafis|rony)/i);
+    if (nameMatch) {
+      return nameMatch[0];
+    }
+  }
+  return fallback;
+}
 
 /**
  * Executes an AI Agent turn using Google Gemini API with fallback support.
@@ -235,36 +373,53 @@ export async function runGeminiAgent(
   const { message, actorId, history = [] } = input;
   const ctx = { actorId, confirm: false };
 
-  // Prepare multi-turn conversation contents:
-  // Take the last 6 history items (3 user + 3 assistant pairs) to preserve full context with minimal tokens
+  // Prepare multi-turn conversation contents strictly adhering to Gemini API rules:
+  // Starts with 'user', strictly alternates 'user' -> 'model' -> 'user'
   const contentsPayload: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
 
-  const recentHistory = history.slice(-6);
-  for (const turn of recentHistory) {
-    if (turn.text && turn.text.trim()) {
+  const candidateTurns = history.slice(-6);
+  for (const turn of candidateTurns) {
+    if (!turn.text || !turn.text.trim()) continue;
+    const mappedRole = turn.role === 'assistant' ? 'model' : 'user';
+
+    // Must start with 'user'
+    if (contentsPayload.length === 0 && mappedRole !== 'user') {
+      continue;
+    }
+
+    // Avoid consecutive same-role turns
+    const last = contentsPayload[contentsPayload.length - 1];
+    if (last && last.role === mappedRole) {
+      last.parts[0].text += '\n' + turn.text.trim();
+    } else {
       contentsPayload.push({
-        role: turn.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: turn.text.trim() }]
+        role: mappedRole,
+        parts: [{ text: turn.text.trim() }],
       });
     }
   }
 
-  // Ensure current user message is appended
-  contentsPayload.push({
-    role: 'user',
-    parts: [{ text: message }]
-  });
+  // Append current user message
+  const last = contentsPayload[contentsPayload.length - 1];
+  if (last && last.role === 'user') {
+    last.parts[0].text += '\n' + message;
+  } else {
+    contentsPayload.push({
+      role: 'user',
+      parts: [{ text: message }],
+    });
+  }
 
   const payload = {
     systemInstruction: {
-      parts: [{ text: SYSTEM_INSTRUCTION }]
+      parts: [{ text: SYSTEM_INSTRUCTION }],
     },
     contents: contentsPayload,
     tools: [
       {
-        functionDeclarations: AGENT_TOOLS
-      }
-    ]
+        functionDeclarations: AGENT_TOOLS,
+      },
+    ],
   };
 
   let candidate: any = null;
@@ -276,7 +431,7 @@ export async function runGeminiAgent(
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         }
       );
 
@@ -306,11 +461,383 @@ export async function runGeminiAgent(
     const args = call.args || {};
 
     switch (fnName) {
+      // 1. Employee Assigned Tasks & Sections
+      case 'get_employee_assigned_tasks':
+      case 'get_employee_tasks': {
+        const rawTarget = (args.employee || args.name || '').trim();
+        const resolvedName = findLastMentionedEmployee(history, rawTarget);
+
+        if (!resolvedName) {
+          return {
+            reply: 'অনুগ্রহ করে কর্মীর নাম উল্লেখ করুন (যেমন: "সিয়াম")।\nPlease specify which employee you want to inspect (e.g. "siyam").',
+            link: { href: '/admin/employees', labelBn: 'টিম পেজে যান', labelEn: 'Go to Team Page' },
+          };
+        }
+
+        const employee = await prisma.user.findFirst({
+          where: {
+            role: 'EMPLOYEE',
+            OR: [
+              { name: { contains: resolvedName, mode: 'insensitive' } },
+              { email: { contains: resolvedName, mode: 'insensitive' } },
+            ],
+          },
+          include: {
+            assignments_as_employee: {
+              include: {
+                section: true,
+              },
+            },
+          },
+        });
+
+        if (!employee) {
+          return {
+            reply: `"${resolvedName || rawTarget}" নামে কোনো কর্মী খুঁজে পাওয়া যায়নি।\nNo employee found with name "${resolvedName || rawTarget}".`,
+            link: { href: '/admin/employees', labelBn: 'টিম পেজে যান', labelEn: 'Go to Team Page' },
+          };
+        }
+
+        // Fetch Dhaka day bounds
+        const todayStr = getDhakaDateString();
+        const startOfDhakaDay = new Date(`${todayStr}T00:00:00+06:00`);
+        const endOfDhakaDay = new Date(`${todayStr}T23:59:59.999+06:00`);
+
+        // Fetch today's completions for this employee
+        const todayCompletions = await prisma.linkCompletion.findMany({
+          where: {
+            employee_id: employee.id,
+            undone_at: null,
+            completed_at: { gte: startOfDhakaDay, lte: endOfDhakaDay },
+          },
+          include: {
+            group_link: true,
+          },
+        });
+
+        const activeAssignments = employee.assignments_as_employee.filter((a: any) => a.section?.is_active);
+
+        const lines: string[] = [
+          `👤 **${employee.name} (${employee.email}) - এর দায়িত্ব ও টাস্ক বিবরণ:**`,
+          `📅 আজকের তারিখ: ${todayStr}`,
+          `✅ আজ সম্পন্ন লিংক পোস্ট: ${toBengaliDigits(todayCompletions.length)} টি`,
+          '',
+          `📂 **বরাদ্দকৃত সেকশনসমূহ (${activeAssignments.length}টি):**`,
+        ];
+
+        if (activeAssignments.length === 0) {
+          lines.push('• বর্তমানে কোনো সেকশন বরাদ্দ করা নেই (No active sections assigned).');
+        } else {
+          for (const a of activeAssignments) {
+            const completedForSection = todayCompletions.filter(
+              (c) => c.group_link?.section_id === a.section_id
+            ).length;
+            const quota = a.post_limit ? `${a.post_limit}টি/দিন` : 'অনির্দিষ্ট (No limit)';
+            lines.push(
+              `• **${a.section.name}**: আজ সম্পন্ন: ${toBengaliDigits(completedForSection)} টি | কোটা: ${quota}`
+            );
+          }
+        }
+
+        return {
+          reply: lines.join('\n'),
+          link: {
+            href: `/admin/employees?q=${encodeURIComponent(employee.name)}`,
+            labelBn: `${employee.name}-এর প্রোফাইল দেখুন`,
+            labelEn: `View ${employee.name}'s Profile`,
+          },
+          suggestions: [
+            {
+              href: `/admin/reports/daily?date=${todayStr}&q=${encodeURIComponent(employee.name)}`,
+              labelBn: `${employee.name}-এর আজকের রিপোর্ট`,
+              labelEn: `${employee.name}'s Today Report`,
+            },
+            {
+              href: '/admin/sections',
+              labelBn: 'গ্রুপ ও লিংক পেজ',
+              labelEn: 'Groups & Links Page',
+            },
+          ],
+        };
+      }
+
+      // 2. Specific Employee Daily Report
+      case 'get_employee_report':
+      case 'get_employee_daily_report': {
+        const rawTarget = (args.employee || args.name || '').trim();
+        const resolvedName = findLastMentionedEmployee(history, rawTarget);
+        const dateInput = (args.date || message).toString();
+        const targetDateStr = resolveDateString(dateInput);
+        const targetDate = parseDateOnly(targetDateStr);
+
+        if (!resolvedName) {
+          return {
+            reply: 'অনুগ্রহ করে কর্মীর নাম উল্লেখ করুন (যেমন: "সিয়াম")।\nPlease specify which employee\'s report you want to view (e.g. "siyam").',
+            link: { href: `/admin/reports/daily?date=${targetDateStr}`, labelBn: 'দৈনিক রিপোর্ট পেজে যান', labelEn: 'Go to Daily Reports' },
+          };
+        }
+
+        const employee = await prisma.user.findFirst({
+          where: {
+            role: 'EMPLOYEE',
+            OR: [
+              { name: { contains: resolvedName, mode: 'insensitive' } },
+              { email: { contains: resolvedName, mode: 'insensitive' } },
+            ],
+          },
+          include: {
+            assignments_as_employee: {
+              include: { section: true },
+            },
+          },
+        });
+
+        if (!employee) {
+          return {
+            reply: `"${resolvedName || rawTarget}" নামে কোনো কর্মী খুঁজে পাওয়া যায়নি।\nNo employee found with name "${resolvedName || rawTarget}".`,
+            link: { href: `/admin/reports/daily?date=${targetDateStr}`, labelBn: 'দৈনিক রিপোর্ট পেজ', labelEn: 'Daily Reports' },
+          };
+        }
+
+        const dayStartUtc = new Date(`${targetDateStr}T00:00:00+06:00`);
+        const dayEndUtc = new Date(`${targetDateStr}T23:59:59.999+06:00`);
+
+        const [allTargets, postsCount, entries, dailyText, settings] = await Promise.all([
+          prisma.sectionTarget.findMany(),
+          prisma.linkCompletion.count({
+            where: {
+              employee_id: employee.id,
+              completed_at: { gte: dayStartUtc, lte: dayEndUtc },
+              undone_at: null,
+            },
+          }),
+          prisma.dailyEntry.findMany({
+            where: { employee_id: employee.id, entry_date: targetDate },
+          }),
+          prisma.dailyText.findUnique({
+            where: {
+              employee_id_entry_date: { employee_id: employee.id, entry_date: targetDate },
+            },
+          }),
+          prisma.scoringSettings.findUnique({ where: { id: 'default' } }),
+        ]);
+
+        const assignedSectionIds = employee.assignments_as_employee.map((a: any) => a.section_id);
+        const empTargets = selectEmployeeTargets(allTargets, employee.id, assignedSectionIds);
+        const dailyTargets = calculateEffectiveTargetsForRange(empTargets, targetDate, targetDate);
+
+        const metricMap: Record<string, number> = {
+          POSTS_DONE: postsCount,
+          SALES_AMOUNT: 0,
+          PROFIT_AMOUNT: 0,
+          NEW_CLIENTS: 0,
+          B2B_ORDERS: 0,
+          RETENTION_COUNT: 0,
+          FOLLOWUPS_DONE: 0,
+        };
+
+        for (const e of entries) {
+          if (e.metric_type !== MetricType.POSTS_DONE) {
+            metricMap[e.metric_type] = Number(e.value);
+          }
+        }
+
+        const cap = settings ? Number(settings.achievement_cap) : 1.0;
+        const failingThreshold = settings ? Number(settings.failing_threshold) : 0.8;
+        const sectionWeights = readSectionWeights(settings);
+
+        const scoringInput = {
+          [MetricType.POSTS_DONE]: { target: dailyTargets.POSTS_DONE || null, achieved: metricMap.POSTS_DONE },
+          [MetricType.SALES_AMOUNT]: { target: dailyTargets.SALES_AMOUNT || null, achieved: metricMap.SALES_AMOUNT },
+          [MetricType.PROFIT_AMOUNT]: { target: dailyTargets.PROFIT_AMOUNT || null, achieved: metricMap.PROFIT_AMOUNT },
+          [MetricType.NEW_CLIENTS]: { target: dailyTargets.NEW_CLIENTS || null, achieved: metricMap.NEW_CLIENTS },
+          [MetricType.B2B_ORDERS]: { target: dailyTargets.B2B_ORDERS || null, achieved: metricMap.B2B_ORDERS },
+          [MetricType.RETENTION_COUNT]: { target: dailyTargets.RETENTION_COUNT || null, achieved: metricMap.RETENTION_COUNT },
+          [MetricType.FOLLOWUPS_DONE]: { target: dailyTargets.FOLLOWUPS_DONE || null, achieved: metricMap.FOLLOWUPS_DONE },
+        };
+
+        const scoreResult = calculateEmployeeScore(scoringInput, {
+          achievementCap: cap,
+          failingThreshold,
+          sectionWeights,
+          lang: 'bn',
+        });
+
+        const statusLabel = scoreResult.isFailing ? 'উন্নতি প্রয়োজন (Fail)' : 'পাস (Pass)';
+
+        const reportLines = [
+          `📊 **${employee.name}-এর দৈনিক পারফরম্যান্স রিপোর্ট (${targetDateStr}):**`,
+          `• মোট স্কোর: **${scoreResult.totalScore}/১০০** (${statusLabel})`,
+          `• পোস্ট সম্পন্ন: **${toBengaliDigits(metricMap.POSTS_DONE)}** টি ${dailyTargets.POSTS_DONE ? `(টার্গেট: ${toBengaliDigits(dailyTargets.POSTS_DONE)})` : ''}`,
+          `• বিক্রয়: **${formatTaka(metricMap.SALES_AMOUNT)}** | মুনাফা: **${formatTaka(metricMap.PROFIT_AMOUNT)}**`,
+          `• নতুন কাস্টমার / লিড: **${toBengaliDigits(metricMap.NEW_CLIENTS)}** টি | B2B অর্ডার: **${toBengaliDigits(metricMap.B2B_ORDERS)}** টি`,
+          `• ফলোআপ সম্পন্ন: **${toBengaliDigits(metricMap.FOLLOWUPS_DONE)}** টি | রিটেনশন: **${toBengaliDigits(metricMap.RETENTION_COUNT)}** টি`,
+        ];
+
+        if (dailyText?.main_issue) {
+          reportLines.push(`• প্রধান সমস্যা / বাধা: "${dailyText.main_issue}"`);
+        }
+        if (dailyText?.next_priorities) {
+          reportLines.push(`• পরবর্তী অগ্রাধিকার: "${dailyText.next_priorities}"`);
+        }
+
+        return {
+          reply: reportLines.join('\n'),
+          link: {
+            href: `/admin/reports/daily?date=${targetDateStr}&q=${encodeURIComponent(employee.name)}`,
+            labelBn: `${employee.name}-এর রিপোর্ট পেজে দেখুন`,
+            labelEn: `View ${employee.name}'s Report Page`,
+          },
+          suggestions: [
+            {
+              href: `/admin/employees?q=${encodeURIComponent(employee.name)}`,
+              labelBn: `${employee.name}-এর প্রোফাইল ও কাজ`,
+              labelEn: `${employee.name}'s Profile & Tasks`,
+            },
+          ],
+        };
+      }
+
+      // 3. Audit Activity Logs
+      case 'get_audit_logs':
+      case 'query_audit_logs': {
+        const where: any = {};
+        if (args.actor) {
+          where.actor = {
+            OR: [
+              { name: { contains: args.actor, mode: 'insensitive' } },
+              { email: { contains: args.actor, mode: 'insensitive' } },
+            ],
+          };
+        }
+        if (args.action && Object.values(AuditAction).includes(args.action)) {
+          where.action = args.action;
+        }
+
+        const takeLimit = Math.max(1, Math.min(20, args.limit || 8));
+        const logs = await prisma.auditLog.findMany({
+          where,
+          take: takeLimit,
+          orderBy: { created_at: 'desc' },
+          include: {
+            actor: {
+              select: { name: true, email: true, role: true },
+            },
+          },
+        });
+
+        if (logs.length === 0) {
+          return {
+            reply: 'কোনো অডিট লগ পাওয়া যায়নি।\nNo audit logs found.',
+            link: { href: '/admin/audit', labelBn: 'অডিট লগ পেজে যান', labelEn: 'Go to Audit Log' },
+          };
+        }
+
+        const logLines = [
+          `🛡️ **সাম্প্রতিক অডিট লগ (${logs.length}টি রেকর্ড):**`,
+          ...logs.map((l, i) => {
+            const time = formatBstDateTime(l.created_at, 'en');
+            const who = l.actor?.name || 'System';
+            return `${toBengaliDigits(i + 1)}. [${time}] **${who}**: ${l.action} (${l.entity})`;
+          }),
+        ];
+
+        return {
+          reply: logLines.join('\n'),
+          link: { href: '/admin/audit', labelBn: 'সম্পূর্ণ অডিট লগ দেখুন', labelEn: 'View Full Audit Log' },
+        };
+      }
+
+      // 4. Lead and Customer Pipeline Stats
+      case 'get_lead_stats': {
+        const [total, ordered, qualified, contact, newLeads, orderedSum] = await Promise.all([
+          prisma.lead.count(),
+          prisma.lead.count({ where: { status: 'ORDERED' } }),
+          prisma.lead.count({ where: { status: 'QUALIFIED' } }),
+          prisma.lead.count({ where: { status: 'CONTACTED' } }),
+          prisma.lead.count({ where: { status: 'NEW' } }),
+          prisma.lead.aggregate({ where: { status: 'ORDERED' }, _sum: { order_amount: true } }),
+        ]);
+
+        const totalSales = Number(orderedSum._sum.order_amount || 0);
+        const conversion = total > 0 ? ((ordered / total) * 100).toFixed(1) : '0';
+
+        const leadLines = [
+          `👥 **কাস্টমার ও লিড পাইপলাইন সারসংক্ষেপ:**`,
+          `• মোট লিড: **${toBengaliDigits(total)}** টি`,
+          `• নিশ্চিত অর্ডার: **${toBengaliDigits(ordered)}** টি (${conversion}% কনভার্সন)`,
+          `• অর্ডারকৃত মোট বিক্রয়: **${formatTaka(totalSales)}**`,
+          `• সক্রিয় স্ট্যাটাস: নতুন ${toBengaliDigits(newLeads)} | যোগাযোগ ${toBengaliDigits(contact)} | কোয়ালিফাইড ${toBengaliDigits(qualified)}`,
+        ];
+
+        return {
+          reply: leadLines.join('\n'),
+          link: { href: '/admin/leads', labelBn: 'লিড ম্যানেজমেন্ট পেজে যান', labelEn: 'Go to Leads Management' },
+        };
+      }
+
+      // 5. Product Catalog
+      case 'list_products': {
+        const products = await prisma.product.findMany({
+          where: { is_active: true },
+          take: 15,
+          orderBy: { name_bn: 'asc' },
+        });
+
+        if (products.length === 0) {
+          return {
+            reply: 'কোনো সক্রিয় পণ্য তালিকাভুক্ত নেই।\nNo active products in catalog.',
+            link: { href: '/admin/products', labelBn: 'পণ্য পেজে যান', labelEn: 'Go to Products Page' },
+          };
+        }
+
+        const lines = [
+          `📦 **পণ্য তালিকা (${products.length}টি সক্রিয় পণ্য):**`,
+          ...products.map(
+            (p, i) =>
+              `${toBengaliDigits(i + 1)}. **${p.name_bn}** (${p.name_en}) - ${formatTaka(Number(p.selling_price))} / ${p.unit}`
+          ),
+        ];
+
+        return {
+          reply: lines.join('\n'),
+          link: { href: '/admin/products', labelBn: 'পণ্য ম্যানেজমেন্ট পেজে দেখুন', labelEn: 'View Products Management' },
+        };
+      }
+
+      // 6. Marketing Campaigns
+      case 'list_campaigns': {
+        const campaigns = await prisma.campaign.findMany({
+          take: 10,
+          orderBy: { created_at: 'desc' },
+        });
+
+        if (campaigns.length === 0) {
+          return {
+            reply: 'কোনো ক্যাম্পেইন পাওয়া যায়নি।\nNo campaigns found.',
+            link: { href: '/admin/campaigns', labelBn: 'ক্যাম্পেইন পেজে যান', labelEn: 'Go to Campaigns Page' },
+          };
+        }
+
+        const lines = [
+          `📢 **মার্কেটিং ক্যাম্পেইনসমূহ (${campaigns.length}টি):**`,
+          ...campaigns.map(
+            (c, i) =>
+              `${toBengaliDigits(i + 1)}. **${c.name}** (বাজেট: ${formatTaka(Number(c.budget))}, স্ট্যাটাস: ${c.status})`
+          ),
+        ];
+
+        return {
+          reply: lines.join('\n'),
+          link: { href: '/admin/campaigns', labelBn: 'ক্যাম্পেইন পেজে দেখুন', labelEn: 'View Campaigns Page' },
+        };
+      }
+
       case 'get_status_summary': {
         const result = await executeCommand('status', [], ctx);
         return {
           ...result,
-          link: { href: '/admin/dashboard', labelBn: 'ড্যাশবোর্ডে দেখুন', labelEn: 'View in Dashboard' }
+          link: { href: '/admin/dashboard', labelBn: 'ড্যাশবোর্ডে দেখুন', labelEn: 'View in Dashboard' },
         };
       }
 
@@ -318,7 +845,7 @@ export async function runGeminiAgent(
         const result = await executeCommand('team', ['list'], ctx);
         return {
           ...result,
-          link: { href: '/admin/employees', labelBn: 'টিম পেজে যান', labelEn: 'Go to Team Page' }
+          link: { href: '/admin/employees', labelBn: 'টিম পেজে যান', labelEn: 'Go to Team Page' },
         };
       }
 
@@ -330,19 +857,30 @@ export async function runGeminiAgent(
             OR: [
               { name: { contains: search, mode: 'insensitive' } },
               { email: { contains: search, mode: 'insensitive' } },
-            ]
-          }
+            ],
+          },
         });
         if (employees.length > 0) {
-          const names = employees.map(e => `${e.name} (${e.email})`).join(', ');
+          const names = employees.map((e) => `${e.name} (${e.email})`).join(', ');
           return {
             reply: `হ্যাঁ, "${search}" নামে কর্মী আছেন:\n${names}\n\nYes, employee exists: ${names}`,
-            link: { href: `/admin/employees?q=${encodeURIComponent(search)}`, labelBn: 'টিম পেজে দেখুন', labelEn: 'View in Team Page' }
+            link: {
+              href: `/admin/employees?q=${encodeURIComponent(search)}`,
+              labelBn: `${search}-এর প্রোফাইল দেখুন`,
+              labelEn: `View ${search}'s Profile`,
+            },
+            suggestions: [
+              {
+                href: `/admin/reports/daily?date=${getDhakaDateString()}&q=${encodeURIComponent(search)}`,
+                labelBn: `${search}-এর রিপোর্ট দেখুন`,
+                labelEn: `View ${search}'s Report`,
+              },
+            ],
           };
         } else {
           return {
             reply: `না, "${search}" নামে কোনো কর্মী খুঁজে পাওয়া যায়নি।\nNo employee found with name "${search}".`,
-            link: { href: '/admin/employees', labelBn: 'টিম পেজে যান', labelEn: 'Go to Team Page' }
+            link: { href: '/admin/employees', labelBn: 'টিম পেজে যান', labelEn: 'Go to Team Page' },
           };
         }
       }
@@ -352,12 +890,12 @@ export async function runGeminiAgent(
           `name=${args.name}`,
           `password=${args.password}`,
           args.email ? `email=${args.email}` : '',
-          args.phone ? `phone=${args.phone}` : ''
+          args.phone ? `phone=${args.phone}` : '',
         ].filter(Boolean);
         const result = await executeCommand('team', cmdArgs, ctx);
         return {
           ...result,
-          link: { href: '/admin/employees', labelBn: 'টিম পেজে যান', labelEn: 'Go to Team Page' }
+          link: { href: '/admin/employees', labelBn: 'টিম পেজে যান', labelEn: 'Go to Team Page' },
         };
       }
 
@@ -365,7 +903,7 @@ export async function runGeminiAgent(
         const result = await executeCommand('password', [args.target, args.new_password], ctx);
         return {
           ...result,
-          link: { href: '/admin/employees', labelBn: 'টিম পেজে যান', labelEn: 'Go to Team Page' }
+          link: { href: '/admin/employees', labelBn: 'টিম পেজে যান', labelEn: 'Go to Team Page' },
         };
       }
 
@@ -373,7 +911,7 @@ export async function runGeminiAgent(
         const result = await executeCommand('groups', ['list'], ctx);
         return {
           ...result,
-          link: { href: '/admin/sections', labelBn: 'গ্রুপ পেজে যান', labelEn: 'Go to Groups Page' }
+          link: { href: '/admin/sections', labelBn: 'গ্রুপ পেজে যান', labelEn: 'Go to Groups Page' },
         };
       }
 
@@ -381,7 +919,7 @@ export async function runGeminiAgent(
         const result = await executeCommand('groups', ['add', 'section', args.name], ctx);
         return {
           ...result,
-          link: { href: '/admin/sections', labelBn: 'গ্রুপ পেজে যান', labelEn: 'Go to Groups Page' }
+          link: { href: '/admin/sections', labelBn: 'গ্রুপ পেজে যান', labelEn: 'Go to Groups Page' },
         };
       }
 
@@ -390,7 +928,7 @@ export async function runGeminiAgent(
         const result = await executeCommand('links', [args.section_name, ...urlList], ctx);
         return {
           ...result,
-          link: { href: '/admin/sections', labelBn: 'গ্রুপ পেজে যান', labelEn: 'Go to Groups Page' }
+          link: { href: '/admin/sections', labelBn: 'গ্রুপ পেজে যান', labelEn: 'Go to Groups Page' },
         };
       }
 
@@ -398,7 +936,7 @@ export async function runGeminiAgent(
         const result = await executeCommand('assign', [args.employee, 'to', args.section_name], ctx);
         return {
           ...result,
-          link: { href: '/admin/sections', labelBn: 'গ্রুপ পেজে যান', labelEn: 'Go to Groups Page' }
+          link: { href: '/admin/sections', labelBn: 'গ্রুপ পেজে যান', labelEn: 'Go to Groups Page' },
         };
       }
 
@@ -407,7 +945,7 @@ export async function runGeminiAgent(
         const result = await executeCommand('permission', [args.employee, permArg], ctx);
         return {
           ...result,
-          link: { href: '/admin/employees', labelBn: 'টিম পেজে যান', labelEn: 'Go to Team Page' }
+          link: { href: '/admin/employees', labelBn: 'টিম পেজে যান', labelEn: 'Go to Team Page' },
         };
       }
 
@@ -437,14 +975,14 @@ export async function runGeminiAgent(
           return {
             reply: `পেজটি ওপেন করা হচ্ছে: ${targetNav.labelBn} / Opening ${targetNav.labelEn}...`,
             link: targetNav,
-            navigate: true
+            navigate: true,
           };
         }
 
         const navRes = await navigate(args.page_intent || message);
         return {
           ...navRes,
-          navigate: true
+          navigate: true,
         };
       }
 
@@ -453,11 +991,11 @@ export async function runGeminiAgent(
     }
   }
 
-  // If Gemini provided a direct textual answer/explanation
+  // If Gemini provided a direct textual explanation
   const textPart = parts.find((p: any) => p.text);
   if (textPart?.text) {
     return {
-      reply: textPart.text
+      reply: textPart.text,
     };
   }
 
