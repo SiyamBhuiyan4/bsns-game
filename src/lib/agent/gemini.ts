@@ -61,13 +61,29 @@ function getGeminiApiKey(): string {
 const AGENT_TOOLS = [
   {
     name: 'navigate_to_page',
-    description: 'Directs the admin to any page/feature across the web app (e.g., dashboard, employees, sections/groups, products, campaigns, leads, targets & budgets, daily report, 90-day plan, audit log, settings, manual).',
+    description: 'Directly opens and navigates the user to any page/feature across the web app whenever the user wants to see, view, open, or go to a page (e.g. employee list / team, dashboard, sections/groups, products, campaigns, leads, targets & budgets, daily report, 90-day plan, audit log, settings, manual).',
     parameters: {
       type: 'OBJECT',
       properties: {
         page_intent: {
           type: 'STRING',
-          description: 'Topic keyword e.g. "team", "leads", "groups", "targets", "dashboard", "manual", "settings"'
+          enum: [
+            'team',
+            'groups',
+            'leads',
+            'products',
+            'campaigns',
+            'targets',
+            'dashboard',
+            'reports_daily',
+            'reports_weekly',
+            'reports_monthly',
+            'plan',
+            'audit',
+            'settings',
+            'manual'
+          ],
+          description: 'The specific page to navigate to: team (employees), groups (sections/links), leads, products, campaigns, targets, dashboard, reports_daily, plan, audit, settings, manual.'
         }
       },
       required: ['page_intent']
@@ -339,7 +355,40 @@ export async function runGeminiAgent(
       }
 
       case 'navigate_to_page': {
-        return await navigate(args.page_intent || message);
+        const pageKey = (args.page_intent || args.page || '').toLowerCase();
+        const PAGE_MAP: Record<string, { href: string; labelBn: string; labelEn: string }> = {
+          team: { href: '/admin/employees', labelBn: 'টিম পেজ', labelEn: 'Team Page' },
+          employees: { href: '/admin/employees', labelBn: 'টিম পেজ', labelEn: 'Team Page' },
+          groups: { href: '/admin/sections', labelBn: 'গ্রুপ পেজ', labelEn: 'Groups Page' },
+          sections: { href: '/admin/sections', labelBn: 'গ্রুপ পেজ', labelEn: 'Groups Page' },
+          leads: { href: '/admin/leads', labelBn: 'লিড পেজ', labelEn: 'Leads Page' },
+          products: { href: '/admin/products', labelBn: 'পণ্য পেজ', labelEn: 'Products Page' },
+          campaigns: { href: '/admin/campaigns', labelBn: 'ক্যাম্পেইন পেজ', labelEn: 'Campaigns Page' },
+          targets: { href: '/admin/targets', labelBn: 'টার্গেট ও বাজেট পেজ', labelEn: 'Targets Page' },
+          dashboard: { href: '/admin/dashboard', labelBn: 'ড্যাশবোর্ড', labelEn: 'Dashboard' },
+          reports_daily: { href: '/admin/reports/daily', labelBn: 'দৈনিক রিপোর্ট', labelEn: 'Daily Report' },
+          reports_weekly: { href: '/admin/reports/weekly', labelBn: 'সাপ্তাহিক রিপোর্ট', labelEn: 'Weekly Report' },
+          reports_monthly: { href: '/admin/reports/monthly', labelBn: 'মাসিক রিপোর্ট', labelEn: 'Monthly Report' },
+          plan: { href: '/admin/plan', labelBn: '৯০ দিনের প্ল্যান', labelEn: '90-Day Plan' },
+          audit: { href: '/admin/audit', labelBn: 'অডিট লগ', labelEn: 'Audit Log' },
+          settings: { href: '/admin/settings', labelBn: 'সেটিংস', labelEn: 'Settings' },
+          manual: { href: '/admin/manual', labelBn: 'নির্দেশিকা', labelEn: 'Manual' },
+        };
+
+        const targetNav = PAGE_MAP[pageKey];
+        if (targetNav) {
+          return {
+            reply: `পেজটি ওপেন করা হচ্ছে: ${targetNav.labelBn} / Opening ${targetNav.labelEn}...`,
+            link: targetNav,
+            navigate: true
+          };
+        }
+
+        const navRes = await navigate(args.page_intent || message);
+        return {
+          ...navRes,
+          navigate: true
+        };
       }
 
       default:
