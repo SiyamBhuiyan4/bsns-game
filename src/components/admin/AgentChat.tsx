@@ -96,7 +96,12 @@ export default function AgentChat() {
     return id;
   };
 
-  const callAgent = async (body: { message: string; confirm?: boolean; pending?: { token: string } }) => {
+  const callAgent = async (body: {
+    message: string;
+    confirm?: boolean;
+    pending?: { token: string };
+    history?: Array<{ role: 'user' | 'assistant'; text: string }>;
+  }) => {
     setLoading(true);
     try {
       const res = await fetch('/api/admin/agent', {
@@ -136,7 +141,17 @@ export default function AgentChat() {
     if (!text || loading) return;
     setInput('');
     addMessage({ role: 'user', text });
-    void callAgent({ message: text });
+
+    // Collect the last 5 conversation messages as context
+    const recentHistory = messages
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .slice(-5)
+      .map((m) => ({
+        role: m.role as 'user' | 'assistant',
+        text: m.text,
+      }));
+
+    void callAgent({ message: text, history: recentHistory });
   };
 
   const answerConfirmation = (msgId: number, original: string, yes: boolean, pending?: { token: string }) => {

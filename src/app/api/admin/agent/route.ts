@@ -41,6 +41,16 @@ const requestSchema = z.object({
   confirm: z.boolean().optional(),
   // Echoed back from a previous preview so the exact previewed command runs (no second AI call).
   pending: z.object({ token: z.string().min(1).max(8000) }).optional(),
+  // Recent chat history turns for multi-turn conversational context
+  history: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']),
+        text: z.string().max(2000),
+      })
+    )
+    .max(10)
+    .optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -70,7 +80,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { message, confirm, pending } = parse.data;
+  const { message, confirm, pending, history } = parse.data;
   const ctx = { actorId: session.userId, confirm: confirm === true };
 
   let result: AgentResult & { link?: NavLink; suggestions?: NavLink[]; navigate?: boolean };
@@ -81,8 +91,8 @@ export async function POST(request: NextRequest) {
       ? await executeCommand(opened.command, opened.args, ctx)
       : { reply: 'এই অনুরোধের মেয়াদ শেষ বা অবৈধ। আবার কমান্ড লিখুন।\nThis request expired or is invalid. Please send the command again.' };
   } else {
-    // 1. First try autonomous Gemini agent (understands Bangla, English, Banglish and executes tools)
-    const geminiResult = await runGeminiAgent({ message, actorId: session.userId });
+    // 1. First try autonomous Gemini agent with multi-turn conversation history
+    const geminiResult = await runGeminiAgent({ message, actorId: session.userId, history });
     if (geminiResult) {
       result = geminiResult;
     } else {

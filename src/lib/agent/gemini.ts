@@ -4,9 +4,15 @@ import prisma from '@/lib/prisma';
 import { executeCommand, type AgentResult } from '@/lib/agent/commands';
 import { navigate, type NavLink } from '@/lib/agent/navigator';
 
+export interface ChatHistoryTurn {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
 export interface GeminiAgentInput {
   message: string;
   actorId: string;
+  history?: ChatHistoryTurn[];
 }
 
 export interface GeminiAgentOutput extends AgentResult {
@@ -215,19 +221,34 @@ export async function runGeminiAgent(
     return null;
   }
 
-  const { message, actorId } = input;
+  const { message, actorId, history = [] } = input;
   const ctx = { actorId, confirm: false };
+
+  // Prepare multi-turn conversation contents:
+  // Take the last 6 history items (3 user + 3 assistant pairs) to preserve full context with minimal tokens
+  const contentsPayload: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
+
+  const recentHistory = history.slice(-6);
+  for (const turn of recentHistory) {
+    if (turn.text && turn.text.trim()) {
+      contentsPayload.push({
+        role: turn.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: turn.text.trim() }]
+      });
+    }
+  }
+
+  // Ensure current user message is appended
+  contentsPayload.push({
+    role: 'user',
+    parts: [{ text: message }]
+  });
 
   const payload = {
     systemInstruction: {
       parts: [{ text: SYSTEM_INSTRUCTION }]
     },
-    contents: [
-      {
-        role: 'user',
-        parts: [{ text: message }]
-      }
-    ],
+    contents: contentsPayload,
     tools: [
       {
         functionDeclarations: AGENT_TOOLS
