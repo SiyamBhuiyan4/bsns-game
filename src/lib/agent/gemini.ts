@@ -351,7 +351,7 @@ function findLastMentionedEmployee(history: ChatHistoryTurn[], fallback: string)
     const emailMatch = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/i);
     if (emailMatch) return emailMatch[0];
 
-    const nameMatch = text.match(/(?:siyam|siam|abu|sumaiya|hasan|jamal|rahim|karim|tanvir|nafis|rony)/i);
+    const nameMatch = text.match(/\b(?:siyam|siam|abu|sumaiya|hasan|jamal|rahim|karim|tanvir|nafis|rony|সিয়াম|সিয়াম|আবু|সুহেনা|হাসান|জামাল|রহিম|করিম)\b/i);
     if (nameMatch) {
       return nameMatch[0];
     }

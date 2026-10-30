@@ -268,6 +268,7 @@ export default function AgentChat() {
   const [isListening, setIsListening] = useState(false);
   const [speakingId, setSpeakingId] = useState<number | null>(null);
   const recognitionRef = useRef<any>(null);
+  const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Clean up speech recognition and synthesis when modal closes
   useEffect(() => {
@@ -276,6 +277,7 @@ export default function AgentChat() {
         window.speechSynthesis.cancel();
       }
       setSpeakingId(null);
+      activeUtteranceRef.current = null;
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();
@@ -297,6 +299,13 @@ export default function AgentChat() {
       }
       setIsListening(false);
       return;
+    }
+
+    // Stop active speech playback so mic does not catch assistant audio
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      setSpeakingId(null);
+      activeUtteranceRef.current = null;
     }
 
     const SpeechRecognitionClass =
@@ -335,6 +344,13 @@ export default function AgentChat() {
       recognition.onerror = (event: any) => {
         console.warn('[SpeechRecognition] error:', event.error);
         setIsListening(false);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          alert(
+            lang === 'en'
+              ? 'Microphone permission was denied. Please allow microphone access in your browser settings.'
+              : 'মাইক্রোফোনের অনুমতি পাওয়া যায়নি। ব্রাউজার সেটিংসে গিয়ে মাইক্রোফোন অ্যাক্সেস অন করুন।'
+          );
+        }
       };
 
       recognition.onend = () => {
@@ -356,6 +372,7 @@ export default function AgentChat() {
     if (speakingId === id) {
       window.speechSynthesis.cancel();
       setSpeakingId(null);
+      activeUtteranceRef.current = null;
       return;
     }
 
@@ -374,8 +391,15 @@ export default function AgentChat() {
     utterance.lang = hasBengali ? 'bn-BD' : 'en-US';
     utterance.rate = 1.0;
 
-    utterance.onend = () => setSpeakingId(null);
-    utterance.onerror = () => setSpeakingId(null);
+    activeUtteranceRef.current = utterance;
+    utterance.onend = () => {
+      setSpeakingId(null);
+      activeUtteranceRef.current = null;
+    };
+    utterance.onerror = () => {
+      setSpeakingId(null);
+      activeUtteranceRef.current = null;
+    };
 
     setSpeakingId(id);
     window.speechSynthesis.speak(utterance);

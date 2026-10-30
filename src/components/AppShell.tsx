@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X, type LucideIcon } from 'lucide-react';
@@ -46,10 +46,33 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { t, lang, L } = useLanguage();
+  const activeNavRef = useRef<HTMLAnchorElement | null>(null);
 
   useEffect(() => setOpen(false), [pathname]);
 
+  // Lock body scroll and handle Escape key when mobile drawer is open
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
   const isActive = (href: string) => (href === homeHref ? pathname === href : pathname.startsWith(href));
+
+  // Automatically scroll active navigation item into view when navigating
+  useEffect(() => {
+    if (activeNavRef.current) {
+      activeNavRef.current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [pathname]);
+
   const current = groups.flatMap((g) => g.items).find((i) => isActive(i.href));
   const initials = session.name
     .split(/\s+/)
@@ -59,11 +82,11 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
     .toUpperCase();
 
   const nav = (
-    <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label={lang === 'bn' ? L('মেনু') : 'Menu'}>
+    <nav className="flex-1 overflow-y-auto px-3 py-3" aria-label={lang === 'bn' ? L('মেনু') : 'Menu'}>
       {groups.map((group) => (
-        <div key={group.key} className="mb-5 last:mb-0">
+        <div key={group.key} className="mb-3.5 last:mb-0">
           {group.labelBn && (
-            <div className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            <div className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               {t(`admin_nav.group_${group.key}`, group.labelBn, group.labelEn ?? group.labelBn)}
             </div>
           )}
@@ -76,8 +99,9 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
                 <li key={item.href}>
                   <Link
                     href={item.href}
+                    ref={active ? activeNavRef : undefined}
                     aria-current={active ? 'page' : undefined}
-                    className={`group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all duration-200 ${
+                    className={`group relative flex items-center gap-3 rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
                       active
                         ? `bg-gradient-to-r ${tint.active} font-semibold text-white shadow-md`
                         : 'font-medium text-slate-600 hover:translate-x-0.5 hover:bg-slate-100 hover:text-slate-900'
@@ -159,7 +183,7 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
 
       {/* Mobile drawer */}
       {open && (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
+        <div id="mobile-nav-drawer" className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label={lang === 'bn' ? 'নেভিগেশন মেনু' : 'Navigation Menu'}>
           <div className="animate-fade-in absolute inset-0 overlay-dim backdrop-blur-sm" onClick={() => setOpen(false)} />
           <aside className="animate-slide-in-left absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-white shadow-xl">
             <div className="flex items-center justify-between pr-3">
@@ -177,7 +201,14 @@ export default function AppShell({ brandBn, brandEn, brandIcon: BrandIcon, homeH
       <div className="lg:pl-64">
         {/* Top bar */}
         <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-slate-200 bg-white/85 px-4 backdrop-blur-md sm:px-6">
-          <button type="button" className="btn-icon lg:hidden" onClick={() => setOpen(true)} aria-label={lang === 'bn' ? L('মেনু খুলুন') : 'Open menu'}>
+          <button
+            type="button"
+            className="btn-icon lg:hidden"
+            onClick={() => setOpen(true)}
+            aria-expanded={open}
+            aria-controls="mobile-nav-drawer"
+            aria-label={lang === 'bn' ? L('মেনু খুলুন') : 'Open menu'}
+          >
             <Menu className="h-5 w-5" />
           </button>
           <div className="min-w-0 flex-1 truncate text-sm font-medium text-slate-500">
