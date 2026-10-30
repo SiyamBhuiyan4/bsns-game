@@ -13,6 +13,8 @@ import {
   FileText,
   Layers,
   Loader2,
+  Mic,
+  MicOff,
   RotateCcw,
   Send,
   ShieldAlert,
@@ -21,6 +23,8 @@ import {
   Target,
   UserPlus,
   Users,
+  Volume2,
+  VolumeX,
   X,
 } from 'lucide-react';
 import { useLanguage } from '@/components/LanguageContext';
@@ -260,6 +264,123 @@ export default function AgentChat() {
   const listEndRef = useRef<HTMLDivElement>(null);
   const wasOpen = useRef(false);
 
+  // Voice text (speech-to-text) and Text-to-speech audio playback state
+  const [isListening, setIsListening] = useState(false);
+  const [speakingId, setSpeakingId] = useState<number | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  // Clean up speech recognition and synthesis when modal closes
+  useEffect(() => {
+    if (!open) {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      setSpeakingId(null);
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {}
+      }
+      setIsListening(false);
+    }
+  }, [open]);
+
+  // Speech-to-text toggle
+  const toggleListening = () => {
+    if (typeof window === 'undefined') return;
+
+    if (isListening) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {}
+      }
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognitionClass =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognitionClass) {
+      alert(
+        lang === 'en'
+          ? 'Voice speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.'
+          : 'আপনার ব্রাউজারে ভয়েস রিকগনিশন সাপোর্ট নেই। গুগল ক্রোম, এজ বা সাফারি ব্রাউজার ব্যবহার করুন।'
+      );
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognitionClass();
+      recognition.lang = lang === 'en' ? 'en-US' : 'bn-BD';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results?.[0]?.[0]?.transcript || '';
+        if (transcript) {
+          setInput((prev) => {
+            const trimmed = prev.trim();
+            return trimmed ? `${trimmed} ${transcript}` : transcript;
+          });
+          inputRef.current?.focus();
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('[SpeechRecognition] error:', event.error);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err) {
+      console.warn('[SpeechRecognition] start error:', err);
+      setIsListening(false);
+    }
+  };
+
+  // Text-to-speech toggle for reading assistant bubbles aloud
+  const toggleSpeak = (id: number, text: string) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    if (speakingId === id) {
+      window.speechSynthesis.cancel();
+      setSpeakingId(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const cleanText = text
+      .replace(/[*_#`[\]()]/g, '')
+      .replace(/https?:\/\/\S+/g, '')
+      .replace(/[•\-\n]+/g, '. ')
+      .trim();
+
+    if (!cleanText) return;
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    const hasBengali = /[\u0980-\u09FF]/.test(cleanText);
+    utterance.lang = hasBengali ? 'bn-BD' : 'en-US';
+    utterance.rate = 1.0;
+
+    utterance.onend = () => setSpeakingId(null);
+    utterance.onerror = () => setSpeakingId(null);
+
+    setSpeakingId(id);
+    window.speechSynthesis.speak(utterance);
+  };
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -493,7 +614,42 @@ export default function AgentChat() {
                           : 'rounded-2xl rounded-tl-xs border border-slate-200/90 bg-white px-4 py-2.5 text-sm text-slate-800 shadow-xs'
                       }
                     >
-                      {isUser ? m.text : <FormattedBubbleText text={m.text} />}
+                      {isUser ? (
+                        m.text
+                      ) : (
+                        <>
+                          <FormattedBubbleText text={m.text} />
+                          <div className="pt-2 flex items-center justify-between border-t border-slate-100/80 mt-2">
+                            <button
+                              type="button"
+                              onClick={() => toggleSpeak(m.id, m.text)}
+                              aria-label={
+                                speakingId === m.id
+                                  ? L('পড়া বন্ধ করুন', 'Stop listening')
+                                  : L('পড়ে শুনুন', 'Listen to voice')
+                              }
+                              title={
+                                speakingId === m.id
+                                  ? L('পড়া বন্ধ করুন', 'Stop listening')
+                                  : L('ভয়েসে শুনুন', 'Read aloud')
+                              }
+                              className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500 hover:text-brand-600 transition-colors py-0.5 px-1.5 rounded-md hover:bg-slate-50 cursor-pointer"
+                            >
+                              {speakingId === m.id ? (
+                                <>
+                                  <VolumeX className="h-3.5 w-3.5 text-rose-500 animate-pulse" />
+                                  <span className="text-rose-600 font-medium">{L('থামুন', 'Stop')}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Volume2 className="h-3.5 w-3.5 text-slate-400" />
+                                  <span>{L('ভয়েস শুনুন', 'Listen')}</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     {/* Needs Confirmation Prompt Banner */}
@@ -661,8 +817,30 @@ export default function AgentChat() {
             ))}
           </div>
 
-          {/* Text Input area */}
-          <div className="flex items-end gap-2 bg-white px-3 pb-3 pt-1">
+          {/* Active Listening Voice Banner */}
+          {isListening && (
+            <div className="flex items-center justify-between bg-rose-50 border-t border-rose-200/80 px-3 py-1.5 text-xs text-rose-700 animate-fade-in">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
+                </span>
+                <span className="font-medium text-[11px] sm:text-xs">
+                  {L('শুনছি... কথা বলুন (বাংলা বা ইংরেজি)', 'Listening... speak now (Bengali or English)')}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={toggleListening}
+                className="text-[11px] font-semibold text-rose-800 hover:underline cursor-pointer"
+              >
+                {L('বাতিল', 'Cancel')}
+              </button>
+            </div>
+          )}
+
+          {/* Text & Voice Input area */}
+          <div className="flex items-end gap-1.5 bg-white px-3 pb-3 pt-1">
             <label htmlFor="agent-chat-input" className="sr-only">
               {L('বার্তা', 'Message')}
             </label>
@@ -673,9 +851,40 @@ export default function AgentChat() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder={L('বার্তা লিখুন (যেমন: আজকের রিপোর্ট, কর্মী তালিকা)...', 'Type a question or command (e.g. daily report)...')}
+              placeholder={
+                isListening
+                  ? L('কথা বলুন, স্বয়ংক্রিয়ভাবে টেক্সট হবে...', 'Listening to your voice...')
+                  : L('বার্তা লিখুন বা মাইকে কথা বলুন...', 'Type or click mic to speak...')
+              }
               className="input max-h-32 min-h-[40px] flex-1 resize-none py-2 text-xs sm:text-sm bg-slate-50/70 focus:bg-white"
             />
+            {/* Microphone button for Voice-to-Text */}
+            <button
+              type="button"
+              onClick={toggleListening}
+              aria-label={
+                isListening
+                  ? L('ভয়েস রেকর্ড বন্ধ করুন', 'Stop listening')
+                  : L('ভয়েসে কথা বলুন', 'Voice input')
+              }
+              title={
+                isListening
+                  ? L('ভয়েস বন্ধ করুন', 'Stop listening')
+                  : L('ভয়েস টাইপিং (মাইক্রোফোন)', 'Voice input')
+              }
+              className={`h-10 w-10 shrink-0 rounded-xl transition flex items-center justify-center cursor-pointer ${
+                isListening
+                  ? 'bg-rose-500 text-white animate-pulse shadow-md ring-2 ring-rose-300'
+                  : 'border border-slate-200 bg-slate-50 text-slate-600 hover:text-brand-600 hover:bg-brand-50 hover:border-brand-200'
+              }`}
+            >
+              {isListening ? (
+                <MicOff className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Mic className="h-4 w-4" aria-hidden="true" />
+              )}
+            </button>
+            {/* Send button */}
             <button
               type="button"
               onClick={() => send()}
