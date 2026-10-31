@@ -26,16 +26,9 @@ export default function AdminShell({ session, children }: { session: { name: str
         { href: '/admin/leads', key: 'admin_nav.leads', labelBn: 'কাস্টমার ও লিড', labelEn: 'Customers & Leads', icon: UserPlus },
         { href: '/admin/sections', key: 'admin_nav.groups', labelBn: 'গ্রুপ ও লিংক', labelEn: 'Groups & Links', icon: Layers },
         { href: '/admin/targets', key: 'admin_nav.targets', labelBn: 'কাজ ও টার্গেট', labelEn: 'Tasks & Targets', icon: Target },
+        { href: '/admin/products', key: 'admin_nav.products', labelBn: 'পণ্য ও সেলস টার্গেট', labelEn: 'Product Goals', icon: Package },
         { href: '/admin/reports/daily', key: 'admin_nav.reports', labelBn: 'রিপোর্ট', labelEn: 'Reports', icon: FileText },
         { href: '/admin/plan', key: 'admin_nav.plan', labelBn: 'কর্মপরিকল্পনা', labelEn: 'Action Plan', icon: CalendarCheck },
-      ],
-    },
-    {
-      key: 'business',
-      labelBn: 'ব্যবসা ও প্রচারণা',
-      labelEn: 'Business & Marketing',
-      items: [
-        { href: '/admin/campaigns', key: 'admin_nav.campaigns', labelBn: 'ক্যাম্পেইন ও প্রোডাক্ট', labelEn: 'Campaigns & Products', icon: Megaphone },
       ],
     },
     {

@@ -1,5 +1,7 @@
-import { redirect } from 'next/navigation';
+'use client';
+
+import ProductGoalsTab from '@/components/admin/ProductGoalsTab';
 
 export default function AdminProductsPage() {
-  redirect('/admin/campaigns?tab=products');
+  return <ProductGoalsTab />;
 }
