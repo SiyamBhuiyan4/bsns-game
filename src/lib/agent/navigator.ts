@@ -19,7 +19,7 @@ import {
 } from '@/lib/date';
 import { getDailyReportSummary } from '@/lib/reports';
 
-export type NavLink = { href: string; labelBn: string; labelEn: string };
+export type NavLink = { href: string; labelBn: string; labelEn: string; actionQuery?: string };
 export type NavResult = { reply: string; link?: NavLink; suggestions?: NavLink[]; navigate?: boolean };
 
 /** Kept for the teach page: every page the assistant can open. */

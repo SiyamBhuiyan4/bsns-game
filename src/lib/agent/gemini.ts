@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { executeCommand, type AgentResult } from '@/lib/agent/commands';
 import { navigate, type NavLink } from '@/lib/agent/navigator';
 import { resolveDateString } from '@/lib/agent/date-parser';
+import { OFF_TOPIC } from '@/lib/agent/knowledge';
 import {
   getDhakaDateString,
   parseDateOnly,
@@ -300,6 +301,56 @@ const AGENT_TOOLS = [
       required: ['employee', 'grant'],
     },
   },
+  {
+    name: 'clarify_and_offer_options',
+    description:
+      'ALWAYS call this tool when the user request is broad, ambiguous, has multiple possibilities, or when the user should pick an option before executing an action (e.g. "কর্মী দেখতে চাই", "রিপোর্ট দেখাও", "টার্গেট বদলাবো", "সিয়ামের কাজ করব", "নতুন এন্ট্রি দেব", "লিড বা কাস্টমার দেখাও"). Provides clarification text and interactive clickable option buttons (each with label and the action query to run on click).',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        clarification: {
+          type: 'STRING',
+          description:
+            'Clarifying message in Bengali & English explaining the possibilities or asking which specific item/action the user wants to execute.',
+        },
+        options: {
+          type: 'ARRAY',
+          description: 'Array of clickable options that will be executed when clicked.',
+          items: {
+            type: 'OBJECT',
+            properties: {
+              labelBn: { type: 'STRING', description: 'Short button label in Bengali' },
+              labelEn: { type: 'STRING', description: 'Short button label in English' },
+              actionQuery: { type: 'STRING', description: 'The exact query to execute when clicked (e.g. "সিয়ামের অ্যাসাইন করা টাস্ক দেখাও", "আজকের দৈনিক রিপোর্ট দেখাও")' },
+              href: { type: 'STRING', description: 'Optional page route to open' },
+            },
+            required: ['labelBn', 'labelEn', 'actionQuery'],
+          },
+        },
+      },
+      required: ['clarification', 'options'],
+    },
+  },
+  {
+    name: 'refuse_off_topic',
+    description:
+      'MUST be called when the user asks an off-topic question unrelated to the Game of Business marketing platform (e.g. general programming code like C++ or Python, hello world, homework, sports, cooking, jokes, etc.).',
+    parameters: {
+      type: 'OBJECT',
+      properties: {
+        topic: { type: 'STRING', description: 'The off-topic subject detected (e.g. "C++ code", "cooking", "trivia")' },
+      },
+    },
+  },
+  {
+    name: 'get_today_targets',
+    description:
+      'Fetches today\'s active performance targets and achievement overview across all sections and employees.',
+    parameters: {
+      type: 'OBJECT',
+      properties: {},
+    },
+  },
 ];
 
 const SYSTEM_INSTRUCTION = `
@@ -307,7 +358,32 @@ You are the Executive AI Agent for "Game of Business" (Marketing Performance Man
 You understand English, Bengali (বাংলা), and Banglish seamlessly.
 You have full authority to assist the admin, inspect database records, calculate performance, navigate pages, and execute administrative actions.
 
-CRITICAL BEHAVIOR RULES:
+STRICT BOUNDARY & OFF-TOPIC REFUSAL RULE (HIGHEST PRIORITY):
+1. You are EXCLUSIVELY the internal AI Agent for this Marketing Performance Platform.
+2. You are ONLY permitted to assist with topics directly within this web application:
+   - Employees & Team Management (list, tasks, add, reset password, permissions)
+   - Customers & Leads Pipeline (check leads, stats, status, customer list, search phone)
+   - Group Sections & Link Tasks (sections, links, assign marketer)
+   - Tasks & Targets (set section target, set employee target, today targets, scores)
+   - Performance Reports (daily, weekly, monthly reports, sales, profit, B2B)
+   - 90-Day Action Plan (phases, milestones, tasks)
+   - Products Catalog (prices, products list, units)
+   - Marketing Campaigns & Ad Spend (budgets, campaign status, ROAS)
+   - System Settings & Audit Logs (activity, who did what, logins)
+   - System Page Navigation
+3. STRICTLY FORBIDDEN:
+   - Writing general programming code (e.g. C++, Java, Python, C#, PHP, algorithms, hello world).
+   - Answering school/college homework, math puzzles, recipes/cooking, poems, movie/song queries, sports scores, politics, or general chit-chat.
+4. When an off-topic query is asked (e.g. "c++ code deo", "hello world code", "write python script", "ranna recipe"):
+   You MUST call "refuse_off_topic" or decline politely in bilingual format and offer valid platform options! NEVER write C++ or non-platform code.
+
+INTERACTIVE CLARIFICATION & OPTIONS RULE:
+1. When a user asks something broad, general, ambiguous, or multi-step (e.g. "কর্মী দেখতে চাই", "রিপোর্ট দেখাও", "টার্গেট বদলাবো", "সিয়ামের কাজ করব", "নতুন এন্ট্রি দেব", "লিড বা কাস্টমার দেখাও"):
+   You MUST call "clarify_and_offer_options"!
+2. Clarify clearly what options exist in Bengali & English, and provide 2-5 clickable options with explicit "actionQuery".
+3. When the user clicks an option, the system sends that exact actionQuery to you, and you MUST execute the action immediately and show the full data in the chat!
+
+AUTONOMOUS EXECUTION & DATA RETRIEVAL RULE:
 1. Multi-turn Entity Memory & Pronouns:
    - In Bengali/Banglish: "or" (ওর), "tar" (তার), "o" (ও), "uni" (উনি), "his", "him", "her", "that person" REFER TO THE PERSON DISCUSSED IN THE IMMEDIATELY PRECEDING TURNS.
    - Example:
@@ -320,7 +396,7 @@ CRITICAL BEHAVIOR RULES:
      User says "ami or report dekhte chaisi specifically" -> Call get_employee_report(employee: "siyam", date: "yesterday").
 
 2. Provide Specific Data First:
-   - When the user asks for specific reports, tasks, audit trails, leads, or employee status, ALWAYS call the corresponding specific tool (get_employee_assigned_tasks, get_employee_report, get_audit_logs, get_lead_stats) so the user gets actual data and answers in the chat!
+   - When the user asks for specific reports, tasks, audit trails, leads, products, campaigns, or employee status, ALWAYS call the corresponding specific tool so the user gets actual data and answers directly in the chat!
    - Do NOT just navigate away to a generic page unless the user solely instructed to open or view a page without data query intent.
 
 3. Dates & Relative Time:
@@ -360,17 +436,95 @@ function findLastMentionedEmployee(history: ChatHistoryTurn[], fallback: string)
 }
 
 /**
+ * Detects if a message is asking for something completely outside the scope
+ * of the internal Game of Business marketing management platform (e.g. C++, Python,
+ * recipes, weather, general homework, sports).
+ */
+export function isOffTopicQuery(text: string): boolean {
+  if (!text || typeof text !== 'string') return false;
+  const lower = text.toLowerCase().trim();
+
+  // Explicit off-topic regex patterns
+  const offTopicPatterns = [
+    // Programming languages / coding requests
+    /\b(?:c\+\+|cpp|csharp|c#|python|java|javascript|typescript|golang|rust|ruby|php|swift|kotlin|html|css|sql\s*injection)\b/i,
+    /\b(?:hello\s*world|leetcode|hackerrank|algorithm|source\s*code|print\s*code|write\s*code|coding|programmer|programming)\b/i,
+    /\b(?:কোডিং|কোড|প্রোগ্রাম|প্রোগ্রামিং|অ্যালগরিদম|সোর্স\s*কোড)\b/i,
+    // General sports / entertainment / non-platform topics
+    /\b(?:cricket|football|world\s*cup|weather|rain|temperature|recipe|cooking|movie|cinema|song|music|joke|jokes|poem|poetry)\b/i,
+    /\b(?:ফুটবল|ক্রিকেট|খেলা|আবহাওয়া|বৃষ্টি|তাপমাত্রা|রান্না|রেসিপি|সিনেমা|গান|কবিতা|জোকস|কৌতুক)\b/i,
+    // Other off-topic domains
+    /\b(?:bitcoin|cryptocurrency|crypto|diet|gym|homework|essay|president|capital\s*city)\b/i,
+  ];
+
+  for (const pattern of offTopicPatterns) {
+    if (pattern.test(lower)) {
+      return true;
+    }
+  }
+
+  // Token matching against OFF_TOPIC (excluding emails and numbers)
+  const sanitized = lower.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '');
+  const tokens = sanitized.split(/[^a-zA-Z0-9\u0980-\u09FF+#]+/);
+  for (const t of tokens) {
+    if (t && OFF_TOPIC.has(t)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function createOffTopicRefusal(): GeminiAgentOutput {
+  return {
+    reply: `দুঃখিত, আমি শুধুমাত্র এই মার্কেটিং পারফরম্যান্স ম্যানেজমেন্ট সিস্টেমের (Game of Business) অভ্যন্তরীণ কাজ, কর্মী, রিপোর্ট, টাস্ক, লিড, পণ্য এবং ক্যাম্পেইন সংক্রান্ত বিষয়ে সহায়তা করতে পারি। সাধারণ কোডিং (C++, Python), সাধারণ জ্ঞান বা প্ল্যাটফর্মের বাইরের কোনো প্রশ্নের উত্তর দিতে আমি অনুমোদিত নই।\n\nSorry, I can only assist with internal operations of this Marketing Performance Management System (Game of Business), including employees, reports, tasks, targets, leads, products, and campaigns. I am restricted from answering external questions, general coding (C++, Python), homework, or off-topic queries.`,
+    suggestions: [
+      {
+        labelBn: 'আজকের দৈনিক রিপোর্ট',
+        labelEn: "Today's Daily Report",
+        actionQuery: 'আজকের দৈনিক রিপোর্ট দেখাও',
+        href: '/admin/reports/daily',
+      },
+      {
+        labelBn: 'সকল কর্মী তালিকা',
+        labelEn: 'All Employees List',
+        actionQuery: 'সকল কর্মীর তালিকা দেখাও',
+        href: '/admin/employees',
+      },
+      {
+        labelBn: 'আজকের টার্গেট সামারি',
+        labelEn: "Today's Target Summary",
+        actionQuery: 'আজকের টার্গেট সামারি দেখাও',
+        href: '/admin/targets',
+      },
+      {
+        labelBn: 'কাস্টমার ও লিড পাইপলাইন',
+        labelEn: 'Customers & Leads',
+        actionQuery: 'লিড স্ট্যাটিস্টিক্স দেখাও',
+        href: '/admin/leads',
+      },
+    ],
+  };
+}
+
+/**
  * Executes an AI Agent turn using Google Gemini API with fallback support.
  */
 export async function runGeminiAgent(
   input: GeminiAgentInput
 ): Promise<GeminiAgentOutput | null> {
+  const { message, actorId, history = [] } = input;
+
+  // Immediate deterministic guardrail against off-topic queries (zero-latency refusal)
+  if (isOffTopicQuery(message)) {
+    return createOffTopicRefusal();
+  }
+
   const apiKey = getGeminiApiKey();
   if (!apiKey) {
     return null;
   }
 
-  const { message, actorId, history = [] } = input;
   const ctx = { actorId, confirm: false };
 
   // Prepare multi-turn conversation contents strictly adhering to Gemini API rules:
@@ -986,6 +1140,98 @@ export async function runGeminiAgent(
         };
       }
 
+      case 'clarify_and_offer_options': {
+        const clarification =
+          args.clarification ||
+          'অনুগ্রহ করে নিচের একটি অপশন বেছে নিন / Please choose an option below:';
+        const rawOptions = Array.isArray(args.options) ? args.options : [];
+        const suggestions: NavLink[] = rawOptions.map((opt: any) => ({
+          labelBn: opt.labelBn || opt.actionQuery || 'বাছাই করুন',
+          labelEn: opt.labelEn || opt.actionQuery || 'Select',
+          actionQuery: opt.actionQuery,
+          href: opt.href,
+        }));
+
+        return {
+          reply: clarification,
+          suggestions: suggestions.length > 0 ? suggestions : undefined,
+        };
+      }
+
+      case 'refuse_off_topic': {
+        return createOffTopicRefusal();
+      }
+
+      case 'get_today_targets': {
+        const todayStr = getDhakaDateString();
+        const targetDate = parseDateOnly(todayStr);
+
+        const [targets, sections] = await Promise.all([
+          prisma.sectionTarget.findMany({
+            include: { section: true, employee: true },
+          }),
+          prisma.groupSection.findMany({
+            where: { is_active: true },
+            select: { id: true, name: true },
+          }),
+        ]);
+
+        const effective = calculateEffectiveTargetsForRange(targets, targetDate, targetDate);
+
+        const lines: string[] = [
+          `🎯 **আজকের (${todayStr}) টার্গেট সামারি / Today's Target Summary:**`,
+          '',
+        ];
+
+        let totalTargetPosts = 0;
+        let totalTargetSales = 0;
+        let totalTargetProfit = 0;
+        let totalTargetClients = 0;
+
+        for (const [secId, metricObj] of Object.entries(effective)) {
+          const sec = sections.find((s) => s.id === secId);
+          const secName = sec ? sec.name : 'Unknown Section';
+          const posts = (metricObj as any)[MetricType.POSTS_DONE] || 0;
+          const sales = (metricObj as any)[MetricType.SALES_AMOUNT] || 0;
+          const profit = (metricObj as any)[MetricType.PROFIT_AMOUNT] || 0;
+          const clients = (metricObj as any)[MetricType.NEW_CLIENTS] || 0;
+
+          totalTargetPosts += posts;
+          totalTargetSales += sales;
+          totalTargetProfit += profit;
+          totalTargetClients += clients;
+
+          if (posts > 0 || sales > 0 || profit > 0 || clients > 0) {
+            lines.push(
+              `• **${secName}**: পোস্ট: ${posts}, সেলস: ${formatTaka(sales)}, লাভ: ${formatTaka(profit)}, নতুন ক্লায়েন্ট: ${clients}`
+            );
+          }
+        }
+
+        lines.push('');
+        lines.push(
+          `📊 **মোট লক্ষ্যমাত্রা (Total Targets)**: পোস্ট: ${totalTargetPosts}, সেলস: ${formatTaka(totalTargetSales)}, মুনাফা: ${formatTaka(totalTargetProfit)}`
+        );
+
+        return {
+          reply: lines.join('\n'),
+          link: { href: '/admin/targets', labelBn: 'টার্গেট ও বাজেট পেজে দেখুন', labelEn: 'View Targets Page' },
+          suggestions: [
+            {
+              labelBn: 'আজকের দৈনিক রিপোর্ট',
+              labelEn: "Today's Daily Report",
+              actionQuery: 'আজকের দৈনিক রিপোর্ট দেখাও',
+              href: '/admin/reports/daily',
+            },
+            {
+              labelBn: 'টার্গেট ম্যানেজমেন্ট পেজ',
+              labelEn: 'Targets Page',
+              href: '/admin/targets',
+            },
+          ],
+        };
+      }
+
       default:
         break;
     }
@@ -994,6 +1240,9 @@ export async function runGeminiAgent(
   // If Gemini provided a direct textual explanation
   const textPart = parts.find((p: any) => p.text);
   if (textPart?.text) {
+    if (isOffTopicQuery(textPart.text)) {
+      return createOffTopicRefusal();
+    }
     return {
       reply: textPart.text,
     };

@@ -224,6 +224,7 @@ export const WEAK = new Set([
 
 /** Words that mark a question as outside the panel even if it shares panel words ("weight loss target"). */
 export const OFF_TOPIC = new Set([
+  'c++', 'cpp', 'python', 'java', 'javascript', 'coding', 'code', 'program', 'programming', 'html', 'css', 'algorithm', 'leetcode', 'কোডিং', 'কোড', 'প্রোগ্রাম', 'প্রোগ্রামিং',
   'football', 'cricket', 'match', 'weather', 'rain', 'dollar', 'gold', 'bitcoin', 'stock', 'girlfriend', 'boyfriend',
   'relationship', 'love', 'recipe', 'cook', 'cooking', 'movie', 'song', 'music', 'joke', 'poem', 'loss', 'diet',
   'salary', 'বেতন', 'instagram', 'follower', 'followers', 'clothes', 'kapor', 'কাপড়', 'কাপড়ের', 'chash', 'tiktok',

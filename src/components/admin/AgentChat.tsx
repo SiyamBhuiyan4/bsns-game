@@ -47,6 +47,7 @@ interface NavLink {
   href: string;
   labelBn: string;
   labelEn: string;
+  actionQuery?: string;
 }
 
 interface AgentResponse {
@@ -801,30 +802,41 @@ export default function AgentChat() {
                       </div>
                     )}
 
-                    {/* Secondary Suggestions Pills */}
+                    {/* Interactive Options & Suggestions */}
                     {m.suggestions && m.suggestions.length > 0 && (
                       <div className="space-y-1.5 pt-1">
                         <div className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
                           <Sparkles className="h-3 w-3 text-brand-600" />
-                          <span>{L('সম্পর্কিত পেজ ও অপশন:', 'Related pages:')}</span>
+                          <span>{L('সম্পর্কিত অপশন ও পদক্ষেপ:', 'Options & next steps:')}</span>
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                           {m.suggestions
-                            .filter((s) => s.href !== m.link?.href)
+                            .filter((s) => !m.link || s.href !== m.link.href || Boolean(s.actionQuery))
                             .map((s, idx) => {
-                              const meta = getLinkMeta(s.href);
-                              const Icon = meta.icon;
+                              const meta = s.href ? getLinkMeta(s.href) : null;
+                              const Icon = meta?.icon || Sparkles;
                               const label = lang === 'en' ? s.labelEn || s.labelBn : s.labelBn || s.labelEn;
+                              const isAction = Boolean(s.actionQuery);
                               return (
                                 <button
-                                  key={`${s.href}-${idx}`}
+                                  key={`${s.href || s.actionQuery}-${idx}`}
                                   type="button"
-                                  onClick={() => handleNavigate(s.href)}
-                                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-2xs hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50/50 transition cursor-pointer"
+                                  onClick={() => {
+                                    if (s.actionQuery) {
+                                      send(s.actionQuery);
+                                    } else if (s.href && s.href !== '#') {
+                                      handleNavigate(s.href);
+                                    }
+                                  }}
+                                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium shadow-2xs transition cursor-pointer ${
+                                    isAction
+                                      ? 'border-brand-200 bg-brand-50/80 text-brand-800 hover:bg-brand-100 hover:border-brand-300 ring-1 ring-brand-500/10'
+                                      : 'border-slate-200 bg-white text-slate-700 hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50/50'
+                                  }`}
                                 >
-                                  <Icon className="h-3 w-3 text-slate-400 group-hover:text-brand-600" />
+                                  <Icon className={`h-3 w-3 ${isAction ? 'text-brand-600' : 'text-slate-400 group-hover:text-brand-600'}`} />
                                   <span>{label}</span>
-                                  <ArrowRight className="h-2.5 w-2.5 text-slate-300" />
+                                  <ArrowRight className="h-2.5 w-2.5 opacity-60" />
                                 </button>
                               );
                             })}
