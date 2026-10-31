@@ -18,7 +18,9 @@ import {
   X,
   CheckCircle2,
   Zap,
+  Target,
 } from 'lucide-react';
+import ProductGoalsTab from '@/components/admin/ProductGoalsTab';
 import { format } from 'date-fns';
 import PageHeader from '@/components/ui/PageHeader';
 import StatCard from '@/components/ui/StatCard';
@@ -68,6 +70,16 @@ export default function AdminCampaignsPage() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Unified Section Tabs: Marketing Campaigns vs Product Goals
+  const [activeTab, setActiveTab] = useState<'campaigns' | 'products'>('campaigns');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tab') === 'products') {
+      setActiveTab('products');
+    }
+  }, []);
 
   // Filters
   const [selectedChannel, setSelectedChannel] = useState<string>('ALL');
@@ -310,32 +322,69 @@ export default function AdminCampaignsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        icon={<Megaphone className="h-5 w-5" />}
-        title={L('ক্যাম্পেইন', 'Campaigns')}
-        subtitle={L('প্রতিটি ক্যাম্পেইনের বাজেট, খরচ ও ROAS', 'Budget, ad spend and ROAS per campaign')}
+        icon={<Megaphone className="h-5 w-5 text-brand-600" />}
+        title={L('ক্যাম্পেইন ও প্রোডাক্ট মার্কেটিং', 'Campaigns & Products')}
+        subtitle={L(
+          'বিজ্ঞাপন ক্যাম্পেইন, বাজেট, খরচ এবং প্রোডাক্ট সেলস টার্গেট এক জায়গায় পরিচালনা করুন',
+          'Manage marketing campaigns, ad budgets, and product sales goals in one place'
+        )}
         actions={
-          <button
-            onClick={() => {
-              setIsAddOpen(true);
-              setErrorMessage(null);
-            }}
-            className="btn btn-primary"
-          >
-            <Plus className="h-4 w-4" />
-            {L('নতুন ক্যাম্পেইন', 'New campaign')}
-          </button>
+          activeTab === 'campaigns' ? (
+            <button
+              onClick={() => {
+                setIsAddOpen(true);
+                setErrorMessage(null);
+              }}
+              className="btn btn-primary"
+            >
+              <Plus className="h-4 w-4" />
+              {L('নতুন ক্যাম্পেইন', 'New campaign')}
+            </button>
+          ) : null
         }
       />
 
-      {errorMessage && (
-        <div className="alert alert-error">
-          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-          <span className="flex-1">{L(errorMessage)}</span>
-          <button onClick={() => setErrorMessage(null)} className="btn-icon h-6 w-6" aria-label={L('বন্ধ করুন', 'Dismiss')}>
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
+      {/* Unified Section Switcher Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab('campaigns')}
+          className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+            activeTab === 'campaigns'
+              ? 'bg-brand-600 text-white shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <Megaphone className="h-4 w-4" />
+          {L('মার্কেটিং ক্যাম্পেইন ও বাজেট', 'Marketing Campaigns')}
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('products')}
+          className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all ${
+            activeTab === 'products'
+              ? 'bg-brand-600 text-white shadow-sm'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <Target className="h-4 w-4" />
+          {L('প্রোডাক্ট সেলস টার্গেট ও ডেডলাইন', 'Product Sales Goals')}
+        </button>
+      </div>
+
+      {activeTab === 'products' ? (
+        <ProductGoalsTab />
+      ) : (
+        <>
+          {errorMessage && (
+            <div className="alert alert-error">
+              <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+              <span className="flex-1">{L(errorMessage)}</span>
+              <button onClick={() => setErrorMessage(null)} className="btn-icon h-6 w-6" aria-label={L('বন্ধ করুন', 'Dismiss')}>
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
 
       {successMessage && (
         <div className="alert alert-success">
@@ -753,6 +802,8 @@ export default function AdminCampaignsPage() {
             </form>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

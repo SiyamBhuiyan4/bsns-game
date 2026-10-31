@@ -35,9 +35,7 @@ export default function AdminShell({ session, children }: { session: { name: str
       labelBn: 'ব্যবসা ও প্রচারণা',
       labelEn: 'Business & Marketing',
       items: [
-        { href: '/admin/products', key: 'admin_nav.products', labelBn: 'পণ্য ও টার্গেট', labelEn: 'Product Goals', icon: Target },
-        { href: '/admin/campaigns', key: 'admin_nav.campaigns', labelBn: 'ক্যাম্পেইন', labelEn: 'Campaigns', icon: Megaphone },
-        { href: '/admin/budgets', key: 'admin_nav.budgets', labelBn: 'বাজেট', labelEn: 'Budgets', icon: Wallet },
+        { href: '/admin/campaigns', key: 'admin_nav.campaigns', labelBn: 'ক্যাম্পেইন ও প্রোডাক্ট', labelEn: 'Campaigns & Products', icon: Megaphone },
       ],
     },
     {
