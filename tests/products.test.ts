@@ -262,4 +262,77 @@ describe('Products Catalog & Pricing Verifier Tests', () => {
     expect(foundInAdminList).toBeDefined();
     expect(foundInAdminList.is_active).toBe(false);
   });
+
+  it('7. should create product with sales target and deadline, track progress against sales, and calculate days remaining', async () => {
+    mockSessionUser.userId = adminUser.id;
+    mockSessionUser.role = 'ADMIN';
+
+    const deadlineDate = new Date();
+    deadlineDate.setDate(deadlineDate.getDate() + 10);
+    const deadlineStr = deadlineDate.toISOString().split('T')[0];
+
+    // 1. Create product with a target of 100 units by deadline
+    const createReq = new NextRequest('http://localhost:3000/api/products', {
+      method: 'POST',
+      body: JSON.stringify({
+        name_bn: 'প্রিমিয়াম বাটন মাশরুম',
+        name_en: 'Premium Button Mushroom',
+        unit: 'box',
+        selling_price: 450,
+        target_quantity: 100,
+        target_deadline: deadlineStr,
+      }),
+    });
+
+    const createRes = await createProduct(createReq);
+    expect(createRes.status).toBe(201);
+    const createData = await createRes.json();
+    const prodId = createData.product.id;
+    expect(Number(createData.product.target_quantity)).toBe(100);
+
+    // 2. Record 35 units sold by employee
+    await prisma.dailyProductSale.create({
+      data: {
+        employee_id: employeeUser.id,
+        entry_date: new Date(),
+        product_id: prodId,
+        quantity: 35,
+        amount: 35 * 450,
+      },
+    });
+
+    // 3. Fetch products and verify progress and velocity calculations
+    const fetchReq = new NextRequest('http://localhost:3000/api/products');
+    const fetchRes = await getProducts(fetchReq);
+    expect(fetchRes.status).toBe(200);
+    const fetchData = await fetchRes.json();
+    const productItem = fetchData.products.find((p: any) => p.id === prodId);
+
+    expect(productItem).toBeDefined();
+    expect(productItem.target_quantity).toBe(100);
+    expect(productItem.achieved_quantity).toBe(35);
+    expect(productItem.progress_percentage).toBe(35);
+    expect(productItem.remaining_quantity).toBe(65);
+    expect(productItem.days_remaining).toBeGreaterThanOrEqual(9);
+    expect(productItem.days_remaining).toBeLessThanOrEqual(11);
+    expect(productItem.daily_needed).toBeGreaterThan(0);
+    expect(productItem.is_completed).toBe(false);
+
+    // 4. Update target to 35 units (target met) via PUT
+    const updateReq = new NextRequest(`http://localhost:3000/api/products/${prodId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        target_quantity: 35,
+      }),
+    });
+    const updateRes = await updateProduct(updateReq, { params: Promise.resolve({ id: prodId }) });
+    expect(updateRes.status).toBe(200);
+
+    // 5. Verify target completion status
+    const verifyRes = await getProducts(new NextRequest('http://localhost:3000/api/products'));
+    const verifyData = await verifyRes.json();
+    const completedItem = verifyData.products.find((p: any) => p.id === prodId);
+    expect(completedItem.is_completed).toBe(true);
+    expect(completedItem.progress_percentage).toBe(100);
+  });
 });

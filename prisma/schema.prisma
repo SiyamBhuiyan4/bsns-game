@@ -229,18 +229,21 @@ model LinkCompletion {
 }
 
 model Product {
-  id            String       @id @default(uuid())
-  name_bn       String
-  name_en       String
-  unit          String
-  selling_price Decimal      @db.Decimal(12, 2)
-  is_active     Boolean      @default(true)
-  created_at    DateTime     @default(now())
-  updated_at    DateTime     @updatedAt
+  id                String       @id @default(uuid())
+  name_bn           String
+  name_en           String
+  unit              String
+  selling_price     Decimal      @db.Decimal(12, 2)
+  target_quantity   Decimal?     @default(0) @db.Decimal(10, 2)
+  target_deadline   DateTime?
+  target_start_date DateTime?
+  is_active         Boolean      @default(true)
+  created_at        DateTime     @default(now())
+  updated_at        DateTime     @updatedAt
 
-  sales         DailyProductSale[]
-  campaigns     Campaign[]
-  leads         Lead[]
+  sales             DailyProductSale[]
+  campaigns         Campaign[]
+  leads             Lead[]
 }
 
 model DailyProductSale {

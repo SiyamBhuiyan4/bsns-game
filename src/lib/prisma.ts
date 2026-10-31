@@ -93,7 +93,7 @@ const MODELS: Record<ModelName, ModelDef> = {
     },
   },
   product: {
-    table: 'Product', dates: ['created_at', 'updated_at'], hasUpdatedAt: true, defaults: { is_active: true, created_at: NOW }, unique: [],
+    table: 'Product', dates: ['target_start_date', 'target_deadline', 'created_at', 'updated_at'], hasUpdatedAt: true, defaults: { is_active: true, target_quantity: 0, target_deadline: null, target_start_date: null, created_at: NOW }, unique: [],
     relations: {
       sales: { to: 'dailyProductSale', fk: 'product_id', many: true },
       campaigns: { to: 'campaign', fk: 'product_id', many: true },

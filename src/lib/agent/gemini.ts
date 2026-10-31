@@ -936,6 +936,11 @@ export async function runGeminiAgent(
           where: { is_active: true },
           take: 15,
           orderBy: { name_bn: 'asc' },
+          include: {
+            sales: {
+              select: { quantity: true, amount: true },
+            },
+          },
         });
 
         if (products.length === 0) {
@@ -946,16 +951,26 @@ export async function runGeminiAgent(
         }
 
         const lines = [
-          `📦 **পণ্য তালিকা (${products.length}টি সক্রিয় পণ্য):**`,
-          ...products.map(
-            (p, i) =>
-              `${toBengaliDigits(i + 1)}. **${p.name_bn}** (${p.name_en}) - ${formatTaka(Number(p.selling_price))} / ${p.unit}`
-          ),
+          `📦 **পণ্য ও সেলস টার্গেট তালিকা (${toBengaliDigits(products.length)}টি পণ্য):**`,
+          ...products.map((p: any, i: number) => {
+            const tQty = p.target_quantity ? Number(p.target_quantity) : 0;
+            const soldQty = Array.isArray(p.sales)
+              ? p.sales.reduce((sum: number, s: any) => sum + Number(s.quantity || 0), 0)
+              : 0;
+            const targetInfo = tQty > 0
+              ? ` | 🎯 টার্গেট: ${toBengaliDigits(soldQty)}/${toBengaliDigits(tQty)} ${p.unit} (${Math.round((soldQty / tQty) * 100)}%)`
+              : '';
+            const deadlineInfo = p.target_deadline
+              ? ` [মেয়াদ: ${new Date(p.target_deadline).toISOString().split('T')[0]}]`
+              : '';
+
+            return `${toBengaliDigits(i + 1)}. **${p.name_bn}** (${p.name_en}) - ${formatTaka(Number(p.selling_price))}/${p.unit}${targetInfo}${deadlineInfo}`;
+          }),
         ];
 
         return {
           reply: lines.join('\n'),
-          link: { href: '/admin/products', labelBn: 'পণ্য ম্যানেজমেন্ট পেজে দেখুন', labelEn: 'View Products Management' },
+          link: { href: '/admin/products', labelBn: 'পণ্য ও টার্গেট পেজে দেখুন', labelEn: 'View Products & Targets' },
         };
       }
 
