@@ -148,17 +148,9 @@ const AGENT_TOOLS = [
     },
   },
   {
-    name: 'list_campaigns',
-    description: 'Lists active marketing campaigns, budgets, and channel sources.',
-    parameters: {
-      type: 'OBJECT',
-      properties: {},
-    },
-  },
-  {
     name: 'navigate_to_page',
     description:
-      'Directly opens and navigates the user to a page across the web app whenever the user wants to visit, open, or switch to a page (e.g. employees / team, dashboard, sections/groups, products, campaigns, leads, targets, daily report, 90-day plan, audit log, settings, manual).',
+      'Directly opens and navigates the user to a page across the web app whenever the user wants to visit, open, or switch to a page (e.g. employees / team, dashboard, sections/groups, products, leads, targets, daily report, 90-day plan, audit log, settings, manual).',
     parameters: {
       type: 'OBJECT',
       properties: {
@@ -169,7 +161,6 @@ const AGENT_TOOLS = [
             'groups',
             'leads',
             'products',
-            'campaigns',
             'targets',
             'dashboard',
             'reports_daily',
@@ -181,7 +172,7 @@ const AGENT_TOOLS = [
             'manual',
           ],
           description:
-            'The specific page to navigate to: team (employees), groups (sections/links), leads, products, campaigns, targets, dashboard, reports_daily, plan, audit, settings, manual.',
+            'The specific page to navigate to: team (employees), groups (sections/links), leads, products (product goals), targets, dashboard, reports_daily, plan, audit, settings, manual.',
         },
       },
       required: ['page_intent'],
@@ -367,8 +358,7 @@ STRICT BOUNDARY & OFF-TOPIC REFUSAL RULE (HIGHEST PRIORITY):
    - Tasks & Targets (set section target, set employee target, today targets, scores)
    - Performance Reports (daily, weekly, monthly reports, sales, profit, B2B)
    - 90-Day Action Plan (phases, milestones, tasks)
-   - Products Catalog (prices, products list, units)
-   - Marketing Campaigns & Ad Spend (budgets, campaign status, ROAS)
+   - Products & Sales Goals (target quantities, deadlines, catalog prices)
    - System Settings & Audit Logs (activity, who did what, logins)
    - System Page Navigation
 3. STRICTLY FORBIDDEN:
@@ -396,7 +386,7 @@ AUTONOMOUS EXECUTION & DATA RETRIEVAL RULE:
      User says "ami or report dekhte chaisi specifically" -> Call get_employee_report(employee: "siyam", date: "yesterday").
 
 2. Provide Specific Data First:
-   - When the user asks for specific reports, tasks, audit trails, leads, products, campaigns, or employee status, ALWAYS call the corresponding specific tool so the user gets actual data and answers directly in the chat!
+   - When the user asks for specific reports, tasks, audit trails, leads, products & sales goals, or employee status, ALWAYS call the corresponding specific tool so the user gets actual data and answers directly in the chat!
    - Do NOT just navigate away to a generic page unless the user solely instructed to open or view a page without data query intent.
 
 3. Dates & Relative Time:
@@ -447,12 +437,16 @@ export function isOffTopicQuery(text: string): boolean {
   // Explicit off-topic regex patterns
   const offTopicPatterns = [
     // Programming languages / coding requests
-    /\b(?:c\+\+|cpp|csharp|c#|python|java|javascript|typescript|golang|rust|ruby|php|swift|kotlin|html|css|sql\s*injection)\b/i,
-    /\b(?:hello\s*world|leetcode|hackerrank|algorithm|source\s*code|print\s*code|write\s*code|coding|programmer|programming)\b/i,
-    /\b(?:কোডিং|কোড|প্রোগ্রাম|প্রোগ্রামিং|অ্যালগরিদম|সোর্স\s*কোড)\b/i,
+    /(?:\b(?:cpp|csharp|python|java|javascript|typescript|golang|rust|ruby|php|swift|kotlin|html|css|sql\s*injection)\b|\bc\+\+(?=[^a-zA-Z0-9+]|$)|(?:\b|#)c#(?=[^a-zA-Z0-9#]|$))/i,
+    /(?:\bhello\w*\s*world\b|leetcode|hackerrank|algorithm|source\s*code|write\s*(?:a\s*)?code|coding|programmer|programming)/i,
+    /(?:কোডিং|কোড|প্রোগ্রাম|প্রোগ্রামিং|অ্যালগরিদম|সোর্স\s*কোড)/i,
+    // Coding in bangla / banglish: e.g. "code ta de", "code deo", "code dao", "code lekho", "code pathao"
+    /(?:(?:print|hello|c\+\+|cpp|c#|python|java)\s*(?:korar|er)?\s*code|code\s*(?:ta\s*)?(?:de|deo|dao|lekho|likhe|pathao|show|chai))/i,
     // General sports / entertainment / non-platform topics
     /\b(?:cricket|football|world\s*cup|weather|rain|temperature|recipe|cooking|movie|cinema|song|music|joke|jokes|poem|poetry)\b/i,
-    /\b(?:ফুটবল|ক্রিকেট|খেলা|আবহাওয়া|বৃষ্টি|তাপমাত্রা|রান্না|রেসিপি|সিনেমা|গান|কবিতা|জোকস|কৌতুক)\b/i,
+    /(?:ফুটবল|ক্রিকেট|খেলা|আবহাওয়া|বৃষ্টি|তাপমাত্রা|রান্না|রেসিপি|সিনেমা|গান|কবিতা|জোকস|কৌতুক)/i,
+    // General casual chit-chat outside business: e.g. "vallage na", "val lagena", "mon valo na", "tumi ke", "girlfriend"
+    /(?:v?a?l?l?age\s*na|mon\s*(?:v?a?b?h?alo\s*na|kharap)|girlfriend|boyfriend|love\s*you|bhalobashi|prem|biye|kemon\s*acho)/i,
     // Other off-topic domains
     /\b(?:bitcoin|cryptocurrency|crypto|diet|gym|homework|essay|president|capital\s*city)\b/i,
   ];
@@ -477,7 +471,7 @@ export function isOffTopicQuery(text: string): boolean {
 
 export function createOffTopicRefusal(): GeminiAgentOutput {
   return {
-    reply: `দুঃখিত, আমি শুধুমাত্র এই মার্কেটিং পারফরম্যান্স ম্যানেজমেন্ট সিস্টেমের (Game of Business) অভ্যন্তরীণ কাজ, কর্মী, রিপোর্ট, টাস্ক, লিড, পণ্য এবং ক্যাম্পেইন সংক্রান্ত বিষয়ে সহায়তা করতে পারি। সাধারণ কোডিং (C++, Python), সাধারণ জ্ঞান বা প্ল্যাটফর্মের বাইরের কোনো প্রশ্নের উত্তর দিতে আমি অনুমোদিত নই।\n\nSorry, I can only assist with internal operations of this Marketing Performance Management System (Game of Business), including employees, reports, tasks, targets, leads, products, and campaigns. I am restricted from answering external questions, general coding (C++, Python), homework, or off-topic queries.`,
+    reply: `দুঃখিত, আমি শুধুমাত্র এই মার্কেটিং পারফরম্যান্স প্ল্যাটফর্মের (Game of Business) অভ্যন্তরীণ কাজ, কর্মী, রিপোর্ট, টাস্ক, লিড ও পণ্যের সেলস টার্গেট সংক্রান্ত বিষয়ে সহায়তা করতে পারি। সাধারণ কোডিং (C++, Python), সাধারণ জ্ঞান বা প্ল্যাটফর্মের বাইরের কোনো প্রশ্নের উত্তর দিতে আমি অনুমোদিত নই।\n\nSorry, I can only assist with internal operations of this Marketing Performance Management System (Game of Business), including employees, reports, tasks, targets, leads, and product sales goals. I am restricted from answering external questions, general coding (C++, Python), homework, or off-topic queries.`,
     suggestions: [
       {
         labelBn: 'আজকের দৈনিক রিপোর্ট',
@@ -490,6 +484,12 @@ export function createOffTopicRefusal(): GeminiAgentOutput {
         labelEn: 'All Employees List',
         actionQuery: 'সকল কর্মীর তালিকা দেখাও',
         href: '/admin/employees',
+      },
+      {
+        labelBn: 'পণ্য ও সেলস টার্গেট',
+        labelEn: 'Products & Sales Goals',
+        actionQuery: 'পণ্য ও সেলস টার্গেট দেখাও',
+        href: '/admin/products',
       },
       {
         labelBn: 'আজকের টার্গেট সামারি',
@@ -974,33 +974,7 @@ export async function runGeminiAgent(
         };
       }
 
-      // 6. Marketing Campaigns
-      case 'list_campaigns': {
-        const campaigns = await prisma.campaign.findMany({
-          take: 10,
-          orderBy: { created_at: 'desc' },
-        });
 
-        if (campaigns.length === 0) {
-          return {
-            reply: 'কোনো ক্যাম্পেইন পাওয়া যায়নি।\nNo campaigns found.',
-            link: { href: '/admin/campaigns', labelBn: 'ক্যাম্পেইন পেজে যান', labelEn: 'Go to Campaigns Page' },
-          };
-        }
-
-        const lines = [
-          `📢 **মার্কেটিং ক্যাম্পেইনসমূহ (${campaigns.length}টি):**`,
-          ...campaigns.map(
-            (c, i) =>
-              `${toBengaliDigits(i + 1)}. **${c.name}** (বাজেট: ${formatTaka(Number(c.budget))}, স্ট্যাটাস: ${c.status})`
-          ),
-        ];
-
-        return {
-          reply: lines.join('\n'),
-          link: { href: '/admin/campaigns', labelBn: 'ক্যাম্পেইন পেজে দেখুন', labelEn: 'View Campaigns Page' },
-        };
-      }
 
       case 'get_status_summary': {
         const result = await executeCommand('status', [], ctx);

@@ -569,18 +569,13 @@ export async function navigate(message: string): Promise<NavResult> {
     !actions.has('edit');
 
   if (isCampaignInquiry) {
-    const camps = await prisma.campaign.findMany({ where: { status: 'ACTIVE' }, take: 10 });
-    if (camps.length > 0) {
-      const listBn = camps.map((cp) => `• 📢 **${cp.name}** (${cp.channel}): বাজেট ৳ ${cp.budget_amount}`).join('\n');
-      const listEn = camps.map((cp) => `• 📢 **${cp.name}** (${cp.channel}): Budget ৳ ${cp.budget_amount}`).join('\n');
-      return {
-        reply: bn
-          ? `📢 **আমাদের চলমান ক্যাম্পেইনসমূহ (Active Campaigns)**:\n${listBn}\n\nক্যাম্পেইন পেজে নিয়ে যাচ্ছি...`
-          : `📢 **Our Active Campaigns**:\n${listEn}\n\nOpening campaigns page...`,
-        link: { href: '/admin/campaigns', labelBn: 'ক্যাম্পেইন পেজ', labelEn: 'Campaigns Page' },
-        navigate: true,
-      };
-    }
+    return {
+      reply: bn
+        ? `📦 **পণ্য ও সেলস টার্গেট পেজে নিয়ে যাচ্ছি...**`
+        : `📦 **Opening Product Goals & Targets page...**`,
+      link: { href: '/admin/products', labelBn: 'পণ্য ও সেলস টার্গেট', labelEn: 'Product Goals' },
+      navigate: true,
+    };
   }
 
   // Employees Inquiry
@@ -765,14 +760,14 @@ export async function navigate(message: string): Promise<NavResult> {
     }
     return {
       reply: say(
-        '🤖 **আমি শুধুমাত্র এই বিজনেস ম্যানেজমেন্ট প্ল্যাটফর্মের রিমোট এআই সহকারী (Website AI Assistant)**।\n' +
-          'আমি আবহাওয়া, রান্না, খেলাধুলা বা বাইরের কোনো সাধারণ বিষয়ের উত্তর দিই না।\n\n' +
-          '💡 তবে এই প্ল্যাটফর্মের **পণ্য**, **কর্মী**, **ক্যাম্পেইন**, **দৈনিক/মাসিক রিপোর্ট**, **টার্গেট**, **স্কোরিং** বা **কাস্টমার ডেটাবেস** সংক্রান্ত যেকোনো কাজ বা তথ্যের জন্য আমাকে জিজ্ঞেস করতে পারেন!',
-        '🤖 **I am the dedicated remote AI assistant for this business management platform**.\n' +
-          'I do not answer general non-website queries like weather, cooking, or sports.\n\n' +
-          '💡 However, I can help you with anything regarding our **products**, **employees**, **campaigns**, **daily/monthly reports**, **targets**, **scoring rules**, and **customer database**!'
+        '🤖 **আমি শুধুমাত্র এই বিজনেস প্ল্যাটফর্মের এআই সহকারী (Website AI Assistant)**।\n' +
+          'আমি সাধারণ কোডিং (C++, Python), আবহাওয়া, রান্না বা বাইরের কোনো সাধারণ বিষয়ের উত্তর দিই না।\n\n' +
+          '💡 তবে এই প্ল্যাটফর্মের **পণ্য ও সেলস টার্গেট**, **কর্মী**, **দৈনিক/মাসিক রিপোর্ট**, **টার্গেট**, **গ্রুপ লিংক** বা **কাস্টমার ডেটাবেস** সংক্রান্ত যেকোনো কাজ বা তথ্যের জন্য আমাকে জিজ্ঞেস করতে পারেন!',
+        '🤖 **I am the dedicated AI assistant for this business platform**.\n' +
+          'I do not answer general non-platform queries like coding (C++, Python), weather, cooking, or sports.\n\n' +
+          '💡 However, I can help you with anything regarding our **product sales targets**, **employees**, **daily/monthly reports**, **targets**, **group links**, and **customer database**!'
       ),
-      suggestions: PAGES.filter((p) => ['team', 'groups', 'leads', 'manual', 'products', 'campaigns'].includes(p.id)),
+      suggestions: PAGES.filter((p) => ['team', 'groups', 'leads', 'manual', 'products'].includes(p.id)),
     };
   }
 

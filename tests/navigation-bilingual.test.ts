@@ -130,7 +130,6 @@ describe('Subagent 28: Navigation, Headers & Bilingual Framework Verifier', () =
         '/admin/csv/history',
         '/admin/employees',
         '/admin/products',
-        '/admin/campaigns',
         '/admin/leads',
         '/admin/targets',
         '/admin/reports/daily',
